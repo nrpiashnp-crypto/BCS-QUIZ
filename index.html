@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>লিয়ানা বুকস · Lyanna Books</title>
 <meta name="description" content="লিয়ানা বুকস: বিসিএস বিজ্ঞান বই (লেখক পিয়াস) আর প্রতিটি অধ্যায়ের অনলাইন পরীক্ষা।">
+<link rel="icon" href="img/logo/logo-C.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tiro+Bangla&family=Hind+Siliguri:wght@400;500;600&family=Cormorant+Garamond:ital,wght@0,500;1,500&display=swap">
@@ -33,14 +34,21 @@ a{color:var(--accent)}
 .orn{display:flex;align-items:center;justify-content:center;gap:10px;color:var(--gold);margin-top:12px}
 .orn::before,.orn::after{content:"";height:1px;width:56px;background:currentColor;opacity:.6}
 
-/* Photo + welcome */
-.hero{display:grid;justify-items:center;text-align:center;padding:30px 0 34px;border-bottom:1px solid var(--rule)}
-.photo{width:min(220px,60vw);aspect-ratio:1;border-radius:50%;overflow:hidden;border:3px solid var(--card);box-shadow:0 0 0 1px var(--gold),0 10px 30px rgba(0,0,0,.12);background:var(--soft);display:grid;place-items:center}
+.logo{width:min(150px,40vw);height:auto;display:block;margin:0 auto 6px}
+.logo .lt{fill:var(--accent)} .logo .lg{fill:var(--gold)} .logo .lp{fill:var(--paper)}
+
+/* Intro */
+.hero{text-align:center;padding:26px 0 30px;border-bottom:1px solid var(--rule)}
+.hero p{max-width:30em;margin:0 auto 12px;color:var(--muted);text-wrap:pretty}
+.hero p:first-child{font-family:var(--display);font-size:19px;color:var(--ink)}
+
+/* About Lyanna */
+.about{display:grid;grid-template-columns:140px 1fr;gap:22px;align-items:center;background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:20px}
+@media (max-width:520px){.about{grid-template-columns:1fr;justify-items:center;text-align:center}}
+.photo{width:140px;aspect-ratio:1;border-radius:50%;overflow:hidden;border:3px solid var(--card);box-shadow:0 0 0 1px var(--gold),0 8px 22px rgba(0,0,0,.12)}
 .photo img{width:100%;height:100%;object-fit:cover;display:block}
-.photo .mono{font-family:var(--display);font-size:min(110px,30vw);color:var(--accent);line-height:1}
-.hero p{max-width:30em;margin:14px 0 0;color:var(--muted);text-wrap:pretty}
-.hero p:first-of-type{margin-top:22px;font-family:var(--display);font-size:20px;color:var(--ink)}
-.hero p b{color:var(--ink);font-weight:500}
+.about p{margin:0;color:var(--muted)}
+.about b{color:var(--ink);font-weight:500}
 
 /* Sections */
 h2{font-family:var(--display);font-weight:400;font-size:26px;margin:34px 0 14px;text-align:center}
@@ -79,16 +87,13 @@ footer .fb{font-family:var(--display);color:var(--ink);font-size:18px}
 <div class="wrap">
 
 <header class="brand">
+  <svg class="logo" viewBox="30 40 180 172" role="img" aria-label="লিয়ানা বুকস লোগো"><path class="lt" d="M84.16 178H82.71L73.73 171L74 99.46H62.51L54.59 91.54V90.48H73.6Q70.3 86.52 67.86 83.55Q65.42 80.58 65.42 76.1Q65.42 70.02 70.17 65.07Q74.92 60.12 82.91 57.22Q90.89 54.32 100.66 54.32Q110.83 54.32 122.18 57.55Q133.53 60.78 144.49 66.79Q155.44 72.8 164.29 81.24L162.97 85.86H162.04Q148.84 74.12 134.39 69.03Q119.93 63.95 106.21 63.95Q98.29 63.95 91.49 66Q84.69 68.04 80.53 71.94Q76.37 75.83 76.37 81.38Q76.37 83.49 77.1 85.53Q77.83 87.58 80.2 90.48H87.2L95.12 98.4V99.46H83.11ZM122.84 155.16Q115.71 155.16 110.1 151.6Q104.49 148.04 101.32 142.23Q98.15 136.42 98.15 129.82Q98.15 123.48 100.99 118.53Q103.83 113.58 108.65 110.75Q113.47 107.91 119.14 107.91Q125.61 107.91 130.49 111.21Q135.38 114.51 138.81 119.13Q140.39 114.9 143.23 111.87Q146.07 108.83 150.16 108.83Q158.21 108.83 164.95 121.37L165.21 121.24Q164.55 117.28 164.42 112.86Q164.29 108.44 164.29 100.65Q164.29 100.38 164.29 100.05Q164.29 99.72 164.29 99.46H95.12L87.2 91.54V90.48H177.49L185.41 98.4V99.46H173.39L174.45 178H173L164.02 171Q164.02 168.5 164.02 164.47Q164.02 160.44 164.09 155.82Q164.15 151.2 164.15 147.05Q164.15 142.89 164.15 139.92Q164.15 136.95 164.15 136.42Q164.15 130.08 162.37 126.32Q160.59 122.56 158.28 120.91Q155.97 119.26 154.12 119.26Q150.69 119.26 148.84 122.63Q146.99 125.99 145.81 132.99L145.01 133.25L141.71 131.8Q135.91 119.26 124.42 119.26Q117.95 119.26 113.27 123.29Q108.58 127.31 108.58 134.18Q108.58 137.34 109.84 140.58Q111.09 143.81 113.73 145.92Q116.37 148.04 120.2 148.04L120.33 147.64Q118.61 145.79 117.89 144.01Q117.16 142.23 117.16 140.51Q117.16 136.42 120.33 134.04Q123.5 131.67 127.33 131.67Q131.81 131.67 135.05 134.7Q138.28 137.74 138.28 142.76Q138.28 148.17 134.06 151.67Q129.83 155.16 122.84 155.16Z"/><path class="lg" d="M120,186 C100,172 70,170 38,178 L38,200 C70,192 100,194 120,208 Z"/><path class="lg" d="M120,186 C140,172 170,170 202,178 L202,200 C170,192 140,194 120,208 Z"/><path class="lp" d="M120,190 C100,178 72,176 44,183 L44,186 C72,179 100,181 120,193 Z M120,190 C140,178 168,176 196,183 L196,186 C168,179 140,181 120,193 Z"/><path class="lg" d="M196,45 Q197.96,50.04 203,52 Q197.96,53.96 196,59 Q194.04,53.96 189,52 Q194.04,50.04 196,45Z"/></svg>
   <p class="bn">লিয়ানা বুকস</p>
   <p class="en">Lyanna Books</p>
   <div class="orn" aria-hidden="true">✦</div>
 </header>
 
 <section class="hero">
-  <div class="photo">
-    <img src="img/lyanna.jpg" alt="লিয়ানা" width="640" height="640">
-  </div>
-  <p>আমাদের মেয়ে <b>লিয়ানার</b> নামে এই প্রকাশনী।</p>
   <p>আমাদের বই শুধু সহজ ভাষায় লেখা নয়। বিগত প্রশ্ন বিশ্লেষণ করে দেখানো হয়েছে কোন বিষয় থেকে কোথায় কী প্রশ্ন আসে, আর সামনের পরীক্ষায় কী আসতে পারে।</p>
   <p>লক্ষ্য একটাই: একটি বই দিয়েই যেন বিজ্ঞানের জন্য আলাদা কোর্স না লাগে। তাই প্রতিটি অধ্যায়ের অনলাইন পরীক্ষা সবার জন্য বিনামূল্যে।</p>
 </section>
@@ -121,6 +126,14 @@ footer .fb{font-family:var(--display);color:var(--ink);font-size:18px}
     <a class="ch" href="sound/"><span class="n">২</span><span><span class="nm">শব্দ</span><span class="st">পরীক্ষা দিন →</span></span></a>
     <div class="ch soon"><span class="n">·</span><span><span class="nm">রোগ</span><span class="st">শীঘ্রই</span></span></div>
     <div class="ch soon"><span class="n">·</span><span><span class="nm">আরও অধ্যায়</span><span class="st">একে একে যোগ হবে</span></span></div>
+  </div>
+</section>
+
+<section>
+  <h2>লিয়ানা পরিচিতি</h2>
+  <div class="about">
+    <div class="photo"><img src="img/lyanna.jpg" alt="লিয়ানা" width="640" height="640" loading="lazy"></div>
+    <p>আমাদের মেয়ে <b>লিয়ানা</b>। এই প্রকাশনী তার নামে। লোগোর "লি" অক্ষরটিও তার নামের প্রথম অক্ষর।</p>
   </div>
 </section>
 
