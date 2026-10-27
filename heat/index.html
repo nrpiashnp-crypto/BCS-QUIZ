@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>তাপ: অনলাইন পরীক্ষা</title>
+<meta name="description" content="বিসিএস বিজ্ঞান, অধ্যায় ৬ তাপ: বিগত বিসিএস ও চাকরির পরীক্ষার প্রশ্ন, সময় ও নেগেটিভ মার্কিংসহ, ব্যাখ্যাসহ।">
+<link rel="preload" href="/fonts/NotoSansBengali-bengali.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/TiroBangla-400-bengali.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+/* Layout: one narrow book-like column. Start screen -> exam (sticky timer bar) -> result + review. Practice mode keeps instant feedback. */
+:root{
+  --paper:#fbfaf7; --ink:#1d1f21; --muted:#5f6366; --rule:#d9d6cf; --card:#ffffff;
+  --accent:#1f4e5f; --accent-ink:#ffffff; --sel:#e3eef2; --good:#1e7a46; --good-bg:#e5f3ea; --bad:#b3261e; --bad-bg:#fbe9e7; --warn:#8a5a00;
+  --display:'Tiro Bangla',Georgia,serif; --body:'Noto Sans Bengali',system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#15181a; --ink:#e9e7e2; --muted:#a3a7aa; --rule:#33383b; --card:#1d2124;
+  --accent:#7fb7c9; --accent-ink:#0f1416; --sel:#1d3138; --good:#6fcf97; --good-bg:#17301f; --bad:#f08a80; --bad-bg:#3a1c1a; --warn:#e0b25a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#15181a; --ink:#e9e7e2; --muted:#a3a7aa; --rule:#33383b; --card:#1d2124;
+  --accent:#7fb7c9; --accent-ink:#0f1416; --sel:#1d3138; --good:#6fcf97; --good-bg:#17301f; --bad:#f08a80; --bad-bg:#3a1c1a; --warn:#e0b25a; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6}
+.wrap{max-width:680px;margin:0 auto;padding-block:20px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{border-bottom:2px solid var(--ink);padding-bottom:12px;margin-bottom:12px}
+.book{font-size:13px;letter-spacing:.04em;color:var(--muted)}
+h1{font-family:var(--display);font-weight:400;font-size:30px;margin:4px 0 2px;text-wrap:balance}
+h2{font-family:var(--display);font-weight:400;font-size:22px;margin:22px 0 8px}
+.sub{color:var(--muted);font-size:15px;margin:0}
+button{font:inherit;cursor:pointer}
+.btn{display:inline-block;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:10px 18px;font-weight:600}
+.btn.ghost{background:none;color:var(--ink);border-color:var(--rule);font-weight:500}
+.btns{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
+.rules{margin:8px 0 0;padding-left:20px}
+.rules li{margin:2px 0}
+.hist{border-top:1px solid var(--rule);margin-top:18px;padding-top:6px;font-size:15px}
+.hist table{border-collapse:collapse;width:100%}
+.hist td,.hist th{border-bottom:1px solid var(--rule);padding:5px 4px;text-align:left;font-variant-numeric:tabular-nums}
+.hist th{color:var(--muted);font-weight:500}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);background:var(--paper);display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--rule);z-index:5;font-size:15px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+.clock{font-family:var(--display);font-size:22px;color:var(--accent);font-variant-numeric:tabular-nums;min-width:4ch}
+.clock.low{color:var(--bad)}
+/* Start screen: the start button comes first and big, rules below it. */
+#start{display:flex;flex-direction:column}
+#start .back{order:-3}#start .selch{order:-2}#start .btns{order:-1;margin:6px 0 16px}
+#start #go{font-size:19px;padding:14px 26px;flex:1 1 220px}
+/* Exam bar sits at the bottom of the screen (Sakib's pick): quiet timer, submit button near the thumb. */
+#exam .bar{position:fixed;top:auto;bottom:0;left:0;right:0;padding:10px max(16px,calc(50% - 340px)) calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--rule);border-bottom:0;box-shadow:0 -4px 14px rgba(0,0,0,.06)}
+#exam{padding-bottom:76px}
+#exam .clock{font-family:var(--body);font-size:16px;font-weight:500;color:var(--ink);min-width:0}
+#exam .clock::before{content:"সময় ";font-size:13px;font-weight:400;color:var(--muted)}
+#exam .clock.low{color:var(--warn)}
+.bar b{font-variant-numeric:tabular-nums}
+.q{padding:18px 0;border-bottom:1px solid var(--rule)}
+.qh{display:flex;gap:10px;align-items:baseline}
+.num{font-family:var(--display);color:var(--accent);min-width:1.6em}
+.qt{font-weight:500;margin:0;min-width:0}
+.src{display:block;font-size:13px;color:var(--muted);font-weight:400}
+.pend{display:inline-block;font-size:12px;color:var(--warn);border:1px dashed var(--warn);border-radius:4px;padding:0 6px;margin-left:4px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 0 2.2em}
+@media (max-width:520px){.opts{grid-template-columns:1fr;margin-left:0}}
+.opt{display:flex;gap:8px;align-items:flex-start;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--rule);border-radius:8px;padding:9px 12px;min-height:44px;width:100%}
+.opt .k{font-family:var(--display);color:var(--muted);min-width:1.2em}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.opt.sel{background:var(--sel);border-color:var(--accent)}
+.opt:disabled{cursor:default}
+.opt.right{background:var(--good-bg);border-color:var(--good)}
+.opt.wrong{background:var(--bad-bg);border-color:var(--bad)}
+.exp{margin:10px 0 0 2.2em;font-size:15px;border-left:3px solid var(--accent);padding:2px 0 2px 10px}
+@media (max-width:520px){.exp{margin-left:0}}
+.ok{color:var(--good);font-weight:600}.no{color:var(--bad);font-weight:600}.skip{color:var(--muted);font-weight:600}
+.ref{color:var(--muted);white-space:nowrap}
+.score{border:1.5px solid var(--ink);border-radius:10px;padding:16px;margin:14px 0;text-align:center}
+.big{font-family:var(--display);font-size:46px;line-height:1.1;font-variant-numeric:tabular-nums}
+.stats{display:flex;justify-content:center;flex-wrap:wrap;gap:6px 18px;font-size:15px;margin-top:6px}
+.msg{margin:10px 0 0;font-size:15px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.chip{border:1px solid var(--rule);background:none;color:var(--ink);border-radius:999px;padding:4px 12px;font-size:14px}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+footer{margin-top:24px;font-size:14px;color:var(--muted)}
+.note{border:1px dashed var(--rule);border-radius:8px;padding:10px 12px;margin-top:14px}
+[hidden]{display:none !important}
+@media (prefers-reduced-motion:no-preference){.exp{animation:in .2s ease-out}@keyframes in{from{opacity:.4}to{opacity:1}}}
+</style>
+<link rel="icon" type="image/svg+xml" href="/img/logo/final-icon.svg">
+<link rel="apple-touch-icon" href="/img/logo/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="লিয়ানা বুকস">
+<meta property="og:title" content="তাপ: অনলাইন পরীক্ষা · লিয়ানা বুকস">
+<meta property="og:description" content="বিসিএস বিজ্ঞান, তাপ অধ্যায়: সময় ও নেগেটিভ মার্কিংসহ অনলাইন পরীক্ষা, ব্যাখ্যাসহ।">
+<meta property="og:url" content="https://lyannabooks.com/heat/">
+<meta property="og:image" content="https://lyannabooks.com/img/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="bn_BD">
+<meta name="twitter:card" content="summary_large_image">
+<style>.sitebar{background:#13294b;display:flex;align-items:center;justify-content:space-between;padding:8px 16px}.sitebar img{width:110px;height:auto;display:block}.exp .bl{display:block;margin-top:8px;font-size:12.5px;color:var(--muted);text-decoration:none;opacity:.85}.exp .bl:hover{text-decoration:underline}.sitebar a.h{color:#e6c97a;text-decoration:none;font:500 14px 'Noto Sans Bengali',system-ui,sans-serif}</style>
+</head>
+<body>
+<div class="sitebar"><a href="/"><img src="/img/logo/final-onnavy-transparent.svg" alt="লিয়ানা বুকস"></a><a class="h" href="/">← হোম</a></div>
+
+<div class="wrap">
+<header>
+  <div class="book">বিসিএস বিজ্ঞান · পিয়াস · অধ্যায় ৬</div>
+  <h1>তাপ: অনলাইন পরীক্ষা</h1>
+  <p class="sub">বিগত বিসিএস এবং অন্যান্য নিয়োগ ও ভর্তি পরীক্ষার প্রশ্ন, আসল পরীক্ষার নিয়মে।</p>
+</header>
+
+<section id="start">
+  <ul class="rules">
+    <li>প্রতি পরীক্ষায় <b id="nq">২৫</b>টি প্রশ্ন, সময় <b id="nm">১৫</b> মিনিট।</li>
+    <li>সঠিক উত্তরে ১ নম্বর, ভুল উত্তরে −০.৫। উত্তর না দিলে নম্বর কাটা যায় না।</li>
+    <li>জমা দেওয়ার আগে উত্তর বদলানো যায়। সময় শেষ হলে নিজে থেকেই জমা হবে।</li>
+    <li>শেষে ফল, প্রতিটি প্রশ্নের ব্যাখ্যা আর বইয়ের সংশ্লিষ্ট অংশের নাম দেখাবে।</li>
+    <li>প্রতিবার <b id="pool"></b>টি প্রশ্নের ভান্ডার থেকে নতুন করে প্রশ্ন বাছাই হয়, তাই বারবার পরীক্ষা দেওয়া যায়।</li>
+  </ul>
+  <div class="btns">
+    <button class="btn" id="go" type="button">পরীক্ষা শুরু করুন</button>
+    <button class="btn ghost" id="practice" type="button">সব প্রশ্ন অনুশীলন</button>
+  </div>
+  <div class="hist" id="hist" hidden></div>
+</section>
+
+<section id="exam" hidden>
+  <div class="bar"><span class="clock" id="clock">১৫:০০</span><span>উত্তর <b id="ans">০</b> / <b id="tot">২৫</b></span><button class="btn" id="submit" type="button">জমা দিন</button></div>
+  <main id="elist"></main>
+  <div class="btns"><button class="btn" id="submit2" type="button">জমা দিন</button></div>
+</section>
+
+<section id="result" hidden>
+  <div class="score" id="scorebox"></div>
+  <div class="btns"><button class="btn" id="again" type="button">নতুন পরীক্ষা</button><button class="btn ghost" id="home" type="button">শুরুর পাতা</button></div>
+  <h2>উত্তর ও ব্যাখ্যা</h2>
+  <main id="rlist"></main>
+</section>
+
+<section id="prac" hidden>
+  <div class="bar"><span>সঠিক <b id="pok">০</b> / উত্তর <b id="pdone">০</b> / মোট <b id="ptot">০</b></span><button class="btn ghost" id="home2" type="button">শুরুর পাতা</button></div>
+  <div class="chips" id="chips"></div>
+  <main id="plist"></main>
+</section>
+
+<footer>
+  <div class="note">বিসিএস ও অন্য পরীক্ষার প্রশ্নের নিচে পরীক্ষার নাম ও সাল দেওয়া আছে।</div>
+  <p>লিয়ানা বুকস · lyannabooks.com</p>
+</footer>
+</div>
+<script>
+const Q=[{"q": "কোন তাপমাত্রার পানির ঘনত্ব সবচেয়ে বেশি?", "o": ["4°F", "0°F", "0°C", "4°C"], "a": 3, "e": "পানির একটি বিশেষ আচরণ আছে। অন্য অনেক তরল ঠান্ডা করলে সংকুচিত হয়ে ঘন হতে থাকে, কিন্তু পানি ঠান্ডা করতে করতে ৪° সেলসিয়াস (4°C) পর্যন্ত সংকুচিত হয়। এই তাপমাত্রায় পানির আয়তন সবচেয়ে কম, তাই ঘনত্ব সবচেয়ে বেশি, প্রায় ১০০০ কেজি/মিটার³। এর চেয়ে আরও ঠান্ডা করলে পানি আবার প্রসারিত হতে শুরু করে এবং ঘনত্ব কমে। এ কারণেই বরফ (0°C) পানির চেয়ে হালকা এবং পানিতে ভাসে। শীতের দেশে হ্রদের উপরিভাগ জমে বরফ হয়ে গেলেও নিচের ৪°C তাপমাত্রার পানিতে মাছ ও অন্যান্য জলজ প্রাণী বেঁচে থাকে। ফারেনহাইট স্কেলের 4°F বা 0°F ঘনত্বের সর্বোচ্চ বিন্দু নয়।<br>মনে রাখুন:<br>পানির এই ব্যতিক্রমী আচরণকে পানির অসংগত প্রসারণ বলে।<br>পানির ঘনত্ব ৪°C তাপমাত্রায় ১ গ্রাম/ঘন সেন্টিমিটার।", "t": "x", "s": "বাংলাদেশ সড়ক পরিবহন কর্তৃপক্ষ (বিআরটিএ), মোটরযান পরিদর্শক, ২০২৩ ও কোস্ট গার্ড, কৃষি প্রশিক্ষণ একাডেমি ও ফায়ার সার্ভিস, নার্স ও ফোরম্যান, ২০১৯ ও জনশক্তি, কর্মসংস্থান ও প্রশিক্ষণ ব্যুরো (বিএমইটি), ইন্সট্রাক্টর (টিটিসি), ২০১৮", "p": "পানির ঘনত্ব", "v": 0}, {"q": "ফারেনহাইট ও সেলসিয়াস স্কেলে সমান তাপমাত্রা নির্দেশ করে কত ডিগ্রি তাপমাত্রা?", "o": ["0°C", "100°C", "4°C", "-40°C"], "a": 3, "e": "সেলসিয়াস ও ফারেনহাইট স্কেলের মধ্যে সম্পর্কের সূত্র: C/5 = (F − 32)/9। দুই স্কেলে একই পাঠ কোথায় মেলে তা জানতে ধরি C = F = x। তাহলে x/5 = (x − 32)/9। আড়াআড়ি গুণ করলে 9x = 5x − 160, অর্থাৎ 4x = −160। এখান থেকে x = −40। যাচাই করা যায়: −40°C-কে ফারেনহাইটে নিলে F = (9/5) × (−40) + 32 = −72 + 32 = −40। সুতরাং −40° এমন একমাত্র তাপমাত্রা, যেখানে দুটি স্কেলের পাঠ সমান হয়।<br>মনে রাখুন:<br>পানির হিমাঙ্ক সেলসিয়াসে 0° ও ফারেনহাইটে 32°, স্ফুটনাঙ্ক যথাক্রমে 100° ও 212°।<br>কেলভিন স্কেলে K = C + 273।", "t": "x", "s": "বাংলাদেশ সড়ক পরিবহন কর্তৃপক্ষ (বিআরটিএ), মোটরযান পরিদর্শক, ২০২৩", "p": "তাপমাত্রার স্কেল", "v": 0}, {"q": "প্রেসার কুকারে পানির স্ফুটনাঙ্ক-", "o": ["কম হয়", "বেশি হয়", "ঠিক থাকে", "কোনোটিই নয়"], "a": 1, "e": "তরলকে ফোটাতে গেলে তার বাষ্পচাপ বাইরের চাপের সমান করতে হয়। বাইরের চাপ বেশি হলে তরলকে বেশি তাপমাত্রায় নিয়ে যেতে হয়, তাই স্ফুটনাঙ্কও বেড়ে যায়। প্রেসার কুকারের ঢাকনা শক্তভাবে আটকানো থাকে, ফলে ভেতরের জলীয় বাষ্প বের হতে পারে না এবং কুকারের ভেতরের চাপ বাইরের বায়ুচাপের চেয়ে বেশি হয়ে যায়। এই চাপে পানি ১০০°C-এর চেয়ে বেশি তাপমাত্রায় ফোটে। বেশি তাপে খাবার তাড়াতাড়ি সেদ্ধ হয়, তাই মাংস বা ডাল রান্না কম সময়ে হয়ে যায়।<br>মনে রাখুন:<br>পাহাড়ের চূড়ায় বায়ুচাপ কম, তাই সেখানে পানি ১০০°C-এর কম তাপমাত্রায় ফোটে এবং রান্না ধীরে হয়।<br>পানিতে লবণ মেশালেও স্ফুটনাঙ্ক সামান্য বাড়ে।", "t": "x", "s": "বাংলাদেশ সড়ক পরিবহন কর্তৃপক্ষ (বিআরটিএ), মোটরযান পরিদর্শক, ২০২৩", "p": "স্ফুটনাঙ্ক", "v": 0}, {"q": "একটি কক্ষের তাপমাত্রা 30°C। ফারেনহাইট স্কেলে তাপমাত্রা কত হবে?", "o": ["86°F", "80°F", "68°F", "62°F"], "a": 0, "e": "সেলসিয়াস (C) থেকে ফারেনহাইট (F) স্কেলে রূপান্তরের সূত্র: C/5 = (F − 32)/9। এখানে C = 30। তাহলে 30/5 = (F − 32)/9, অর্থাৎ 6 = (F − 32)/9। দুই দিকে 9 দিয়ে গুণ করলে F − 32 = 54। এখান থেকে F = 54 + 32 = 86। সুতরাং কক্ষের তাপমাত্রা 86°F।<br>শর্টকাট: F = (9/5) × C + 32 = (9/5) × 30 + 32 = 54 + 32 = 86।<br>মনে রাখুন:<br>উল্টো দিকে F থেকে C বের করতে C = (5/9) × (F − 32)।<br>−40° এমন একমাত্র তাপমাত্রা, যেখানে সেলসিয়াস ও ফারেনহাইট স্কেলের পাঠ সমান।", "t": "x", "s": "কারিগরি শিক্ষা অধিদপ্তর, ইন্সট্রাক্টর (পলিটেকনিক ও টেকনিক্যাল স্কুল), ২০২৩", "p": "তাপমাত্রার স্কেল", "v": 0}, {"q": "কোন তাপমাত্রায় সেলসিয়াস ও ফারেনহাইট স্কেল একই পাঠ দেখায়?", "o": ["160°C", "−40°C", "40°C", "−160°C"], "a": 1, "e": "সেলসিয়াস ও ফারেনহাইট স্কেলের মধ্যে সম্পর্ক হলো C/5 = (F − 32)/9। দুই স্কেলে পাঠ সমান হলে F = C ধরি। তখন C/5 = (C − 32)/9।<br>আড়াআড়ি গুণ করে পাই 9C = 5C − 160।<br>4C = −160, তাই C = −40।<br>অর্থাৎ −40°C = −40°F, এই একটি তাপমাত্রাতেই দুই স্কেলের পাঠ মেলে।<br>মনে রাখুন:<br>পানির হিমাঙ্ক 0°C = 32°F এবং স্ফুটনাঙ্ক 100°C = 212°F।<br>কেলভিনে রূপান্তর: K = °C + 273।<br>সেলসিয়াস স্কেলে মৌলিক ব্যবধান ১০০ ভাগ, আর ফারেনহাইটে ১৮০ ভাগ।", "t": "x", "s": "কারিগরি শিক্ষা অধিদপ্তর, জুনিয়র ইন্সট্রাক্টর (পলিটেকনিক ও টেকনিক্যাল স্কুল), ২০২৩", "p": "তাপমাত্রার স্কেল", "v": 0}, {"q": "কোন পদার্থের আপেক্ষিক তাপ সর্বাধিক?", "o": ["বায়ু", "পানি", "লোহা", "তামা"], "a": 1, "e": "আপেক্ষিক তাপ হলো ১ কিলোগ্রাম পদার্থের তাপমাত্রা ১ কেলভিন বাড়াতে যে তাপ লাগে। কোনো পদার্থের আপেক্ষিক তাপ বেশি হলে তাকে গরম করতে বেশি তাপ লাগে, আবার ঠান্ডা হতেও সময় নেয়। এই চারটির মধ্যে পানির আপেক্ষিক তাপ সবচেয়ে বেশি, প্রায় ৪২০০ J/kg·K। বাতাসের আপেক্ষিক তাপ প্রায় ১০০০, তামার প্রায় ৩৮৫ এবং লোহার প্রায় ৪৫০। পানির এই বড় আপেক্ষিক তাপের কারণে সমুদ্র দিনের বেলা ধীরে গরম হয়, আবার রাতে ধীরে ঠান্ডা হয়। ফলে উপকূলীয় অঞ্চলের আবহাওয়া মৃদু থাকে।<br>মনে রাখুন:<br>পানির আপেক্ষিক তাপ প্রায় 1 cal/g·°C।<br>সমুদ্র থেকে দূরের মহাদেশীয় অঞ্চলে দিন-রাতের তাপমাত্রার পার্থক্য বেশি হয়, কারণ স্থলভাগ দ্রুত গরম ও ঠান্ডা হয়।", "t": "x", "s": "জনশক্তি, কর্মসংস্থান ও প্রশিক্ষণ ব্যুরো (বিএমইটি), ইন্সট্রাক্টর, ২০২২", "p": "আপেক্ষিক তাপ", "v": 0}, {"q": "কত ডিগ্রি সেলসিয়াস তাপমাত্রাকে পরমশূন্য তাপমাত্রা বলা হয়?", "o": ["০° সেলসিয়াস", "− ৮° সেলসিয়াস", "− ২৭৩° সেলসিয়াস", "− ২৯১° সেলসিয়াস"], "a": 2, "e": "যে তাপমাত্রার চেয়ে কম তাপমাত্রা সম্ভব নয়, তাকে পরম শূন্য তাপমাত্রা (Absolute zero) বলে। গ্যাসের আয়তন ও তাপমাত্রার সম্পর্ক থেকে বোঝা যায়, চাপ স্থির রেখে প্রতি ডিগ্রি সেলসিয়াস কমালে গ্যাসের আয়তন 0°C-এর আয়তনের 1/273 অংশ করে কমে। তাই −273°C-এ তাত্ত্বিকভাবে আয়তন শূন্য হয়ে যায়। এই বিন্দুতে অণুগুলোর গতি প্রায় থেমে যায়। ০° সেলসিয়াস হলো বরফ গলার তাপমাত্রা, তা পরম শূন্য নয়।<br>মনে রাখুন:<br>পরম শূন্য তাপমাত্রা = 0 K = −273.15°C।<br>কেলভিন স্কেলে 0°C = 273 K।<br>কেলভিন স্কেলের প্রবর্তক লর্ড কেলভিন।", "t": "x", "s": "পররাষ্ট্র মন্ত্রণালয়, সহকারী সাইফার কর্মকর্তা/সহকারী কনস্যুলার কর্মকর্তা, ২০২২", "p": "পরম শূন্য তাপমাত্রা", "v": 0}, {"q": "রেফ্রিজারেটরের কম্প্রেসারের মধ্যে যে তরল পদার্থ ব্যবহার করা হয় তার নাম—", "o": ["নিয়ন", "ফ্রেয়ন", "অক্সিজেন", "হাইড্রোজেন"], "a": 1, "e": "রেফ্রিজারেটরের ভেতরে যে তরল পদার্থ ঘুরে ঘুরে ঠান্ডা তৈরি করে, তাকে রেফ্রিজারেন্ট বলে। কম্প্রেসার এই রেফ্রিজারেন্টকে চাপ দিয়ে তরলে পরিণত করে, পরে সেটি বাষ্পীভূত হওয়ার সময় ভেতর থেকে তাপ শুষে নেয়, ফলে ভেতরটা ঠান্ডা হয়। ফ্রেয়ন (Freon) এই কাজে ব্যবহৃত হয়, কারণ এটি বর্ণহীন, সহজে জ্বলে না, কম বিষাক্ত এবং রাসায়নিকভাবে স্থিতিশীল। মিথেন ও ইথেনের হাইড্রোজেন পরমাণুর জায়গায় ক্লোরিন ও ফ্লোরিন বসিয়ে ফ্রেয়ন পাওয়া যায়। নিয়ন, অক্সিজেন বা হাইড্রোজেন এ কাজে ব্যবহৃত হয় না।<br>মনে রাখুন:<br>ফ্রেয়ন-১২-এর সংকেত CCl₂F₂।<br>ফ্রেয়ন ওজোন স্তরের ক্ষতি করে, তাই মন্ট্রিয়ল প্রটোকল (১৯৮৭) এর ব্যবহার নিষিদ্ধ করেছে।<br>ফ্রেয়ন ক্লোরোফ্লোরোকার্বন (CFC) শ্রেণির যৌগ।", "t": "x", "s": "শিক্ষা প্রকৌশল অধিদপ্তর, এস্টিমেটর, ২০২২", "p": "রেফ্রিজারেটর", "v": 0}, {"q": "গ্যাসের আণবিক গতির সাথে যে শক্তি নিহিত—", "o": ["গতিশক্তি", "অভ্যন্তরীণ শক্তি", "এন্ট্রপি", "এনথালপি"], "a": 1, "e": "কোনো পদার্থের সব অণুর বিক্ষিপ্ত গতির গতিশক্তি এবং অণুদের পারস্পরিক আকর্ষণের স্থিতিশক্তি মিলে যে মোট শক্তি তৈরি হয়, তাকে অভ্যন্তরীণ শক্তি (Internal energy) বলে। গ্যাসের অণুরা সবসময় অনিয়মিতভাবে ছুটে বেড়ায়, আর তাপমাত্রা বাড়লে এই গতি বাড়ে। তাই গ্যাসের অণুগুলোর গতির সঙ্গে অভ্যন্তরীণ শক্তি জড়িয়ে আছে। আদর্শ গ্যাসের ক্ষেত্রে এটি শুধু তাপমাত্রার ওপর নির্ভর করে। এন্ট্রপি বিশৃঙ্খলার পরিমাপ, আর এনথালপি = অভ্যন্তরীণ শক্তি + চাপ × আয়তন। গ্যাসের তাপমাত্রা যত বাড়ে, অণুর গতিশক্তি তত বাড়ে, আর সেই সঙ্গে অভ্যন্তরীণ শক্তিও বাড়ে। তাই তাপ প্রয়োগ করলে গ্যাসের অভ্যন্তরীণ শক্তি বদলে যায়।<br>মনে রাখুন:<br>তাপগতিবিদ্যার প্রথম সূত্র: ΔU = Q − W।<br>অভ্যন্তরীণ শক্তির একক জুল।", "t": "x", "s": "বাংলাদেশ ভূতাত্ত্বিক জরিপ অধিদপ্তর, উপসহকারী পরিচালক (ড্রিলিং প্রকৌশল), ২০২১", "p": "অভ্যন্তরীণ শক্তি", "v": 0}, {"q": "একটি গ্যাসীয় সিস্টেমে 110J শক্তি প্রয়োগ করা হলো এবং এটির আভ্যন্তরীণ শক্তি 40J পরিমাণ বৃদ্ধি পেল। বাহ্যিক কাজের পরিমাণ—", "o": ["150J", "70J", "110J", "40J"], "a": 1, "e": "তাপগতিবিদ্যার প্রথম সূত্র আসলে শক্তির সংরক্ষণ নীতিরই একটি রূপ। এ অনুসারে সিস্টেমে যে তাপ সরবরাহ করা হয়, তা দুটি কাজে লাগে। একটি অংশ অভ্যন্তরীণ শক্তি বাড়ায়, বাকি অংশ বাইরে কাজ করে। সূত্রটি হলো ΔQ = ΔU + ΔW।<br>এখানে ΔQ = 110 J, ΔU = 40 J<br>ΔW = ΔQ − ΔU = 110 − 40 = 70 J<br>অর্থাৎ সিস্টেম বাইরে ৭০ জুল কাজ করেছে।<br>মনে রাখুন: রুদ্ধতাপীয় প্রক্রিয়ায় ΔQ = 0, তাই ΔW = −ΔU। সমোষ্ণ প্রক্রিয়ায় তাপমাত্রা স্থির বলে ΔU = 0।", "t": "x", "s": "জনশক্তি, কর্মসংস্থান ও প্রশিক্ষণ ব্যুরো (বিএমইটি), ক্রাফট ইন্সট্রাক্টর, ২০২১", "p": "তাপগতিবিদ্যা", "v": 0}, {"q": "একটি কার্নট ইঞ্জিনের সিংকের তাপমাত্রা 27°C। এটির দক্ষতা 25% হলে উৎসের তাপমাত্রা কত?", "o": ["227°c", "327°c", "127°c", "27°c"], "a": 2, "e": "কার্নো ইঞ্জিনের দক্ষতা নির্ভর করে উৎস ও সিংকের পরম তাপমাত্রার ওপর। সূত্রটি η = 1 − T₂/T₁, যেখানে T₁ উৎসের এবং T₂ সিংকের তাপমাত্রা (কেলভিনে)।<br>T₂ = 27 + 273 = 300 K, η = 25% = 0.25<br>0.25 = 1 − 300/T₁<br>300/T₁ = 0.75<br>T₁ = 400 K = 400 − 273 = 127°C<br>শর্টকাট: দক্ষতা ও সিংক তাপমাত্রা দেওয়া থাকলে T₁ = T₂/(1 − η) বের করে নিলেই চলে।<br>মনে রাখুন: গণনায় তাপমাত্রা সবসময় কেলভিনে ধরতে হয়। কার্নো ইঞ্জিনের দক্ষতা কখনো ১০০% হয় না, কারণ সিংকের তাপমাত্রা কখনো শূন্য কেলভিন হতে পারে না।", "t": "x", "s": "জনশক্তি, কর্মসংস্থান ও প্রশিক্ষণ ব্যুরো (বিএমইটি), ক্রাফট ইন্সট্রাক্টর, ২০২১", "p": "কার্নট ইঞ্জিন", "v": 0}, {"q": "থার্মোডাইনামিক্স-এর প্রথম সূত্রটি কোন সমীকরণ দ্বারা প্রকাশ করা হয়?", "o": ["W = JH", "H = JW", "W = J + H", "H = J + W [যখন J তাপের যান্ত্রিক তুল্যাংক, W কাজ ও H তাপ প্রকাশ করে।]"], "a": 0, "e": "তাপগতিবিদ্যার প্রথম সূত্র শক্তির সংরক্ষণ নীতির সঙ্গে মিলে যায়। এ সূত্রের প্রাচীন রূপ হলো যান্ত্রিক শক্তি কাজে লাগিয়ে যে তাপ পাওয়া যায়, তা কাজের সমানুপাতিক। এই সম্পর্ককে লেখা হয় W = JH, যেখানে W কাজ, H উৎপন্ন তাপ এবং J তাপের যান্ত্রিক তুল্যাঙ্ক। J-এর মান প্রায় ৪.২ জুল প্রতি ক্যালরি। জুল এই তুল্যাঙ্কের মান পরীক্ষা করে বের করেন।<br>মনে রাখুন:<br>আধুনিক রূপ: ΔQ = ΔU + ΔW।<br>দ্বিতীয় সূত্র তাপের স্বতঃস্ফূর্ত প্রবাহের দিক এবং ইঞ্জিনের দক্ষতার সীমা নির্ধারণ করে।<br>তাপ এবং কাজের একক জুল।", "t": "x", "s": "জনশক্তি, কর্মসংস্থান ও প্রশিক্ষণ ব্যুরো (বিএমইটি), সিনিয়র ইন্সট্রাক্টর, ২০২১", "p": "তাপগতিবিদ্যা", "v": 0}, {"q": "একটি গ্যাসের রুদ্ধতাপীয় প্রসারণ কোন সূত্র দ্বারা প্রকাশ করা হয়?", "o": ["PV = constant", "PVᵞ = constant", "PV⁰ = constant", "PVᵅ = constant"], "a": 1, "e": "গ্যাসের রুদ্ধতাপীয় (Adiabatic) প্রসারণে গ্যাস ও পরিবেশের মধ্যে কোনো তাপ আদান-প্রদান হয় না। এখানে গ্যাসের চাপ ও আয়তনের সম্পর্ক হলো PVᵞ = ধ্রুবক। γ হলো গ্যাসের স্থির চাপ ও স্থির আয়তনে আপেক্ষিক তাপের অনুপাত (Cp/Cv)। সমোষ্ণ প্রক্রিয়ায় তাপমাত্রা স্থির থাকে বলে সম্পর্ক হয় PV = ধ্রুবক, যাকে বয়েলের সূত্র বলে। রুদ্ধতাপীয় প্রসারণে গ্যাস নিজের অভ্যন্তরীণ শক্তি খরচ করে কাজ করে, তাই তাপমাত্রা কমে যায়।<br>মনে রাখুন:<br>γ সব সময় ১-এর চেয়ে বেশি।<br>এক পরমাণুক গ্যাসের γ = ১.৬৭ এবং দ্বি-পরমাণুক গ্যাসের γ = ১.৪।", "t": "x", "s": "জনশক্তি, কর্মসংস্থান ও প্রশিক্ষণ ব্যুরো (বিএমইটি), সিনিয়র ইন্সট্রাক্টর, ২০২১", "p": "তাপগতিবিদ্যা", "v": 0}, {"q": "উষ্ণতার একক কীভাবে প্রকাশ করা হয়?", "o": ["মিটার", "অ্যাম্পিয়ার", "কেলভিন", "ফারেনহাইট"], "a": 2, "e": "তাপমাত্রার আন্তর্জাতিক পদ্ধতির (SI) একক হলো <b>কেলভিন</b> (K)। দৈনন্দিন ব্যবহারে সেলসিয়াস (°C) আর ফারেনহাইট (°F) চলে, তবে বৈজ্ঞানিক কাজে কেলভিন ব্যবহার হয়। মিটার দৈর্ঘ্যের এবং অ্যাম্পিয়ার তড়িৎ প্রবাহের একক। পরম শূন্য তাপমাত্রাকে ০ কেলভিন ধরে এই স্কেল তৈরি করা হয়েছে, তাই কেলভিন স্কেলে ঋণাত্মক মান হয় না। সেলসিয়াস স্কেলে পানির হিমাঙ্ক ০ ডিগ্রি ও স্ফুটনাঙ্ক ১০০ ডিগ্রি, আর ফারেনহাইট স্কেলে সেগুলো যথাক্রমে ৩২ ও ২১২ ডিগ্রি।<br>মনে রাখুন:<br>K = °C + 273.15<br>পরম শূন্য তাপমাত্রা 0 K, যা প্রায় −273.15 °C।<br>কেলভিনের ক্ষেত্রে ডিগ্রি চিহ্ন বসে না, আমরা শুধু 300 K লিখি।", "t": "x", "s": "তথ্য ও যোগাযোগ প্রযুক্তি বিভাগ, সহকারী নেটওয়ার্ক ইঞ্জিনিয়ার, ২০১৯", "p": "তাপমাত্রার একক", "v": 0}, {"q": "পরম শূন্য তাপমাত্রা হিসাবে গ্রহণ করা হয়—", "o": ["−২৭৩°C", "২৭০°C", "২৩৭°C", "−২৩৭°C"], "a": 0, "e": "পরম শূন্য তাপমাত্রা হলো সর্বনিম্ন সম্ভাব্য তাপমাত্রা, যেখানে আদর্শ গ্যাসের আয়তন তত্ত্বগতভাবে শূন্য হয়ে যায়। সেলসিয়াস স্কেলে এর মান প্রায় −273°C (সূক্ষ্মভাবে −273.15°C)। কেলভিন স্কেলে এই বিন্দুকে 0 K ধরা হয়, তাই T(K) = t(°C) + 273।<br>মনে রাখুন: এই তাপমাত্রায় অণুর গতি প্রায় থেমে যায়। বাস্তবে কোনো বস্তুকে ঠিক এই তাপমাত্রায় পৌঁছানো যায় না।<br>পরম শূন্য তাপমাত্রা ফারেনহাইট স্কেলে প্রায় −459.67°F।<br>কেলভিন স্কেলের নাম বিজ্ঞানী লর্ড কেলভিনের নামে রাখা হয়েছে।<br>পরম শূন্য তাপমাত্রার কাছাকাছি গেলে কিছু পদার্থ অতিপরিবাহী হয়ে যায়।<br>পরম শূন্যের নিচে কোনো তাপমাত্রা সম্ভব নয়।", "t": "x", "s": "সড়ক পরিবহন ও সেতু মন্ত্রণালয়, উপ-সহকারী প্রকৌশলী (যান্ত্রিক), ২০১৯", "p": "পরম শূন্য তাপমাত্রা", "v": 0}, {"q": "নিচের কোনটিতে সবচেয়ে কম thermal conductivity?", "o": ["Copper", "Silver", "Glass", "Air"], "a": 3, "e": "তাপ পরিবাহিতা (Thermal conductivity) হলো কোনো পদার্থ কত ভালোভাবে তাপ পরিবহন করে তার মাপ। তামা ও রুপা ধাতু বলে এদের মুক্ত ইলেকট্রন সহজে তাপ বহন করে, তাই পরিবাহিতা অনেক বেশি। কাচের পরিবাহিতা কম, কিন্তু বায়ুর পরিবাহিতা আরও কম, প্রায় ০.০২৬ W/m·K। এ কারণেই বায়ু আটকে রাখা পদার্থ, যেমন উল বা ফোম, ভালো অন্তরক হিসেবে কাজ করে।<br>মনে রাখুন: ধাতুর মধ্যে রুপার তাপ পরিবাহিতা সবচেয়ে বেশি, তার পরেই তামা।<br>পানি ও অন্যান্য তরলের তাপ পরিবাহিতা ধাতুর চেয়ে অনেক কম।<br>রুপার তাপ পরিবাহিতা প্রায় 429 W/m·K।", "t": "x", "s": "সড়ক পরিবহন ও সেতু মন্ত্রণালয়, উপ-সহকারী প্রকৌশলী (যান্ত্রিক), ২০১৯", "p": "তাপ পরিবাহিতা", "v": 0}, {"q": "যে তাপমাত্রার গ্যাসের আয়তন শূন্য হয়ে যায় তাকে বলা হয়—", "o": ["পরম স্কেল তাপমাত্রা", "পরম শূন্য তাপমাত্রা", "পরম তাপমাত্রা", "কোনোটিই নয়"], "a": 1, "e": "গ্যাসের আয়তন তাপমাত্রা কমালে কমে। চার্লসের সূত্র অনুযায়ী স্থির চাপে প্রতি ১°C তাপমাত্রা কমলে গ্যাসের আয়তন ০°C-এর আয়তনের ১/২৭৩ অংশ করে কমে। এই হিসাবে −273°C তাপমাত্রায় আয়তন তত্ত্বগতভাবে শূন্য হয়ে যায়, আর এই তাপমাত্রাকে পরম শূন্য তাপমাত্রা (Absolute zero) বলে। কেলভিন স্কেলে এর মান 0 K। এই ধারণার ভিত্তিতে লর্ড কেলভিন পরম স্কেল চালু করেন।<br>মনে রাখুন: বাস্তব গ্যাস এই তাপমাত্রার আগেই তরল হয়ে যায়, তাই আয়তন সত্যিই শূন্য হয় না, এটি তাত্ত্বিক ধারণা।<br>স্থির আয়তনে গ্যাসের চাপও প্রতি ১°C তাপমাত্রা কমলে ০°C-এর চাপের ১/২৭৩ অংশ করে কমে।", "t": "x", "s": "সড়ক পরিবহন ও সেতু মন্ত্রণালয়, উপ-সহকারী প্রকৌশলী (যান্ত্রিক), ২০১৯", "p": "পরম শূন্য তাপমাত্রা", "v": 0}, {"q": "Molecular collision এর মাধ্যমে তাপ পরিবহনকে বলা হয়—", "o": ["Conduction", "Convection", "Radiation", "কোনোটিই নয়"], "a": 0, "e": "অণুগুলোর পারস্পরিক সংঘর্ষের মাধ্যমে তাপ এক অণু থেকে আরেক অণুতে যায়, কিন্তু অণুগুলো নিজের জায়গা ছেড়ে সরে না। এভাবে তাপের পরিবহনকে পরিবহন বা পরিবাহন (Conduction) বলে। সংবহনে (Convection) তাপ বহন করে তরল বা গ্যাসের অণুগুলো নিজেরাই স্থান বদলায়, আর বিকিরণে (Radiation) তাপ মাধ্যম ছাড়াই তড়িৎচুম্বকীয় তরঙ্গে যায়। ধাতুতে মুক্ত ইলেকট্রনও তাপ বহন করে, তাই ধাতু ভালো তাপ পরিবাহী।<br>মনে রাখুন:<br>কঠিন পদার্থে তাপ প্রধানত পরিবহনে ছড়ায়।<br>সূর্যের তাপ পৃথিবীতে আসে বিকিরণে।<br>উদাহরণ: গরম চায়ে রাখা ধাতব চামচ কিছুক্ষণ পরে নিজেও গরম হয়ে ওঠে।<br>পরিবহনে তাপ সাধারণত বেশি তাপমাত্রার প্রান্ত থেকে কম তাপমাত্রার প্রান্তে যায়।", "t": "x", "s": "সড়ক পরিবহন ও সেতু মন্ত্রণালয়, উপ-সহকারী প্রকৌশলী (যান্ত্রিক), ২০১৯", "p": "তাপ পরিবাহিতা", "v": 0}, {"q": "১°C সমান — ডিগ্রি ফারেনহাইট—", "o": ["৩২.৬", "৩২.৪", "৩২.৮", "৩৩.৮"], "a": 3, "e": "সেলসিয়াস থেকে ফারেনহাইটে রূপান্তরের সূত্র হলো F = (9/5) × C + 32। এখানে C = 1 বসালে F = 1.8 + 32 = 33.8। অর্থাৎ ১°C সমান 33.8°F। সেলসিয়াস স্কেলে পানির হিমাঙ্ক 0° আর ফারেনহাইট স্কেলে সেটি 32°, তাই হিসাবে 32 যোগ করতে হয়। উল্টো দিকে ফারেনহাইট থেকে সেলসিয়াসে যেতে লিখি C = (F − 32) × 5/9।<br>মনে রাখুন: পানির স্ফুটনাঙ্ক 100°C, যা 212°F-এর সমান।<br>মানুষের স্বাভাবিক দেহতাপ 37°C, যা প্রায় 98.6°F।<br>গলন্ত বরফের তাপমাত্রা 0°C = 32°F এবং ফুটন্ত পানির তাপমাত্রা 100°C = 212°F।<br>দুই স্কেলের ঘরের অনুপাত 100 : 180 = 5 : 9।", "t": "x", "s": "কোস্ট গার্ড, কৃষি প্রশিক্ষণ একাডেমি ও ফায়ার সার্ভিস, নার্স ও ফোরম্যান, ২০১৯", "p": "তাপমাত্রার স্কেল", "v": 0}, {"q": "১ ক্যালরি = কত জুল?", "o": ["৪.২", "২.৮", "৪.৯", "৫"], "a": 0, "e": "তাপ এক ধরনের শক্তি। SI পদ্ধতিতে তাপের একক জুল (J), আর আগের একক ক্যালরি (cal)। এদের সম্পর্ক 1 cal = 4.2 J (আরও সূক্ষ্মভাবে 4.18 J)। ক্যালরি হলো ১ গ্রাম পানির তাপমাত্রা ১°C বাড়াতে যে তাপ লাগে, তার পরিমাণ।<br>মনে রাখুন: 1 kcal = 1000 cal = 4200 J।<br>খাবারের শক্তি মাপতে বড় ক্যালরি বা কিলোক্যালরি (kcal) ব্যবহার করা হয়।<br>১ গ্রাম শর্করা ও আমিষ থেকে প্রায় ৪ kcal এবং ১ গ্রাম চর্বি থেকে প্রায় ৯ kcal শক্তি পাওয়া যায়।<br>ক্যালরি ছোট একক, তাই খাবারের শক্তি মাপতে বড় একক কিলোক্যালরি ব্যবহৃত হয়।", "t": "x", "s": "চলচ্চিত্র ও প্রকাশনা অধিদপ্তর, ক্যামেরাম্যান, ২০১৯", "p": "তাপের একক", "v": 0}, {"q": "চাপ বাড়লে কোন পদার্থের গলনাঙ্ক বেড়ে যায়?", "o": ["বিসমাথ", "মোম", "অ্যান্টিমনি", "ঢালাই লোহা"], "a": 1, "e": "বেশিরভাগ পদার্থ গলে তরল হলে তাদের আয়তন বাড়ে, আবার চাপ দিলে আয়তন বাড়াতে বাধা পায়। তাই এ ধরনের পদার্থকে গলাতে বেশি তাপ লাগে, অর্থাৎ চাপ বাড়লে গলনাঙ্ক বাড়ে। মোম এমনই একটি পদার্থ। অন্যদিকে বরফ, বিসমাথ ও অ্যান্টিমনির মতো পদার্থ জমাট বাঁধার সময় আয়তনে বাড়ে, গলার সময় কমে। চাপ বাড়ালে এদের গলা সহজ হয়, তাই এদের গলনাঙ্ক কমে যায়।<br>মনে রাখুন:<br>চাপে গলনাঙ্ক বাড়ে: মোম, সীসা, তামা।<br>চাপে গলনাঙ্ক কমে: বরফ, বিসমাথ (Bismuth), অ্যান্টিমনি, ঢালাই লোহা।<br>মজার ব্যাপার হলো, বরফের ওপর স্কেটিং করা সহজ হয় এই কারণেই। স্কেটের নিচের চাপে বরফ সামান্য গলে পিচ্ছিল স্তর তৈরি করে।", "t": "x", "s": "চলচ্চিত্র ও প্রকাশনা অধিদপ্তর, ক্যামেরাম্যান, ২০১৯", "p": "গলনাঙ্ক", "v": 0}, {"q": "কোনটি তাপ কুপরিবাহী?", "o": ["লোহা", "তামা", "রাবার", "পানি"], "a": 2, "e": "যে পদার্থের ভেতর দিয়ে তাপ সহজে চলাচল করতে পারে না, তাকে তাপ কুপরিবাহী বলে। রাবার এমনই একটি পদার্থ। লোহা ও তামা ধাতু বলে তাপ খুব ভালোভাবে পরিবহন করে। পানি তাপ পরিবহন করে পরিচলন প্রক্রিয়ায়, তবে এটিও কুপরিবাহীই, কেবল ধাতুর মতো সুপরিবাহী নয়। এ কারণেই রান্নার পাত্র ধাতুর হয় আর তার হাতল রাবার বা কাঠের হয়। ধাতুর মুক্ত ইলেকট্রন তাপ বহন করে বলে ধাতু সুপরিবাহী হয়।<br>মনে রাখুন:<br>কাঠ, প্লাস্টিক ও কাচও তাপ ও বিদ্যুতের কুপরিবাহী।<br>সুপরিবাহী পদার্থের উদাহরণ: তামা, রুপা, অ্যালুমিনিয়াম।<br>তাপ পরিবহনের তিনটি পদ্ধতি হলো পরিবহন, পরিচলন ও বিকিরণ।", "t": "x", "s": "ডাক অধিদপ্তর, এস্টিমেটর, ২০১৮", "p": "তাপ পরিবহন", "v": 0}, {"q": "কোন রঙের বস্তুর তাপ শোষণ ক্ষমতা বেশি?", "o": ["লাল", "হলুদ", "সাদা", "কালো"], "a": 3, "e": "কালো রঙের বস্তু তার ওপর পড়া প্রায় সব তাপ বিকিরণ শোষণ করে নেয়। তাই কালো বস্তুর তাপ শোষণ ক্ষমতা সবচেয়ে বেশি। সাদা বস্তু বেশির ভাগ তাপ প্রতিফলিত করে, তাই এর শোষণ ক্ষমতা সবচেয়ে কম। লাল ও হলুদ রং কিছুটা শোষণ করে, কিন্তু কালোর মতো এতটা নয়। রোদে রাখা কালো কাপড় তাই সাদা কাপড়ের চেয়ে তাড়াতাড়ি গরম হয়ে ওঠে।<br>মনে রাখুন:<br>এ কারণেই গ্রীষ্মকালে সাদা বা হালকা রঙের জামা পরলে কম গরম লাগে।<br>যে বস্তু ভালো শোষক, সে ভালো বিকিরকও।<br>চকচকে পৃষ্ঠ তাপ ভালো প্রতিফলন করে।", "t": "x", "s": "বিভিন্ন মন্ত্রণালয়/বিভাগ/অধিদপ্তর, ব্যক্তিগত কর্মকর্তা (সাধারণ), ২০১৮", "p": "তাপ বিকিরণ", "v": 0}, {"q": "কোনটি পানির স্ফুটনাঙ্ক তাপমাত্রা?", "o": ["80° F", "100° F", "180° F", "212° F"], "a": 3, "e": "স্বাভাবিক বায়ুচাপে পানির স্ফুটনাঙ্ক সেলসিয়াস স্কেলে 100°C। সেলসিয়াসকে ফারেনহাইটে নেওয়ার সূত্র F = (9/5)C + 32। তাই F = (9/5) × 100 + 32 = 180 + 32 = 212°F। অন্য অপশনের 180° F হলো কেবল 100°C-এর ফারেনহাইট ব্যবধান, প্রকৃত তাপমাত্রা নয়। ফারেনহাইট স্কেলে নিম্ন স্থিরাঙ্ক 32°F এবং ঊর্ধ্ব স্থিরাঙ্ক 212°F, এই দুইয়ের মাঝে 180টি ভাগ থাকে।<br>মনে রাখুন:<br>বরফের গলনাঙ্ক 0°C বা 32°F।<br>কেলভিন স্কেলে পানির স্ফুটনাঙ্ক 373 K।<br>কেলভিন স্কেলে K = C + 273।<br>মানুষের শরীরের স্বাভাবিক তাপমাত্রা প্রায় 37°C।<br>কেলভিন স্কেলে পানির হিমাঙ্ক 273 K।", "t": "x", "s": "জনস্বাস্থ্য প্রকৌশল অধিদপ্তর, এস্টিমেটর, ২০১৮", "p": "স্ফুটনাঙ্ক ও স্কেল", "v": 0}, {"q": "তাপের এস. আই. একক কী?", "o": ["ক্যালরি", "কিলোক্যালরি", "জুল", "ওয়াট"], "a": 2, "e": "তাপ এক ধরনের শক্তি, তাই এর এস.আই. (SI) একক শক্তির এককের সমান, অর্থাৎ জুল (Joule)। ক্যালরি ও কিলোক্যালরিও তাপের একক, তবে সেগুলো এস.আই. পদ্ধতির একক নয়। ওয়াট হলো ক্ষমতার একক, যেখানে এক সেকেন্ডে কত শক্তি খরচ হয় তা মাপা হয়। কাজ ও শক্তির এককও জুল, কারণ তাপ আসলে শক্তিরই একটি রূপ।<br>মনে রাখুন:<br>১ ক্যালরি ≈ 4.2 জুল।<br>১ ওয়াট = ১ জুল প্রতি সেকেন্ড।<br>তাপমাত্রার এস.আই. একক কেলভিন (K)।<br>তাপ পরিমাপের যন্ত্রকে ক্যালরিমিটার বলা হয়। তাপ সবসময় উষ্ণ বস্তু থেকে শীতল বস্তুর দিকে প্রবাহিত হয়।", "t": "x", "s": "বিভিন্ন মন্ত্রণালয়/বিভাগ/অধিদপ্তর, ব্যক্তিগত কর্মকর্তা, ২০১৮", "p": "তাপের একক", "v": 0}, {"q": "তাপ এক ধরনের—", "o": ["পদার্থ", "আলো", "বল", "শক্তি"], "a": 3, "e": "তাপ একটি শক্তি (Energy), যা উষ্ণ বস্তু থেকে শীতল বস্তুর দিকে প্রবাহিত হতে পারে। এর কারণেই আমরা গরম বা ঠান্ডা অনুভব করি। তাপ নিজে কোনো পদার্থ নয়, কারণ এর ভর বা আয়তন নেই। এটি আলো বা বলও নয়, কারণ আলো আরেক ধরনের শক্তি আর বল ঠেলা বা টানকে বোঝায়।<br>মনে রাখুন:<br>তাপের SI একক জুল (J), আর তাপমাত্রার SI একক কেলভিন (K)।<br>তাপ তিনভাবে ছড়ায়: পরিবহন, পরিচলন ও বিকিরণ।<br>তাপ ও তাপমাত্রা এক জিনিস নয়। তাপমাত্রা বলে বস্তুটি কতটা গরম বা ঠান্ডা।<br>তাপের আরেকটি একক ক্যালরি, আর ১ ক্যালরি প্রায় 4.186 জুলের সমান।", "t": "x", "s": "স্বাস্থ্য ও পরিবার কল্যাণ মন্ত্রণালয়, সহকারী প্রকৌশলী (সিভিল), ২০১৭", "p": "তাপের ধারণা", "v": 0}, {"q": "রোদে কাপড় শুকায় কোন প্রক্রিয়ায়?", "o": ["স্ফুটন", "বাষ্পীভবন", "ঊর্ধ্বপাতন", "ঘনীভবন"], "a": 1, "e": "ভিজা কাপড় রোদে দিলে তাপে কাপড়ের পানি বাষ্প হয়ে বাতাসে মিশে যায়। তরল পানির এভাবে ধীরে ধীরে বাষ্প হওয়াকে বাষ্পীভবন (Evaporation) বলে। এটি যেকোনো তাপমাত্রায় ঘটে, কিন্তু তাপ ও বাতাস বেশি হলে দ্রুত ঘটে। এ কারণেই রোদ ও বাতাসের দিনে কাপড় তাড়াতাড়ি শুকায়।<br>মনে রাখুন:<br>স্ফুটনে পানি নির্দিষ্ট তাপমাত্রায় (১০০° সেলসিয়াস) ফুটে বাষ্প হয়।<br>ঘনীভবনে বাষ্প ঠান্ডা হয়ে আবার তরল হয়।<br>ঊর্ধ্বপাতনে কঠিন পদার্থ সরাসরি বাষ্প হয়, যেমন কর্পূর।<br>বাষ্পীভবনের সময় পানি আশপাশ থেকে তাপ নেয়, তাই ঘামে ভেজা শরীরে বাতাস লাগলে ঠান্ডা লাগে।<br>কাপড় শুকানোর জন্য ছায়ার চেয়ে খোলা বাতাসে মেলে দেওয়া ভালো।", "t": "x", "s": "বাংলাদেশ রেলওয়ে, উপ-সহকারী প্রকৌশলী, ২০১৭", "p": "বাষ্পীভবন", "v": 0}, {"q": "৫০° ফারেনহাইট উষ্ণতার সমান—", "o": ["১০০° সেন্টিগ্রেড", "৫০° সেন্টিগ্রেড", "৩২° সেন্টিগ্রেড", "১০° সেন্টিগ্রেড"], "a": 3, "e": "ফারেনহাইট (F) থেকে সেলসিয়াস (C) পাওয়ার সূত্র হলো C/5 = (F − 32)/9। এখানে F = 50 বসালে<br>C/5 = (50 − 32)/9 = 18/9 = 2<br>C = 10<br>তাই ৫০° ফারেনহাইট = ১০° সেলসিয়াস (সেন্টিগ্রেড)।<br>যাচাই: উল্টো পথে F = C × 9/5 + 32 = 10 × 9/5 + 32 = 18 + 32 = 50। মিলে যায়।<br>মনে রাখুন:<br>পানির হিমাঙ্ক ০°C = ৩২°F এবং স্ফুটনাঙ্ক ১০০°C = ২১২°F।<br>কেলভিন (K) = C + 273 (সুনির্দিষ্ট মান 273.15)।<br>−৪০° তাপমাত্রায় সেলসিয়াস ও ফারেনহাইট স্কেলের পাঠ সমান হয়।", "t": "x", "s": "স্থানীয় সরকার, পল্লী উন্নয়ন ও সমবায় মন্ত্রণালয়, সহকারী প্রকৌশলী (সিভিল), ২০১৭", "p": "তাপমাত্রার স্কেল", "v": 0}];
+const N=25, MIN=15, NB=0;           // প্রশ্নসংখ্যা, মিনিট, ন্যূনতম বিসিএস প্রশ্ন
+const bn=n=>String(n).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+const K=['ক','খ','গ','ঘ','ঙ'];
+const $=id=>document.getElementById(id);
+const show=id=>['start','exam','result','prac'].forEach(s=>$(s).hidden=s!==id);
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const fmtScore=x=>bn(Number.isInteger(x)?x:x.toFixed(1));
+const srcLine=q=>`<span class="src">${q.t==='b'?q.s:q.t==='x'?q.s:'সম্ভাব্য প্রশ্ন'}${q.v?' <span class="pend">অপশন যাচাই বাকি</span>':''}</span>`;
+const ref=q=>`<span class="ref">${/^\d|^[০-৯]/.test(q.p)?'বইয়ের অনুচ্ছেদ '+q.p:'বইয়ের অংশ: '+q.p}</span>`;
+function store(get,val){try{if(get)return JSON.parse(localStorage.getItem('heat-scores')||'[]');localStorage.setItem('heat-scores',JSON.stringify(val))}catch(e){return []}}
+function drawHist(){
+  const h=store(true)||[]; const el=$('hist');
+  if(!h.length){el.hidden=true;return}
+  el.hidden=false;
+  el.innerHTML='<b>এই ফোনে আগের পরীক্ষাগুলো</b><table><tr><th>পরীক্ষা</th><th>তারিখ</th><th>নম্বর</th></tr>'+
+    h.slice(-8).map((r,i,a)=>`<tr><td>${bn(h.length-a.length+i+1)}</td><td>${r.d}</td><td>${fmtScore(r.s)} / ${bn(r.n)}</td></tr>`).join('')+'</table>';
+}
+$('nq').textContent=bn(N);$('nm').textContent=bn(MIN);$('pool').textContent=bn(Q.length);$('tot').textContent=bn(N);
+drawHist();
+
+// ---------- পরীক্ষা ----------
+let paper=[],pick=[],timer=null,endAt=0,startAt=0,armed=0;
+function startExam(){
+  const b=shuffle(Q.filter(q=>q.t==='b')), r=shuffle(b.slice(NB).concat(Q.filter(q=>q.t!=='b')));
+  paper=shuffle(b.slice(0,NB).concat(r.slice(0,N-NB)));
+  pick=paper.map(()=>-1);
+  const box=$('elist');box.innerHTML='';
+  paper.forEach((q,i)=>{
+    const s=document.createElement('section');s.className='q';
+    s.innerHTML=`<div class="qh"><span class="num">${bn(i+1)}.</span><p class="qt">${q.q}${srcLine(q)}</p></div><div class="opts"></div>`;
+    const o=s.querySelector('.opts');
+    q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';
+      b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;
+      b.onclick=()=>{pick[i]=pick[i]===j?-1:j;[...o.children].forEach((x,k)=>x.classList.toggle('sel',k===pick[i]));$('ans').textContent=bn(pick.filter(x=>x>=0).length)};
+      o.appendChild(b)});
+    box.appendChild(s);
+  });
+  $('ans').textContent='০';
+  startAt=Date.now();endAt=startAt+MIN*60000;tick();clearInterval(timer);timer=setInterval(tick,500);
+  show('exam');window.scrollTo(0,0);
+}
+function tick(){
+  const left=Math.max(0,endAt-Date.now()),s=Math.ceil(left/1000);
+  $('clock').textContent=bn(String(Math.floor(s/60)).padStart(2,'0'))+':'+bn(String(s%60).padStart(2,'0'));
+  $('clock').classList.toggle('low',s<=60);
+  if(left<=0)finish();
+}
+function askSubmit(btn){
+  const blank=pick.filter(x=>x<0).length;
+  if(armed&&Date.now()-armed<4000){finish();return}
+  armed=Date.now();
+  [$('submit'),$('submit2')].forEach(b=>b.textContent=blank?`${bn(blank)}টি বাকি, তবু জমা দিতে আবার চাপুন`:'নিশ্চিত হলে আবার চাপুন');
+  setTimeout(()=>{if(Date.now()-armed>=4000)[$('submit'),$('submit2')].forEach(b=>b.textContent='জমা দিন')},4100);
+}
+function finish(){
+  clearInterval(timer);armed=0;[$('submit'),$('submit2')].forEach(b=>b.textContent='জমা দিন');
+  let ok=0,bad=0;paper.forEach((q,i)=>{if(pick[i]<0)return;pick[i]===q.a?ok++:bad++});
+  const blank=N-ok-bad, score=ok-bad*0.5, used=Math.min(MIN*60,Math.round((Date.now()-startAt)/1000));
+  const d=new Date(), ds=bn(d.getDate())+'/'+bn(d.getMonth()+1)+'/'+bn(d.getFullYear());
+  const h=store(true)||[];h.push({d:ds,s:score,n:N});store(false,h);
+  const msg=score>=20?'চমৎকার! অধ্যায়টি আপনার আয়ত্তে এসেছে।':score>=15?'ভালো হয়েছে। ভুল প্রশ্নগুলোর অংশ আবার পড়ে নিন।':'অধ্যায়টি আরেকবার পড়ে কয়েক দিন পর আবার পরীক্ষা দিন।';
+  $('scorebox').innerHTML=`<div class="big">${fmtScore(score)} / ${bn(N)}</div>
+   <div class="stats"><span class="ok">সঠিক ${bn(ok)}</span><span class="no">ভুল ${bn(bad)}</span><span class="skip">উত্তর দেননি ${bn(blank)}</span><span>সময় ${bn(Math.floor(used/60))} মিনিট ${bn(used%60)} সেকেন্ড</span></div>
+   <p class="msg">${msg}</p><p class="msg">বইয়ের শেষ পাতার ছকে লিখে রাখুন: তারিখ ${ds}, নম্বর ${fmtScore(score)}।</p>`;
+  const box=$('rlist');box.innerHTML='';
+  paper.forEach((q,i)=>{
+    const s=document.createElement('section');s.className='q';const p=pick[i];
+    s.innerHTML=`<div class="qh"><span class="num">${bn(i+1)}.</span><p class="qt">${q.q}${srcLine(q)}</p></div><div class="opts">${
+      q.o.map((t,j)=>`<button type="button" class="opt${j===q.a?' right':''}${j===p&&p!==q.a?' wrong':''}" disabled><span class="k">${K[j]}</span><span>${t}</span></button>`).join('')}</div>
+      <div class="exp">${p<0?'<span class="skip">উত্তর দেননি।</span> সঠিক উত্তর: '+K[q.a]+') '+q.o[q.a]+'।':p===q.a?'<span class="ok">সঠিক (+১)।</span>':'<span class="no">ভুল (−০.৫)।</span> সঠিক উত্তর: '+K[q.a]+') '+q.o[q.a]+'।'} ${q.e} ${ref(q)}</div>`;
+    box.appendChild(s);
+  });
+  show('result');window.scrollTo(0,0);drawHist();
+}
+
+// ---------- অনুশীলন ----------
+let filt='all',pok=0,pdone=0;
+const F=[['all','সব'],['b','বিসিএস'],['x','অন্য পরীক্ষা'],['l','সম্ভাব্য']].filter(([k])=>k==='all'||Q.some(q=>q.t===k));
+$('chips').innerHTML=F.map(([k,t])=>`<button type="button" class="chip" data-k="${k}" aria-pressed="${k==='all'}">${t}</button>`).join('');
+$('chips').onclick=e=>{const k=e.target.dataset&&e.target.dataset.k;if(!k)return;filt=k;[...$('chips').children].forEach(c=>c.setAttribute('aria-pressed',c.dataset.k===k));renderPrac()};
+function renderPrac(){
+  const L=Q.filter(q=>filt==='all'||q.t===filt);pok=0;pdone=0;
+  const upd=()=>{$('pok').textContent=bn(pok);$('pdone').textContent=bn(pdone);$('ptot').textContent=bn(L.length)};
+  const box=$('plist');box.innerHTML='';
+  L.forEach((q,i)=>{
+    const s=document.createElement('section');s.className='q';
+    s.innerHTML=`<div class="qh"><span class="num">${bn(i+1)}.</span><p class="qt">${q.q}${srcLine(q)}</p></div><div class="opts"></div>`;
+    const o=s.querySelector('.opts');
+    q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';
+      b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;
+      b.onclick=()=>{[...o.children].forEach(x=>x.disabled=true);o.children[q.a].classList.add('right');
+        const good=j===q.a;if(!good)b.classList.add('wrong');pdone++;if(good)pok++;upd();
+        const e=document.createElement('div');e.className='exp';
+        e.innerHTML=`<span class="${good?'ok':'no'}">${good?'সঠিক।':'ভুল। সঠিক উত্তর: '+K[q.a]+') '+q.o[q.a]+'।'}</span> ${q.e} ${ref(q)}`;s.appendChild(e)};
+      o.appendChild(b)});
+    box.appendChild(s);
+  });
+  upd();
+}
+$('go').onclick=startExam;$('again').onclick=startExam;
+$('submit').onclick=()=>askSubmit();$('submit2').onclick=()=>askSubmit();
+$('home').onclick=$('home2').onclick=()=>{show('start');drawHist();window.scrollTo(0,0)};
+$('practice').onclick=()=>{renderPrac();show('prac');window.scrollTo(0,0)};
+window.addEventListener('beforeunload',e=>{if(!$('exam').hidden){e.preventDefault();e.returnValue=''}});
+</script>
+<script src="/js/book-link.js" data-kind="science" data-chapter="তাপ" defer></script>
+</body>
+</html>

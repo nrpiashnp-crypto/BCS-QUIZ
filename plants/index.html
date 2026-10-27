@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>উদ্ভিদজগৎ: অনলাইন পরীক্ষা</title>
+<meta name="description" content="বিসিএস বিজ্ঞান, অধ্যায় ১৫ উদ্ভিদজগৎ: বিগত বিসিএস ও চাকরির পরীক্ষার প্রশ্ন, সময় ও নেগেটিভ মার্কিংসহ, ব্যাখ্যাসহ।">
+<link rel="preload" href="/fonts/NotoSansBengali-bengali.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/TiroBangla-400-bengali.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+/* Layout: one narrow book-like column. Start screen -> exam (sticky timer bar) -> result + review. Practice mode keeps instant feedback. */
+:root{
+  --paper:#fbfaf7; --ink:#1d1f21; --muted:#5f6366; --rule:#d9d6cf; --card:#ffffff;
+  --accent:#1f4e5f; --accent-ink:#ffffff; --sel:#e3eef2; --good:#1e7a46; --good-bg:#e5f3ea; --bad:#b3261e; --bad-bg:#fbe9e7; --warn:#8a5a00;
+  --display:'Tiro Bangla',Georgia,serif; --body:'Noto Sans Bengali',system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#15181a; --ink:#e9e7e2; --muted:#a3a7aa; --rule:#33383b; --card:#1d2124;
+  --accent:#7fb7c9; --accent-ink:#0f1416; --sel:#1d3138; --good:#6fcf97; --good-bg:#17301f; --bad:#f08a80; --bad-bg:#3a1c1a; --warn:#e0b25a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#15181a; --ink:#e9e7e2; --muted:#a3a7aa; --rule:#33383b; --card:#1d2124;
+  --accent:#7fb7c9; --accent-ink:#0f1416; --sel:#1d3138; --good:#6fcf97; --good-bg:#17301f; --bad:#f08a80; --bad-bg:#3a1c1a; --warn:#e0b25a; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6}
+.wrap{max-width:680px;margin:0 auto;padding-block:20px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{border-bottom:2px solid var(--ink);padding-bottom:12px;margin-bottom:12px}
+.book{font-size:13px;letter-spacing:.04em;color:var(--muted)}
+h1{font-family:var(--display);font-weight:400;font-size:30px;margin:4px 0 2px;text-wrap:balance}
+h2{font-family:var(--display);font-weight:400;font-size:22px;margin:22px 0 8px}
+.sub{color:var(--muted);font-size:15px;margin:0}
+button{font:inherit;cursor:pointer}
+.btn{display:inline-block;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:10px 18px;font-weight:600}
+.btn.ghost{background:none;color:var(--ink);border-color:var(--rule);font-weight:500}
+.btns{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
+.rules{margin:8px 0 0;padding-left:20px}
+.rules li{margin:2px 0}
+.hist{border-top:1px solid var(--rule);margin-top:18px;padding-top:6px;font-size:15px}
+.hist table{border-collapse:collapse;width:100%}
+.hist td,.hist th{border-bottom:1px solid var(--rule);padding:5px 4px;text-align:left;font-variant-numeric:tabular-nums}
+.hist th{color:var(--muted);font-weight:500}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);background:var(--paper);display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--rule);z-index:5;font-size:15px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+.clock{font-family:var(--display);font-size:22px;color:var(--accent);font-variant-numeric:tabular-nums;min-width:4ch}
+.clock.low{color:var(--bad)}
+/* Start screen: the start button comes first and big, rules below it. */
+#start{display:flex;flex-direction:column}
+#start .back{order:-3}#start .selch{order:-2}#start .btns{order:-1;margin:6px 0 16px}
+#start #go{font-size:19px;padding:14px 26px;flex:1 1 220px}
+/* Exam bar sits at the bottom of the screen (Sakib's pick): quiet timer, submit button near the thumb. */
+#exam .bar{position:fixed;top:auto;bottom:0;left:0;right:0;padding:10px max(16px,calc(50% - 340px)) calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--rule);border-bottom:0;box-shadow:0 -4px 14px rgba(0,0,0,.06)}
+#exam{padding-bottom:76px}
+#exam .clock{font-family:var(--body);font-size:16px;font-weight:500;color:var(--ink);min-width:0}
+#exam .clock::before{content:"সময় ";font-size:13px;font-weight:400;color:var(--muted)}
+#exam .clock.low{color:var(--warn)}
+.bar b{font-variant-numeric:tabular-nums}
+.q{padding:18px 0;border-bottom:1px solid var(--rule)}
+.qh{display:flex;gap:10px;align-items:baseline}
+.num{font-family:var(--display);color:var(--accent);min-width:1.6em}
+.qt{font-weight:500;margin:0;min-width:0}
+.src{display:block;font-size:13px;color:var(--muted);font-weight:400}
+.pend{display:inline-block;font-size:12px;color:var(--warn);border:1px dashed var(--warn);border-radius:4px;padding:0 6px;margin-left:4px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 0 2.2em}
+@media (max-width:520px){.opts{grid-template-columns:1fr;margin-left:0}}
+.opt{display:flex;gap:8px;align-items:flex-start;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--rule);border-radius:8px;padding:9px 12px;min-height:44px;width:100%}
+.opt .k{font-family:var(--display);color:var(--muted);min-width:1.2em}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.opt.sel{background:var(--sel);border-color:var(--accent)}
+.opt:disabled{cursor:default}
+.opt.right{background:var(--good-bg);border-color:var(--good)}
+.opt.wrong{background:var(--bad-bg);border-color:var(--bad)}
+.exp{margin:10px 0 0 2.2em;font-size:15px;border-left:3px solid var(--accent);padding:2px 0 2px 10px}
+@media (max-width:520px){.exp{margin-left:0}}
+.ok{color:var(--good);font-weight:600}.no{color:var(--bad);font-weight:600}.skip{color:var(--muted);font-weight:600}
+.ref{color:var(--muted);white-space:nowrap}
+.score{border:1.5px solid var(--ink);border-radius:10px;padding:16px;margin:14px 0;text-align:center}
+.big{font-family:var(--display);font-size:46px;line-height:1.1;font-variant-numeric:tabular-nums}
+.stats{display:flex;justify-content:center;flex-wrap:wrap;gap:6px 18px;font-size:15px;margin-top:6px}
+.msg{margin:10px 0 0;font-size:15px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.chip{border:1px solid var(--rule);background:none;color:var(--ink);border-radius:999px;padding:4px 12px;font-size:14px}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+footer{margin-top:24px;font-size:14px;color:var(--muted)}
+.note{border:1px dashed var(--rule);border-radius:8px;padding:10px 12px;margin-top:14px}
+[hidden]{display:none !important}
+@media (prefers-reduced-motion:no-preference){.exp{animation:in .2s ease-out}@keyframes in{from{opacity:.4}to{opacity:1}}}
+</style>
+<link rel="icon" type="image/svg+xml" href="/img/logo/final-icon.svg">
+<link rel="apple-touch-icon" href="/img/logo/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="লিয়ানা বুকস">
+<meta property="og:title" content="উদ্ভিদজগৎ: অনলাইন পরীক্ষা · লিয়ানা বুকস">
+<meta property="og:description" content="বিসিএস বিজ্ঞান, উদ্ভিদজগৎ অধ্যায়: সময় ও নেগেটিভ মার্কিংসহ অনলাইন পরীক্ষা, ব্যাখ্যাসহ।">
+<meta property="og:url" content="https://lyannabooks.com/plants/">
+<meta property="og:image" content="https://lyannabooks.com/img/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="bn_BD">
+<meta name="twitter:card" content="summary_large_image">
+<style>.sitebar{background:#13294b;display:flex;align-items:center;justify-content:space-between;padding:8px 16px}.sitebar img{width:110px;height:auto;display:block}.exp .bl{display:block;margin-top:8px;font-size:12.5px;color:var(--muted);text-decoration:none;opacity:.85}.exp .bl:hover{text-decoration:underline}.sitebar a.h{color:#e6c97a;text-decoration:none;font:500 14px 'Noto Sans Bengali',system-ui,sans-serif}</style>
+</head>
+<body>
+<div class="sitebar"><a href="/"><img src="/img/logo/final-onnavy-transparent.svg" alt="লিয়ানা বুকস"></a><a class="h" href="/">← হোম</a></div>
+
+<div class="wrap">
+<header>
+  <div class="book">বিসিএস বিজ্ঞান · পিয়াস · অধ্যায় ১৫</div>
+  <h1>উদ্ভিদজগৎ: অনলাইন পরীক্ষা</h1>
+  <p class="sub">বিগত বিসিএস এবং অন্যান্য নিয়োগ ও ভর্তি পরীক্ষার প্রশ্ন, আসল পরীক্ষার নিয়মে।</p>
+</header>
+
+<section id="start">
+  <ul class="rules">
+    <li>প্রতি পরীক্ষায় <b id="nq">২৫</b>টি প্রশ্ন, সময় <b id="nm">১৫</b> মিনিট।</li>
+    <li>সঠিক উত্তরে ১ নম্বর, ভুল উত্তরে −০.৫। উত্তর না দিলে নম্বর কাটা যায় না।</li>
+    <li>জমা দেওয়ার আগে উত্তর বদলানো যায়। সময় শেষ হলে নিজে থেকেই জমা হবে।</li>
+    <li>শেষে ফল, প্রতিটি প্রশ্নের ব্যাখ্যা আর বইয়ের সংশ্লিষ্ট অংশের নাম দেখাবে।</li>
+    <li>প্রতিবার <b id="pool"></b>টি প্রশ্নের ভান্ডার থেকে নতুন করে প্রশ্ন বাছাই হয়, তাই বারবার পরীক্ষা দেওয়া যায়।</li>
+  </ul>
+  <div class="btns">
+    <button class="btn" id="go" type="button">পরীক্ষা শুরু করুন</button>
+    <button class="btn ghost" id="practice" type="button">সব প্রশ্ন অনুশীলন</button>
+  </div>
+  <div class="hist" id="hist" hidden></div>
+</section>
+
+<section id="exam" hidden>
+  <div class="bar"><span class="clock" id="clock">১৫:০০</span><span>উত্তর <b id="ans">০</b> / <b id="tot">২৫</b></span><button class="btn" id="submit" type="button">জমা দিন</button></div>
+  <main id="elist"></main>
+  <div class="btns"><button class="btn" id="submit2" type="button">জমা দিন</button></div>
+</section>
+
+<section id="result" hidden>
+  <div class="score" id="scorebox"></div>
+  <div class="btns"><button class="btn" id="again" type="button">নতুন পরীক্ষা</button><button class="btn ghost" id="home" type="button">শুরুর পাতা</button></div>
+  <h2>উত্তর ও ব্যাখ্যা</h2>
+  <main id="rlist"></main>
+</section>
+
+<section id="prac" hidden>
+  <div class="bar"><span>সঠিক <b id="pok">০</b> / উত্তর <b id="pdone">০</b> / মোট <b id="ptot">০</b></span><button class="btn ghost" id="home2" type="button">শুরুর পাতা</button></div>
+  <div class="chips" id="chips"></div>
+  <main id="plist"></main>
+</section>
+
+<footer>
+  <div class="note">বিসিএস ও অন্য পরীক্ষার প্রশ্নের নিচে পরীক্ষার নাম ও সাল দেওয়া আছে।</div>
+  <p>লিয়ানা বুকস · lyannabooks.com</p>
+</footer>
+</div>
+<script>
+const Q=[{"q": "'ইরাটম' কী?", "o": ["উন্নত জাতের পাট", "উন্নত জাতের ধান", "উন্নত জাতের গম", "উন্নত জাতের ইক্ষু"], "a": 1, "e": "ইরাটম ধানের একটি উন্নত জাত। ধানের জাত উন্নত করার একটি পদ্ধতি হলো বীজে নিয়ন্ত্রিত মাত্রায় পারমাণবিক বিকিরণ প্রয়োগ করে মিউটেশন (Mutation) ঘটানো, অর্থাৎ বংশগতির বৈশিষ্ট্যে পরিবর্তন আনা। এভাবে যেসব গাছে ভালো বৈশিষ্ট্য দেখা যায়, সেগুলো বেছে নিয়ে নতুন জাত দাঁড় করানো হয়। ইরাটম-২৪ এ ধরনের একটি জাত, আর সে কারণেই নামের মধ্যে অ্যাটম শব্দটি এসেছে। পাট, গম বা আখের সঙ্গে এই নামের কোনো সম্পর্ক নেই, তাই ওই বিকল্পগুলো ঠিক নয়। বাংলাদেশে বাংলাদেশ পরমাণু কৃষি গবেষণা ইনস্টিটিউট (BINA) বিকিরণ ব্যবহার করে বিভিন্ন ফসলের জাত উদ্ভাবন করে।<br>মনে রাখুন:<br>বিনা-র সদর দপ্তর ময়মনসিংহে।<br>বিনা ধান-৭ আমাদের পরিচিত আরেকটি উন্নত ধানের জাত।", "t": "x", "s": "প্রবাসী কল্যাণ ও বৈদেশিক কর্মসংস্থান মন্ত্রণালয়, উচ্চমান সহকারী/কম্পিউটার অপারেটর, ২০২৩", "p": "উন্নত ফসলের জাত", "v": 0}, {"q": "ক্লোরোফিল পাওয়া যায়-", "o": ["সকল প্রাণীতে", "ছত্রাকে", "সবুজ পাতায়", "ফলে"], "a": 2, "e": "ক্লোরোফিল (Chlorophyll) হলো উদ্ভিদের সবুজ রঞ্জক পদার্থ, যার বাংলা নাম পত্রহরিৎ। এটি কোষের ক্লোরোপ্লাস্ট (Chloroplast) নামের অঙ্গাণুতে থাকে। সবুজ পাতায় ক্লোরোফিল সবচেয়ে বেশি থাকে বলে পাতা সবুজ দেখায়। সূর্যের আলো শোষণ করে ক্লোরোফিলই সালোকসংশ্লেষণ প্রক্রিয়ায় সাহায্য করে, যার ফলে কার্বন ডাই-অক্সাইড ও পানি থেকে খাদ্য তৈরি হয়। প্রাণীর দেহে ক্লোরোফিল থাকে না, কারণ প্রাণী নিজে খাদ্য তৈরি করতে পারে না। ছত্রাকেও এটি অনুপস্থিত, তাই ছত্রাক পরভোজী হিসেবে অন্যের ওপর নির্ভর করে খাদ্যের জন্য।<br>মনে রাখুন:<br>ক্লোরোফিলের একটি অণুর কেন্দ্রে ম্যাগনেসিয়াম পরমাণু থাকে।<br>সালোকসংশ্লেষণের সমীকরণ: 6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂।", "t": "x", "s": "বাংলাদেশ সড়ক পরিবহন কর্তৃপক্ষ (বিআরটিএ), মোটরযান পরিদর্শক, ২০২৩", "p": "ক্লোরোফিল", "v": 0}, {"q": "খাদ্য তৈরিতে উদ্ভিদ বায়ু থেকে গ্রহণ করে—", "o": ["O₂", "H₂", "CO₂", "H₂O"], "a": 2, "e": "সবুজ উদ্ভিদ নিজের খাদ্য নিজেই তৈরি করে, এই প্রক্রিয়ার নাম সালোকসংশ্লেষণ (Photosynthesis)। এ কাজের জন্য তিনটি জিনিস দরকার: সূর্যের আলো, পানি আর কার্বন ডাই-অক্সাইড। উদ্ভিদ মাটি থেকে শিকড়ের মাধ্যমে পানি শোষণ করে। অন্য দিকে বাতাস থেকে কার্বন ডাই-অক্সাইড (CO₂) নেয় পাতার ক্ষুদ্র ছিদ্র বা পত্ররন্ধ্রের মাধ্যমে। ক্লোরোফিল সূর্যের আলো শুষে নিলে এই দুই কাঁচামাল থেকে গ্লুকোজ তৈরি হয় এবং উপজাত হিসেবে অক্সিজেন বাতাসে মুক্ত হয়। তাই খাদ্য তৈরিতে উদ্ভিদ বাতাস থেকে নেয় CO₂, অক্সিজেন বা হাইড্রোজেন নয়।<br>মনে রাখুন:<br>সালোকসংশ্লেষণের সমীকরণ: 6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂।<br>শ্বসনের সময় উদ্ভিদ অক্সিজেন গ্রহণ করে এবং কার্বন ডাই-অক্সাইড ছাড়ে।", "t": "x", "s": "কারিগরি শিক্ষা অধিদপ্তর, ইন্সট্রাক্টর (পলিটেকনিক ও টেকনিক্যাল স্কুল), ২০২৩", "p": "সালোকসংশ্লেষণ", "v": 0}, {"q": "ক্লোরোফিলে কোন মৌলটির উপস্থিতি বিদ্যমান?", "o": ["K", "Ca", "Mg", "Na"], "a": 2, "e": "উদ্ভিদের সবুজ রঙের রঞ্জক ক্লোরোফিলের (Chlorophyll) অণুর কেন্দ্রে একটি ম্যাগনেসিয়াম (Mg) পরমাণু থাকে। এই রঞ্জক সূর্যের আলো শুষে নিয়ে সালোকসংশ্লেষণে সাহায্য করে। ম্যাগনেসিয়ামের অভাব হলে ক্লোরোফিল তৈরি ব্যাহত হয় এবং পাতা হলদে হয়ে যায়। ক্লোরোফিলে কার্বন, হাইড্রোজেন, অক্সিজেন ও নাইট্রোজেনও থাকে। পটাশিয়াম (K), ক্যালসিয়াম (Ca) ও সোডিয়াম (Na) এর অংশ নয়। ম্যাগনেসিয়াম পরমাণু ক্লোরোফিলের পোরফাইরিন বলয়ের ঠিক মাঝখানে বসে থাকে। মাটিতে ম্যাগনেসিয়াম কম থাকলে গাছ ফ্যাকাশে হয়ে যায়।<br>মনে রাখুন:<br>রক্তের হিমোগ্লোবিনের কেন্দ্রে থাকে আয়রন (Fe)।<br>ক্লোরোফিল মূলত নীল-বেগুনি ও লাল আলো শোষণ করে, সবুজ আলো প্রতিফলিত করে বলে পাতা সবুজ দেখায়।", "t": "x", "s": "কারিগরি শিক্ষা অধিদপ্তর, জুনিয়র ইন্সট্রাক্টর (পলিটেকনিক ও টেকনিক্যাল স্কুল), ২০২৩", "p": "ক্লোরোফিল", "v": 0}, {"q": "উদ্ভিদের বৃদ্ধিমাপক যন্ত্রের নাম কী?", "o": ["ক্যালোরিমিটার", "স্ফিগমোম্যানোমিটার", "অক্সানোমিটার", "পোটোমিটার"], "a": 2, "e": "উদ্ভিদ কত দ্রুত বাড়ছে, তা মাপার জন্য বিশেষ যন্ত্র আছে। অক্সানোমিটার (Auxanometer) এর মধ্যে একটি। এতে উদ্ভিদের শীর্ষের সঙ্গে একটি সরু সুতা বাঁধা থাকে, আর সুতার অন্য প্রান্ত একটি চাকা বা স্কেলের সঙ্গে যুক্ত। গাছ লম্বা হলে সুতা টেনে স্কেলের কাঁটা সরে যায়, এভাবে বৃদ্ধি মাপা হয়। জগদীশচন্দ্র বসু আবিষ্কৃত ক্রেসকোগ্রাফও এমন একটি যন্ত্র, যা গাছের বৃদ্ধি বহুগুণ বড় করে দেখায়। ক্যালোরিমিটার তাপ মাপে, আর স্ফিগমোম্যানোমিটার রক্তচাপ। পোটোমিটার (Potometer) উদ্ভিদের প্রস্বেদন মাপে।<br>মনে রাখুন:<br>ক্রেসকোগ্রাফ: জগদীশচন্দ্র বসু।<br>পোটোমিটার: প্রস্বেদনের হার।<br>ফটোমিটার: আলোর তীব্রতা।", "t": "x", "s": "পরিবার পরিকল্পনা অধিদপ্তর, সহকারী পরিবার পরিকল্পনা কর্মকর্তা, ২০২২", "p": "বৃদ্ধি পরিমাপ", "v": 0}, {"q": "কোন আলোতে সালোকসংশ্লেষণ ভালো হয় না?", "o": ["লাল", "নীল", "কমলা", "হলুদ"], "a": 3, "e": "গাছপালা সালোকসংশ্লেষণের সময় সূর্যের আলো থেকে শক্তি নেয়। পাতার ক্লোরোফিল আলোর সব রঙ সমান শোষণ করে না। ক্লোরোফিল প্রধানত লাল ও নীল আলো শোষণ করে, তাই এই দুই আলোতে সালোকসংশ্লেষণ ভালো হয়। কমলা ও বেগুনি আলোও কিছুটা কাজে লাগে। কিন্তু সবুজ ও হলুদ আলো ক্লোরোফিল খুব কম শোষণ করে, বরং বেশির ভাগই প্রতিফলিত করে দেয়। গাছের পাতা সবুজ দেখায় এই কারণেই। তাই হলুদ আলোতে সালোকসংশ্লেষণ সবচেয়ে কম হয়।<br>মনে রাখুন:<br>সালোকসংশ্লেষণের সমীকরণ: 6CO₂ + 12H₂O → C₆H₁₂O₆ + 6O₂ + 6H₂O।<br>সবুজ আলোতে সালোকসংশ্লেষণ সবচেয়ে কম হয়।", "t": "x", "s": "জনশক্তি, কর্মসংস্থান ও প্রশিক্ষণ ব্যুরো (বিএমইটি), ইন্সট্রাক্টর, ২০২২", "p": "সালোকসংশ্লেষণ", "v": 0}, {"q": "'গাছের জীবন আছে' এই তত্ত্ব উদ্ঘাটন করেছিলেন—", "o": ["ইবনে সিনা", "আচার্য প্রফুল্ল চন্দ্র", "স্যার জগদীশ চন্দ্র বসু", "স্যার আইজাক নিউটন"], "a": 2, "e": "গাছেরও জীবন আছে, তারা প্রাণীর মতোই উদ্দীপনায় সাড়া দেয়, এটি পরীক্ষা করে প্রমাণ করেন বাঙালি বিজ্ঞানী স্যার জগদীশচন্দ্র বসু। তিনি নিজের তৈরি অতি সংবেদনশীল যন্ত্র ক্রেসকোগ্রাফ দিয়ে দেখান, আঘাত, বিষ বা তাপ দিলে গাছের মধ্যে প্রাণীর মতোই সাড়া জাগে। জগদীশচন্দ্র বসু ১৮৫৮ সালের ৩০ নভেম্বর জন্মগ্রহণ করেন, তাঁর পৈতৃক নিবাস বিক্রমপুরের রাঢ়িখালে, যা এখন মুন্সীগঞ্জ জেলায়। ১৯১৭ সালে তিনি কলকাতায় বসু বিজ্ঞান মন্দির প্রতিষ্ঠা করেন। বেতার তরঙ্গ নিয়ে গবেষণা করে তিনি অনেকের আগেই মাইক্রোওয়েভ তৈরি ও শনাক্ত করেছিলেন।<br>মনে রাখুন:<br>জগদীশচন্দ্র বসুর আবিষ্কৃত যন্ত্র: ক্রেসকোগ্রাফ।<br>তাঁর মৃত্যু ১৯৩৭ সালের ২৩ নভেম্বর।", "t": "x", "s": "ফায়ার সার্ভিস ও সিভিল ডিফেন্স অধিদপ্তর, স্টেশন অফিসার, ২০২২", "p": "জগদীশচন্দ্র বসু", "v": 0}, {"q": "সালোকসংশ্লেষণ প্রক্রিয়ায় কোনটি তৈরি হয়?", "o": ["আমিষ", "শর্করা", "ভিটামিন", "এনজাইম"], "a": 1, "e": "সালোকসংশ্লেষণ (Photosynthesis) হলো সবুজ উদ্ভিদের খাদ্য তৈরির প্রক্রিয়া। এতে পাতার ক্লোরোফিল সূর্যের আলো শোষণ করে এবং সেই শক্তি দিয়ে কার্বন ডাই-অক্সাইড ও পানি থেকে শর্করা, অর্থাৎ গ্লুকোজ তৈরি করে। এর সঙ্গে উপজাত হিসেবে অক্সিজেন বের হয়। এই বিক্রিয়ার সমীকরণ: 6CO₂ + 12H₂O → C₆H₁₂O₆ + 6O₂ + 6H₂O। আমিষ, ভিটামিন বা এনজাইম সরাসরি এই প্রক্রিয়ায় তৈরি হয় না।<br>মনে রাখুন:<br>সালোকসংশ্লেষণ হয় ক্লোরোপ্লাস্টে।<br>তৈরি হওয়া গ্লুকোজ পরে স্টার্চ হিসেবে জমা থাকে।<br>উদ্ভিদ দিনের বেলা CO₂ নেয় ও O₂ ছাড়ে, ফলে বায়ুমণ্ডলে অক্সিজেনের ভারসাম্য থাকে।", "t": "x", "s": "কৃষি সম্প্রসারণ অধিদপ্তর, উপসহকারী কৃষি কর্মকর্তা, ২০২১", "p": "সালোকসংশ্লেষণ", "v": 0}, {"q": "নিচের কোনটি ঔষধি গাছ?", "o": ["পাট", "ধনিয়া", "অর্জুন", "তুলা"], "a": 2, "e": "ঔষধি গাছ বা ভেষজ উদ্ভিদ হলো সেই গাছ, যার অংশ রোগ সারাতে বা প্রতিরোধে কাজে লাগে। অর্জুন গাছের ছাল হৃদরোগ ও রক্তচাপের চিকিৎসায় বহুকাল ধরে ব্যবহৃত হচ্ছে। এর বাকলে ট্যানিন থাকে, যা মাড়ির রক্তপাত ও প্রদাহ কমায়। পাট ও তুলা আঁশ উৎপাদনকারী অর্থকরী ফসল, আর ধনিয়া মশলা হিসেবে ব্যবহৃত হয়, তাই এগুলো প্রচলিত অর্থে ঔষধি গাছ নয়।<br>মনে রাখুন:<br>অন্যান্য ঔষধি গাছ: নিম, তুলসী, বাসক, বহেড়া, হরীতকী, আমলকী।<br>বাংলাদেশের জাতীয় ফল কাঁঠাল, কিন্তু আমলকী-হরীতকী-বহেড়া মিলে ত্রিফলা তৈরি হয়।<br>নিমের পাতা জীবাণুনাশক হিসেবে পরিচিত।", "t": "x", "s": "কৃষি সম্প্রসারণ অধিদপ্তর, উপসহকারী কৃষি কর্মকর্তা, ২০২১", "p": "ঔষধি গাছ", "v": 0}, {"q": "গাছের শারীরিক বৃদ্ধি হয় কোন সারে?", "o": ["TSP", "MP", "SSP", "Urea"], "a": 3, "e": "গাছের কাণ্ড ও পাতা বেড়ে ওঠা, অর্থাৎ শারীরিক (Vegetative) বৃদ্ধির জন্য সবচেয়ে বেশি দরকার নাইট্রোজেন। ইউরিয়া সারের প্রায় ৪৬ ভাগই নাইট্রোজেন, তাই এটি গাছকে সবুজ ও সতেজ করে। TSP ফসফরাসের সার, যা মূলের বৃদ্ধি, ফুল ও ফল ধরার জন্য বেশি কাজে লাগে। MP পটাশের সার, যা রোগ প্রতিরোধ ও ফলের গুণ বাড়ায়। SSP-ও ফসফরাসের সার। নাইট্রোজেনের অভাব হলে গাছের পাতা হলুদ হয়ে যায় এবং বৃদ্ধি থেমে যায়।<br>মনে রাখুন: ইউরিয়াতে নাইট্রোজেন, TSP-তে ফসফরাস, MP-তে পটাশিয়াম থাকে। মাটিতে এই তিনটি উপাদানের নাম NPK।<br>ফসফরাসের অভাবে ফুল ও ফল কম ধরে।<br>পটাশিয়ামের অভাবে পাতার কিনারা পুড়ে যাওয়ার মতো দেখায়।", "t": "x", "s": "পররাষ্ট্র মন্ত্রণালয়, প্রশাসনিক কর্মকর্তা, ২০১৯", "p": "রাসায়নিক সার", "v": 0}, {"q": "নিচের কোন রাসায়নিক সারটি নাইট্রোজেনের অভাব পূরণ করে?", "o": ["টিএসপি", "ইউরিয়া", "জিংকে ফসফেট", "জিপসাম"], "a": 1, "e": "গাছের বৃদ্ধির জন্য নাইট্রোজেন অপরিহার্য, কারণ এটি পাতা সবুজ করে এবং প্রোটিন তৈরিতে সাহায্য করে। রাসায়নিক সারের মধ্যে ইউরিয়াতে নাইট্রোজেন সবচেয়ে বেশি, প্রায় ৪৬ ভাগ। টিএসপি ফসফরাসের সার, আর জিপসাম সালফার ও ক্যালসিয়ামের উৎস। জিংক ফসফেটের উপাদান যথাক্রমে জিংক ও ফসফরাস। জমিতে ইউরিয়া দিলে মাটির অণুজীব একে প্রথমে অ্যামোনিয়া ও পরে নাইট্রেটে বদলে দেয়, যা গাছ সহজে শোষণ করে।<br>মনে রাখুন: ইউরিয়ার রাসায়নিক সংকেত CO(NH₂)₂।<br>ফসফরাসের সার টিএসপি, আর পটাশিয়ামের সার এমওপি বা মিউরেট অব পটাশ।<br>সার ব্যবহারে অতিরিক্ত নাইট্রোজেন জমি ও পানি দূষিত করতে পারে।", "t": "x", "s": "কৃষি সম্প্রসারণ অধিদপ্তর, উপ-সহকারী কৃষি কর্মকর্তা, ২০১৯", "p": "রাসায়নিক সার", "v": 0}, {"q": "সালোকসংশ্লেষণের অন্ধকার বিক্রিয়ার গতিপথ কতটি?", "o": ["দুইটি", "তিনটি", "চারটি", "পাঁচটি"], "a": 1, "e": "সালোকসংশ্লেষণের (Photosynthesis) অন্ধকার বিক্রিয়ায় কার্বন ডাইঅক্সাইড থেকে শর্করা তৈরি হয় এবং এর জন্য আলো লাগে না। উদ্ভিদভেদে এই বিক্রিয়ার তিনটি গতিপথ আছে: C₃ (ক্যালভিন চক্র), C₄ (হ্যাচ ও স্ল্যাক চক্র) এবং CAM (ক্রেসুলেসিয়ান এসিড বিপাক)। C₃ পথে প্রথম স্থায়ী যৌগ তিন কার্বনের ফসফোগ্লিসারিক অ্যাসিড, আর C₄ পথে প্রথম স্থায়ী যৌগ চার কার্বনের অক্সালো-অ্যাসিটিক অ্যাসিড।<br>মনে রাখুন:<br>আখ ও ভুট্টা C₄ উদ্ভিদ।<br>কচু ও মরু অঞ্চলের ক্যাকটাস CAM পথে কাজ করে।<br>অন্ধকার বিক্রিয়া ক্লোরোপ্লাস্টের স্ট্রোমায় এবং আলোক বিক্রিয়া গ্রানায় ঘটে।<br>অন্ধকার বিক্রিয়ায় গ্লুকোজ তৈরি হতে আলোক বিক্রিয়ায় তৈরি ATP ও NADPH লাগে।", "t": "x", "s": "কৃষি সম্প্রসারণ অধিদপ্তর, উপ-সহকারী কৃষি কর্মকর্তা, ২০১৯", "p": "সালোকসংশ্লেষণ", "v": 0}, {"q": "মাটির উর্বরতা বৃদ্ধিতে সাহায্য করে—", "o": ["হাইড্রোজেন", "কার্বন ডাই-অক্সাইড", "অক্সিজেন", "নাইট্রোজেন"], "a": 3, "e": "গাছ বাড়তে যে পুষ্টি উপাদান সবচেয়ে বেশি দরকার হয়, তার একটি নাইট্রোজেন। নাইট্রোজেন প্রোটিন ও ক্লোরোফিলের গঠনে লাগে, তাই এটি গাছের বৃদ্ধি ও মাটির উর্বরতা বাড়ায়। ইউরিয়া সারে প্রচুর নাইট্রোজেন থাকে। মটর, সিম বা মসুরের মতো শিম্বগোত্রীয় গাছের শিকড়ে থাকা রাইজোবিয়াম ব্যাকটেরিয়া বাতাসের নাইট্রোজেনকে মাটিতে আবদ্ধ করে। একই জমিতে বারবার একই ফসল চাষ করলে নাইট্রোজেন কমে যায়, তাই ফসলের পালাবদল করা হয়।<br>মনে রাখুন:<br>গাছের তিনটি প্রধান সার-উপাদান হলো নাইট্রোজেন (N), ফসফরাস (P) ও পটাশিয়াম (K)।<br>ইউরিয়ায় প্রায় ৪৬ ভাগ নাইট্রোজেন থাকে।<br>শিম্বগোত্রীয় গাছ মাটিকে উর্বর করে বলে এদের সবুজ সার হিসেবেও ব্যবহার করা হয়।", "t": "x", "s": "স্থানীয় সরকার বিভাগ, উপসহকারী প্রকৌশলী/নকশাকার, ২০১৯", "p": "রাসায়নিক সার", "v": 0}, {"q": "খাদ্য তৈরির জন্য উদ্ভিদ বায়ু থেকে কী গ্রহণ করে?", "o": ["জিংক", "অক্সিজেন", "কার্বন ডাই-অক্সাইড", "ফসফরাস"], "a": 2, "e": "উদ্ভিদ নিজের খাদ্য তৈরি করে সালোকসংশ্লেষণ (Photosynthesis) প্রক্রিয়ায়। এতে সে বাতাস থেকে কার্বন ডাই-অক্সাইড নেয়, মাটি থেকে পানি টানে, আর সূর্যের আলো ও ক্লোরোফিলের সাহায্যে গ্লুকোজ বানায়। পাশাপাশি অক্সিজেন বাতাসে ছাড়ে। জিংক ও ফসফরাস মাটি থেকে আসে। পাতার ছোট ছিদ্র স্টোমাটা (Stomata) দিয়ে কার্বন ডাই-অক্সাইড ভেতরে ঢোকে।<br>মনে রাখুন:<br>6CO2 + 6H2O → C6H12O6 + 6O2।<br>গাছ দিনে অক্সিজেন ছাড়ে, রাতে শ্বসনে অক্সিজেন নেয়।<br>সবুজ রঞ্জক ক্লোরোফিল সূর্যের আলো শোষণ করে এই কাজে সাহায্য করে।<br>গ্লুকোজ গাছের শক্তির উৎস, আর বাড়তি অংশ স্টার্চ হিসেবে জমা হয়।", "t": "x", "s": "স্থানীয় সরকার বিভাগ, সহকারী প্রকৌশলী (পুর), ২০১৯", "p": "সালোকসংশ্লেষণ", "v": 0}, {"q": "সূর্যের আলো থেকে আগত শক্তির কতটুকু সবুজ উদ্ভিদ ব্যবহার করে?", "o": ["১%", "২%", "৩%", "৮%"], "a": 0, "e": "সবুজ উদ্ভিদ সালোকসংশ্লেষণের (Photosynthesis) মাধ্যমে সূর্যের আলো থেকে খাদ্য তৈরি করে। কিন্তু সূর্য থেকে পৃথিবীতে যে আলো আসে, তার খুব সামান্য অংশই এ কাজে লাগে, সাধারণভাবে প্রায় ১ শতাংশ। বাকি অংশ প্রতিফলিত হয়, শোষিত হয়ে তাপ হয়ে যায় বা অন্যভাবে হারায়। এই সামান্য শক্তিই উদ্ভিদের দেহে খাদ্য হিসেবে জমা থাকে এবং খাদ্যশৃঙ্খলের মাধ্যমে সব প্রাণীর কাছে পৌঁছায়।<br>মনে রাখুন:<br>সালোকসংশ্লেষণে ক্লোরোফিল আলোর শক্তি শোষণ করে।<br>কার্বন ডাই-অক্সাইড ও পানি থেকে শর্করা ও অক্সিজেন তৈরি হয়।<br>সূর্যের আলো না থাকলে উদ্ভিদ খাদ্য তৈরি করতে পারত না, তাই সূর্যই সব খাদ্যশক্তির আদি উৎস।", "t": "x", "s": "চলচ্চিত্র ও প্রকাশনা অধিদপ্তর, ক্যামেরাম্যান, ২০১৯", "p": "সালোকসংশ্লেষণ", "v": 0}, {"q": "ইউরিয়া সার থেকে উদ্ভিদ কোন খাদ্য গ্রহণ করে?", "o": ["অক্সিজেন", "কার্বন ডাইঅক্সাইড", "সালফার", "নাইট্রোজেন"], "a": 3, "e": "ইউরিয়ার রাসায়নিক সংকেত CO(NH₂)₂ এবং এতে প্রায় ৪৬ শতাংশ নাইট্রোজেন থাকে। উদ্ভিদ বাতাস থেকে সরাসরি নাইট্রোজেন নিতে পারে না, তাই ইউরিয়া সার মাটিতে দিলে এটি থেকে নাইট্রোজেন পায়। নাইট্রোজেন পাতা সবুজ করতে এবং গাছের বৃদ্ধিতে সাহায্য করে। অক্সিজেন ও কার্বন ডাইঅক্সাইড গাছ প্রধানত বাতাস থেকে নেয়, আর সালফার ইউরিয়ার উপাদান নয়। নাইট্রোজেনের অভাব হলে গাছের পাতা হলদে হয়ে যায়।<br>মনে রাখুন:<br>টিএসপি সারে ফসফরাস এবং এমওপি সারে পটাশিয়াম থাকে।<br>গাছের তিনটি প্রধান পুষ্টি উপাদান: নাইট্রোজেন, ফসফরাস ও পটাশিয়াম।<br>ফসফরাস শিকড় ও ফুল-ফলের বৃদ্ধিতে সাহায্য করে।", "t": "x", "s": "বিভিন্ন মন্ত্রণালয়/বিভাগ/অধিদপ্তর, প্রশাসনিক কর্মকর্তা (সাধারণ), ২০১৮", "p": "সার", "v": 0}, {"q": "পাখির দ্বারা পুষ্পরেণু বহন করাকে বলে-", "o": ["Autogamy", "Ornithophily", "Entomophily", "Anemophily"], "a": 1, "e": "ফুলের পরাগরেণু একটি ফুল থেকে আরেকটি ফুলে পৌঁছানোকে পরাগায়ন (Pollination) বলে। যে পরাগায়নে বাহক হিসেবে পাখি কাজ করে, তাকে বলা হয় অর্নিথোফিলি (Ornithophily)। ফুলের মধু খেতে এসে পাখির দেহে পরাগ লেগে যায় এবং অন্য ফুলে গেলে সেটি সেখানে পড়ে। শিমুলের মতো কিছু ফুলে এভাবে পাখি পরাগায়ন ঘটায়।<br>মনে রাখুন:<br>অটোগ্যামি (Autogamy) হলো একই ফুলের পরাগে নিজের গর্ভমুণ্ডে পরাগায়ন।<br>এন্টোমোফিলি (Entomophily) হলো পোকামাকড় দ্বারা এবং অ্যানিমোফিলি (Anemophily) হলো বাতাস দ্বারা পরাগায়ন।<br>হাইড্রোফিলি (Hydrophily) হলো পানির মাধ্যমে পরাগায়ন।<br>অন্য ফুলের পরাগে পরাগায়ন হলে তাকে পরপরাগায়ন বলে।", "t": "x", "s": "জনস্বাস্থ্য প্রকৌশল অধিদপ্তর, এস্টিমেটর, ২০১৮", "p": "পরাগায়ন", "v": 0}, {"q": "কৃষিকাজের জন্য সবচেয়ে উপযোগী মাটি হলো—", "o": ["পলি মাটি", "বেলে মাটি", "এঁটেল মাটি", "দো-আঁশ মাটি"], "a": 3, "e": "দো-আঁশ মাটিতে বালি, পলি ও এঁটেল মাটি সুষম অনুপাতে মেশানো থাকে। এই মাটি পানি ধরে রাখতে পারে, আবার বাড়তি পানি বের করেও দেয়, ফলে শিকড় বাতাস পায়। তাছাড়া এতে জৈব পদার্থ ও খনিজ পুষ্টি বেশি থাকে। তাই কৃষির জন্য সবচেয়ে ভালো মাটি দো-আঁশ। এই মাটি ঝুরঝুরে হওয়ায় চাষ দেওয়াও সহজ হয়।<br>মনে রাখুন:<br>বেলে মাটি পানি ধরে রাখতে পারে না, আর এঁটেল মাটিতে পানি জমে থাকে।<br>বাংলাদেশের বেশির ভাগ জমি নদীবাহিত পলি মাটির, তাই এখানকার মাটি খুব উর্বর। মধুপুর ও বরেন্দ্র অঞ্চলের মাটি অবশ্য লালচে।", "t": "x", "s": "গণপূর্ত অধিদপ্তর, উপ-সহকারী প্রকৌশলী ও ড্রাফটসম্যান (সিভিল), ২০১৮", "p": "মাটি", "v": 0}, {"q": "উদ্ভিদের বৃদ্ধি হয় নিচের কোনটির প্রভাবে?", "o": ["পানির প্রভাবে", "Urea সারের প্রভাবে", "TSP সারের প্রভাবে", "MP সারের প্রভাবে"], "a": 1, "e": "ইউরিয়া সারে প্রায় ৪৬ ভাগ নাইট্রোজেন থাকে। নাইট্রোজেন গাছের পাতা ও কাণ্ড বাড়তে সাহায্য করে এবং গাছকে সবুজ রাখে, তাই সবুজ পাতাসহ উদ্ভিদের বৃদ্ধিতে ইউরিয়া সারের ভূমিকা সবচেয়ে বেশি। মাটিতে নাইট্রোজেন কম থাকলে গাছের পাতা হলদে হয়ে যায় এবং বাড়ন্ত ধীর হয়। শুধু পানি গাছের বেঁচে থাকার জন্য দরকার, কিন্তু পুষ্টি জোগানোর কাজটি সারই করে।<br>মনে রাখুন:<br>টিএসপি (TSP) ফসফরাসের উৎস, যা শিকড় ও ফল-ফুল গঠনে কাজে লাগে।<br>এমপি (MP) পটাশিয়ামের উৎস, যা রোগ প্রতিরোধে সহায়তা করে।<br>উদ্ভিদের প্রধান তিনটি সার উপাদান হলো নাইট্রোজেন, ফসফরাস ও পটাশিয়াম, যাদের সংক্ষেপে NPK বলা হয়।", "t": "x", "s": "বিআরটিএ, মোটরযান পরিদর্শক, ২০১৭", "p": "সার", "v": 0}];
+const N=19, MIN=11, NB=0;           // প্রশ্নসংখ্যা, মিনিট, ন্যূনতম বিসিএস প্রশ্ন
+const bn=n=>String(n).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+const K=['ক','খ','গ','ঘ','ঙ'];
+const $=id=>document.getElementById(id);
+const show=id=>['start','exam','result','prac'].forEach(s=>$(s).hidden=s!==id);
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const fmtScore=x=>bn(Number.isInteger(x)?x:x.toFixed(1));
+const srcLine=q=>`<span class="src">${q.t==='b'?q.s:q.t==='x'?q.s:'সম্ভাব্য প্রশ্ন'}${q.v?' <span class="pend">অপশন যাচাই বাকি</span>':''}</span>`;
+const ref=q=>`<span class="ref">${/^\d|^[০-৯]/.test(q.p)?'বইয়ের অনুচ্ছেদ '+q.p:'বইয়ের অংশ: '+q.p}</span>`;
+function store(get,val){try{if(get)return JSON.parse(localStorage.getItem('plants-scores')||'[]');localStorage.setItem('plants-scores',JSON.stringify(val))}catch(e){return []}}
+function drawHist(){
+  const h=store(true)||[]; const el=$('hist');
+  if(!h.length){el.hidden=true;return}
+  el.hidden=false;
+  el.innerHTML='<b>এই ফোনে আগের পরীক্ষাগুলো</b><table><tr><th>পরীক্ষা</th><th>তারিখ</th><th>নম্বর</th></tr>'+
+    h.slice(-8).map((r,i,a)=>`<tr><td>${bn(h.length-a.length+i+1)}</td><td>${r.d}</td><td>${fmtScore(r.s)} / ${bn(r.n)}</td></tr>`).join('')+'</table>';
+}
+$('nq').textContent=bn(N);$('nm').textContent=bn(MIN);$('pool').textContent=bn(Q.length);$('tot').textContent=bn(N);
+drawHist();
+
+// ---------- পরীক্ষা ----------
+let paper=[],pick=[],timer=null,endAt=0,startAt=0,armed=0;
+function startExam(){
+  const b=shuffle(Q.filter(q=>q.t==='b')), r=shuffle(b.slice(NB).concat(Q.filter(q=>q.t!=='b')));
+  paper=shuffle(b.slice(0,NB).concat(r.slice(0,N-NB)));
+  pick=paper.map(()=>-1);
+  const box=$('elist');box.innerHTML='';
+  paper.forEach((q,i)=>{
+    const s=document.createElement('section');s.className='q';
+    s.innerHTML=`<div class="qh"><span class="num">${bn(i+1)}.</span><p class="qt">${q.q}${srcLine(q)}</p></div><div class="opts"></div>`;
+    const o=s.querySelector('.opts');
+    q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';
+      b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;
+      b.onclick=()=>{pick[i]=pick[i]===j?-1:j;[...o.children].forEach((x,k)=>x.classList.toggle('sel',k===pick[i]));$('ans').textContent=bn(pick.filter(x=>x>=0).length)};
+      o.appendChild(b)});
+    box.appendChild(s);
+  });
+  $('ans').textContent='০';
+  startAt=Date.now();endAt=startAt+MIN*60000;tick();clearInterval(timer);timer=setInterval(tick,500);
+  show('exam');window.scrollTo(0,0);
+}
+function tick(){
+  const left=Math.max(0,endAt-Date.now()),s=Math.ceil(left/1000);
+  $('clock').textContent=bn(String(Math.floor(s/60)).padStart(2,'0'))+':'+bn(String(s%60).padStart(2,'0'));
+  $('clock').classList.toggle('low',s<=60);
+  if(left<=0)finish();
+}
+function askSubmit(btn){
+  const blank=pick.filter(x=>x<0).length;
+  if(armed&&Date.now()-armed<4000){finish();return}
+  armed=Date.now();
+  [$('submit'),$('submit2')].forEach(b=>b.textContent=blank?`${bn(blank)}টি বাকি, তবু জমা দিতে আবার চাপুন`:'নিশ্চিত হলে আবার চাপুন');
+  setTimeout(()=>{if(Date.now()-armed>=4000)[$('submit'),$('submit2')].forEach(b=>b.textContent='জমা দিন')},4100);
+}
+function finish(){
+  clearInterval(timer);armed=0;[$('submit'),$('submit2')].forEach(b=>b.textContent='জমা দিন');
+  let ok=0,bad=0;paper.forEach((q,i)=>{if(pick[i]<0)return;pick[i]===q.a?ok++:bad++});
+  const blank=N-ok-bad, score=ok-bad*0.5, used=Math.min(MIN*60,Math.round((Date.now()-startAt)/1000));
+  const d=new Date(), ds=bn(d.getDate())+'/'+bn(d.getMonth()+1)+'/'+bn(d.getFullYear());
+  const h=store(true)||[];h.push({d:ds,s:score,n:N});store(false,h);
+  const msg=score>=15.2?'চমৎকার! অধ্যায়টি আপনার আয়ত্তে এসেছে।':score>=11.4?'ভালো হয়েছে। ভুল প্রশ্নগুলোর অংশ আবার পড়ে নিন।':'অধ্যায়টি আরেকবার পড়ে কয়েক দিন পর আবার পরীক্ষা দিন।';
+  $('scorebox').innerHTML=`<div class="big">${fmtScore(score)} / ${bn(N)}</div>
+   <div class="stats"><span class="ok">সঠিক ${bn(ok)}</span><span class="no">ভুল ${bn(bad)}</span><span class="skip">উত্তর দেননি ${bn(blank)}</span><span>সময় ${bn(Math.floor(used/60))} মিনিট ${bn(used%60)} সেকেন্ড</span></div>
+   <p class="msg">${msg}</p><p class="msg">বইয়ের শেষ পাতার ছকে লিখে রাখুন: তারিখ ${ds}, নম্বর ${fmtScore(score)}।</p>`;
+  const box=$('rlist');box.innerHTML='';
+  paper.forEach((q,i)=>{
+    const s=document.createElement('section');s.className='q';const p=pick[i];
+    s.innerHTML=`<div class="qh"><span class="num">${bn(i+1)}.</span><p class="qt">${q.q}${srcLine(q)}</p></div><div class="opts">${
+      q.o.map((t,j)=>`<button type="button" class="opt${j===q.a?' right':''}${j===p&&p!==q.a?' wrong':''}" disabled><span class="k">${K[j]}</span><span>${t}</span></button>`).join('')}</div>
+      <div class="exp">${p<0?'<span class="skip">উত্তর দেননি।</span> সঠিক উত্তর: '+K[q.a]+') '+q.o[q.a]+'।':p===q.a?'<span class="ok">সঠিক (+১)।</span>':'<span class="no">ভুল (−০.৫)।</span> সঠিক উত্তর: '+K[q.a]+') '+q.o[q.a]+'।'} ${q.e} ${ref(q)}</div>`;
+    box.appendChild(s);
+  });
+  show('result');window.scrollTo(0,0);drawHist();
+}
+
+// ---------- অনুশীলন ----------
+let filt='all',pok=0,pdone=0;
+const F=[['all','সব'],['b','বিসিএস'],['x','অন্য পরীক্ষা'],['l','সম্ভাব্য']].filter(([k])=>k==='all'||Q.some(q=>q.t===k));
+$('chips').innerHTML=F.map(([k,t])=>`<button type="button" class="chip" data-k="${k}" aria-pressed="${k==='all'}">${t}</button>`).join('');
+$('chips').onclick=e=>{const k=e.target.dataset&&e.target.dataset.k;if(!k)return;filt=k;[...$('chips').children].forEach(c=>c.setAttribute('aria-pressed',c.dataset.k===k));renderPrac()};
+function renderPrac(){
+  const L=Q.filter(q=>filt==='all'||q.t===filt);pok=0;pdone=0;
+  const upd=()=>{$('pok').textContent=bn(pok);$('pdone').textContent=bn(pdone);$('ptot').textContent=bn(L.length)};
+  const box=$('plist');box.innerHTML='';
+  L.forEach((q,i)=>{
+    const s=document.createElement('section');s.className='q';
+    s.innerHTML=`<div class="qh"><span class="num">${bn(i+1)}.</span><p class="qt">${q.q}${srcLine(q)}</p></div><div class="opts"></div>`;
+    const o=s.querySelector('.opts');
+    q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';
+      b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;
+      b.onclick=()=>{[...o.children].forEach(x=>x.disabled=true);o.children[q.a].classList.add('right');
+        const good=j===q.a;if(!good)b.classList.add('wrong');pdone++;if(good)pok++;upd();
+        const e=document.createElement('div');e.className='exp';
+        e.innerHTML=`<span class="${good?'ok':'no'}">${good?'সঠিক।':'ভুল। সঠিক উত্তর: '+K[q.a]+') '+q.o[q.a]+'।'}</span> ${q.e} ${ref(q)}`;s.appendChild(e)};
+      o.appendChild(b)});
+    box.appendChild(s);
+  });
+  upd();
+}
+$('go').onclick=startExam;$('again').onclick=startExam;
+$('submit').onclick=()=>askSubmit();$('submit2').onclick=()=>askSubmit();
+$('home').onclick=$('home2').onclick=()=>{show('start');drawHist();window.scrollTo(0,0)};
+$('practice').onclick=()=>{renderPrac();show('prac');window.scrollTo(0,0)};
+window.addEventListener('beforeunload',e=>{if(!$('exam').hidden){e.preventDefault();e.returnValue=''}});
+</script>
+<script src="/js/book-link.js" data-kind="science" data-chapter="উদ্ভিদজগৎ" defer></script>
+</body>
+</html>
