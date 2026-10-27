@@ -1,18 +1,132 @@
 <!doctype html>
-<html lang="bn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>বিসিএস বিজ্ঞান পরীক্ষা · লিয়ানা বুকস</title>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>লিয়ানা বুকস · Lyanna Books</title>
+<meta name="description" content="লিয়ানা বুকস: বিসিএস বিজ্ঞান বই (লেখক পিয়াস) আর প্রতিটি অধ্যায়ের অনলাইন পরীক্ষা।">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tiro+Bangla&family=Hind+Siliguri:wght@400;500;600&family=Cormorant+Garamond:ital,wght@0,500;1,500&display=swap">
 <style>
-:root{--paper:#fbfaf7;--ink:#1d1f21;--muted:#5f6366;--rule:#d9d6cf;--accent:#1f4e5f}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#15181a;--ink:#e9e7e2;--muted:#a3a7aa;--rule:#33383b;--accent:#7fb7c9;color-scheme:dark}}
-body{margin:0;background:var(--paper);color:var(--ink);font-family:'Hind Siliguri',system-ui,sans-serif;line-height:1.6}
-.wrap{max-width:680px;margin:0 auto;padding:28px max(16px,env(safe-area-inset-left,0px)) 48px}
-h1{font-size:26px;font-weight:600;margin:0 0 6px}
-p{color:var(--muted);margin:0 0 18px}
-a.card{display:block;border:1px solid var(--rule);border-radius:8px;padding:14px 16px;margin:10px 0;color:var(--ink);text-decoration:none}
-a.card:hover{border-color:var(--accent)}
-a.card b{color:var(--accent)}
-</style></head><body><div class="wrap">
-<h1>বিসিএস বিজ্ঞান: অনলাইন পরীক্ষা</h1>
-<p>প্রতিটি অধ্যায়ের বিগত বিসিএস, অন্য পরীক্ষা আর সম্ভাব্য প্রশ্ন নিয়ে সময় ও নেগেটিভ মার্কিংসহ পরীক্ষা। শেষে ব্যাখ্যা আর বইয়ের অনুচ্ছেদ নম্বর।</p>
-<a class="card" href="sound/"><b>শব্দ</b> · অধ্যায় ২</a>
-</div></body></html>
+/* Home page: wordmark -> photo + welcome -> the book -> chapter quizzes -> footer. Same palette as sound/. */
+:root{
+  --paper:#fbfaf7; --ink:#1d1f21; --muted:#5f6366; --rule:#d9d6cf; --card:#ffffff;
+  --accent:#1f4e5f; --accent-ink:#ffffff; --soft:#e8f0f2; --gold:#9a7b3c;
+  --display:'Tiro Bangla',Georgia,serif; --body:'Hind Siliguri','Noto Sans Bengali',system-ui,sans-serif; --latin:'Cormorant Garamond',Georgia,serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#15181a; --ink:#e9e7e2; --muted:#a3a7aa; --rule:#33383b; --card:#1d2124;
+  --accent:#7fb7c9; --accent-ink:#0f1416; --soft:#1d3138; --gold:#d2b47a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#15181a; --ink:#e9e7e2; --muted:#a3a7aa; --rule:#33383b; --card:#1d2124;
+  --accent:#7fb7c9; --accent-ink:#0f1416; --soft:#1d3138; --gold:#d2b47a; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.7}
+.wrap{max-width:720px;margin:0 auto;padding-block:28px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+a{color:var(--accent)}
+
+/* Wordmark */
+.brand{text-align:center;padding-bottom:22px;border-bottom:1px solid var(--rule)}
+.brand .bn{font-family:var(--display);font-size:clamp(40px,11vw,64px);line-height:1.15;margin:0;color:var(--ink)}
+.brand .en{font-family:var(--latin);font-size:clamp(16px,4.4vw,21px);letter-spacing:.32em;text-transform:uppercase;color:var(--gold);margin:4px 0 0;padding-left:.32em}
+.orn{display:flex;align-items:center;justify-content:center;gap:10px;color:var(--gold);margin-top:12px}
+.orn::before,.orn::after{content:"";height:1px;width:56px;background:currentColor;opacity:.6}
+
+/* Photo + welcome */
+.hero{display:grid;justify-items:center;text-align:center;padding:30px 0 34px;border-bottom:1px solid var(--rule)}
+.photo{width:min(220px,60vw);aspect-ratio:1;border-radius:50%;overflow:hidden;border:3px solid var(--card);box-shadow:0 0 0 1px var(--gold),0 10px 30px rgba(0,0,0,.12);background:var(--soft);display:grid;place-items:center}
+.photo img{width:100%;height:100%;object-fit:cover;display:block}
+.photo .mono{font-family:var(--display);font-size:min(110px,30vw);color:var(--accent);line-height:1}
+.hero p{max-width:30em;margin:20px 0 0;color:var(--muted);text-wrap:pretty}
+.hero p b{color:var(--ink);font-weight:500}
+
+/* Sections */
+h2{font-family:var(--display);font-weight:400;font-size:26px;margin:34px 0 14px;text-align:center}
+h2 small{display:block;font-family:var(--body);font-size:14px;color:var(--muted);letter-spacing:.02em}
+
+/* Book */
+.book{display:grid;grid-template-columns:150px 1fr;gap:22px;align-items:center;background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:20px}
+@media (max-width:520px){.book{grid-template-columns:1fr;justify-items:center;text-align:center}}
+.cover{width:150px;aspect-ratio:3/4.2;border-radius:4px 8px 8px 4px;background:linear-gradient(135deg,#1f4e5f,#16384a);color:#fff;padding:16px 12px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:inset 6px 0 0 rgba(0,0,0,.18),0 8px 20px rgba(0,0,0,.18)}
+.cover .t{font-family:var(--display);font-size:24px;line-height:1.25}
+.cover .s{font-size:12px;opacity:.85;line-height:1.4}
+.cover .a{font-family:var(--display);font-size:15px;border-top:1px solid rgba(255,255,255,.35);padding-top:6px}
+.book h3{font-family:var(--display);font-weight:400;font-size:24px;margin:0}
+.book .by{color:var(--gold);margin:0 0 8px}
+.book ul{margin:0;padding-left:20px;color:var(--muted)}
+@media (max-width:520px){.book ul{text-align:left}}
+.book li{margin:3px 0}
+.tag{display:inline-block;margin-top:12px;font-size:14px;color:var(--accent);background:var(--soft);border-radius:999px;padding:3px 12px}
+
+/* Quiz list */
+.lead{text-align:center;color:var(--muted);margin:-4px auto 16px;max-width:32em}
+.chapters{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.ch{display:flex;align-items:center;gap:12px;border:1px solid var(--rule);border-radius:10px;padding:12px 14px;background:var(--card);color:var(--ink);text-decoration:none;min-height:56px}
+.ch .n{font-family:var(--display);color:var(--accent);font-size:20px;min-width:1.4em;text-align:center}
+.ch .nm{font-weight:500}
+.ch .st{display:block;font-size:13px;color:var(--muted);font-weight:400}
+a.ch:hover,a.ch:focus-visible{border-color:var(--accent);outline:none}
+a.ch .st{color:var(--accent)}
+.ch.soon{opacity:.6}
+
+footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--rule);text-align:center;color:var(--muted);font-size:14px}
+footer .fb{font-family:var(--display);color:var(--ink);font-size:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="brand">
+  <p class="bn">লিয়ানা বুকস</p>
+  <p class="en">Lyanna Books</p>
+  <div class="orn" aria-hidden="true">✦</div>
+</header>
+
+<section class="hero">
+  <div class="photo">
+    <!-- Photo goes here: img/lyanna.jpg -->
+    <span class="mono" aria-hidden="true">লি</span>
+  </div>
+  <p>আমাদের মেয়ে <b>লিয়ানার</b> নামে এই প্রকাশনী। যত্ন করে লেখা, সহজ ভাষার বই পাঠকের হাতে তুলে দেওয়াই আমাদের লক্ষ্য।</p>
+</section>
+
+<section>
+  <h2>আমাদের বই<small>প্রথম প্রকাশ</small></h2>
+  <div class="book">
+    <div class="cover" aria-hidden="true">
+      <div><div class="t">বিসিএস বিজ্ঞান</div><div class="s">প্রিলিভিত্তিক লিখিত</div></div>
+      <div class="a">পিয়াস</div>
+    </div>
+    <div>
+      <h3>বিসিএস বিজ্ঞান</h3>
+      <p class="by">লেখক: পিয়াস</p>
+      <ul>
+        <li>এক বইয়ে প্রিলি আর লিখিত দুটোরই প্রস্তুতি</li>
+        <li>সহজ বাংলায় গুছিয়ে লেখা, দরকারি ইংরেজি পরিভাষাসহ</li>
+        <li>বিগত বিসিএস প্রশ্ন বাক্যে বাক্যে চিহ্নিত</li>
+        <li>প্রতিটি অধ্যায়ের শেষে QR কোডে অনলাইন পরীক্ষা</li>
+      </ul>
+      <span class="tag">শীঘ্রই আসছে · ডিসেম্বর ২০২৬</span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>অধ্যায়ভিত্তিক অনলাইন পরীক্ষা</h2>
+  <p class="lead">বইয়ের QR কোড স্ক্যান করলে এখানে আসবেন। সময় আর নেগেটিভ মার্কিংসহ আসল পরীক্ষার মতো, শেষে প্রতিটি প্রশ্নের ব্যাখ্যা আর বইয়ের অনুচ্ছেদ নম্বর।</p>
+  <div class="chapters">
+    <a class="ch" href="sound/"><span class="n">২</span><span><span class="nm">শব্দ</span><span class="st">পরীক্ষা দিন →</span></span></a>
+    <div class="ch soon"><span class="n">·</span><span><span class="nm">রোগ</span><span class="st">শীঘ্রই</span></span></div>
+    <div class="ch soon"><span class="n">·</span><span><span class="nm">আরও অধ্যায়</span><span class="st">একে একে যোগ হবে</span></span></div>
+  </div>
+</section>
+
+<footer>
+  <div class="fb">লিয়ানা বুকস</div>
+  <div>lyannabooks.com · © ২০২৬</div>
+</footer>
+
+</div>
+</body>
+</html>
