@@ -141,8 +141,9 @@ footer{margin-top:28px;font-size:14px;color:var(--muted)}
 .oc.ex .go{color:var(--accent);font-weight:600;font-size:14px;white-space:nowrap}
 .grp{font-family:var(--body);font-size:14px;font-weight:600;letter-spacing:.02em;color:var(--gold);margin:20px 0 0;padding-bottom:4px;border-bottom:1px solid var(--rule)}
 h2.post{font-size:20px;margin:22px 0 2px}
-.badge{flex:none;width:46px;height:46px;border-radius:50%;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;color:#fff;font-weight:600;line-height:1.05;padding:3px;overflow:hidden;font-size:14px;letter-spacing:-.01em}
-.badge.lg{width:60px;height:60px;font-size:17px}
+.badge{flex:none;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--soft);color:var(--accent)}
+.badge svg{width:24px;height:24px}.badge.lg svg{width:30px;height:30px}
+.badge.lg{width:56px;height:56px}
 .oc.org{flex-direction:row;align-items:center;gap:12px;border-left-width:1px}
 .oc.org .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
 .ohead{display:flex;align-items:center;gap:14px;margin:6px 0 4px}
@@ -225,22 +226,12 @@ function cat(c){
   V().innerHTML=crumb([[null,C.t]])+`<h1>${C.t}</h1><p class="sub">${C.m}</p><div class="grid">${Object.entries(C.subs).map(([s,t])=>{const l=L.filter(e=>inSub(e,c,s));
     return `<a class="card big" href="#/${c}/${s}"><span class="t">${t}</span><span class="m">${bn(new Set(l.map(e=>e.org)).size)}টি প্রতিষ্ঠান · ${bn(l.length)}টি পরীক্ষা</span><span class="go">দেখুন →</span></a>`}).join('')}</div>`;
 }
-// neutral monogram badge (no official logos): short label + colour from a fixed palette
-const SHORT={spcbl:'এসপিসিবিএল',bdbl:'বিডিবিএল',ucb:'ইউসিবি',bb:'বিবি',bba:'সেতু',bhbfc:'এইচবিএফসি',brdb:'বিআরডিবি',ibbl:'আইবিবিএল',pdbf:'পিডিবিএফ',sbc:'এসবিসি',wewb:'ওয়েজ বোর্ড',sbac:'এসবিএসি',fsibl:'এফএসআইবিএল',mtb:'এমটিবি',nrbc:'এনআরবিসি',pkb:'প্রবাসী',rakub:'রাকাব',ksb:'কর্মসংস্থান',bkb:'কৃষি',dbbl:'ডাচ্-বাংলা',bscja:'জনতা-অগ্রণী',alarafah:'আল-আরাফাহ্',bankasia:'এশিয়া',abbank:'এবি'};
-const PAL=['#13294b','#7a4a12','#1f5f5b','#6b2d4a','#3b4f8c','#5a5f1e','#8a3b2a','#2f4858'];
-// shrink each badge's text until it fits its circle
-function fitBadges(){document.querySelectorAll('.badge').forEach(b=>{const t=b.firstChild,room=b.clientWidth-8;b.style.fontSize='';let f=parseFloat(getComputedStyle(b).fontSize);while(t.offsetWidth>room&&f>7){f-=.5;b.style.fontSize=f+'px'}})}
-if(document.fonts)document.fonts.ready.then(fitBadges);
-function shortOf(org,name){
-  if(SHORT[org])return SHORT[org];
-  const ab=splitName(name)[1];if(ab)return ab;
-  const k=name.match(/^সম্মিলিত\s+(\S+)/);if(k)return k[1]+' ব্যাংক';
-  const w=name.split(/\s+/).filter(x=>!/^(ব্যাংক|বাংলাদেশ|লিমিটেড|কর্পোরেশন|ইসলামী|দ্য|ও)$/.test(x));
-  return (w[0]||name);
-}
-function badge(org,name,big){
-  const t=shortOf(org,name);let h=0;for(const ch of org)h=(h*31+ch.charCodeAt(0))>>>0;
-  return `<span class="badge${big?' lg':''}" style="background:${PAL[h%PAL.length]}" aria-hidden="true"><span>${t}</span></span>`;
+// plain category icon (bank / government office / PSC paper); no logos or abbreviations
+const ICON={bank:'<path d="M3 10h18L12 4 3 10z"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18"/>',
+  gov:'<rect x="5" y="4" width="14" height="16" rx="1"/><path d="M9 8h2M13 8h2M9 12h2M13 12h2M10.5 20v-4h3v4"/>',
+  psc:'<rect x="5" y="3.5" width="14" height="17" rx="1.5"/><path d="M8.5 8h7M8.5 11.5h7M8.5 15h4.5"/>'};
+function badge(org,name,big,c){
+  return `<span class="badge${big?' lg':''}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${ICON[c]||ICON.bank}</svg></span>`;
 }
 function splitName(n){const m=n.match(/^(.*?)\s*\(([^)]+)\)\s*$/);return m&&!/^(বাংলাদেশ|সম্মিলিত)$/.test(m[2])?[m[1],m[2]]:[n,'']}
 const groupOf=n=>/^সম্মিলিত/.test(n)?'সম্মিলিত নিয়োগ পরীক্ষা':/ব্যাংক/.test(n)?'ব্যাংক':'অন্যান্য প্রতিষ্ঠান';
@@ -250,7 +241,7 @@ function sub(c,s){
   const orgs={};L.forEach(e=>{(orgs[e.org]=orgs[e.org]||{bn:e.orgbn,l:[]}).l.push(e)});
   const O=Object.entries(orgs).sort((a,b)=>sum(b[1].l)-sum(a[1].l));
   const card=([k,o])=>{const [n,ab]=splitName(o.bn);
-    return `<a class="oc org" href="#/${c}/${s}/${k}" title="${esc(o.bn)}">${badge(k,o.bn)}<span class="body"><span class="n">${n}${ab?`<span class="ab">${ab}</span>`:''}</span><span class="f">${bn(o.l.length)}টি পরীক্ষা <span class="cnt">${bn(sum(o.l))} প্রশ্ন</span><span class="go">→</span></span></span></a>`};
+    return `<a class="oc org" href="#/${c}/${s}/${k}" title="${esc(o.bn)}">${badge(k,o.bn,0,c)}<span class="body"><span class="n">${n}${ab?`<span class="ab">${ab}</span>`:''}</span><span class="f">${bn(o.l.length)}টি পরীক্ষা <span class="cnt">${bn(sum(o.l))} প্রশ্ন</span><span class="go">→</span></span></span></a>`};
   const G={};O.forEach(x=>{const g=c==='bank'?groupOf(x[1].bn):'';(G[g]=G[g]||[]).push(x)});
   const keys=Object.keys(G).sort((a,b)=>GORDER.indexOf(a)-GORDER.indexOf(b));
   V().innerHTML=crumb(C.flat?[[null,C.t]]:[['#/'+c,C.t],[null,C.subs[s]]])+`<h1>${C.flat?C.t:C.subs[s]}</h1><p class="sub">প্রতিষ্ঠান বেছে নিন: ${bn(O.length)}টি প্রতিষ্ঠান, ${bn(L.length)}টি পরীক্ষা।</p>`+
@@ -275,7 +266,7 @@ function org(c,s,o){
   if(!L.length)return notFound();
   const nm=L[0].orgbn,[full,ab]=splitName(nm),lab=ab||full;
   L.sort((a,b)=>(b.year==='misc'?'0':b.year).localeCompare(a.year==='misc'?'0':a.year));
-  V().innerHTML=crumb([['#/'+c,C.t],...subCrumb(c,s),[null,lab]])+`<div class="ohead">${badge(o,nm,1)}<div><h1>${lab}</h1>${ab?`<p class="sub" style="margin:2px 0 0">${full}</p>`:''}</div></div>
+  V().innerHTML=crumb([['#/'+c,C.t],...subCrumb(c,s),[null,lab]])+`<div class="ohead">${badge(o,nm,1,c)}<div><h1>${lab}</h1>${ab?`<p class="sub" style="margin:2px 0 0">${full}</p>`:''}</div></div>
   <p class="sub">${bn(L.length)}টি পরীক্ষা, ${bn(sum(L))}টি প্রশ্ন। যে পরীক্ষা দিতে চান, সেটিতে চাপ দিন।</p><div class="tlist">${L.map(e=>{
     const y=e.year==='misc'?'বিবিধ প্রশ্ন':bn(e.year);
     return `<a class="tl" href="#/x/${e.id}"><span class="body"><span class="tt">${lab} ${y}</span><span class="st">${e.postbn}${e.title&&e.title!==e.postbn?' · '+e.title:''} · ${e.full?'পূর্ণ প্রশ্নপত্র':'সংগৃহীত প্রশ্ন'} · ${bn(e.n)}টি প্রশ্ন</span></span><span class="gobtn">শুরু →</span></a>`}).join('')}</div>`;
@@ -391,8 +382,7 @@ function renderPrac(f){
 }
 
 // ---------- রাউটার ----------
-function route(){routeInner();fitBadges()}
-function routeInner(){
+function route(){
   if($('exam')&&!$('exam').hidden&&timer){/* পরীক্ষা চলাকালে অন্য পাতায় গেলে টাইমার বন্ধ */clearInterval(timer);timer=null}
   document.title='চাকরির প্রশ্নব্যাংক · লিয়ানা বুকস';
   const p=location.hash.replace(/^#\/?/,'').split('/').filter(Boolean);
