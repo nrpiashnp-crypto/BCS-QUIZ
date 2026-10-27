@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>বায়ুমণ্ডল: অনলাইন পরীক্ষা</title>
+<meta name="description" content="বিসিএস বিজ্ঞান, অধ্যায় ২০ বায়ুমণ্ডল: বিগত বিসিএস ও চাকরির পরীক্ষার প্রশ্ন, সময় ও নেগেটিভ মার্কিংসহ, ব্যাখ্যাসহ।">
+<link rel="preload" href="/fonts/NotoSansBengali-bengali.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/TiroBangla-400-bengali.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+/* Layout: one narrow book-like column. Start screen -> exam (sticky timer bar) -> result + review. Practice mode keeps instant feedback. */
+:root{
+  --paper:#fbfaf7; --ink:#1d1f21; --muted:#5f6366; --rule:#d9d6cf; --card:#ffffff;
+  --accent:#1f4e5f; --accent-ink:#ffffff; --sel:#e3eef2; --good:#1e7a46; --good-bg:#e5f3ea; --bad:#b3261e; --bad-bg:#fbe9e7; --warn:#8a5a00;
+  --display:'Tiro Bangla',Georgia,serif; --body:'Noto Sans Bengali',system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#15181a; --ink:#e9e7e2; --muted:#a3a7aa; --rule:#33383b; --card:#1d2124;
+  --accent:#7fb7c9; --accent-ink:#0f1416; --sel:#1d3138; --good:#6fcf97; --good-bg:#17301f; --bad:#f08a80; --bad-bg:#3a1c1a; --warn:#e0b25a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#15181a; --ink:#e9e7e2; --muted:#a3a7aa; --rule:#33383b; --card:#1d2124;
+  --accent:#7fb7c9; --accent-ink:#0f1416; --sel:#1d3138; --good:#6fcf97; --good-bg:#17301f; --bad:#f08a80; --bad-bg:#3a1c1a; --warn:#e0b25a; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6}
+.wrap{max-width:680px;margin:0 auto;padding-block:20px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{border-bottom:2px solid var(--ink);padding-bottom:12px;margin-bottom:12px}
+.book{font-size:13px;letter-spacing:.04em;color:var(--muted)}
+h1{font-family:var(--display);font-weight:400;font-size:30px;margin:4px 0 2px;text-wrap:balance}
+h2{font-family:var(--display);font-weight:400;font-size:22px;margin:22px 0 8px}
+.sub{color:var(--muted);font-size:15px;margin:0}
+button{font:inherit;cursor:pointer}
+.btn{display:inline-block;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:10px 18px;font-weight:600}
+.btn.ghost{background:none;color:var(--ink);border-color:var(--rule);font-weight:500}
+.btns{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
+.rules{margin:8px 0 0;padding-left:20px}
+.rules li{margin:2px 0}
+.hist{border-top:1px solid var(--rule);margin-top:18px;padding-top:6px;font-size:15px}
+.hist table{border-collapse:collapse;width:100%}
+.hist td,.hist th{border-bottom:1px solid var(--rule);padding:5px 4px;text-align:left;font-variant-numeric:tabular-nums}
+.hist th{color:var(--muted);font-weight:500}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);background:var(--paper);display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--rule);z-index:5;font-size:15px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+.clock{font-family:var(--display);font-size:22px;color:var(--accent);font-variant-numeric:tabular-nums;min-width:4ch}
+.clock.low{color:var(--bad)}
+/* Start screen: the start button comes first and big, rules below it. */
+#start{display:flex;flex-direction:column}
+#start .back{order:-3}#start .selch{order:-2}#start .btns{order:-1;margin:6px 0 16px}
+#start #go{font-size:19px;padding:14px 26px;flex:1 1 220px}
+/* Exam bar sits at the bottom of the screen (Sakib's pick): quiet timer, submit button near the thumb. */
+#exam .bar{position:fixed;top:auto;bottom:0;left:0;right:0;padding:10px max(16px,calc(50% - 340px)) calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--rule);border-bottom:0;box-shadow:0 -4px 14px rgba(0,0,0,.06)}
+#exam{padding-bottom:76px}
+#exam .clock{font-family:var(--body);font-size:16px;font-weight:500;color:var(--ink);min-width:0}
+#exam .clock::before{content:"সময় ";font-size:13px;font-weight:400;color:var(--muted)}
+#exam .clock.low{color:var(--warn)}
+.bar b{font-variant-numeric:tabular-nums}
+.q{padding:18px 0;border-bottom:1px solid var(--rule)}
+.qh{display:flex;gap:10px;align-items:baseline}
+.num{font-family:var(--display);color:var(--accent);min-width:1.6em}
+.qt{font-weight:500;margin:0;min-width:0}
+.src{display:block;font-size:13px;color:var(--muted);font-weight:400}
+.pend{display:inline-block;font-size:12px;color:var(--warn);border:1px dashed var(--warn);border-radius:4px;padding:0 6px;margin-left:4px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 0 2.2em}
+@media (max-width:520px){.opts{grid-template-columns:1fr;margin-left:0}}
+.opt{display:flex;gap:8px;align-items:flex-start;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--rule);border-radius:8px;padding:9px 12px;min-height:44px;width:100%}
+.opt .k{font-family:var(--display);color:var(--muted);min-width:1.2em}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.opt.sel{background:var(--sel);border-color:var(--accent)}
+.opt:disabled{cursor:default}
+.opt.right{background:var(--good-bg);border-color:var(--good)}
+.opt.wrong{background:var(--bad-bg);border-color:var(--bad)}
+.exp{margin:10px 0 0 2.2em;font-size:15px;border-left:3px solid var(--accent);padding:2px 0 2px 10px}
+@media (max-width:520px){.exp{margin-left:0}}
+.ok{color:var(--good);font-weight:600}.no{color:var(--bad);font-weight:600}.skip{color:var(--muted);font-weight:600}
+.ref{color:var(--muted);white-space:nowrap}
+.score{border:1.5px solid var(--ink);border-radius:10px;padding:16px;margin:14px 0;text-align:center}
+.big{font-family:var(--display);font-size:46px;line-height:1.1;font-variant-numeric:tabular-nums}
+.stats{display:flex;justify-content:center;flex-wrap:wrap;gap:6px 18px;font-size:15px;margin-top:6px}
+.msg{margin:10px 0 0;font-size:15px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.chip{border:1px solid var(--rule);background:none;color:var(--ink);border-radius:999px;padding:4px 12px;font-size:14px}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+footer{margin-top:24px;font-size:14px;color:var(--muted)}
+.note{border:1px dashed var(--rule);border-radius:8px;padding:10px 12px;margin-top:14px}
+[hidden]{display:none !important}
+@media (prefers-reduced-motion:no-preference){.exp{animation:in .2s ease-out}@keyframes in{from{opacity:.4}to{opacity:1}}}
+</style>
+<link rel="icon" type="image/svg+xml" href="/img/logo/final-icon.svg">
+<link rel="apple-touch-icon" href="/img/logo/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="লিয়ানা বুকস">
+<meta property="og:title" content="বায়ুমণ্ডল: অনলাইন পরীক্ষা · লিয়ানা বুকস">
+<meta property="og:description" content="বিসিএস বিজ্ঞান, বায়ুমণ্ডল অধ্যায়: সময় ও নেগেটিভ মার্কিংসহ অনলাইন পরীক্ষা, ব্যাখ্যাসহ।">
+<meta property="og:url" content="https://lyannabooks.com/air/">
+<meta property="og:image" content="https://lyannabooks.com/img/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="bn_BD">
+<meta name="twitter:card" content="summary_large_image">
+<style>.sitebar{background:#13294b;display:flex;align-items:center;justify-content:space-between;padding:8px 16px}.sitebar img{width:110px;height:auto;display:block}.exp .bl{display:block;margin-top:8px;font-size:12.5px;color:var(--muted);text-decoration:none;opacity:.85}.exp .bl:hover{text-decoration:underline}.sitebar a.h{color:#e6c97a;text-decoration:none;font:500 14px 'Noto Sans Bengali',system-ui,sans-serif}</style>
+</head>
+<body>
+<div class="sitebar"><a href="/"><img src="/img/logo/final-onnavy-transparent.svg" alt="লিয়ানা বুকস"></a><a class="h" href="/">← হোম</a></div>
+
+<div class="wrap">
+<header>
+  <div class="book">বিসিএস বিজ্ঞান · পিয়াস · অধ্যায় ২০</div>
+  <h1>বায়ুমণ্ডল: অনলাইন পরীক্ষা</h1>
+  <p class="sub">বিগত বিসিএস এবং অন্যান্য নিয়োগ ও ভর্তি পরীক্ষার প্রশ্ন, আসল পরীক্ষার নিয়মে।</p>
+</header>
+
+<section id="start">
+  <ul class="rules">
+    <li>প্রতি পরীক্ষায় <b id="nq">২৫</b>টি প্রশ্ন, সময় <b id="nm">১৫</b> মিনিট।</li>
+    <li>সঠিক উত্তরে ১ নম্বর, ভুল উত্তরে −০.৫। উত্তর না দিলে নম্বর কাটা যায় না।</li>
+    <li>জমা দেওয়ার আগে উত্তর বদলানো যায়। সময় শেষ হলে নিজে থেকেই জমা হবে।</li>
+    <li>শেষে ফল, প্রতিটি প্রশ্নের ব্যাখ্যা আর বইয়ের সংশ্লিষ্ট অংশের নাম দেখাবে।</li>
+    <li>প্রতিবার <b id="pool"></b>টি প্রশ্নের ভান্ডার থেকে নতুন করে প্রশ্ন বাছাই হয়, তাই বারবার পরীক্ষা দেওয়া যায়।</li>
+  </ul>
+  <div class="btns">
+    <button class="btn" id="go" type="button">পরীক্ষা শুরু করুন</button>
+    <button class="btn ghost" id="practice" type="button">সব প্রশ্ন অনুশীলন</button>
+  </div>
+  <div class="hist" id="hist" hidden></div>
+</section>
+
+<section id="exam" hidden>
+  <div class="bar"><span class="clock" id="clock">১৫:০০</span><span>উত্তর <b id="ans">০</b> / <b id="tot">২৫</b></span><button class="btn" id="submit" type="button">জমা দিন</button></div>
+  <main id="elist"></main>
+  <div class="btns"><button class="btn" id="submit2" type="button">জমা দিন</button></div>
+</section>
+
+<section id="result" hidden>
+  <div class="score" id="scorebox"></div>
+  <div class="btns"><button class="btn" id="again" type="button">নতুন পরীক্ষা</button><button class="btn ghost" id="home" type="button">শুরুর পাতা</button></div>
+  <h2>উত্তর ও ব্যাখ্যা</h2>
+  <main id="rlist"></main>
+</section>
+
+<section id="prac" hidden>
+  <div class="bar"><span>সঠিক <b id="pok">০</b> / উত্তর <b id="pdone">০</b> / মোট <b id="ptot">০</b></span><button class="btn ghost" id="home2" type="button">শুরুর পাতা</button></div>
+  <div class="chips" id="chips"></div>
+  <main id="plist"></main>
+</section>
+
+<footer>
+  <div class="note">বিসিএস ও অন্য পরীক্ষার প্রশ্নের নিচে পরীক্ষার নাম ও সাল দেওয়া আছে।</div>
+  <p>লিয়ানা বুকস · lyannabooks.com</p>
+</footer>
+</div>
+<script>
+const Q=[{"q": "বায়ুমণ্ডলে শতকরা কত ভাগ নাইট্রোজেন বিদ্যমান?", "o": ["২০.৭১%", "৭৮.০২%", "০.৮১%", "০.০৩%"], "a": 1, "e": "বায়ুমণ্ডলের সবচেয়ে বড় অংশজুড়ে আছে নাইট্রোজেন (Nitrogen)। শুষ্ক বায়ুর আয়তনের প্রায় ৭৮ ভাগই এই গ্যাস, সূক্ষ্ম হিসাবে প্রায় ৭৮.০৮%। নাইট্রোজেন সহজে অন্য পদার্থের সঙ্গে বিক্রিয়া করে না। বাতাসে এটি বেশি থাকায় অক্সিজেনের তীব্রতা কমে যায়, ফলে আগুন হঠাৎ করে সব কিছুকে গ্রাস করে না। দ্বিতীয় স্থানে আছে অক্সিজেন, যা প্রায় ২১ ভাগ, আর কার্বন ডাই-অক্সাইড আছে খুব সামান্য, শতকরা ০.০৩ ভাগের কাছাকাছি। এই অল্প পরিমাণ কার্বন ডাই-অক্সাইডই উদ্ভিদের সালোকসংশ্লেষণের কাঁচামাল।<br>মনে রাখুন:<br>বায়ুতে নাইট্রোজেন প্রায় ৭৮%, অক্সিজেন প্রায় ২১% এবং আর্গন প্রায় ১%।<br>ভূপৃষ্ঠ থেকে প্রায় ১০ থেকে ১৫ কিলোমিটার পর্যন্ত স্তরকে ট্রপোস্ফিয়ার বলে, আবহাওয়ার সব ঘটনা এখানেই ঘটে।", "t": "x", "s": "নার্সিং ও মিডওয়াইফারি অধিদপ্তর, সিনিয়র স্টাফ নার্স, ২০২৩", "p": "বায়ুর উপাদান", "v": 0}, {"q": "SMOG কী?", "o": ["সিগারেটের ধোঁয়া", "কুয়াশা", "দূষিত বাতাস", "শিশির"], "a": 2, "e": "স্মগ (SMOG) শব্দটি এসেছে ইংরেজি Smoke (ধোঁয়া) ও Fog (কুয়াশা) শব্দ দুটি জুড়ে। শীতকালে ঠান্ডা বাতাস যখন ভূপৃষ্ঠের কাছে আটকে থাকে, তখন কারখানা ও যানবাহনের ধোঁয়া ওপরে উঠে ছড়াতে পারে না। সেই ধোঁয়া কুয়াশার জলকণার সঙ্গে মিশে ঘন, বিষাক্ত ও দূষিত বাতাসের একটি স্তর তৈরি করে, যাকে স্মগ বলে। এই বাতাস শ্বাস নিলে চোখ জ্বালা করে, কাশি হয় এবং হাঁপানির রোগীর কষ্ট বাড়ে। শুধু সিগারেটের ধোঁয়া বা কুয়াশা বা শিশিরকে স্মগ বলা যায় না, কারণ স্মগে দূষণকারী পদার্থ থাকাই এর মূল বৈশিষ্ট্য।<br>মনে রাখুন:<br>১৯৫২ সালে লন্ডনে ভয়াবহ স্মগে হাজার হাজার মানুষ মারা গিয়েছিল।<br>গাড়ির ধোঁয়ার সঙ্গে সূর্যের আলোর বিক্রিয়ায় যে স্মগ হয়, তাকে আলোক-রাসায়নিক স্মগ বলে।", "t": "x", "s": "জাতীয় সংসদ সচিবালয়, ব্যক্তিগত কর্মকর্তা, ২০২৩", "p": "বায়ুদূষণ", "v": 0}, {"q": "CFC গ্যাস কী?", "o": ["ক্লোরোফ্লুরোকার্বন", "কমপ্রেসড ফ্লুরোকার্বন", "কমন ফ্লুরোকার্বন", "ক্লোরোফেরিক কার্বন"], "a": 0, "e": "CFC-এর পূর্ণরূপ ক্লোরোফ্লুরোকার্বন (Chlorofluorocarbon)। এটি ক্লোরিন, ফ্লোরিন ও কার্বন দিয়ে গঠিত একধরনের যৌগ। একসময় রেফ্রিজারেটর ও এয়ার কন্ডিশনারের শীতলকারক হিসেবে এবং অ্যারোসল স্প্রেতে এর ব্যাপক ব্যবহার ছিল। বায়ুমণ্ডলের ওপরের দিকে গেলে সূর্যের অতিবেগুনি রশ্মিতে CFC ভেঙে ক্লোরিন পরমাণু ছেড়ে দেয়। এই ক্লোরিন ওজোন স্তরকে ক্ষতিগ্রস্ত করে, ফলে ক্ষতিকর অতিবেগুনি রশ্মি সহজে পৃথিবীতে পৌঁছায়। CFC একটি গ্রিনহাউস গ্যাসও, তাই ধরিত্রীর উষ্ণতা বাড়াতেও এর ভূমিকা আছে।<br>মনে রাখুন:<br>১৯৮৭ সালে মন্ট্রিল প্রোটোকলে CFC ব্যবহার কমানোর চুক্তি হয়।<br>প্রধান গ্রিনহাউস গ্যাস: কার্বন ডাই-অক্সাইড, মিথেন, নাইট্রাস অক্সাইড ও জলীয় বাষ্প।<br>ওজোন স্তর ভূপৃষ্ঠ থেকে প্রায় ২০ থেকে ৪০ কিলোমিটার উচ্চতায় স্ট্র্যাটোস্ফিয়ারে থাকে।", "t": "x", "s": "জাতীয় সংসদ সচিবালয়, ব্যক্তিগত কর্মকর্তা, ২০২৩", "p": "ওজোন স্তর", "v": 0}, {"q": "নিচের কোন গ্যাস গ্রিন হাউস গ্যাস নয়?", "o": ["কার্বন ডাই-অক্সাইড", "নাইট্রাস অক্সাইড", "সালফার ডাই-অক্সাইড", "জলীয় বাষ্প"], "a": 2, "e": "সূর্য থেকে আসা তাপ পৃথিবীর ভূপৃষ্ঠ শুষে নেয়, আর ভূপৃষ্ঠ থেকে ফিরে যাওয়া তাপের একটি অংশকে কিছু গ্যাস আটকে রাখে। এই গ্যাসের কারণে পৃথিবী উষ্ণ থাকে, তাই এদের গ্রিনহাউস গ্যাস বলা হয়। কার্বন ডাই-অক্সাইড, মিথেন, নাইট্রাস অক্সাইড, জলীয় বাষ্প ও ক্লোরোফ্লুরোকার্বন এই গ্রুপের গ্যাস। সালফার ডাই-অক্সাইড (SO₂) এ গ্রুপে পড়ে না। কয়লা ও খনিজ তেল পোড়ালে এটি বাতাসে মেশে, আর বৃষ্টির পানিতে গলে অ্যাসিড বৃষ্টি তৈরি করে। এ কারণে প্রশ্নের উত্তর সালফার ডাই-অক্সাইড।<br>মনে রাখুন:<br>অ্যাসিড বৃষ্টির জন্য প্রধানত SO₂ ও নাইট্রোজেন অক্সাইড দায়ী।<br>বিশ্ব উষ্ণায়নের সবচেয়ে বড় কারণ কার্বন ডাই-অক্সাইড।", "t": "x", "s": "কারিগরি শিক্ষা অধিদপ্তর, ইন্সট্রাক্টর (পলিটেকনিক ও টেকনিক্যাল স্কুল), ২০২৩", "p": "গ্রিনহাউস গ্যাস", "v": 0}, {"q": "নিচের কোনটি গ্রিনহাউস গ্যাস?", "o": ["অক্সিজেন", "নাইট্রোজেন", "ক্লোরোফ্লোরো কার্বন", "হাইড্রোজেন"], "a": 2, "e": "সূর্য থেকে আসা আলো পৃথিবীকে গরম করে। পৃথিবী সেই তাপ আবার অবলোহিত (Infrared) বিকিরণ হিসেবে মহাশূন্যে ফেরত পাঠাতে চায়। বায়ুমণ্ডলের যে গ্যাসগুলো এই বিকিরণ শুষে নিয়ে পৃথিবীকে উষ্ণ রাখে, তাদের গ্রিনহাউস গ্যাস (Greenhouse Gas) বলে। ক্লোরোফ্লোরো কার্বন (CFC) এমনই একটি গ্যাস, এমনকি তাপ ধরে রাখার ক্ষমতায় এটি কার্বন ডাই-অক্সাইডের চেয়ে অনেক বেশি শক্তিশালী। অক্সিজেন, নাইট্রোজেন ও হাইড্রোজেন অবলোহিত বিকিরণ উল্লেখযোগ্যভাবে শোষণ করে না, তাই এগুলো গ্রিনহাউস গ্যাস নয়।<br>মনে রাখুন:<br>প্রধান গ্রিনহাউস গ্যাস: কার্বন ডাই-অক্সাইড (CO₂), মিথেন (CH₄), নাইট্রাস অক্সাইড (N₂O), ওজোন (O₃), জলীয় বাষ্প ও CFC।<br>CFC ওজোন স্তরেরও ক্ষতি করে।", "t": "x", "s": "স্বাস্থ্য অধিদপ্তর, মেডিকেল টেকনোলজিস্ট, ২০২৩", "p": "গ্রিনহাউস গ্যাস", "v": 0}, {"q": "নিচের কোন উপাদানটি বায়ুতে সবচেয়ে বেশি রয়েছে?", "o": ["কার্বন ডাই-অক্সাইড", "অক্সিজেন", "নাইট্রোজেন", "জলীয় বাষ্প"], "a": 2, "e": "আমাদের চারপাশের বায়ু বিভিন্ন গ্যাসের মিশ্রণ। এর মধ্যে নাইট্রোজেন সবচেয়ে বেশি, প্রায় ৭৮ শতাংশ। এরপর আছে অক্সিজেন, প্রায় ২১ শতাংশ। কার্বন ডাই-অক্সাইডের পরিমাণ খুবই সামান্য, মাত্র ০.০৩ থেকে ০.০৪ শতাংশের মতো। জলীয় বাষ্পের পরিমাণ স্থান ও আবহাওয়াভেদে বদলায়। আমরা অক্সিজেনের কথা বেশি শুনি বলে অনেকে ভাবে অক্সিজেনই সবচেয়ে বেশি, কিন্তু আসলে নাইট্রোজেনই প্রায় তিন-চতুর্থাংশের বেশি জায়গা দখল করে আছে।<br>মনে রাখুন:<br>শুষ্ক বায়ুতে প্রায় ০.৯ শতাংশ আর্গন থাকে। বায়ুতে সবচেয়ে বেশি থাকা নিষ্ক্রিয় গ্যাস আর্গন।<br>উদ্ভিদ নাইট্রোজেন সরাসরি বায়ু থেকে নিতে পারে না, ব্যাকটেরিয়ার সাহায্যে যৌগরূপে নেয়।", "t": "x", "s": "কারিগরি শিক্ষা অধিদপ্তর, জুনিয়র ইন্সট্রাক্টর (পলিটেকনিক ও টেকনিক্যাল স্কুল), ২০২৩", "p": "বায়ুর উপাদান", "v": 0}, {"q": "নিচের কোন গ্যাসটি গ্রিনহাউস গ্যাস নয়?", "o": ["কার্বন ডাই-অক্সাইড", "নাইট্রাস অক্সাইড", "কার্বন ডাই-সালফাইড", "জলীয় বাষ্প"], "a": 2, "e": "যে গ্যাস অবলোহিত তাপীয় বিকিরণ শুষে পৃথিবীকে উষ্ণ রাখে, সেটিই গ্রিনহাউস গ্যাস। জলীয় বাষ্প, কার্বন ডাই-অক্সাইড, মিথেন, নাইট্রাস অক্সাইড, ওজোন এবং ক্লোরোফ্লোরো কার্বন এই গ্যাসগুলোর মধ্যে পড়ে। কার্বন ডাই-সালফাইড (CS₂) একটি উদ্বায়ী তরল যৌগ। এর মূল ব্যবহার শিল্পে দ্রাবক হিসেবে, বায়ুমণ্ডলে তাপ ধরে রাখার জন্য এটি পরিচিত নয়। তাই অপশনের বাকি তিনটি গ্রিনহাউস গ্যাস হলেও এটি নয়।<br>মনে রাখুন:<br>গ্রিনহাউস প্রভাব না থাকলে পৃথিবীর গড় তাপমাত্রা খুব কম হতো, প্রাণের জন্য অনুপযুক্ত।<br>বর্তমান বৈশ্বিক উষ্ণায়নের প্রধান কারণ মানুষের কাজে বাড়তে থাকা CO₂ ও মিথেন।", "t": "x", "s": "কারিগরি শিক্ষা অধিদপ্তর, জুনিয়র ইন্সট্রাক্টর (পলিটেকনিক ও টেকনিক্যাল স্কুল), ২০২৩", "p": "গ্রিনহাউস গ্যাস", "v": 0}, {"q": "কোনটি গ্রীন হাউজ গ্যাস নয়?", "o": ["O₂", "O₃", "CO₂", "Water Vapor"], "a": 0, "e": "গ্রিনহাউস গ্যাস (Greenhouse gas) এমন গ্যাস, যা পৃথিবী থেকে ফিরে যাওয়া তাপ শুষে নিয়ে বায়ুমণ্ডলকে উষ্ণ রাখে। কার্বন ডাই-অক্সাইড (CO₂), মিথেন (CH₄), নাইট্রাস অক্সাইড (N₂O), পানির বাষ্প এবং ওজোন (O₃) এই ধরনের গ্যাস। কিন্তু অক্সিজেন (O₂) গ্রিনহাউস গ্যাস নয়, কারণ দুই পরমাণুর এই অণুটি অবলোহিত রশ্মি বা তাপ তেমন শোষণ করতে পারে না। নাইট্রোজেনও ঠিক একই কারণে গ্রিনহাউস গ্যাস নয়।<br>মনে রাখুন:<br>গ্রিনহাউস গ্যাসের মধ্যে সবচেয়ে বেশি ক্ষতিকর ভূমিকা কার্বন ডাই-অক্সাইডের।<br>গ্রিনহাউস প্রভাব না থাকলে পৃথিবী অনেক ঠান্ডা হয়ে যেত।<br>ক্লোরোফ্লুরোকার্বন (CFC) একটি শক্তিশালী গ্রিনহাউস গ্যাস।", "t": "x", "s": "জনশক্তি, কর্মসংস্থান ও প্রশিক্ষণ ব্যুরো (বিএমইটি), ইন্সট্রাক্টর, ২০২২", "p": "গ্রিনহাউস গ্যাস", "v": 0}, {"q": "শুষ্ক বাতাসের তুলনায় জলীয় বাষ্পপূর্ণ বাতাসের ঘনত্ব—", "o": ["বেশি", "কম", "সমান", "কোনো সম্পর্ক নেই"], "a": 1, "e": "বাতাসের প্রধান উপাদান নাইট্রোজেন (N₂, আণবিক ভর 28) ও অক্সিজেন (O₂, আণবিক ভর 32), তাই শুষ্ক বাতাসের গড় আণবিক ভর প্রায় 29। জলীয় বাষ্পের অণু (H₂O) আরও হালকা, এর আণবিক ভর মাত্র 18। বাতাসে জলীয় বাষ্প মিশলে কিছু ভারী অণুর জায়গায় হালকা অণু এসে বসে, কারণ একই তাপমাত্রা ও চাপে একই আয়তনে অণুর সংখ্যা সমান থাকে। ফলে মিশ্রণের গড় ভর কমে যায়। তাই আর্দ্র বাতাসের ঘনত্ব শুষ্ক বাতাসের চেয়ে কম।<br>মনে রাখুন:<br>আর্দ্র বাতাস হালকা বলে ঊর্ধ্বে ওঠে।<br>ঝড়-বৃষ্টির আগে বায়ুর চাপ কমে যায়, ব্যারোমিটারের পারদ নামে।", "t": "x", "s": "জনশক্তি, কর্মসংস্থান ও প্রশিক্ষণ ব্যুরো (বিএমইটি), ইন্সট্রাক্টর, ২০২২", "p": "জলীয় বাষ্প", "v": 0}, {"q": "'Green House' কথাটি প্রথম ব্যবহৃত হয় কোন সালে?", "o": ["১৯৯৬", "১৮৯৬", "১৮৯০", "১৯৫০"], "a": 1, "e": "পৃথিবীর বায়ুমণ্ডলের কিছু গ্যাস সূর্যের তাপকে ধরে রেখে ভূপৃষ্ঠকে উষ্ণ রাখে, কাচের ঘর বা গ্রিনহাউস যেমন ভেতরে তাপ আটকে রাখে। এই ধারণাটি গ্রিনহাউস প্রভাব (Greenhouse effect) নামে পরিচিত। ফরাসি বিজ্ঞানী জোসেফ ফুরিয়ে ১৮২৪ সালে প্রথম ধারণা দেন। তবে সুইডিশ বিজ্ঞানী সভান্তে আরহেনিয়াস ১৮৯৬ সালে হিসাব করে দেখান, বায়ুমণ্ডলে কার্বন ডাই-অক্সাইড বাড়লে পৃথিবীর তাপমাত্রা বাড়বে। এ কারণে প্রশ্নে ১৮৯৬ সালকেই সঠিক ধরা হয়।<br>মনে রাখুন:<br>গ্রিনহাউস প্রভাব না থাকলে পৃথিবীর গড় তাপমাত্রা প্রায় −18°C হতো।<br>বর্তমানে পৃথিবীর গড় তাপমাত্রা প্রায় 15°C।", "t": "x", "s": "জনশক্তি, কর্মসংস্থান ও প্রশিক্ষণ ব্যুরো (বিএমইটি), ইন্সট্রাক্টর, ২০২২", "p": "গ্রিনহাউস", "v": 0}, {"q": "নিচের কোনটি গ্রিনহাউস গ্যাস নয়?", "o": ["মিথেন", "কার্বন ডাই-অক্সাইড", "অক্সিজেন", "নাইট্রাস অক্সাইড"], "a": 2, "e": "গ্রিনহাউস গ্যাস হলো বায়ুমণ্ডলের সেই গ্যাস, যা পৃথিবীর ছাড়া তাপীয় অবলোহিত বিকিরণ শুষে রাখে এবং বায়ুমণ্ডলকে উষ্ণ করে। কার্বন ডাই-অক্সাইড, মিথেন ও নাইট্রাস অক্সাইড এই ধরনের গ্যাস। অক্সিজেন (O₂) দুই পরমাণুর সরল অণু, এটি অবলোহিত রশ্মি শোষণ করে না, তাই গ্রিনহাউস গ্যাস নয়। মজার ব্যাপার হলো, গ্রিনহাউস গ্যাস না থাকলে পৃথিবীর গড় তাপমাত্রা অনেক কম হতো, জীবনধারণ কঠিন হয়ে পড়ত।<br>মনে রাখুন:<br>অন্য গ্রিনহাউস গ্যাস: ওজোন, জলীয় বাষ্প, ক্লোরোফ্লোরোকার্বন (CFC)।<br>গ্রিনহাউস প্রভাব বেশি হলে বৈশ্বিক উষ্ণায়ন বাড়ে।<br>ওজোন স্তর সূর্যের অতিবেগুনি রশ্মি আটকায়।", "t": "x", "s": "বিভিন্ন মন্ত্রণালয়, ব্যক্তিগত কর্মকর্তা, ২০২২ ও বিদ্যুৎ, জ্বালানি ও খনিজ সম্পদ মন্ত্রণালয়, নিরাপত্তা কর্মকর্তা, ২০১৯", "p": "গ্রিনহাউস গ্যাস", "v": 0}, {"q": "বৈশ্বিক উষ্ণতা বৃদ্ধির জন্য কোন গ্যাসটি বেশি দায়ী?", "o": ["কার্বন ডাই-অক্সাইড", "মিথেন", "ওজোন", "কার্বন মনো অক্সাইড"], "a": 0, "e": "পৃথিবীর বায়ুমণ্ডলে গ্রিনহাউস গ্যাসগুলো সূর্যের তাপকে ধরে রাখে এবং বৈশ্বিক উষ্ণতা বাড়ায়। এদের মধ্যে কার্বন ডাই-অক্সাইড (CO₂) সবচেয়ে বেশি দায়ী, কারণ কয়লা, তেল ও গ্যাস পোড়ানোয়, বন কাটায় এবং কলকারখানার ধোঁয়ায় এটি সবচেয়ে বেশি পরিমাণে বায়ুমণ্ডলে যোগ হয়। মিথেন প্রতি অণুতে বেশি তাপ আটকালেও এর পরিমাণ অনেক কম। কার্বন মনোক্সাইড সরাসরি গ্রিনহাউস গ্যাস হিসেবে প্রধান ভূমিকা রাখে না।<br>মনে রাখুন:<br>গ্রিনহাউস প্রভাবের জন্য দায়ী প্রধান গ্যাসগুলো: CO₂, CH₄, N₂O, CFC।<br>ধানখেত ও গবাদিপশুর পেট থেকে মিথেন নির্গত হয়।<br>পৃথিবীর উষ্ণায়ন ঠেকাতে ২০১৫ সালে প্যারিস চুক্তি হয়।", "t": "x", "s": "শিক্ষা মন্ত্রণালয়, উপসহকারী প্রকৌশলী (ড্রাফটসম্যান), ২০২২ ও শিক্ষা প্রকৌশল অধিদপ্তর, সহকারী প্রকৌশলী (পুর), ২০১৯", "p": "বৈশ্বিক উষ্ণায়ন", "v": 0}, {"q": "CFC-12 এর সংকেত কোনটি?", "o": ["CFCl₃", "CF₂Cl₂", "CF₃Cl", "CF₂ClCFCl₂"], "a": 1, "e": "ক্লোরোফ্লোরোকার্বন (CFC) যৌগের নামকরণে একটি সহজ নিয়ম আছে। সংখ্যার সঙ্গে 90 যোগ করলে তিন অঙ্ক পাওয়া যায়, যা যথাক্রমে কার্বন, হাইড্রোজেন ও ফ্লোরিন পরমাণুর সংখ্যা। CFC-12-এর ক্ষেত্রে 12 + 90 = 102, অর্থাৎ কার্বন ১টি, হাইড্রোজেন ০টি, ফ্লোরিন ২টি। মিথেনের মতো কার্বনে মোট ৪টি বন্ধন থাকে, তাই বাকি ২টি জায়গায় ক্লোরিন বসে এবং সংকেত হয় CF₂Cl₂। একই নিয়মে CFC-11 হলো CFCl₃ এবং CFC-13 হলো CF₃Cl।<br>মনে রাখুন:<br>CFC-12 (ডাইক্লোরোডাইফ্লোরোমিথেন) রেফ্রিজারেন্ট হিসেবে ব্যবহৃত হয়।<br>CFC ওজোন স্তর ক্ষয় করে।<br>CFC-কে ফ্রেয়নও বলা হয়।", "t": "x", "s": "জনশক্তি, কর্মসংস্থান ও প্রশিক্ষণ ব্যুরো (বিএমইটি), ক্রাফট ইন্সট্রাক্টর, ২০২১", "p": "ওজোন স্তর", "v": 0}, {"q": "বাতাসে নাইট্রোজেন গ্যাস আছে কত ভাগ?", "o": ["শতকরা ৬০ ভাগ", "শতকরা ৬৫ ভাগ", "শতকরা ৭০ ভাগ", "শতকরা ৭৯ ভাগ"], "a": 3, "e": "বায়ুমণ্ডলে সবচেয়ে বেশি আছে নাইট্রোজেন গ্যাস। আধুনিক মাপে এর পরিমাণ আয়তনে প্রায় ৭৮ ভাগ। এখানে চারটি বিকল্পের মধ্যে ৭৮-এর সবচেয়ে কাছের সংখ্যা ৭৯, তাই ‘শতকরা ৭৯ ভাগ’ উত্তরটিই এখানে গ্রহণযোগ্য।<br>অন্য বিকল্পগুলো অনেক দূরে। নাইট্রোজেন তুলনামূলকভাবে নিষ্ক্রিয় গ্যাস বলে বাতাসের অক্সিজেনকে লঘু করে রাখে, তাই জিনিস হঠাৎ দ্রুত পুড়ে যায় না।<br>মনে রাখুন:<br>নাইট্রোজেন প্রায় ৭৮%, অক্সিজেন প্রায় ২১%, আর্গন প্রায় ০.৯৩%, কার্বন ডাই-অক্সাইড প্রায় ০.০৪%।<br>পুরোনো বইয়ে নাইট্রোজেন ৭৯% আর অক্সিজেন ২১% ধরা হয়।<br>নাইট্রোজেনের প্রতীক N।<br>নাইট্রোজেন চক্রের মাধ্যমে বাতাসের নাইট্রোজেন আবার মাটিতে ফিরে আসে।", "t": "x", "s": "স্বাস্থ্য প্রকৌশল অধিদপ্তর, এস্টিমেটর (তড়িৎ), ২০১৯", "p": "বায়ুর উপাদান", "v": 0}, {"q": "করোনার কারণে কোন গ্যাসের সৃষ্টি হয়?", "o": ["CO₂", "O₂", "O₃", "সবকয়টি"], "a": 2, "e": "উচ্চ ভোল্টেজের তারের চারপাশের বাতাসে বিদ্যুৎ ক্ষরণ হলে সেখানে হালকা নীলচে আলো দেখা যায় এবং আশপাশের বাতাস আয়নিত হয়ে ওঠে। এই ঘটনাকে করোনা নিঃসরণ (Corona Discharge) বলে। এই সময় বাতাসের অক্সিজেন অণু ভেঙে নতুন করে জুড়ে গিয়ে ওজোন (O₃) তৈরি হয়। তাই উত্তর ওজোন, কার্বন ডাই-অক্সাইড বা সাধারণ অক্সিজেন নয়।<br>মনে রাখুন: ওজোন হলো অক্সিজেনেরই একটি রূপ (বহুরূপতা)। বজ্রপাতের সময়ও বাতাসে অল্প ওজোন তৈরি হয় বলে ঝড়ের পরে একটা বিশেষ গন্ধ পাওয়া যায়।<br>ওজোন স্তর বায়ুমণ্ডলের স্ট্র্যাটোস্ফিয়ারে থাকে এবং সূর্যের ক্ষতিকর অতিবেগুনি রশ্মি শোষণ করে।", "t": "x", "s": "স্বাস্থ্য ও পরিবার কল্যাণ মন্ত্রণালয়, উপ-সহকারী প্রকৌশলী (তড়িৎ), ২০১৯", "p": "ওজোন", "v": 0}, {"q": "বৃষ্টিপাত সাধারণত কোন এককে পরিমাপ করা হয়?", "o": ["বর্গমিটার", "ঘনমিটার", "মিলিমিটার", "কোনোটিই নয়"], "a": 2, "e": "বৃষ্টিপাত পরিমাপের যন্ত্রের নাম রেইনগেজ (Rain gauge)। এটি একটি নির্দিষ্ট জায়গায় একটি নির্দিষ্ট সময়ে যত গভীরতার পানি জমেছে, তা মাপে। তাই বৃষ্টিপাত সাধারণত <b>মিলিমিটার</b> (mm) এককে প্রকাশ করা হয়। বর্গমিটার ক্ষেত্রফলের একক এবং ঘনমিটার আয়তনের একক। এই দুটি দিয়ে বৃষ্টির গভীরতা প্রকাশ করা হয় না। রেইনগেজ খোলা জায়গায় বসানো হয়, যাতে গাছ বা ঘরের আড়াল ছাড়াই বৃষ্টির পানি সোজা জমা হয়।<br>মনে রাখুন: ১ মিলিমিটার বৃষ্টি মানে ১ বর্গমিটার জায়গায় ১ লিটার পানি জমা।<br>বাংলাদেশে সবচেয়ে বেশি বৃষ্টি হয় সিলেট ও চট্টগ্রাম অঞ্চলে।<br>বাতাসের আর্দ্রতা মাপার যন্ত্রের নাম হাইগ্রোমিটার।", "t": "x", "s": "স্থানীয় সরকার বিভাগ, উপসহকারী প্রকৌশলী/নকশাকার, ২০১৯", "p": "বৃষ্টিপাত", "v": 0}, {"q": "উষ্ণতার জন্য দায়ী প্রধান গ্যাস কোনটি?", "o": ["মিথেন", "কার্বন ডাই-অক্সাইড", "নাইট্রোজেন", "ওজোন"], "a": 1, "e": "পৃথিবী গরম হয়ে ওঠার প্রধান কারণ গ্রিনহাউস প্রভাব (Greenhouse effect)। সূর্য থেকে আসা তাপ পৃথিবী থেকে ফিরে যেতে চাইলে বায়ুমণ্ডলের কিছু গ্যাস সেটি আটকে রাখে। জ্বালানি পোড়ানোর ফলে সবচেয়ে বেশি বাড়ছে কার্বন ডাই-অক্সাইড (CO2), তাই উষ্ণতা বৃদ্ধির জন্য সবচেয়ে বেশি দায়ী গ্যাস এটিই। মিথেনও তাপ আটকায়, তবে এর পরিমাণ অনেক কম।<br>মনে রাখুন:<br>আরও গ্রিনহাউস গ্যাস: মিথেন, নাইট্রাস অক্সাইড, CFC, জলীয় বাষ্প।<br>নাইট্রোজেন গ্রিনহাউস গ্যাস নয়।<br>ওজোন স্তর ক্ষয়ের জন্য দায়ী গ্যাস CFC।<br>বাতাসে CO₂ বাড়লে বৈশ্বিক উষ্ণতা বাড়ে, মেরুর বরফ গলে এবং সমুদ্রপৃষ্ঠের উচ্চতা বাড়ে।", "t": "x", "s": "বিভিন্ন মন্ত্রণালয়, উপ-সহকারী প্রকৌশলী (সিভিল), ২০১৯", "p": "গ্রিনহাউস প্রভাব", "v": 0}, {"q": "Clean dry air-এ কত শতাংশ Oxygen থাকে?", "o": ["75", "15", "23", "48"], "a": 2, "e": "শুষ্ক ও পরিষ্কার বাতাসে আয়তন হিসাবে অক্সিজেন প্রায় ২১ শতাংশ, আর নাইট্রোজেন প্রায় ৭৮ শতাংশ। কিন্তু ভর বা ওজনের হিসাবে বাতাসে অক্সিজেন প্রায় ২৩ শতাংশ। প্রশ্নের বিকল্পে ২১ নেই, আছে ২৩, আর সেটি ভরের হিসাবে সঠিক মান, তাই এটিই গ্রহণযোগ্য উত্তর। পরিবেশ প্রকৌশলে বাতাসের গঠন প্রায়ই ওজনের হিসাবে বলা হয়।<br>মনে রাখুন:<br>আয়তন হিসাবে: নাইট্রোজেন ৭৮.০৯%, অক্সিজেন ২০.৯৫%, আর্গন ০.৯৩%, কার্বন ডাই-অক্সাইড প্রায় ০.০৪%।<br>ভর হিসাবে নাইট্রোজেন প্রায় ৭৫.৫%।<br>বাতাসের গ্যাসগুলো মিশে থাকলেও রাসায়নিকভাবে যুক্ত হয় না, তাই বাতাস যৌগ নয়, মিশ্রণ।<br>বায়ুমণ্ডলের প্রায় ৯৯ শতাংশ নাইট্রোজেন ও অক্সিজেন নিয়ে গঠিত।", "t": "x", "s": "স্থানীয় সরকার বিভাগ, সহকারী প্রকৌশলী (পুর), ২০১৯", "p": "বায়ুর উপাদান", "v": 0}, {"q": "বায়ুমণ্ডলে সবচেয়ে বেশি পাওয়া যায়—", "o": ["অক্সিজেন", "নাইট্রোজেন", "কার্বন", "মিথেন"], "a": 1, "e": "আমাদের চারপাশের বাতাসের প্রায় ৭৮ ভাগই নাইট্রোজেন (Nitrogen), অক্সিজেন প্রায় ২১ ভাগ। এর পরে আর্গন প্রায় ০.৯৩ ভাগ, আর কার্বন ডাই-অক্সাইড মাত্র প্রায় ০.০৪ ভাগ। অক্সিজেন আমরা শ্বাসে নিই বলে অনেকে মনে করে যে সেটিই সবচেয়ে বেশি, কিন্তু আসলে নাইট্রোজেনই সবচেয়ে বেশি। বাতাসের প্রায় অর্ধেক ভর ভূপৃষ্ঠ থেকে মাত্র ৫.৫ কিলোমিটারের মধ্যে থাকে।<br>মনে রাখুন:<br>বায়ুমণ্ডলের গ্যাসের ক্রম: নাইট্রোজেন, অক্সিজেন, আর্গন, কার্বন ডাই-অক্সাইড।<br>মিথেন বায়ুতে অতি সামান্য থাকে, কিন্তু এটি একটি গ্রিনহাউস গ্যাস।<br>জলীয় বাষ্প স্থানভেদে বদলায়, তাই বাতাসের গঠন শুষ্ক বাতাস ধরে হিসাব করা হয়।", "t": "x", "s": "প্রত্নতত্ত্ব অধিদপ্তর, এস্টিমেটর, ২০১৯", "p": "বায়ুর উপাদান", "v": 0}, {"q": "বায়ুমণ্ডলে নিচের কোন উপাদানটি সবচেয়ে কম?", "o": ["ওজোন", "হাইড্রোজেন", "মিথেন", "কার্বন ডাই-অক্সাইড"], "a": 0, "e": "বায়ুমণ্ডলের প্রধান উপাদান নাইট্রোজেন ও অক্সিজেন। এর বাইরে কার্বন ডাই-অক্সাইড প্রায় ০.০৪ শতাংশ। মিথেন প্রায় ১.৮ ppm (শতাংশে ০.০০০১৮), হাইড্রোজেন প্রায় ০.৫ ppm। অপশনের চারটি গ্যাসের মধ্যে ওজোনের পরিমাণ সবচেয়ে কম, সাধারণ বাতাসে এর গড় ভাগ খুবই সামান্য। তাই ওজোনই এখানে সবচেয়ে কম থাকা উপাদান। তবু এই সামান্য গ্যাসটিই ক্ষতিকর অতিবেগুনি রশ্মি আটকে প্রাণের সুরক্ষা দেয়।<br>মনে রাখুন:<br>ওজোন স্তর স্ট্র্যাটোস্ফিয়ারে বেশি জমে থাকে এবং সূর্যের অতিবেগুনি রশ্মি আটকায়।<br>বায়ুতে নাইট্রোজেন প্রায় ৭৮ শতাংশ এবং অক্সিজেন প্রায় ২১ শতাংশ।<br>ওজোনের রাসায়নিক সংকেত O₃।<br>আবহাওয়াবিদেরা বায়ুর গ্যাসের পরিমাণ বোঝাতে অনেক সময় ppm (প্রতি দশ লক্ষ ভাগে কত ভাগ) এককটি ব্যবহার করেন।", "t": "x", "s": "মাদকদ্রব্য নিয়ন্ত্রণ অধিদপ্তর, উপ-পরিদর্শক, ২০১৮", "p": "বায়ুর উপাদান", "v": 0}, {"q": "গ্রিনহাউস ইফেক্টের ফলে বাংলাদেশের সবচেয়ে গুরুত্ব ক্ষতি কী হবে?", "o": ["বৃষ্টিপাত হবে না", "নিম্নভূমি নিমজ্জিত হবে", "মেঘ-রৌদ্রের লুকোচুরি হবে না", "সাইক্লোন হবে"], "a": 1, "e": "পৃথিবীর তাপমাত্রা বাড়লে মেরু অঞ্চলের বরফ গলে সমুদ্রের পানির উচ্চতা বাড়ে। বাংলাদেশের বেশিরভাগ ভূমি সমুদ্রপৃষ্ঠ থেকে খুব সামান্য উঁচু, তাই সমুদ্রের পানি বাড়লে নিম্নভূমি, বিশেষ করে উপকূলের বড় অংশ, তলিয়ে যাওয়ার ঝুঁকিতে পড়ে। এর সঙ্গে লোনা পানি ঢুকে ফসল ও সুপেয় পানি নষ্ট করে। এ কারণে গ্রিনহাউস ইফেক্টের সবচেয়ে বড় ক্ষতি হলো নিম্নভূমির নিমজ্জন।<br>মনে রাখুন:<br>গ্রিনহাউস গ্যাসের মধ্যে প্রধান হলো কার্বন ডাই-অক্সাইড ও মিথেন।<br>বায়ুমণ্ডলে ক্লোরোফ্লুরোকার্বন (CFC) ও নাইট্রাস অক্সাইডও গ্রিনহাউস গ্যাস।<br>গ্রিনহাউস ইফেক্টের ফলে সৃষ্ট এই তাপমাত্রা বৃদ্ধিকে বৈশ্বিক উষ্ণায়ন (Global Warming) বলে।", "t": "x", "s": "প্রবাসী কল্যাণ ও বৈদেশিক কর্মসংস্থান মন্ত্রণালয়, উপসহকারী পরিচালক, ২০১৭", "p": "গ্রিনহাউস প্রভাব", "v": 0}, {"q": "কখনো কখনো শিলাবৃষ্টি হয়। এ ধরনের বৃষ্টির কারণ কী?", "o": ["মেঘের পানির কণা খুবই উত্তপ্ত হয়ে যায়", "মেঘে পানি কণার চেয়ে ক্লোরিনের পরিমাণ বেশি হয়ে গেলে", "মেঘের পানির কণার সাথে বাতাসের ভাসমান রাসায়নিক পদার্থের বিক্রিয়ার ফলে", "মেঘের পানির কণা খুব ঠাণ্ডা হয়ে যাওয়ায়"], "a": 3, "e": "গ্রীষ্মকালে প্রবল ঝড়ের মেঘে নিচ থেকে ওপরে ওঠা শক্তিশালী বায়ুপ্রবাহ থাকে। এই বাতাসের টানে মেঘের পানির কণা অনেক ওপরে চলে যায়, যেখানে তাপমাত্রা খুব কম। সেখানে কণাগুলো জমে বরফের টুকরো হয়ে যায়। বাতাসে ওঠানামার সময় একে একে আরও পানি জমে স্তর তৈরি হয়, ফলে টুকরোগুলো বড় ও ভারী হয়। তখন আর বাতাসে ভেসে থাকতে পারে না এবং অভিকর্ষ বলের টানে নিচে পড়ে। এটিই শিলাবৃষ্টি (Hailstorm)। তাই কারণ হলো মেঘের পানির কণা খুব ঠান্ডা হয়ে যাওয়া, কণা উত্তপ্ত হয়ে যাওয়া বা রাসায়নিক বিক্রিয়া নয়।<br>মনে রাখুন:<br>বসন্ত ও গ্রীষ্মের শুরুতে কালবৈশাখীর সময় শিলাবৃষ্টি বেশি হয়।<br>শিলাবৃষ্টি সাধারণত কিউমুলোনিম্বাস (Cumulonimbus) মেঘ থেকে হয়।<br>শিলাবৃষ্টি ফসল ও ঘরবাড়ির ক্ষতি করে।", "t": "x", "s": "জনপ্রশাসন মন্ত্রণালয়, ব্যক্তিগত কর্মকর্তা, ২০১৬", "p": "শিলাবৃষ্টি", "v": 0}, {"q": "বাতাসে অক্সিজেনের পরিমাণ কত?", "o": ["২২%", "২৯%", "৩৩%", "কোনোটিই নয়"], "a": 3, "e": "বাতাস বিভিন্ন গ্যাসের মিশ্রণ। আয়তনে এতে নাইট্রোজেন প্রায় ৭৮ শতাংশ, অক্সিজেন প্রায় ২১ শতাংশ (আরও নির্দিষ্ট করে ২০.৯৫ শতাংশ) এবং বাকি প্রায় ১ শতাংশ আর্গন, কার্বন ডাই-অক্সাইড ও অন্যান্য গ্যাস। দেওয়া ২২%, ২৯% বা ৩৩% কোনোটিই এই মানের কাছাকাছি নয়, তাই উত্তর কোনোটিই নয়।<br>মনে রাখুন:<br>বাতাসের প্রধান উপাদান নাইট্রোজেন, অক্সিজেন নয়।<br>বাতাসে কার্বন ডাই-অক্সাইড মাত্র প্রায় ০.০৩ থেকে ০.০৪ শতাংশ।<br>অক্সিজেন শ্বাসপ্রশ্বাস ও দহনে সাহায্য করে।<br>উচ্চতা বাড়ার সঙ্গে বাতাসের চাপ কমে, ফলে প্রতি শ্বাসে কম অক্সিজেন পাওয়া যায়। তাই খুব উঁচু পাহাড়ে ওঠার সময় শ্বাসকষ্ট হয়।", "t": "x", "s": "জনপ্রশাসন মন্ত্রণালয়, ব্যক্তিগত কর্মকর্তা, ২০১৬", "p": "বায়ুর উপাদান", "v": 0}, {"q": "আবহাওয়া পরিবর্তনের প্রধান কারণ কী?", "o": ["বৃষ্টি", "কুয়াশা", "বায়ুপ্রবাহ", "মেঘ"], "a": 2, "e": "আবহাওয়া হলো কোনো জায়গার নির্দিষ্ট সময়ের তাপমাত্রা, বৃষ্টি, বাতাস ও আর্দ্রতার অবস্থা। বায়ু যখন এক অঞ্চল থেকে আরেক অঞ্চলে বয়ে যায়, তখন সে তাপ ও জলীয় বাষ্প বহন করে নিয়ে যায়। ফলে নতুন জায়গায় তাপমাত্রা ও বৃষ্টিপাত বদলে যায়। তাই আবহাওয়া বদলের প্রধান নিয়ামক হিসেবে বায়ুপ্রবাহকে ধরা হয়। বৃষ্টি, কুয়াশা ও মেঘ আবহাওয়ারই রূপ, এগুলো পরিবর্তনের মূল কারণ নয়।<br>উদাহরণ: গ্রীষ্মে দক্ষিণ থেকে আসা আর্দ্র মৌসুমি বায়ু বাংলাদেশে বৃষ্টি আনে।<br>মনে রাখুন: আবহাওয়া অল্প সময়ের অবস্থা, আর জলবায়ু কোনো স্থানের দীর্ঘদিনের গড় আবহাওয়া।", "t": "x", "s": "জনপ্রশাসন মন্ত্রণালয়, প্রশাসনিক কর্মকর্তা, ২০১৬", "p": "আবহাওয়া", "v": 0}];
+const N=24, MIN=14, NB=0;           // প্রশ্নসংখ্যা, মিনিট, ন্যূনতম বিসিএস প্রশ্ন
+const bn=n=>String(n).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+const K=['ক','খ','গ','ঘ','ঙ'];
+const $=id=>document.getElementById(id);
+const show=id=>['start','exam','result','prac'].forEach(s=>$(s).hidden=s!==id);
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const fmtScore=x=>bn(Number.isInteger(x)?x:x.toFixed(1));
+const srcLine=q=>`<span class="src">${q.t==='b'?q.s:q.t==='x'?q.s:'সম্ভাব্য প্রশ্ন'}${q.v?' <span class="pend">অপশন যাচাই বাকি</span>':''}</span>`;
+const ref=q=>`<span class="ref">${/^\d|^[০-৯]/.test(q.p)?'বইয়ের অনুচ্ছেদ '+q.p:'বইয়ের অংশ: '+q.p}</span>`;
+function store(get,val){try{if(get)return JSON.parse(localStorage.getItem('air-scores')||'[]');localStorage.setItem('air-scores',JSON.stringify(val))}catch(e){return []}}
+function drawHist(){
+  const h=store(true)||[]; const el=$('hist');
+  if(!h.length){el.hidden=true;return}
+  el.hidden=false;
+  el.innerHTML='<b>এই ফোনে আগের পরীক্ষাগুলো</b><table><tr><th>পরীক্ষা</th><th>তারিখ</th><th>নম্বর</th></tr>'+
+    h.slice(-8).map((r,i,a)=>`<tr><td>${bn(h.length-a.length+i+1)}</td><td>${r.d}</td><td>${fmtScore(r.s)} / ${bn(r.n)}</td></tr>`).join('')+'</table>';
+}
+$('nq').textContent=bn(N);$('nm').textContent=bn(MIN);$('pool').textContent=bn(Q.length);$('tot').textContent=bn(N);
+drawHist();
+
+// ---------- পরীক্ষা ----------
+let paper=[],pick=[],timer=null,endAt=0,startAt=0,armed=0;
+function startExam(){
+  const b=shuffle(Q.filter(q=>q.t==='b')), r=shuffle(b.slice(NB).concat(Q.filter(q=>q.t!=='b')));
+  paper=shuffle(b.slice(0,NB).concat(r.slice(0,N-NB)));
+  pick=paper.map(()=>-1);
+  const box=$('elist');box.innerHTML='';
+  paper.forEach((q,i)=>{
+    const s=document.createElement('section');s.className='q';
+    s.innerHTML=`<div class="qh"><span class="num">${bn(i+1)}.</span><p class="qt">${q.q}${srcLine(q)}</p></div><div class="opts"></div>`;
+    const o=s.querySelector('.opts');
+    q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';
+      b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;
+      b.onclick=()=>{pick[i]=pick[i]===j?-1:j;[...o.children].forEach((x,k)=>x.classList.toggle('sel',k===pick[i]));$('ans').textContent=bn(pick.filter(x=>x>=0).length)};
+      o.appendChild(b)});
+    box.appendChild(s);
+  });
+  $('ans').textContent='০';
+  startAt=Date.now();endAt=startAt+MIN*60000;tick();clearInterval(timer);timer=setInterval(tick,500);
+  show('exam');window.scrollTo(0,0);
+}
+function tick(){
+  const left=Math.max(0,endAt-Date.now()),s=Math.ceil(left/1000);
+  $('clock').textContent=bn(String(Math.floor(s/60)).padStart(2,'0'))+':'+bn(String(s%60).padStart(2,'0'));
+  $('clock').classList.toggle('low',s<=60);
+  if(left<=0)finish();
+}
+function askSubmit(btn){
+  const blank=pick.filter(x=>x<0).length;
+  if(armed&&Date.now()-armed<4000){finish();return}
+  armed=Date.now();
+  [$('submit'),$('submit2')].forEach(b=>b.textContent=blank?`${bn(blank)}টি বাকি, তবু জমা দিতে আবার চাপুন`:'নিশ্চিত হলে আবার চাপুন');
+  setTimeout(()=>{if(Date.now()-armed>=4000)[$('submit'),$('submit2')].forEach(b=>b.textContent='জমা দিন')},4100);
+}
+function finish(){
+  clearInterval(timer);armed=0;[$('submit'),$('submit2')].forEach(b=>b.textContent='জমা দিন');
+  let ok=0,bad=0;paper.forEach((q,i)=>{if(pick[i]<0)return;pick[i]===q.a?ok++:bad++});
+  const blank=N-ok-bad, score=ok-bad*0.5, used=Math.min(MIN*60,Math.round((Date.now()-startAt)/1000));
+  const d=new Date(), ds=bn(d.getDate())+'/'+bn(d.getMonth()+1)+'/'+bn(d.getFullYear());
+  const h=store(true)||[];h.push({d:ds,s:score,n:N});store(false,h);
+  const msg=score>=19.2?'চমৎকার! অধ্যায়টি আপনার আয়ত্তে এসেছে।':score>=14.4?'ভালো হয়েছে। ভুল প্রশ্নগুলোর অংশ আবার পড়ে নিন।':'অধ্যায়টি আরেকবার পড়ে কয়েক দিন পর আবার পরীক্ষা দিন।';
+  $('scorebox').innerHTML=`<div class="big">${fmtScore(score)} / ${bn(N)}</div>
+   <div class="stats"><span class="ok">সঠিক ${bn(ok)}</span><span class="no">ভুল ${bn(bad)}</span><span class="skip">উত্তর দেননি ${bn(blank)}</span><span>সময় ${bn(Math.floor(used/60))} মিনিট ${bn(used%60)} সেকেন্ড</span></div>
+   <p class="msg">${msg}</p><p class="msg">বইয়ের শেষ পাতার ছকে লিখে রাখুন: তারিখ ${ds}, নম্বর ${fmtScore(score)}।</p>`;
+  const box=$('rlist');box.innerHTML='';
+  paper.forEach((q,i)=>{
+    const s=document.createElement('section');s.className='q';const p=pick[i];
+    s.innerHTML=`<div class="qh"><span class="num">${bn(i+1)}.</span><p class="qt">${q.q}${srcLine(q)}</p></div><div class="opts">${
+      q.o.map((t,j)=>`<button type="button" class="opt${j===q.a?' right':''}${j===p&&p!==q.a?' wrong':''}" disabled><span class="k">${K[j]}</span><span>${t}</span></button>`).join('')}</div>
+      <div class="exp">${p<0?'<span class="skip">উত্তর দেননি।</span> সঠিক উত্তর: '+K[q.a]+') '+q.o[q.a]+'।':p===q.a?'<span class="ok">সঠিক (+১)।</span>':'<span class="no">ভুল (−০.৫)।</span> সঠিক উত্তর: '+K[q.a]+') '+q.o[q.a]+'।'} ${q.e} ${ref(q)}</div>`;
+    box.appendChild(s);
+  });
+  show('result');window.scrollTo(0,0);drawHist();
+}
+
+// ---------- অনুশীলন ----------
+let filt='all',pok=0,pdone=0;
+const F=[['all','সব'],['b','বিসিএস'],['x','অন্য পরীক্ষা'],['l','সম্ভাব্য']].filter(([k])=>k==='all'||Q.some(q=>q.t===k));
+$('chips').innerHTML=F.map(([k,t])=>`<button type="button" class="chip" data-k="${k}" aria-pressed="${k==='all'}">${t}</button>`).join('');
+$('chips').onclick=e=>{const k=e.target.dataset&&e.target.dataset.k;if(!k)return;filt=k;[...$('chips').children].forEach(c=>c.setAttribute('aria-pressed',c.dataset.k===k));renderPrac()};
+function renderPrac(){
+  const L=Q.filter(q=>filt==='all'||q.t===filt);pok=0;pdone=0;
+  const upd=()=>{$('pok').textContent=bn(pok);$('pdone').textContent=bn(pdone);$('ptot').textContent=bn(L.length)};
+  const box=$('plist');box.innerHTML='';
+  L.forEach((q,i)=>{
+    const s=document.createElement('section');s.className='q';
+    s.innerHTML=`<div class="qh"><span class="num">${bn(i+1)}.</span><p class="qt">${q.q}${srcLine(q)}</p></div><div class="opts"></div>`;
+    const o=s.querySelector('.opts');
+    q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';
+      b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;
+      b.onclick=()=>{[...o.children].forEach(x=>x.disabled=true);o.children[q.a].classList.add('right');
+        const good=j===q.a;if(!good)b.classList.add('wrong');pdone++;if(good)pok++;upd();
+        const e=document.createElement('div');e.className='exp';
+        e.innerHTML=`<span class="${good?'ok':'no'}">${good?'সঠিক।':'ভুল। সঠিক উত্তর: '+K[q.a]+') '+q.o[q.a]+'।'}</span> ${q.e} ${ref(q)}`;s.appendChild(e)};
+      o.appendChild(b)});
+    box.appendChild(s);
+  });
+  upd();
+}
+$('go').onclick=startExam;$('again').onclick=startExam;
+$('submit').onclick=()=>askSubmit();$('submit2').onclick=()=>askSubmit();
+$('home').onclick=$('home2').onclick=()=>{show('start');drawHist();window.scrollTo(0,0)};
+$('practice').onclick=()=>{renderPrac();show('prac');window.scrollTo(0,0)};
+window.addEventListener('beforeunload',e=>{if(!$('exam').hidden){e.preventDefault();e.returnValue=''}});
+</script>
+<script src="/js/book-link.js" data-kind="science" data-chapter="বায়ুমণ্ডল" defer></script>
+</body>
+</html>

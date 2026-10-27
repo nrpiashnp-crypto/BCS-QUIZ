@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>বংশগতি ও জীবপ্রযুক্তি: অনলাইন পরীক্ষা</title>
+<meta name="description" content="বিসিএস বিজ্ঞান, অধ্যায় ১৮ বংশগতি ও জীবপ্রযুক্তি: বিগত বিসিএস ও চাকরির পরীক্ষার প্রশ্ন, সময় ও নেগেটিভ মার্কিংসহ, ব্যাখ্যাসহ।">
+<link rel="preload" href="/fonts/NotoSansBengali-bengali.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/TiroBangla-400-bengali.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+/* Layout: one narrow book-like column. Start screen -> exam (sticky timer bar) -> result + review. Practice mode keeps instant feedback. */
+:root{
+  --paper:#fbfaf7; --ink:#1d1f21; --muted:#5f6366; --rule:#d9d6cf; --card:#ffffff;
+  --accent:#1f4e5f; --accent-ink:#ffffff; --sel:#e3eef2; --good:#1e7a46; --good-bg:#e5f3ea; --bad:#b3261e; --bad-bg:#fbe9e7; --warn:#8a5a00;
+  --display:'Tiro Bangla',Georgia,serif; --body:'Noto Sans Bengali',system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#15181a; --ink:#e9e7e2; --muted:#a3a7aa; --rule:#33383b; --card:#1d2124;
+  --accent:#7fb7c9; --accent-ink:#0f1416; --sel:#1d3138; --good:#6fcf97; --good-bg:#17301f; --bad:#f08a80; --bad-bg:#3a1c1a; --warn:#e0b25a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#15181a; --ink:#e9e7e2; --muted:#a3a7aa; --rule:#33383b; --card:#1d2124;
+  --accent:#7fb7c9; --accent-ink:#0f1416; --sel:#1d3138; --good:#6fcf97; --good-bg:#17301f; --bad:#f08a80; --bad-bg:#3a1c1a; --warn:#e0b25a; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6}
+.wrap{max-width:680px;margin:0 auto;padding-block:20px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{border-bottom:2px solid var(--ink);padding-bottom:12px;margin-bottom:12px}
+.book{font-size:13px;letter-spacing:.04em;color:var(--muted)}
+h1{font-family:var(--display);font-weight:400;font-size:30px;margin:4px 0 2px;text-wrap:balance}
+h2{font-family:var(--display);font-weight:400;font-size:22px;margin:22px 0 8px}
+.sub{color:var(--muted);font-size:15px;margin:0}
+button{font:inherit;cursor:pointer}
+.btn{display:inline-block;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:10px 18px;font-weight:600}
+.btn.ghost{background:none;color:var(--ink);border-color:var(--rule);font-weight:500}
+.btns{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
+.rules{margin:8px 0 0;padding-left:20px}
+.rules li{margin:2px 0}
+.hist{border-top:1px solid var(--rule);margin-top:18px;padding-top:6px;font-size:15px}
+.hist table{border-collapse:collapse;width:100%}
+.hist td,.hist th{border-bottom:1px solid var(--rule);padding:5px 4px;text-align:left;font-variant-numeric:tabular-nums}
+.hist th{color:var(--muted);font-weight:500}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);background:var(--paper);display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--rule);z-index:5;font-size:15px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+.clock{font-family:var(--display);font-size:22px;color:var(--accent);font-variant-numeric:tabular-nums;min-width:4ch}
+.clock.low{color:var(--bad)}
+/* Start screen: the start button comes first and big, rules below it. */
+#start{display:flex;flex-direction:column}
+#start .back{order:-3}#start .selch{order:-2}#start .btns{order:-1;margin:6px 0 16px}
+#start #go{font-size:19px;padding:14px 26px;flex:1 1 220px}
+/* Exam bar sits at the bottom of the screen (Sakib's pick): quiet timer, submit button near the thumb. */
+#exam .bar{position:fixed;top:auto;bottom:0;left:0;right:0;padding:10px max(16px,calc(50% - 340px)) calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--rule);border-bottom:0;box-shadow:0 -4px 14px rgba(0,0,0,.06)}
+#exam{padding-bottom:76px}
+#exam .clock{font-family:var(--body);font-size:16px;font-weight:500;color:var(--ink);min-width:0}
+#exam .clock::before{content:"সময় ";font-size:13px;font-weight:400;color:var(--muted)}
+#exam .clock.low{color:var(--warn)}
+.bar b{font-variant-numeric:tabular-nums}
+.q{padding:18px 0;border-bottom:1px solid var(--rule)}
+.qh{display:flex;gap:10px;align-items:baseline}
+.num{font-family:var(--display);color:var(--accent);min-width:1.6em}
+.qt{font-weight:500;margin:0;min-width:0}
+.src{display:block;font-size:13px;color:var(--muted);font-weight:400}
+.pend{display:inline-block;font-size:12px;color:var(--warn);border:1px dashed var(--warn);border-radius:4px;padding:0 6px;margin-left:4px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 0 2.2em}
+@media (max-width:520px){.opts{grid-template-columns:1fr;margin-left:0}}
+.opt{display:flex;gap:8px;align-items:flex-start;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--rule);border-radius:8px;padding:9px 12px;min-height:44px;width:100%}
+.opt .k{font-family:var(--display);color:var(--muted);min-width:1.2em}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.opt.sel{background:var(--sel);border-color:var(--accent)}
+.opt:disabled{cursor:default}
+.opt.right{background:var(--good-bg);border-color:var(--good)}
+.opt.wrong{background:var(--bad-bg);border-color:var(--bad)}
+.exp{margin:10px 0 0 2.2em;font-size:15px;border-left:3px solid var(--accent);padding:2px 0 2px 10px}
+@media (max-width:520px){.exp{margin-left:0}}
+.ok{color:var(--good);font-weight:600}.no{color:var(--bad);font-weight:600}.skip{color:var(--muted);font-weight:600}
+.ref{color:var(--muted);white-space:nowrap}
+.score{border:1.5px solid var(--ink);border-radius:10px;padding:16px;margin:14px 0;text-align:center}
+.big{font-family:var(--display);font-size:46px;line-height:1.1;font-variant-numeric:tabular-nums}
+.stats{display:flex;justify-content:center;flex-wrap:wrap;gap:6px 18px;font-size:15px;margin-top:6px}
+.msg{margin:10px 0 0;font-size:15px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.chip{border:1px solid var(--rule);background:none;color:var(--ink);border-radius:999px;padding:4px 12px;font-size:14px}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+footer{margin-top:24px;font-size:14px;color:var(--muted)}
+.note{border:1px dashed var(--rule);border-radius:8px;padding:10px 12px;margin-top:14px}
+[hidden]{display:none !important}
+@media (prefers-reduced-motion:no-preference){.exp{animation:in .2s ease-out}@keyframes in{from{opacity:.4}to{opacity:1}}}
+</style>
+<link rel="icon" type="image/svg+xml" href="/img/logo/final-icon.svg">
+<link rel="apple-touch-icon" href="/img/logo/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="লিয়ানা বুকস">
+<meta property="og:title" content="বংশগতি ও জীবপ্রযুক্তি: অনলাইন পরীক্ষা · লিয়ানা বুকস">
+<meta property="og:description" content="বিসিএস বিজ্ঞান, বংশগতি ও জীবপ্রযুক্তি অধ্যায়: সময় ও নেগেটিভ মার্কিংসহ অনলাইন পরীক্ষা, ব্যাখ্যাসহ।">
+<meta property="og:url" content="https://lyannabooks.com/genetics/">
+<meta property="og:image" content="https://lyannabooks.com/img/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="bn_BD">
+<meta name="twitter:card" content="summary_large_image">
+<style>.sitebar{background:#13294b;display:flex;align-items:center;justify-content:space-between;padding:8px 16px}.sitebar img{width:110px;height:auto;display:block}.exp .bl{display:block;margin-top:8px;font-size:12.5px;color:var(--muted);text-decoration:none;opacity:.85}.exp .bl:hover{text-decoration:underline}.sitebar a.h{color:#e6c97a;text-decoration:none;font:500 14px 'Noto Sans Bengali',system-ui,sans-serif}</style>
+</head>
+<body>
+<div class="sitebar"><a href="/"><img src="/img/logo/final-onnavy-transparent.svg" alt="লিয়ানা বুকস"></a><a class="h" href="/">← হোম</a></div>
+
+<div class="wrap">
+<header>
+  <div class="book">বিসিএস বিজ্ঞান · পিয়াস · অধ্যায় ১৮</div>
+  <h1>বংশগতি ও জীবপ্রযুক্তি: অনলাইন পরীক্ষা</h1>
+  <p class="sub">বিগত বিসিএস এবং অন্যান্য নিয়োগ ও ভর্তি পরীক্ষার প্রশ্ন, আসল পরীক্ষার নিয়মে।</p>
+</header>
+
+<section id="start">
+  <ul class="rules">
+    <li>প্রতি পরীক্ষায় <b id="nq">২৫</b>টি প্রশ্ন, সময় <b id="nm">১৫</b> মিনিট।</li>
+    <li>সঠিক উত্তরে ১ নম্বর, ভুল উত্তরে −০.৫। উত্তর না দিলে নম্বর কাটা যায় না।</li>
+    <li>জমা দেওয়ার আগে উত্তর বদলানো যায়। সময় শেষ হলে নিজে থেকেই জমা হবে।</li>
+    <li>শেষে ফল, প্রতিটি প্রশ্নের ব্যাখ্যা আর বইয়ের সংশ্লিষ্ট অংশের নাম দেখাবে।</li>
+    <li>প্রতিবার <b id="pool"></b>টি প্রশ্নের ভান্ডার থেকে নতুন করে প্রশ্ন বাছাই হয়, তাই বারবার পরীক্ষা দেওয়া যায়।</li>
+  </ul>
+  <div class="btns">
+    <button class="btn" id="go" type="button">পরীক্ষা শুরু করুন</button>
+    <button class="btn ghost" id="practice" type="button">সব প্রশ্ন অনুশীলন</button>
+  </div>
+  <div class="hist" id="hist" hidden></div>
+</section>
+
+<section id="exam" hidden>
+  <div class="bar"><span class="clock" id="clock">১৫:০০</span><span>উত্তর <b id="ans">০</b> / <b id="tot">২৫</b></span><button class="btn" id="submit" type="button">জমা দিন</button></div>
+  <main id="elist"></main>
+  <div class="btns"><button class="btn" id="submit2" type="button">জমা দিন</button></div>
+</section>
+
+<section id="result" hidden>
+  <div class="score" id="scorebox"></div>
+  <div class="btns"><button class="btn" id="again" type="button">নতুন পরীক্ষা</button><button class="btn ghost" id="home" type="button">শুরুর পাতা</button></div>
+  <h2>উত্তর ও ব্যাখ্যা</h2>
+  <main id="rlist"></main>
+</section>
+
+<section id="prac" hidden>
+  <div class="bar"><span>সঠিক <b id="pok">০</b> / উত্তর <b id="pdone">০</b> / মোট <b id="ptot">০</b></span><button class="btn ghost" id="home2" type="button">শুরুর পাতা</button></div>
+  <div class="chips" id="chips"></div>
+  <main id="plist"></main>
+</section>
+
+<footer>
+  <div class="note">বিসিএস ও অন্য পরীক্ষার প্রশ্নের নিচে পরীক্ষার নাম ও সাল দেওয়া আছে।</div>
+  <p>লিয়ানা বুকস · lyannabooks.com</p>
+</footer>
+</div>
+<script>
+const Q=[{"q": "মানবদেহে কয় জোড়া AUTOSOME আছে?", "o": ["২২ জোড়া", "২৩ জোড়া", "২৬ জোড়া", "১ জোড়া"], "a": 0, "e": "মানুষের প্রতিটি দেহকোষে ক্রোমোজোম থাকে ৪৬টি, অর্থাৎ ২৩ জোড়া। এর মধ্যে ২২ জোড়া অটোজোম (Autosome), যারা দেহের সাধারণ বৈশিষ্ট্য নিয়ন্ত্রণ করে এবং নারী-পুরুষে একই রকম। বাকি ১ জোড়াকে সেক্স ক্রোমোজোম বা লিঙ্গ ক্রোমোজোম বলে, যা শিশুর লিঙ্গ নির্ধারণ করে। নারীর লিঙ্গ ক্রোমোজোম XX, আর পুরুষের XY। তাই ২৩ জোড়ার সবগুলো অটোজোম নয়। অটোজোম দেহের গঠন, রং ও অন্যান্য বৈশিষ্ট্যের জিন বহন করে, যা পিতামাতা উভয়ের কাছ থেকে সমানভাবে আসে।<br>মনে রাখুন:<br>জনন কোষ (শুক্রাণু বা ডিম্বাণু) তে ক্রোমোজোম থাকে ২৩টি।<br>শিশুর লিঙ্গ নির্ধারিত হয় পিতার শুক্রাণুর X বা Y ক্রোমোজোম থেকে।", "t": "x", "s": "পরিবার পরিকল্পনা অধিদপ্তর, সিনিয়র স্টাফ নার্স, ২০২৩", "p": "ক্রোমোসোম", "v": 0}, {"q": "বংশগতি বিদ্যার জনক কে?", "o": ["রাদারফোর্ড", "মেন্ডেল", "ডন লিউয়েন হুক", "আলেকজান্ডার ফ্লেমিং"], "a": 1, "e": "বংশগতি বা জিনতত্ত্ব (Genetics) হলো বংশ পরম্পরায় বৈশিষ্ট্য সঞ্চারের বিজ্ঞান। অস্ট্রিয়ার ধর্মযাজক গ্রেগর জোহান মেন্ডেল মটরশুঁটি গাছ নিয়ে অনেক বছর পরীক্ষা করেন। সেই পরীক্ষার ফল থেকে তিনি বংশগতির মূল সূত্রগুলো প্রকাশ করেন ১৮৬৬ সালে। এ জন্য তাঁকে বংশগতিবিদ্যার জনক বলা হয়। তাঁর কাজ প্রথমে কেউ গুরুত্ব দেয়নি, পরে ১৯০০ সালে তিনজন বিজ্ঞানী তা নতুন করে আবিষ্কার করেন। অ্যালেকজান্ডার ফ্লেমিং পেনিসিলিন আবিষ্কার করেছিলেন, আর রাদারফোর্ড পরমাণুর কেন্দ্রক আবিষ্কারের জন্য বিখ্যাত।<br>মনে রাখুন:<br>মেন্ডেলের সূত্র দুটি: পৃথকীকরণ সূত্র ও স্বাধীন সঞ্চরণ সূত্র।<br>'জিন' শব্দটি প্রস্তাব করেন জোহানসেন।", "t": "x", "s": "পরিবার পরিকল্পনা অধিদপ্তর, সহকারী পরিবার পরিকল্পনা কর্মকর্তা, ২০২২", "p": "বংশগতি", "v": 0}, {"q": "ক্রোমোসোমের গঠন কী?", "o": ["DNA", "প্রোটিন", "RNA", "DNA এবং প্রোটিন"], "a": 3, "e": "আমাদের কোষের নিউক্লিয়াসের ভেতরে সুতার মতো ক্রোমোসোম (Chromosome) থাকে। এগুলো বংশগতির বৈশিষ্ট্য বহন করে। ক্রোমোসোমের মূল কাঠামো তৈরি হয় ডিএনএ (DNA) ও হিস্টোন নামের প্রোটিন দিয়ে। ডিএনএর লম্বা সুতা হিস্টোনের গায়ে প্যাঁচানো থাকে, ফলে এত লম্বা অণু সামান্য জায়গায় ধরে। শুধু ডিএনএ বা শুধু প্রোটিন দিয়ে ক্রোমোসোম গঠিত নয়, দুটোই লাগে। আরএনএও খুব অল্প পরিমাণে থাকে। ক্রোমোসোমের প্রধান রাসায়নিক উপাদান তাই ডিএনএ ও প্রোটিনের মিলিত রূপ।<br>মনে রাখুন:<br>মানুষের কোষে ক্রোমোসোম সংখ্যা ৪৬টি বা ২৩ জোড়া।<br>ডিএনএ–প্রোটিনের এই জটিল পদার্থকে ক্রোমাটিন বলে।<br>নিউক্লিওসোম হলো ডিএনএ ও হিস্টোনের মৌলিক একক।", "t": "x", "s": "জনশক্তি, কর্মসংস্থান ও প্রশিক্ষণ ব্যুরো (বিএমইটি), ইন্সট্রাক্টর, ২০২২", "p": "ক্রোমোসোম", "v": 0}, {"q": "মানবদেহে ক্রোমোজোমের সংখ্যা কত?", "o": ["২৩", "৪৪", "৪৬", "৪৮"], "a": 2, "e": "আমাদের দেহের প্রতিটি কোষের নিউক্লিয়াসে ক্রোমোসোম থাকে। মানুষের দেহকোষে ক্রোমোসোমের সংখ্যা ৪৬টি, অর্থাৎ ২৩ জোড়া। এর অর্ধেক এসেছে মায়ের কাছ থেকে আর অর্ধেক বাবার কাছ থেকে। ২৩ জোড়ার মধ্যে ২২ জোড়া অটোসোম, যা দেহের সাধারণ বৈশিষ্ট্য নিয়ন্ত্রণ করে। বাকি এক জোড়া লিঙ্গ ক্রোমোসোম। নারীর লিঙ্গ ক্রোমোসোম XX এবং পুরুষের XY। ২৩ সংখ্যাটি জোড়ার সংখ্যা, মোট সংখ্যা নয়, তাই এটি সঠিক উত্তর নয়। কোনো ব্যক্তির ক্রোমোসোম সংখ্যা কম বা বেশি হলে নানা রকম জেনেটিক সমস্যা দেখা দিতে পারে।<br>মনে রাখুন:<br>যৌনকোষ (শুক্রাণু ও ডিম্বাণু) ক্রোমোসোম সংখ্যা ২৩টি।<br>ডাউন সিনড্রোমে ২১ নম্বর ক্রোমোসোম তিনটি থাকে।", "t": "x", "s": "ফায়ার সার্ভিস ও সিভিল ডিফেন্স অধিদপ্তর, স্টেশন অফিসার, ২০২২", "p": "ক্রোমোসোম", "v": 0}, {"q": "মানুষের চোখের রং নিয়ন্ত্রণ করে কোনটি?", "o": ["ডিএনএ", "আরএনএ", "নিউক্লিওলাস", "সেন্ট্রোমিয়ার"], "a": 0, "e": "আমাদের চোখের রঙ কেমন হবে, তা ঠিক হয় বাবা-মায়ের কাছ থেকে পাওয়া জিনের মাধ্যমে। জিন হলো ডিএনএ (DNA) অণুর নির্দিষ্ট অংশ, যাতে বংশগত তথ্য লেখা থাকে। চোখের মণির আইরিসে মেলানিন নামের রঞ্জক কতটা তৈরি হবে, তা এই জিনগুলো নিয়ন্ত্রণ করে। মেলানিন বেশি হলে চোখ কালো বা বাদামি, কম হলে নীল বা ধূসর দেখায়। আরএনএ ডিএনএর তথ্য নিয়ে প্রোটিন তৈরিতে সাহায্য করে, নিউক্লিওলাস রাইবোসোম তৈরি করে আর সেন্ট্রোমিয়ার ক্রোমোসোমের দুই ক্রোমাটিডকে ধরে রাখে।<br>মনে রাখুন:<br>ডিএনএর গঠন দ্বি-হেলিক্স, আবিষ্কার করেন ওয়াটসন ও ক্রিক (১৯৫৩)।<br>ডিএনএ মূলত নিউক্লিয়াসে থাকে।", "t": "x", "s": "ফায়ার সার্ভিস ও সিভিল ডিফেন্স অধিদপ্তর, স্টেশন অফিসার, ২০২২ ও বাংলাদেশ রেলওয়ে, উপসহকারী প্রকৌশলী (ব্রিজ), ২০১৮", "p": "জিন", "v": 0}, {"q": "পাটের জীবনরহস্য উন্মোচন করেন–", "o": ["ফরিদুল আলম", "শহীদুল আলম", "মাকসুদুল আলম", "মিজানুর রহমান"], "a": 2, "e": "পাটের জীবনরহস্য উন্মোচন করেন বাংলাদেশি বিজ্ঞানী ড. মাকসুদুল আলম। ২০১০ সালে তাঁর নেতৃত্বে একটি গবেষক দল দেশি পাটের (Corchorus olitorius) জিনোম বিন্যাস শনাক্ত করে। জিনোম হলো কোনো জীবের সব জিনের সমষ্টি। এই আবিষ্কারের ফলে ভবিষ্যতে বেশি ফলনশীল ও রোগ-প্রতিরোধী পাটের জাত উদ্ভাবনের পথ খুলেছে। জিনোম জানা থাকলে বিজ্ঞানীরা পাটের আঁশের গুণ বাড়ানো এবং পাটের ক্ষতিকারক ছত্রাক দমনের উপায় খুঁজে পান।<br>মনে রাখুন:<br>ড. মাকসুদুল আলম এর আগে পেঁপে ও রাবারের জিনোমও উন্মোচন করেন।<br>পাটের জীবনরহস্য উন্মোচনের কাজে তাঁর সঙ্গে ছিল ঢাকা বিশ্ববিদ্যালয় ও অন্যান্য প্রতিষ্ঠানের গবেষকরা।<br>পাটকে বলা হয় সোনালি আঁশ।", "t": "x", "s": "বিভিন্ন মন্ত্রণালয়, প্রশাসনিক কর্মকর্তা, ২০২২", "p": "জিনোম", "v": 0}, {"q": "Which one among the following is absent in 'RNA'?", "o": ["Guanine", "Uracil", "Thymine", "Cytosine"], "a": 2, "e": "আমাদের কোষে দুই ধরনের নিউক্লিক এসিড আছে: DNA ও RNA। প্রতিটির নাইট্রোজেন বেস অর্থাৎ ক্ষারক চারটি। DNA-তে আছে অ্যাডেনিন (A), গুয়ানিন (G), সাইটোসিন (C) ও থাইমিন (T)। RNA-তে থাইমিনের বদলে থাকে ইউরাসিল (U), বাকি তিনটি একই। তাই RNA-তে থাইমিন (Thymine) থাকে না। বেসগুলো জোড়া বাঁধে নির্দিষ্ট নিয়মে: DNA-তে A-T এবং G-C, আর RNA-তে A-U এবং G-C। নিউক্লিক এসিডের এই পার্থক্য থেকে বোঝা যায়, থাইমিন কেবল DNA-র নিজস্ব বেস।<br>মনে রাখুন:<br>DNA-তে সুগার ডিঅক্সিরাইবোজ, RNA-তে রাইবোজ।<br>DNA সাধারণত দ্বিসূত্রক, RNA একসূত্রক।<br>DNA-এর দ্বিসূত্রক কুণ্ডলী মডেল দেন ওয়াটসন ও ক্রিক (১৯৫৩)।", "t": "x", "s": "ঔষধ প্রশাসন অধিদপ্তর, ঔষধ পরিদর্শক, ২০২২", "p": "RNA", "v": 0}, {"q": "'সুপার বাগ' কী কাজে ব্যবহৃত হয়?", "o": ["সমুদ্রের তেল উত্তোলনে", "সমুদ্রের তেল অপসারণে", "সমুদ্রের গভীরতা নির্ণয়ে", "সমুদ্রের সীমানা নির্ণয়ে"], "a": 1, "e": "সুপার বাগ (Superbug) হলো জেনেটিক প্রযুক্তিতে তৈরি এক বিশেষ ব্যাকটেরিয়া, যা সমুদ্রে ছড়িয়ে পড়া অপরিশোধিত তেল খেয়ে ফেলতে পারে। জাহাজডুবি বা তেল-কূপের দুর্ঘটনায় সমুদ্রে তেল ছড়ালে জলজ প্রাণী মারা যায় ও পরিবেশ নষ্ট হয়। সুপার বাগ সেই তেল ভেঙে ফেলে ক্ষতিহীন পদার্থে পরিণত করে, তাই এটি তেল অপসারণে কাজে লাগে। এটি তেল উত্তোলন, গভীরতা মাপা বা সীমানা নির্ণয়ের কোনো কাজে ব্যবহৃত হয় না।<br>মনে রাখুন:<br>সুপার বাগ তৈরি করেন ভারতীয় বংশোদ্ভূত মার্কিন বিজ্ঞানী আনন্দ মোহন চক্রবর্তী।<br>এটি ব্যাকটেরিয়া সুডোমোনাস প্রজাতির জিন পরিবর্তন করে তৈরি।<br>অণুজীব দিয়ে দূষণ পরিষ্কারকে জৈব প্রতিকার (Bioremediation) বলে।", "t": "x", "s": "স্বাস্থ্য প্রকৌশল অধিদপ্তর, নকশাকার (ড্রাফটসম্যান), ২০২২", "p": "জীবপ্রযুক্তি", "v": 0}, {"q": "মানব জিন থাকে—", "o": ["RNA-তে", "RBC-তে", "DNA-তে", "সাইটোপ্লাজমে"], "a": 2, "e": "জিন (Gene) হলো বংশগতির মৌলিক একক। জীবকোষের নিউক্লিয়াসের ভেতরে ক্রোমোজোম থাকে, আর ক্রোমোজোম গঠিত DNA (ডিঅক্সিরাইবোনিউক্লিক অ্যাসিড) দিয়ে। DNA-এর যে নির্দিষ্ট অংশ কোনো বৈশিষ্ট্যের তথ্য বহন করে, সেই অংশই জিন। অর্থাৎ মানুষের জিন DNA-তেই থাকে। RNA প্রোটিন তৈরিতে সাহায্য করে, আর RBC বা লোহিত রক্তকণিকার কাজ অক্সিজেন বহন। জিনের সংখ্যা মানুষের দেহে প্রায় ২০ থেকে ২৫ হাজার। মানব জিনোম প্রকল্প এই জিনগুলোর পুরো নকশা বের করে এবং ২০০৩ সালে তা সম্পূর্ণ হয়।<br>মনে রাখুন:<br>DNA-এর গঠন দ্বিসূত্রক প্যাঁচানো সিঁড়ির মতো, যা ওয়াটসন ও ক্রিক ১৯৫৩ সালে প্রস্তাব করেন।<br>DNA-র ক্ষার চারটি: অ্যাডেনিন, গুয়ানিন, সাইটোসিন ও থায়ামিন।<br>RNA-তে থায়ামিনের বদলে ইউরাসিল থাকে।", "t": "x", "s": "নার্সিং ও মিডওয়াইফারি অধিদপ্তর, সিনিয়র স্টাফ নার্স, ২০২১", "p": "জিন", "v": 0}, {"q": "জীবের বংশগতির বৈশিষ্ট্য বহন করে—", "o": ["সাইটোপ্লাজম", "ক্রোমোজোম", "নিউক্লিয়াস", "নিউক্লিওলাস"], "a": 1, "e": "পিতা-মাতার বৈশিষ্ট্য সন্তানের মধ্যে যে বস্তুর মাধ্যমে বাহিত হয়, তাকে বংশগতীয় বস্তু বলে। এর প্রধান বাহক ক্রোমোজোম (Chromosome), যা নিউক্লিয়াসের ভেতর থাকে। ক্রোমোজোমে থাকা DNA-র নির্দিষ্ট অংশ জিন হিসেবে কাজ করে। জিনই জীবের বিভিন্ন বৈশিষ্ট্য নির্ধারণ করে। সাইটোপ্লাজম কোষের তরল অংশ, নিউক্লিয়াস কোষের নিয়ন্ত্রণ কেন্দ্র, আর নিউক্লিওলাস রাইবোজোম তৈরির জায়গা। তাই বংশগতির বৈশিষ্ট্য বহন করে ক্রোমোজোম। কোষ বিভাজনের সময় ক্রোমোজোম নিজের প্রতিলিপি তৈরি করে, ফলে নতুন কোষও একই বংশগত তথ্য পায়। এভাবেই এক প্রজন্ম থেকে পরের প্রজন্মে বৈশিষ্ট্য যায়।<br>মনে রাখুন:<br>মানুষের কোষে ৪৬টি ক্রোমোজোম থাকে।<br>বংশগতির জনক গ্রেগর মেন্ডেল।<br>ক্রোমোজোম শব্দের অর্থ রঙিন বস্তু।", "t": "x", "s": "নার্সিং ও মিডওয়াইফারি অধিদপ্তর, সিনিয়র স্টাফ নার্স, ২০২১", "p": "ক্রোমোজোম", "v": 0}, {"q": "মানুষের ক্রোমোজোমের সংখ্যা—", "o": ["২০ জোড়া", "২২ জোড়া", "২৩ জোড়া", "২৮ জোড়া"], "a": 2, "e": "মানুষের প্রতিটি দেহকোষের নিউক্লিয়াসে মোট ৪৬টি ক্রোমোজোম থাকে। জোড়া ধরলে এই সংখ্যা ২৩ জোড়া। এদের মধ্যে ২২ জোড়া অটোসোম, যা দেহের সাধারণ বৈশিষ্ট্য নিয়ন্ত্রণ করে। বাকি ১ জোড়া সেক্স ক্রোমোজোম বা লিঙ্গ নির্ধারণকারী ক্রোমোজোম। নারীর কোষে এই জোড়া XX এবং পুরুষের কোষে XY। এ কারণে ২৩ জোড়াই হলো সঠিক উত্তর। ক্রোমোজোমের সংখ্যা প্রজাতিভেদে আলাদা হয়। যেমন মাছির দেহকোষে ৮টি এবং ধানে ২৪টি ক্রোমোজোম থাকে। তাই এই সংখ্যা প্রজাতি চেনার একটি বৈশিষ্ট্য।<br>মনে রাখুন:<br>জনন কোষে (শুক্রাণু ও ডিম্বাণু) ক্রোমোজোমের সংখ্যা অর্ধেক, ২৩টি।<br>সন্তানের লিঙ্গ নির্ধারণ করে পিতার ক্রোমোজোম।<br>অটোসোম ৪৪টি।", "t": "x", "s": "নার্সিং ও মিডওয়াইফারি অধিদপ্তর, সিনিয়র স্টাফ নার্স, ২০২১", "p": "ক্রোমোজোম", "v": 0}, {"q": "সন্তান ছেলে কি মেয়ে হবে নির্ভর করে—", "o": ["মহিলাদের ডিম্বাণুর ক্রোমোসোমের উপর", "পুরুষদের শুক্রাণুর ক্রোমোসোমের উপর", "উভয়ের ক্রোমোসোমের উপর", "কোনটির উপর নয়"], "a": 1, "e": "সন্তান ছেলে হবে না মেয়ে, তা নির্ভর করে পিতার শুক্রাণুর ক্রোমোসোমের ওপর। মায়ের ডিম্বাণুতে সবসময় একটি X ক্রোমোসোম থাকে। কিন্তু শুক্রাণু X অথবা Y, যেকোনো একটি বহন করতে পারে। X শুক্রাণু ডিম্বাণুকে নিষিক্ত করলে XX অর্থাৎ কন্যা হয়, আর Y শুক্রাণু নিষিক্ত করলে XY অর্থাৎ পুত্র হয়। তাই সন্তানের লিঙ্গ নির্ধারণে মায়ের কোনো ভূমিকা নেই। অর্থাৎ ছেলে বা মেয়ে হওয়ার সিদ্ধান্ত নেয় শুক্রাণু, ডিম্বাণু নয়।<br>মনে রাখুন:<br>মানুষের দেহকোষে মোট ক্রোমোসোম ২৩ জোড়া বা ৪৬টি।<br>এর মধ্যে ২২ জোড়া অটোজোম আর ১ জোড়া লিঙ্গ ক্রোমোসোম।", "t": "x", "s": "নার্সিং ও মিডওয়াইফারি অধিদপ্তর, মিডওয়াইফ, ২০২০", "p": "ক্রোমোজোম", "v": 0}, {"q": "Down syndrome হলো একটি—", "o": ["Genetic disorder", "রক্তের সমস্যা", "Thyroid জনিত সমস্যা", "কিডনীর সমস্যা"], "a": 0, "e": "মানুষের কোষে সাধারণত ৪৬টি ক্রোমোসোম থাকে। ডাউন সিনড্রোম (Down syndrome) রোগে ২১ নম্বর ক্রোমোসোম দুটির বদলে তিনটি থাকে। তাই এটি একটি জিনগত রোগ (Genetic disorder)। আক্রান্ত শিশুর দৈহিক ও মানসিক বিকাশ ধীরে হয়। সাধারণত মায়ের বয়স বেশি হলে এই রোগে আক্রান্ত শিশু জন্মানোর ঝুঁকি কিছুটা বাড়ে, তবে এটি ছোঁয়াচে রোগ নয়।<br>মনে রাখুন:<br>এই অবস্থাকে ট্রাইসোমি ২১ (Trisomy 21) বলা হয়।<br>ডাউন সিনড্রোমে আক্রান্ত ব্যক্তির মোট ক্রোমোসোম ৪৭টি।<br>২১ মার্চ বিশ্ব ডাউন সিনড্রোম দিবস।<br>ডাউন সিনড্রোম প্রথম বর্ণনা করেন ব্রিটিশ চিকিৎসক জন ল্যাংডন ডাউন।<br>ডাউন সিনড্রোমের শিশুদের চোখের গড়নে বিশেষ বৈশিষ্ট্য থাকে।", "t": "x", "s": "নার্সিং ও মিডওয়াইফারি অধিদপ্তর, সিনিয়র স্টাফ নার্স, ২০১৮", "p": "বংশগত রোগ", "v": 0}, {"q": "DNA কী?", "o": ["ক্রোমোজোম", "জাইগোট", "নিউক্লিওপ্লাজম", "নিউক্লিক এসিড"], "a": 3, "e": "DNA-এর পূর্ণরূপ ডিঅক্সিরাইবো নিউক্লিক এসিড (Deoxyribonucleic Acid)। এটি এক ধরনের নিউক্লিক এসিড, যা জীবের বংশগতির তথ্য বহন করে। DNA কোষের নিউক্লিয়াসে ক্রোমোজোমের মধ্যে থাকে, তাই এটি নিজে ক্রোমোজোম বা জাইগোট নয়। নিউক্লিওপ্লাজমও নিউক্লিয়াসের ভেতরের তরল পদার্থ, DNA নয়। DNA-এর তথ্য অনুযায়ী কোষে প্রোটিন তৈরি হয় এবং এভাবেই জীবের বৈশিষ্ট্য প্রকাশ পায়।<br>মনে রাখুন:<br>নিউক্লিক এসিড দুই প্রকার, DNA ও RNA।<br>DNA-এর দ্বিসূত্রক পেঁচানো গঠনের মডেল ১৯৫৩ সালে ওয়াটসন ও ক্রিক দেন।<br>জাইগোট হলো নিষিক্ত ডিম্বাণু, যা শুক্রাণু ও ডিম্বাণুর মিলনে তৈরি হয়।<br>DNA-এর চারটি ক্ষারক হলো অ্যাডেনিন, গুয়ানিন, সাইটোসিন ও থাইমিন।", "t": "x", "s": "বিভিন্ন মন্ত্রণালয়/বিভাগ/অধিদপ্তর, ব্যক্তিগত কর্মকর্তা, ২০১৮", "p": "DNA", "v": 0}, {"q": "মানবদেহে ক্রোমোজোম সাধারণত কয় জোড়া থাকে?", "o": ["২৩ জোড়া", "৪৬ জোড়া", "২১ জোড়া", "৪২ জোড়া"], "a": 0, "e": "মানুষের প্রতিটি দেহকোষে মোট ৪৬টি ক্রোমোজোম থাকে, অর্থাৎ ২৩ জোড়া। এর ২২ জোড়া অটোজোম (দেহ গঠনের) এবং বাকি ১ জোড়া লিঙ্গ নির্ধারণকারী। নারীর লিঙ্গ ক্রোমোজোম XX আর পুরুষের XY। ৪৬ হলো মোট সংখ্যা, জোড়ার সংখ্যা নয়, তাই ৪৬ জোড়া ভুল।<br>মনে রাখুন:<br>জননকোষে (শুক্রাণু ও ডিম্বাণু) ক্রোমোজোম থাকে ২৩টি।<br>ক্রোমোজোম গঠিত হয় ডিএনএ ও প্রোটিন দিয়ে।<br>২১তম ক্রোমোজোম একটি বেশি থাকলে ডাউন সিনড্রোম হয়।<br>নিষিক্ত ডিম্বাণুতে ২৩টি ক্রোমোজোম আসে মায়ের কাছ থেকে এবং ২৩টি আসে বাবার কাছ থেকে।<br>ক্রোমোজোমের সংখ্যা প্রজাতিভেদে আলাদা, যেমন মটর গাছে ১৪টি।", "t": "x", "s": "স্বাস্থ্য ও পরিবার কল্যাণ মন্ত্রণালয়, সিনিয়র স্টাফ নার্স (বাতিলকৃত পরীক্ষা), ২০১৭", "p": "ক্রোমোজোম", "v": 0}, {"q": "জীবদেহের বৈশিষ্ট্যগুলো বংশানুক্রমে বহন করে—", "o": ["ডি এন এ", "আর এন এ", "মাইটোকন্ড্রিয়া", "নিউক্লিক এসিড"], "a": 0, "e": "জীবের দেহকোষের নিউক্লিয়াসে ক্রোমোজোম থাকে, আর ক্রোমোজোম গঠিত হয় ডিএনএ (DNA বা ডিঅক্সিরাইবোনিউক্লিক অ্যাসিড) দিয়ে। এই ডিএনএতে বংশগত বৈশিষ্ট্যের তথ্য জমা থাকে, আর প্রজননের সময় তা পিতামাতা থেকে সন্তানে যায়। তাই বংশগতির ধারক ও বাহক হলো ডিএনএ। মাইটোকন্ড্রিয়া কোষের শক্তি উৎপাদনকারী অঙ্গাণু, আর নিউক্লিক অ্যাসিড একটি বৃহত্তর শ্রেণি, যার মধ্যে ডিএনএ ও আরএনএ দুটিই পড়ে, তাই নির্দিষ্ট উত্তর ডিএনএ।<br>মনে রাখুন:<br>কিছু ভাইরাসে ডিএনএর বদলে আরএনএ (RNA) এই কাজ করে।<br>ডিএনএ-র ছোট একটি অংশই জিন (Gene)।<br>১৯৫৩ সালে ওয়াটসন ও ক্রিক ডিএনএর দ্বিসূত্রক কুণ্ডলী গঠনের মডেল দেন।", "t": "x", "s": "জনপ্রশাসন মন্ত্রণালয়, ব্যক্তিগত কর্মকর্তা, ২০১৬", "p": "ডিএনএ", "v": 0}];
+const N=16, MIN=10, NB=0;           // প্রশ্নসংখ্যা, মিনিট, ন্যূনতম বিসিএস প্রশ্ন
+const bn=n=>String(n).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+const K=['ক','খ','গ','ঘ','ঙ'];
+const $=id=>document.getElementById(id);
+const show=id=>['start','exam','result','prac'].forEach(s=>$(s).hidden=s!==id);
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const fmtScore=x=>bn(Number.isInteger(x)?x:x.toFixed(1));
+const srcLine=q=>`<span class="src">${q.t==='b'?q.s:q.t==='x'?q.s:'সম্ভাব্য প্রশ্ন'}${q.v?' <span class="pend">অপশন যাচাই বাকি</span>':''}</span>`;
+const ref=q=>`<span class="ref">${/^\d|^[০-৯]/.test(q.p)?'বইয়ের অনুচ্ছেদ '+q.p:'বইয়ের অংশ: '+q.p}</span>`;
+function store(get,val){try{if(get)return JSON.parse(localStorage.getItem('genetics-scores')||'[]');localStorage.setItem('genetics-scores',JSON.stringify(val))}catch(e){return []}}
+function drawHist(){
+  const h=store(true)||[]; const el=$('hist');
+  if(!h.length){el.hidden=true;return}
+  el.hidden=false;
+  el.innerHTML='<b>এই ফোনে আগের পরীক্ষাগুলো</b><table><tr><th>পরীক্ষা</th><th>তারিখ</th><th>নম্বর</th></tr>'+
+    h.slice(-8).map((r,i,a)=>`<tr><td>${bn(h.length-a.length+i+1)}</td><td>${r.d}</td><td>${fmtScore(r.s)} / ${bn(r.n)}</td></tr>`).join('')+'</table>';
+}
+$('nq').textContent=bn(N);$('nm').textContent=bn(MIN);$('pool').textContent=bn(Q.length);$('tot').textContent=bn(N);
+drawHist();
+
+// ---------- পরীক্ষা ----------
+let paper=[],pick=[],timer=null,endAt=0,startAt=0,armed=0;
+function startExam(){
+  const b=shuffle(Q.filter(q=>q.t==='b')), r=shuffle(b.slice(NB).concat(Q.filter(q=>q.t!=='b')));
+  paper=shuffle(b.slice(0,NB).concat(r.slice(0,N-NB)));
+  pick=paper.map(()=>-1);
+  const box=$('elist');box.innerHTML='';
+  paper.forEach((q,i)=>{
+    const s=document.createElement('section');s.className='q';
+    s.innerHTML=`<div class="qh"><span class="num">${bn(i+1)}.</span><p class="qt">${q.q}${srcLine(q)}</p></div><div class="opts"></div>`;
+    const o=s.querySelector('.opts');
+    q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';
+      b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;
+      b.onclick=()=>{pick[i]=pick[i]===j?-1:j;[...o.children].forEach((x,k)=>x.classList.toggle('sel',k===pick[i]));$('ans').textContent=bn(pick.filter(x=>x>=0).length)};
+      o.appendChild(b)});
+    box.appendChild(s);
+  });
+  $('ans').textContent='০';
+  startAt=Date.now();endAt=startAt+MIN*60000;tick();clearInterval(timer);timer=setInterval(tick,500);
+  show('exam');window.scrollTo(0,0);
+}
+function tick(){
+  const left=Math.max(0,endAt-Date.now()),s=Math.ceil(left/1000);
+  $('clock').textContent=bn(String(Math.floor(s/60)).padStart(2,'0'))+':'+bn(String(s%60).padStart(2,'0'));
+  $('clock').classList.toggle('low',s<=60);
+  if(left<=0)finish();
+}
+function askSubmit(btn){
+  const blank=pick.filter(x=>x<0).length;
+  if(armed&&Date.now()-armed<4000){finish();return}
+  armed=Date.now();
+  [$('submit'),$('submit2')].forEach(b=>b.textContent=blank?`${bn(blank)}টি বাকি, তবু জমা দিতে আবার চাপুন`:'নিশ্চিত হলে আবার চাপুন');
+  setTimeout(()=>{if(Date.now()-armed>=4000)[$('submit'),$('submit2')].forEach(b=>b.textContent='জমা দিন')},4100);
+}
+function finish(){
+  clearInterval(timer);armed=0;[$('submit'),$('submit2')].forEach(b=>b.textContent='জমা দিন');
+  let ok=0,bad=0;paper.forEach((q,i)=>{if(pick[i]<0)return;pick[i]===q.a?ok++:bad++});
+  const blank=N-ok-bad, score=ok-bad*0.5, used=Math.min(MIN*60,Math.round((Date.now()-startAt)/1000));
+  const d=new Date(), ds=bn(d.getDate())+'/'+bn(d.getMonth()+1)+'/'+bn(d.getFullYear());
+  const h=store(true)||[];h.push({d:ds,s:score,n:N});store(false,h);
+  const msg=score>=12.8?'চমৎকার! অধ্যায়টি আপনার আয়ত্তে এসেছে।':score>=9.6?'ভালো হয়েছে। ভুল প্রশ্নগুলোর অংশ আবার পড়ে নিন।':'অধ্যায়টি আরেকবার পড়ে কয়েক দিন পর আবার পরীক্ষা দিন।';
+  $('scorebox').innerHTML=`<div class="big">${fmtScore(score)} / ${bn(N)}</div>
+   <div class="stats"><span class="ok">সঠিক ${bn(ok)}</span><span class="no">ভুল ${bn(bad)}</span><span class="skip">উত্তর দেননি ${bn(blank)}</span><span>সময় ${bn(Math.floor(used/60))} মিনিট ${bn(used%60)} সেকেন্ড</span></div>
+   <p class="msg">${msg}</p><p class="msg">বইয়ের শেষ পাতার ছকে লিখে রাখুন: তারিখ ${ds}, নম্বর ${fmtScore(score)}।</p>`;
+  const box=$('rlist');box.innerHTML='';
+  paper.forEach((q,i)=>{
+    const s=document.createElement('section');s.className='q';const p=pick[i];
+    s.innerHTML=`<div class="qh"><span class="num">${bn(i+1)}.</span><p class="qt">${q.q}${srcLine(q)}</p></div><div class="opts">${
+      q.o.map((t,j)=>`<button type="button" class="opt${j===q.a?' right':''}${j===p&&p!==q.a?' wrong':''}" disabled><span class="k">${K[j]}</span><span>${t}</span></button>`).join('')}</div>
+      <div class="exp">${p<0?'<span class="skip">উত্তর দেননি।</span> সঠিক উত্তর: '+K[q.a]+') '+q.o[q.a]+'।':p===q.a?'<span class="ok">সঠিক (+১)।</span>':'<span class="no">ভুল (−০.৫)।</span> সঠিক উত্তর: '+K[q.a]+') '+q.o[q.a]+'।'} ${q.e} ${ref(q)}</div>`;
+    box.appendChild(s);
+  });
+  show('result');window.scrollTo(0,0);drawHist();
+}
+
+// ---------- অনুশীলন ----------
+let filt='all',pok=0,pdone=0;
+const F=[['all','সব'],['b','বিসিএস'],['x','অন্য পরীক্ষা'],['l','সম্ভাব্য']].filter(([k])=>k==='all'||Q.some(q=>q.t===k));
+$('chips').innerHTML=F.map(([k,t])=>`<button type="button" class="chip" data-k="${k}" aria-pressed="${k==='all'}">${t}</button>`).join('');
+$('chips').onclick=e=>{const k=e.target.dataset&&e.target.dataset.k;if(!k)return;filt=k;[...$('chips').children].forEach(c=>c.setAttribute('aria-pressed',c.dataset.k===k));renderPrac()};
+function renderPrac(){
+  const L=Q.filter(q=>filt==='all'||q.t===filt);pok=0;pdone=0;
+  const upd=()=>{$('pok').textContent=bn(pok);$('pdone').textContent=bn(pdone);$('ptot').textContent=bn(L.length)};
+  const box=$('plist');box.innerHTML='';
+  L.forEach((q,i)=>{
+    const s=document.createElement('section');s.className='q';
+    s.innerHTML=`<div class="qh"><span class="num">${bn(i+1)}.</span><p class="qt">${q.q}${srcLine(q)}</p></div><div class="opts"></div>`;
+    const o=s.querySelector('.opts');
+    q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';
+      b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;
+      b.onclick=()=>{[...o.children].forEach(x=>x.disabled=true);o.children[q.a].classList.add('right');
+        const good=j===q.a;if(!good)b.classList.add('wrong');pdone++;if(good)pok++;upd();
+        const e=document.createElement('div');e.className='exp';
+        e.innerHTML=`<span class="${good?'ok':'no'}">${good?'সঠিক।':'ভুল। সঠিক উত্তর: '+K[q.a]+') '+q.o[q.a]+'।'}</span> ${q.e} ${ref(q)}`;s.appendChild(e)};
+      o.appendChild(b)});
+    box.appendChild(s);
+  });
+  upd();
+}
+$('go').onclick=startExam;$('again').onclick=startExam;
+$('submit').onclick=()=>askSubmit();$('submit2').onclick=()=>askSubmit();
+$('home').onclick=$('home2').onclick=()=>{show('start');drawHist();window.scrollTo(0,0)};
+$('practice').onclick=()=>{renderPrac();show('prac');window.scrollTo(0,0)};
+window.addEventListener('beforeunload',e=>{if(!$('exam').hidden){e.preventDefault();e.returnValue=''}});
+</script>
+<script src="/js/book-link.js" data-kind="science" data-chapter="বংশগতি ও জীবপ্রযুক্তি" defer></script>
+</body>
+</html>

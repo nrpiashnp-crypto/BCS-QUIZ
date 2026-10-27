@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>মৌলিক জীববিজ্ঞান: অনলাইন পরীক্ষা</title>
+<meta name="description" content="বিসিএস বিজ্ঞান, অধ্যায় ১৪ মৌলিক জীববিজ্ঞান: বিগত বিসিএস ও চাকরির পরীক্ষার প্রশ্ন, সময় ও নেগেটিভ মার্কিংসহ, ব্যাখ্যাসহ।">
+<link rel="preload" href="/fonts/NotoSansBengali-bengali.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/TiroBangla-400-bengali.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+/* Layout: one narrow book-like column. Start screen -> exam (sticky timer bar) -> result + review. Practice mode keeps instant feedback. */
+:root{
+  --paper:#fbfaf7; --ink:#1d1f21; --muted:#5f6366; --rule:#d9d6cf; --card:#ffffff;
+  --accent:#1f4e5f; --accent-ink:#ffffff; --sel:#e3eef2; --good:#1e7a46; --good-bg:#e5f3ea; --bad:#b3261e; --bad-bg:#fbe9e7; --warn:#8a5a00;
+  --display:'Tiro Bangla',Georgia,serif; --body:'Noto Sans Bengali',system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#15181a; --ink:#e9e7e2; --muted:#a3a7aa; --rule:#33383b; --card:#1d2124;
+  --accent:#7fb7c9; --accent-ink:#0f1416; --sel:#1d3138; --good:#6fcf97; --good-bg:#17301f; --bad:#f08a80; --bad-bg:#3a1c1a; --warn:#e0b25a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#15181a; --ink:#e9e7e2; --muted:#a3a7aa; --rule:#33383b; --card:#1d2124;
+  --accent:#7fb7c9; --accent-ink:#0f1416; --sel:#1d3138; --good:#6fcf97; --good-bg:#17301f; --bad:#f08a80; --bad-bg:#3a1c1a; --warn:#e0b25a; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6}
+.wrap{max-width:680px;margin:0 auto;padding-block:20px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{border-bottom:2px solid var(--ink);padding-bottom:12px;margin-bottom:12px}
+.book{font-size:13px;letter-spacing:.04em;color:var(--muted)}
+h1{font-family:var(--display);font-weight:400;font-size:30px;margin:4px 0 2px;text-wrap:balance}
+h2{font-family:var(--display);font-weight:400;font-size:22px;margin:22px 0 8px}
+.sub{color:var(--muted);font-size:15px;margin:0}
+button{font:inherit;cursor:pointer}
+.btn{display:inline-block;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:10px 18px;font-weight:600}
+.btn.ghost{background:none;color:var(--ink);border-color:var(--rule);font-weight:500}
+.btns{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
+.rules{margin:8px 0 0;padding-left:20px}
+.rules li{margin:2px 0}
+.hist{border-top:1px solid var(--rule);margin-top:18px;padding-top:6px;font-size:15px}
+.hist table{border-collapse:collapse;width:100%}
+.hist td,.hist th{border-bottom:1px solid var(--rule);padding:5px 4px;text-align:left;font-variant-numeric:tabular-nums}
+.hist th{color:var(--muted);font-weight:500}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);background:var(--paper);display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--rule);z-index:5;font-size:15px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+.clock{font-family:var(--display);font-size:22px;color:var(--accent);font-variant-numeric:tabular-nums;min-width:4ch}
+.clock.low{color:var(--bad)}
+/* Start screen: the start button comes first and big, rules below it. */
+#start{display:flex;flex-direction:column}
+#start .back{order:-3}#start .selch{order:-2}#start .btns{order:-1;margin:6px 0 16px}
+#start #go{font-size:19px;padding:14px 26px;flex:1 1 220px}
+/* Exam bar sits at the bottom of the screen (Sakib's pick): quiet timer, submit button near the thumb. */
+#exam .bar{position:fixed;top:auto;bottom:0;left:0;right:0;padding:10px max(16px,calc(50% - 340px)) calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--rule);border-bottom:0;box-shadow:0 -4px 14px rgba(0,0,0,.06)}
+#exam{padding-bottom:76px}
+#exam .clock{font-family:var(--body);font-size:16px;font-weight:500;color:var(--ink);min-width:0}
+#exam .clock::before{content:"সময় ";font-size:13px;font-weight:400;color:var(--muted)}
+#exam .clock.low{color:var(--warn)}
+.bar b{font-variant-numeric:tabular-nums}
+.q{padding:18px 0;border-bottom:1px solid var(--rule)}
+.qh{display:flex;gap:10px;align-items:baseline}
+.num{font-family:var(--display);color:var(--accent);min-width:1.6em}
+.qt{font-weight:500;margin:0;min-width:0}
+.src{display:block;font-size:13px;color:var(--muted);font-weight:400}
+.pend{display:inline-block;font-size:12px;color:var(--warn);border:1px dashed var(--warn);border-radius:4px;padding:0 6px;margin-left:4px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 0 2.2em}
+@media (max-width:520px){.opts{grid-template-columns:1fr;margin-left:0}}
+.opt{display:flex;gap:8px;align-items:flex-start;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--rule);border-radius:8px;padding:9px 12px;min-height:44px;width:100%}
+.opt .k{font-family:var(--display);color:var(--muted);min-width:1.2em}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.opt.sel{background:var(--sel);border-color:var(--accent)}
+.opt:disabled{cursor:default}
+.opt.right{background:var(--good-bg);border-color:var(--good)}
+.opt.wrong{background:var(--bad-bg);border-color:var(--bad)}
+.exp{margin:10px 0 0 2.2em;font-size:15px;border-left:3px solid var(--accent);padding:2px 0 2px 10px}
+@media (max-width:520px){.exp{margin-left:0}}
+.ok{color:var(--good);font-weight:600}.no{color:var(--bad);font-weight:600}.skip{color:var(--muted);font-weight:600}
+.ref{color:var(--muted);white-space:nowrap}
+.score{border:1.5px solid var(--ink);border-radius:10px;padding:16px;margin:14px 0;text-align:center}
+.big{font-family:var(--display);font-size:46px;line-height:1.1;font-variant-numeric:tabular-nums}
+.stats{display:flex;justify-content:center;flex-wrap:wrap;gap:6px 18px;font-size:15px;margin-top:6px}
+.msg{margin:10px 0 0;font-size:15px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.chip{border:1px solid var(--rule);background:none;color:var(--ink);border-radius:999px;padding:4px 12px;font-size:14px}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+footer{margin-top:24px;font-size:14px;color:var(--muted)}
+.note{border:1px dashed var(--rule);border-radius:8px;padding:10px 12px;margin-top:14px}
+[hidden]{display:none !important}
+@media (prefers-reduced-motion:no-preference){.exp{animation:in .2s ease-out}@keyframes in{from{opacity:.4}to{opacity:1}}}
+</style>
+<link rel="icon" type="image/svg+xml" href="/img/logo/final-icon.svg">
+<link rel="apple-touch-icon" href="/img/logo/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="লিয়ানা বুকস">
+<meta property="og:title" content="মৌলিক জীববিজ্ঞান: অনলাইন পরীক্ষা · লিয়ানা বুকস">
+<meta property="og:description" content="বিসিএস বিজ্ঞান, মৌলিক জীববিজ্ঞান অধ্যায়: সময় ও নেগেটিভ মার্কিংসহ অনলাইন পরীক্ষা, ব্যাখ্যাসহ।">
+<meta property="og:url" content="https://lyannabooks.com/biology/">
+<meta property="og:image" content="https://lyannabooks.com/img/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="bn_BD">
+<meta name="twitter:card" content="summary_large_image">
+<style>.sitebar{background:#13294b;display:flex;align-items:center;justify-content:space-between;padding:8px 16px}.sitebar img{width:110px;height:auto;display:block}.exp .bl{display:block;margin-top:8px;font-size:12.5px;color:var(--muted);text-decoration:none;opacity:.85}.exp .bl:hover{text-decoration:underline}.sitebar a.h{color:#e6c97a;text-decoration:none;font:500 14px 'Noto Sans Bengali',system-ui,sans-serif}</style>
+</head>
+<body>
+<div class="sitebar"><a href="/"><img src="/img/logo/final-onnavy-transparent.svg" alt="লিয়ানা বুকস"></a><a class="h" href="/">← হোম</a></div>
+
+<div class="wrap">
+<header>
+  <div class="book">বিসিএস বিজ্ঞান · পিয়াস · অধ্যায় ১৪</div>
+  <h1>মৌলিক জীববিজ্ঞান: অনলাইন পরীক্ষা</h1>
+  <p class="sub">বিগত বিসিএস এবং অন্যান্য নিয়োগ ও ভর্তি পরীক্ষার প্রশ্ন, আসল পরীক্ষার নিয়মে।</p>
+</header>
+
+<section id="start">
+  <ul class="rules">
+    <li>প্রতি পরীক্ষায় <b id="nq">২৫</b>টি প্রশ্ন, সময় <b id="nm">১৫</b> মিনিট।</li>
+    <li>সঠিক উত্তরে ১ নম্বর, ভুল উত্তরে −০.৫। উত্তর না দিলে নম্বর কাটা যায় না।</li>
+    <li>জমা দেওয়ার আগে উত্তর বদলানো যায়। সময় শেষ হলে নিজে থেকেই জমা হবে।</li>
+    <li>শেষে ফল, প্রতিটি প্রশ্নের ব্যাখ্যা আর বইয়ের সংশ্লিষ্ট অংশের নাম দেখাবে।</li>
+    <li>প্রতিবার <b id="pool"></b>টি প্রশ্নের ভান্ডার থেকে নতুন করে প্রশ্ন বাছাই হয়, তাই বারবার পরীক্ষা দেওয়া যায়।</li>
+  </ul>
+  <div class="btns">
+    <button class="btn" id="go" type="button">পরীক্ষা শুরু করুন</button>
+    <button class="btn ghost" id="practice" type="button">সব প্রশ্ন অনুশীলন</button>
+  </div>
+  <div class="hist" id="hist" hidden></div>
+</section>
+
+<section id="exam" hidden>
+  <div class="bar"><span class="clock" id="clock">১৫:০০</span><span>উত্তর <b id="ans">০</b> / <b id="tot">২৫</b></span><button class="btn" id="submit" type="button">জমা দিন</button></div>
+  <main id="elist"></main>
+  <div class="btns"><button class="btn" id="submit2" type="button">জমা দিন</button></div>
+</section>
+
+<section id="result" hidden>
+  <div class="score" id="scorebox"></div>
+  <div class="btns"><button class="btn" id="again" type="button">নতুন পরীক্ষা</button><button class="btn ghost" id="home" type="button">শুরুর পাতা</button></div>
+  <h2>উত্তর ও ব্যাখ্যা</h2>
+  <main id="rlist"></main>
+</section>
+
+<section id="prac" hidden>
+  <div class="bar"><span>সঠিক <b id="pok">০</b> / উত্তর <b id="pdone">০</b> / মোট <b id="ptot">০</b></span><button class="btn ghost" id="home2" type="button">শুরুর পাতা</button></div>
+  <div class="chips" id="chips"></div>
+  <main id="plist"></main>
+</section>
+
+<footer>
+  <div class="note">বিসিএস ও অন্য পরীক্ষার প্রশ্নের নিচে পরীক্ষার নাম ও সাল দেওয়া আছে।</div>
+  <p>লিয়ানা বুকস · lyannabooks.com</p>
+</footer>
+</div>
+<script>
+const Q=[{"q": "স্পিরুলিনা কী?", "o": ["ছত্রাক", "শৈবাল", "ব্যাকটেরিয়া", "ভাইরাস"], "a": 1, "e": "স্পিরুলিনা (Spirulina) এক ধরনের নীলাভ-সবুজ শৈবাল (Blue-green Algae), যা ক্লোরোফিল ছাড়াও ফাইকোসায়ানিন নামের নীল রঞ্জক ধারণ করে। বিজ্ঞানের আধুনিক শ্রেণিবিন্যাসে একে সায়ানোব্যাকটেরিয়া বলা হয়। এটি সালোকসংশ্লেষণ করে নিজের খাদ্য তৈরি করে। এতে প্রচুর প্রোটিন, ভিটামিন ও খনিজ থাকে, তাই একে পুষ্টিকর খাদ্য-সম্পূরক হিসেবে খাওয়া হয়। বিশ্বের নানা দেশে এর চাষ হয় এবং এর চাহিদাও প্রচুর। আমাদের দেশে ও বিদেশে স্পিরুলিনার ট্যাবলেট ও গুঁড়া পুষ্টি-সম্পূরক হিসেবে বিক্রি হয়, এবং অপুষ্টি দূর করতে এর ব্যবহার নিয়ে গবেষণাও হচ্ছে।<br>মনে রাখুন:<br>স্পিরুলিনার শুকনো ওজনের প্রায় ৬০ শতাংশই প্রোটিন।<br>পানিতে ভাসমান শৈবালকে সাধারণভাবে ফাইটোপ্ল্যাঙ্কটন বলা হয়, যারা জলজ খাদ্যশৃঙ্খলের প্রথম ধাপ।", "t": "x", "s": "কারিগরি শিক্ষা অধিদপ্তর, জুনিয়র ইন্সট্রাক্টর (পলিটেকনিক ও টেকনিক্যাল স্কুল), ২০২৩", "p": "শৈবাল", "v": 0}, {"q": "জীবকোষে কোন স্থানে প্রোটিন সংশ্লেষিত হয়?", "o": ["রাইবোজোম", "নিউক্লিয়াস", "মাইট্রোক্রিয়া", "ক্রোমোজোম"], "a": 0, "e": "কোষের ভেতরে প্রোটিন তৈরির কাজ চলে রাইবোজোমে (Ribosome)। নিউক্লিয়াসের ডিএনএ থেকে বার্তা বহনকারী আরএনএ (mRNA) রাইবোজোমে এসে পৌঁছায়। সেখানে সেই বার্তা পড়ে অ্যামাইনো এসিডগুলোকে সঠিক ক্রমে জুড়ে প্রোটিন গড়া হয়। এ কারণে রাইবোজোমকে প্রোটিন তৈরির কারখানা বা প্রোটিন ফ্যাক্টরি বলা হয়। অন্যদিকে মাইটোকন্ড্রিয়া শক্তি উৎপাদন করে বলে কোষের শক্তিঘর, নিউক্লিয়াস কোষের নিয়ন্ত্রণকেন্দ্র আর ক্রোমোজোম বংশগতির বাহক। এ কারণে প্রোটিনের চাহিদা বেশি এমন কোষে, যেমন যকৃত ও গ্রন্থিকোষে, রাইবোজোমের সংখ্যাও বেশি থাকে। এরা কোষের সাইটোপ্লাজমে মুক্তভাবে ভাসে।<br>মনে রাখুন:<br>রাইবোজোম আবিষ্কার করেন জর্জ পেলেড।<br>রাইবোজোম কিছু অংশে অন্তঃপ্লাজমীয় জালিকার গায়ে লেগে থাকে।", "t": "x", "s": "কারিগরি শিক্ষা অধিদপ্তর, জুনিয়র ইন্সট্রাক্টর (পলিটেকনিক ও টেকনিক্যাল স্কুল), ২০২৩", "p": "কোষের অঙ্গাণু", "v": 0}, {"q": "ব্যাকটেরিয়া আবিষ্কার করেন কে?", "o": ["রবার্ট কুক", "লিউয়েন হুক", "রবার্ট হুক", "এডওয়ার্ড জেনার"], "a": 1, "e": "ব্যাকটেরিয়া এত ছোট যে খালি চোখে দেখা যায় না। ওলন্দাজ বিজ্ঞানী অ্যান্টনি ফন লিউয়েনহুক (Antonie van Leeuwenhoek) নিজের হাতে তৈরি সরল অণুবীক্ষণ যন্ত্র দিয়ে ১৬৭০-এর দশকে প্রথম এই জীবাণু দেখেন। এ কারণেই তাঁকে ব্যাকটেরিওলজির জনক বলা হয়। ব্যাকটেরিয়া নামটি অনেক পরে, ১৮২৯ সালে, জার্মান বিজ্ঞানী এরেনবার্গ দেন। রবার্ট হুক এই পরিচয়ের ক্ষেত্রে ভিন্ন, তিনি ১৬৬৫ সালে কোষ আবিষ্কার করেছিলেন। আর এডওয়ার্ড জেনার ১৭৯৬ সালে গুটিবসন্তের টিকা উদ্ভাবন করেন।<br>মনে রাখুন:<br>কোষের আবিষ্কারক: রবার্ট হুক (১৬৬৫)।<br>টিকার জনক: এডওয়ার্ড জেনার।<br>জীবাণুতত্ত্বের প্রতিষ্ঠাতা হিসেবে পরিচিত লুই পাস্তুর ও রবার্ট কখ।", "t": "x", "s": "পরিবার পরিকল্পনা অধিদপ্তর, মেডিকেল টেকনোলজিস্ট, ২০২৩", "p": "অণুজীব", "v": 0}, {"q": "'এভিকালচার' কী?", "o": ["মৎস্য চাষ", "পাখিপালন বিদ্যা", "মৌমাছি চাষ", "রেশম চাষ"], "a": 1, "e": "কালচার শব্দের অর্থ চাষ বা পালন। বিভিন্ন প্রাণী ও উদ্ভিদ পালনের জন্য আলাদা আলাদা বৈজ্ঞানিক নাম আছে। এভিকালচার (Aviculture) হলো পাখি পালন ও তার প্রজনন-সংক্রান্ত বিদ্যা। এভিস শব্দটি ল্যাটিন, যার অর্থ পাখি। কাজেই মৎস্য চাষ বা মৌমাছি পালনের সঙ্গে এর মিল নেই। মাছ চাষকে বলে পিসিকালচার, মৌমাছি পালনকে বলে এপিকালচার আর রেশম পোকা পালনকে বলে সেরিকালচার। এই শব্দগুলোর গোড়ার অংশ মনে রাখলে প্রশ্ন সহজ হয়, কারণ প্রতিটি ল্যাটিন বা গ্রিক শব্দ থেকে এসেছে। যেমন পিসিস মানে মাছ, এপিস মানে মৌমাছি এবং সেরিকাম মানে রেশম।<br>মনে রাখুন:<br>পিসিকালচার: মাছ চাষ।<br>এপিকালচার: মৌমাছি পালন।<br>সেরিকালচার: রেশম চাষ।<br>হর্টিকালচার: বাগান বা ফল-ফুল চাষ।", "t": "x", "s": "তথ্য অধিদপ্তর, সহকারী তথ্য অফিসার, ২০২২", "p": "প্রাণিবিদ্যার শাখা", "v": 0}, {"q": "'ব্ল্যাক বেঙ্গল' কীসের জাত?", "o": ["গরু", "হাঁস", "মুরগি", "ছাগল"], "a": 3, "e": "ব্ল্যাক বেঙ্গল (Black Bengal) বাংলাদেশের নিজস্ব ছাগলের জাত। এর গায়ের রঙ সাধারণত কালো, দেহ ছোট কিন্তু শক্তপোক্ত। এই ছাগলের মাংস সুস্বাদু এবং চামড়া নরম ও মজবুত, তাই বিশ্বে এর চামড়ার বেশ কদর আছে। এরা অল্প খাবারে বাঁচে, বছরে দুবার বাচ্চা দেয় এবং একসঙ্গে প্রায় দুই-তিনটি বাচ্চা হয়। ফলে গ্রামীণ দরিদ্র পরিবারের আয়ের একটি ভালো উৎস এই ছাগল।<br>মনে রাখুন:<br>ছাগলকে বলা হয় 'গরিবের গাভী'।<br>বাংলাদেশের উন্নত গরুর জাত: রেড চিটাগং ক্যাটল, পাবনা ক্যাটল।<br>হাঁসের স্থানীয় জাত: দেশি হাঁস, জিন্ডিং, খাকি ক্যাম্পবেল।", "t": "x", "s": "কৃষি সম্প্রসারণ অধিদপ্তর, উপসহকারী কৃষি কর্মকর্তা, ২০২১", "p": "প্রাণীর জাত", "v": 0}, {"q": "জীবের বেঁচে থাকার জন্য কোনটি অত্যাবশ্যক নয়?", "o": ["পানি", "খাবার", "মাটি", "অক্সিজেন"], "a": 2, "e": "জীবের বেঁচে থাকার জন্য অক্সিজেন, খাদ্য ও পানি অপরিহার্য। অক্সিজেন ছাড়া কয়েক মিনিটের বেশি বাঁচা যায় না, খাবার ছাড়া কয়েক সপ্তাহ, আর পানি ছাড়া কয়েক দিন। মাটি পরিবেশের গুরুত্বপূর্ণ উপাদান, ফসল জন্মানোর ভিত্তি, কিন্তু সব জীবের সরাসরি বেঁচে থাকার জন্য এটি অত্যাবশ্যক নয়। জলজ প্রাণী মাটিতে না থেকেও বাঁচে, এমনকি হাইড্রোপনিক পদ্ধতিতে উদ্ভিদ পানিতে পুষ্টি দিয়ে বিনা মাটিতেও জন্মানো যায়।<br>মনে রাখুন:<br>জীবের কোষীয় শ্বসনের জন্য অক্সিজেন প্রয়োজন।<br>দেহের ওজনের প্রায় ৭০ ভাগ পানি।<br>পরিবেশের উপাদান: জৈব (উদ্ভিদ, প্রাণী) ও অজৈব (মাটি, পানি, বায়ু)।", "t": "x", "s": "কৃষি সম্প্রসারণ অধিদপ্তর, উপসহকারী কৃষি কর্মকর্তা, ২০২১", "p": "জীবের প্রয়োজন", "v": 0}, {"q": "কোনটি কোষের অংশ নয়?", "o": ["সেলমেমব্রেন", "সাইটোপ্লাজম", "প্লাজমা", "নিউক্লিয়াস"], "a": 2, "e": "কোষের তিনটি প্রধান অংশ আছে। বাইরের আবরণ কোষঝিল্লি (Cell Membrane), তার ভেতরে কোষের তরল অংশ সাইটোপ্লাজম এবং কোষের নিয়ন্ত্রণ কেন্দ্র নিউক্লিয়াস। এগুলো কোষের অংশ। কিন্তু প্লাজমা কোষের অংশ নয়। প্লাজমা হলো রক্তের তরল অংশ, যার প্রায় ৯০% পানি। এতে হরমোন, খাদ্যসার, বর্জ্য ও প্রোটিনের মতো পদার্থ দ্রবীভূত থাকে। রক্তকণিকা এই প্লাজমার মধ্যে ভেসে বেড়ায়। প্লাজমা থেকে ফাইব্রিনোজেন জাতীয় প্রোটিন আলাদা করে নিলে যে তরল পড়ে থাকে, তাকে সিরাম বলে। রক্ত জমাট বাঁধতে এই প্রোটিন কাজে লাগে।<br>মনে রাখুন:<br>রক্তের প্রায় ৫৫% প্লাজমা আর ৪৫% রক্তকণিকা।<br>উদ্ভিদকোষে কোষঝিল্লির বাইরে সেলুলোজের কোষপ্রাচীর থাকে।<br>প্রাণীকোষে কোষপ্রাচীর নেই।", "t": "x", "s": "নার্সিং ও মিডওয়াইফারি অধিদপ্তর, সিনিয়র স্টাফ নার্স, ২০২১", "p": "কোষ", "v": 0}, {"q": "— is the study of living creatures.", "o": ["Physics", "Biology", "Zoology", "Botany"], "a": 1, "e": "জীবন্ত প্রাণী ও উদ্ভিদ নিয়ে যে বিজ্ঞান, তার নাম Biology বা জীববিজ্ঞান। এটি বড় শাখা, যার অধীনে অনেক ছোট শাখা আছে। Zoology শুধু প্রাণী নিয়ে আর Botany শুধু উদ্ভিদ নিয়ে পড়াশোনা করে। Physics পদার্থের ধর্ম ও শক্তি নিয়ে আলোচনা করে, যেখানে জীবনের কথা নেই। তাই ‘living creatures’ বললে সবচেয়ে ব্যাপক উত্তর Biology।<br>মনে রাখুন: Biology শব্দটি এসেছে গ্রিক bios (জীবন) ও logos (বিজ্ঞান) থেকে। Zoology = প্রাণিবিদ্যা, Botany = উদ্ভিদবিদ্যা।<br>অণুজীববিজ্ঞান (Microbiology) জীবাণু নিয়ে এবং বংশগতিবিদ্যা (Genetics) বংশগতি নিয়ে আলোচনা করে।<br>অ্যারিস্টটলকে জীববিজ্ঞানের জনক বলা হয়।", "t": "x", "s": "স্বাস্থ্য প্রকৌশল অধিদপ্তর, এস্টিমেটর (তড়িৎ), ২০১৯", "p": "জীববিজ্ঞানের শাখা", "v": 0}, {"q": "মাশরুম এক ধরনের—", "o": ["ফাঙ্গাস", "অপুষ্পক উদ্ভিদ", "পরজীবী উদ্ভিদ", "অর্কিড"], "a": 0, "e": "মাশরুম এক ধরনের ছত্রাক বা ফাঙ্গাস (Fungus)। ছত্রাকে ক্লোরোফিল থাকে না, তাই তারা সূর্যের আলো থেকে নিজের খাবার তৈরি করতে পারে না, বরং মৃত বা পচা জৈব পদার্থ থেকে খাদ্য শোষণ করে। প্রাণিজগৎ ও উদ্ভিদজগতের মতো ছত্রাকের আলাদা একটি রাজ্য আছে। অপুষ্পক উদ্ভিদ বলা ঠিক নয়, কারণ শ্রেণিবিন্যাসে মাশরুম উদ্ভিদ নয়।<br>মনে রাখুন:<br>খাদ্য উপযোগী মাশরুমে প্রোটিন ও ভিটামিন থাকে, তবে কিছু মাশরুম বিষাক্ত।<br>ইস্ট ও পেনিসিলিয়ামও ছত্রাক।<br>মাশরুমের দেহ হাইফি নামের সূক্ষ্ম সুতার মতো কোষে গঠিত, সবগুলো মিলে মাইসেলিয়াম তৈরি করে।<br>ছত্রাকের কোষপ্রাচীর কাইটিন দিয়ে তৈরি।", "t": "x", "s": "পররাষ্ট্র মন্ত্রণালয়, ব্যক্তিগত কর্মকর্তা, ২০১৯", "p": "ছত্রাক", "v": 0}, {"q": "নিচের কোন শর্করাটি উদ্ভিদের কোষ প্রাচীরে পাওয়া যায়?", "o": ["স্টার্চ", "সেলুলোজ", "গ্লাইকোজেন", "ক ও খ"], "a": 1, "e": "উদ্ভিদকোষের চারদিকে কোষপ্রাচীর (Cell wall) থাকে, যার প্রধান উপাদান সেলুলোজ (Cellulose)। এটি গ্লুকোজ অণু দিয়ে তৈরি একটি জটিল শর্করা। স্টার্চ উদ্ভিদের খাদ্য সঞ্চয়ের শর্করা এবং গ্লাইকোজেন প্রাণীর যকৃত ও পেশিতে জমা থাকে, তাই এ দুটি কোষপ্রাচীরে পাওয়া যায় না। সেলুলোজ মানুষ হজম করতে পারে না, তবু এটি খাদ্যআঁশ হিসেবে মল নিষ্কাশনে সাহায্য করে।<br>মনে রাখুন:<br>সেলুলোজ কাগজ ও তুলার প্রধান উপাদান।<br>প্রাণিকোষে কোষপ্রাচীর থাকে না।<br>গরু-ছাগলের পাকস্থলীর জীবাণু সেলুলোজ হজম করতে পারে, তাই এরা ঘাস খেয়ে বাঁচে।<br>সেলুলোজ গ্লুকোজ অণুর শিকল দিয়ে তৈরি, তাই এটি পলিস্যাকারাইড শ্রেণির শর্করা।", "t": "x", "s": "কৃষি সম্প্রসারণ অধিদপ্তর, উপ-সহকারী কৃষি কর্মকর্তা, ২০১৯", "p": "কোষপ্রাচীর", "v": 0}, {"q": "মাশরুম এক ধরনের —", "o": ["অপুষ্পক উদ্ভিদ", "ফাংগাস", "অর্কিড", "পরজীবী উদ্ভিদ"], "a": 1, "e": "মাশরুম বা ব্যাঙের ছাতা একটি ছত্রাক (ফাংগাস, Fungus)। এর দেহে ক্লোরোফিল নেই, তাই এটি নিজে খাদ্য তৈরি করতে পারে না। মৃত জৈব পদার্থ থেকে খাদ্য শোষণ করে বেঁচে থাকে বলে একে মৃতজীবী বলে। ফাংগাস উদ্ভিদ জগতের অংশ নয়, আলাদা জগৎ (Kingdom Fungi) বলে গণ্য হয়। তাই ‘অপুষ্পক উদ্ভিদ’ বলা ঠিক নয়। অর্কিড ফুলগাছ, আর পরজীবী উদ্ভিদ অন্য জীবের ওপর বেঁচে থাকে, মাশরুম সাধারণত তা নয়।<br>মনে রাখুন:<br>ইস্ট, পেনিসিলিয়াম ও মাশরুম সবই ফাংগাসের উদাহরণ।<br>ফাংগাসের কোষপ্রাচীর কাইটিন দিয়ে তৈরি।<br>পেনিসিলিয়াম থেকে পেনিসিলিন নামের অ্যান্টিবায়োটিক পাওয়া যায়।", "t": "x", "s": "মাদকদ্রব্য নিয়ন্ত্রণ অধিদপ্তর, উপ-পরিদর্শক, ২০১৮", "p": "ছত্রাক", "v": 0}, {"q": "মানুষের বৈজ্ঞানিক নাম কী?", "o": ["হোমো ইরেক্টাস", "হোমো স্যাপিয়েন্স", "হোমো হ্যাবিলস", "হোমো নেয়ান্ডারথালিস"], "a": 1, "e": "আধুনিক মানুষের বৈজ্ঞানিক নাম হোমো স্যাপিয়েন্স (Homo sapiens)। ল্যাটিন ভাষায় ‘হোমো’ মানে মানুষ এবং ‘স্যাপিয়েন্স’ মানে জ্ঞানী। বৈজ্ঞানিক নামের প্রথম অংশ গণ (Genus) এবং দ্বিতীয় অংশ প্রজাতি (Species)। হোমো ইরেক্টাস, হোমো হ্যাবিলিস ও হোমো নেয়ান্ডারথালেনসিস আদি বা বিলুপ্ত মানব-প্রজাতি। এই নামগুলোর প্রথম শব্দ একই, কারণ সবাই একই গণ হোমোর অন্তর্ভুক্ত, শুধু প্রজাতি আলাদা।<br>মনে রাখুন:<br>আধুনিক মানুষের পূর্ণ নাম Homo sapiens sapiens।<br>হোমো ইরেক্টাস মানে সোজা হয়ে হাঁটা মানুষ, আর হোমো হ্যাবিলিস মানে দক্ষ মানুষ।<br>দ্বিপদ নামকরণ পদ্ধতি দেন কার্ল লিনিয়াস।<br>মানুষ বর্গীকরণে স্তন্যপায়ী শ্রেণির অন্তর্ভুক্ত এবং প্রাইমেট বর্গের সদস্য।", "t": "x", "s": "ডাক অধিদপ্তর, এস্টিমেটর, ২০১৮", "p": "বৈজ্ঞানিক নাম", "v": 0}, {"q": "মাছ কোনটির সাহায্যে শ্বাসকার্য চালায়?", "o": ["ত্বকের সাহায্যে", "ফুসফুসের সাহায্যে", "ফুলকার সাহায্যে", "গিলের সাহায্যে"], "a": 2, "e": "মাছ ফুলকার (Gill) সাহায্যে শ্বাস নেয়। পানিতে দ্রবীভূত অক্সিজেন ফুলকার মধ্য দিয়ে রক্তে যায় এবং কার্বন ডাইঅক্সাইড বেরিয়ে আসে। বেশির ভাগ মাছ ত্বক বা ফুসফুস দিয়ে নয়, প্রধানত ফুলকা দিয়েই শ্বাস নেয়। ‘গিল’ ফুলকার ইংরেজি নাম, তাই এটি আলাদা কোনো অঙ্গ নয়।<br>মনে রাখুন:<br>কৈ, শিং, মাগুরের মতো কিছু মাছ ফুলকার সঙ্গে অতিরিক্ত শ্বাস অঙ্গ ব্যবহার করে, আর ফুসফুসমাছ ফুসফুস দিয়ে শ্বাস নিতে পারে।<br>ব্যাঙ ত্বক ও ফুসফুস, দুটি দিয়েই শ্বাস নেয়।<br>তিমি ও ডলফিন মাছ নয়, তারা স্তন্যপায়ী এবং ফুসফুস দিয়ে শ্বাস নেয়।", "t": "x", "s": "বিভিন্ন মন্ত্রণালয়/বিভাগ/অধিদপ্তর, প্রশাসনিক কর্মকর্তা (সাধারণ), ২০১৮", "p": "মাছের শ্বাসক্রিয়া", "v": 0}, {"q": "পাখিপালন বিদ্যাকে কী বলে?", "o": ["এপিকালচার", "এভিকালচার", "পোলট্রি", "এথনোলজি"], "a": 1, "e": "পাখি পালনের বিদ্যা এভিকালচার (Aviculture)। ল্যাটিন avis মানে পাখি, আর culture মানে চাষ বা পালন। মনে রাখার সহজ উপায় হলো এভিয়েশনের সঙ্গে মিল। অন্যান্য পালনবিদ্যার নাম আলাদা: মৌমাছি পালনের নাম এপিকালচার (apis = মৌমাছি), মাছ চাষের নাম পিসিকালচার (piscis = মাছ) এবং রেশম চাষের নাম সেরিকালচার। পোলট্রি বলতে মূলত হাঁস-মুরগি পালনকে বোঝায়, আর এথনোলজি হলো মানবজাতির বিজ্ঞান।<br>মনে রাখুন:<br>হর্টিকালচার = বাগান চাষ।<br>ভারমিকালচার = কেঁচো পালন।<br>ফ্লোরিকালচার = ফুল চাষ।<br>সিলভিকালচার = বনায়ন ও বনের পরিচর্যা।<br>অলেরিকালচার = শাকসবজি চাষ।<br>পোলট্রি শব্দটি হাঁস-মুরগি পালনের শিল্পকে বোঝায়।", "t": "x", "s": "বিভিন্ন মন্ত্রণালয়, সহকারী মেইনটেন্যান্স ইঞ্জিনিয়ার, ২০১৭", "p": "প্রাণী পালন", "v": 0}, {"q": "মানবদেহের মৌলিক ইউনিটের নাম কী?", "o": ["কোষ", "নিউক্লিয়াস", "মাইটোকন্ড্রিয়া", "নিউক্লিওলাস"], "a": 0, "e": "জীবদেহের গঠন ও কাজের সবচেয়ে ছোট একক হলো কোষ (Cell)। অ্যামিবার মতো এককোষী প্রাণী একটি কোষ দিয়েই জীবনের সব কাজ চালায়, আর মানুষের মতো বহুকোষী প্রাণীর দেহ কোটি কোটি কোষ দিয়ে তৈরি। নিউক্লিয়াস, মাইটোকন্ড্রিয়া ও নিউক্লিওলাস আলাদা কোনো একক নয়, এগুলো কোষের ভেতরের অংশ।<br>মজার ব্যাপার হলো, ভাইরাসের কোনো কোষীয় গঠন নেই, তাই একে অকোষীয় বলা হয়।<br>মনে রাখুন:<br>রবার্ট হুক ১৬৬৫ সালে প্রথম কোষ (Cell) নামটি দেন।<br>শ্লাইডেন ও শোয়ান কোষতত্ত্ব প্রতিষ্ঠা করেন।<br>মাইটোকন্ড্রিয়াকে কোষের শক্তিঘর বলা হয়।<br>কোষ কথাটির ইংরেজি Cell এসেছে ল্যাটিন শব্দ ‘সেলুলা’ থেকে, যার অর্থ ছোট ঘর।", "t": "x", "s": "নার্সিং সেবা অধিদপ্তর, মিডওয়াইফ, ২০১৭", "p": "কোষ", "v": 0}, {"q": "কোন প্রাণী নিজের শরীরের চেয়ে পঞ্চাশ গুণ বেশি ভরের বস্তু বহন করতে পারে?", "o": ["ঘোড়া", "হাতি", "পিঁপড়া", "গাধা"], "a": 2, "e": "পিঁপড়া তার নিজের দেহের ভরের প্রায় ৫০ গুণ ভার বহন করতে পারে। এর কারণ, পিঁপড়ার দেহ ছোট হওয়ায় তার ওজনের তুলনায় পেশির প্রস্থচ্ছেদ বেশি, তাই পেশির জোরও আপেক্ষিকভাবে বেশি। বড় প্রাণীর দেহ বাড়লে ওজন যত বাড়ে, পেশির শক্তি তত বাড়ে না। ঘোড়া, হাতি বা গাধা তাদের নিজের ওজনের তুলনায় এত বেশি ভার বইতে পারে না।<br>মনে রাখুন:<br>কিছু প্রজাতির পিঁপড়া আরও বেশি ভারও তুলতে পারে, তবে সাধারণত ৫০ গুণের কথা বলা হয়।<br>পিঁপড়া দলবদ্ধ সামাজিক পতঙ্গ, কাজ ভাগ করে নিয়ে কলোনিতে বাস করে।<br>পিঁপড়ার দেহ তিনটি অংশে বিভক্ত: মাথা, বক্ষ ও উদর।", "t": "x", "s": "জনপ্রশাসন মন্ত্রণালয়, ব্যক্তিগত কর্মকর্তা, ২০১৬", "p": "প্রাণীর বৈশিষ্ট্য", "v": 0}];
+const N=16, MIN=10, NB=0;           // প্রশ্নসংখ্যা, মিনিট, ন্যূনতম বিসিএস প্রশ্ন
+const bn=n=>String(n).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+const K=['ক','খ','গ','ঘ','ঙ'];
+const $=id=>document.getElementById(id);
+const show=id=>['start','exam','result','prac'].forEach(s=>$(s).hidden=s!==id);
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const fmtScore=x=>bn(Number.isInteger(x)?x:x.toFixed(1));
+const srcLine=q=>`<span class="src">${q.t==='b'?q.s:q.t==='x'?q.s:'সম্ভাব্য প্রশ্ন'}${q.v?' <span class="pend">অপশন যাচাই বাকি</span>':''}</span>`;
+const ref=q=>`<span class="ref">${/^\d|^[০-৯]/.test(q.p)?'বইয়ের অনুচ্ছেদ '+q.p:'বইয়ের অংশ: '+q.p}</span>`;
+function store(get,val){try{if(get)return JSON.parse(localStorage.getItem('biology-scores')||'[]');localStorage.setItem('biology-scores',JSON.stringify(val))}catch(e){return []}}
+function drawHist(){
+  const h=store(true)||[]; const el=$('hist');
+  if(!h.length){el.hidden=true;return}
+  el.hidden=false;
+  el.innerHTML='<b>এই ফোনে আগের পরীক্ষাগুলো</b><table><tr><th>পরীক্ষা</th><th>তারিখ</th><th>নম্বর</th></tr>'+
+    h.slice(-8).map((r,i,a)=>`<tr><td>${bn(h.length-a.length+i+1)}</td><td>${r.d}</td><td>${fmtScore(r.s)} / ${bn(r.n)}</td></tr>`).join('')+'</table>';
+}
+$('nq').textContent=bn(N);$('nm').textContent=bn(MIN);$('pool').textContent=bn(Q.length);$('tot').textContent=bn(N);
+drawHist();
+
+// ---------- পরীক্ষা ----------
+let paper=[],pick=[],timer=null,endAt=0,startAt=0,armed=0;
+function startExam(){
+  const b=shuffle(Q.filter(q=>q.t==='b')), r=shuffle(b.slice(NB).concat(Q.filter(q=>q.t!=='b')));
+  paper=shuffle(b.slice(0,NB).concat(r.slice(0,N-NB)));
+  pick=paper.map(()=>-1);
+  const box=$('elist');box.innerHTML='';
+  paper.forEach((q,i)=>{
+    const s=document.createElement('section');s.className='q';
+    s.innerHTML=`<div class="qh"><span class="num">${bn(i+1)}.</span><p class="qt">${q.q}${srcLine(q)}</p></div><div class="opts"></div>`;
+    const o=s.querySelector('.opts');
+    q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';
+      b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;
+      b.onclick=()=>{pick[i]=pick[i]===j?-1:j;[...o.children].forEach((x,k)=>x.classList.toggle('sel',k===pick[i]));$('ans').textContent=bn(pick.filter(x=>x>=0).length)};
+      o.appendChild(b)});
+    box.appendChild(s);
+  });
+  $('ans').textContent='০';
+  startAt=Date.now();endAt=startAt+MIN*60000;tick();clearInterval(timer);timer=setInterval(tick,500);
+  show('exam');window.scrollTo(0,0);
+}
+function tick(){
+  const left=Math.max(0,endAt-Date.now()),s=Math.ceil(left/1000);
+  $('clock').textContent=bn(String(Math.floor(s/60)).padStart(2,'0'))+':'+bn(String(s%60).padStart(2,'0'));
+  $('clock').classList.toggle('low',s<=60);
+  if(left<=0)finish();
+}
+function askSubmit(btn){
+  const blank=pick.filter(x=>x<0).length;
+  if(armed&&Date.now()-armed<4000){finish();return}
+  armed=Date.now();
+  [$('submit'),$('submit2')].forEach(b=>b.textContent=blank?`${bn(blank)}টি বাকি, তবু জমা দিতে আবার চাপুন`:'নিশ্চিত হলে আবার চাপুন');
+  setTimeout(()=>{if(Date.now()-armed>=4000)[$('submit'),$('submit2')].forEach(b=>b.textContent='জমা দিন')},4100);
+}
+function finish(){
+  clearInterval(timer);armed=0;[$('submit'),$('submit2')].forEach(b=>b.textContent='জমা দিন');
+  let ok=0,bad=0;paper.forEach((q,i)=>{if(pick[i]<0)return;pick[i]===q.a?ok++:bad++});
+  const blank=N-ok-bad, score=ok-bad*0.5, used=Math.min(MIN*60,Math.round((Date.now()-startAt)/1000));
+  const d=new Date(), ds=bn(d.getDate())+'/'+bn(d.getMonth()+1)+'/'+bn(d.getFullYear());
+  const h=store(true)||[];h.push({d:ds,s:score,n:N});store(false,h);
+  const msg=score>=12.8?'চমৎকার! অধ্যায়টি আপনার আয়ত্তে এসেছে।':score>=9.6?'ভালো হয়েছে। ভুল প্রশ্নগুলোর অংশ আবার পড়ে নিন।':'অধ্যায়টি আরেকবার পড়ে কয়েক দিন পর আবার পরীক্ষা দিন।';
+  $('scorebox').innerHTML=`<div class="big">${fmtScore(score)} / ${bn(N)}</div>
+   <div class="stats"><span class="ok">সঠিক ${bn(ok)}</span><span class="no">ভুল ${bn(bad)}</span><span class="skip">উত্তর দেননি ${bn(blank)}</span><span>সময় ${bn(Math.floor(used/60))} মিনিট ${bn(used%60)} সেকেন্ড</span></div>
+   <p class="msg">${msg}</p><p class="msg">বইয়ের শেষ পাতার ছকে লিখে রাখুন: তারিখ ${ds}, নম্বর ${fmtScore(score)}।</p>`;
+  const box=$('rlist');box.innerHTML='';
+  paper.forEach((q,i)=>{
+    const s=document.createElement('section');s.className='q';const p=pick[i];
+    s.innerHTML=`<div class="qh"><span class="num">${bn(i+1)}.</span><p class="qt">${q.q}${srcLine(q)}</p></div><div class="opts">${
+      q.o.map((t,j)=>`<button type="button" class="opt${j===q.a?' right':''}${j===p&&p!==q.a?' wrong':''}" disabled><span class="k">${K[j]}</span><span>${t}</span></button>`).join('')}</div>
+      <div class="exp">${p<0?'<span class="skip">উত্তর দেননি।</span> সঠিক উত্তর: '+K[q.a]+') '+q.o[q.a]+'।':p===q.a?'<span class="ok">সঠিক (+১)।</span>':'<span class="no">ভুল (−০.৫)।</span> সঠিক উত্তর: '+K[q.a]+') '+q.o[q.a]+'।'} ${q.e} ${ref(q)}</div>`;
+    box.appendChild(s);
+  });
+  show('result');window.scrollTo(0,0);drawHist();
+}
+
+// ---------- অনুশীলন ----------
+let filt='all',pok=0,pdone=0;
+const F=[['all','সব'],['b','বিসিএস'],['x','অন্য পরীক্ষা'],['l','সম্ভাব্য']].filter(([k])=>k==='all'||Q.some(q=>q.t===k));
+$('chips').innerHTML=F.map(([k,t])=>`<button type="button" class="chip" data-k="${k}" aria-pressed="${k==='all'}">${t}</button>`).join('');
+$('chips').onclick=e=>{const k=e.target.dataset&&e.target.dataset.k;if(!k)return;filt=k;[...$('chips').children].forEach(c=>c.setAttribute('aria-pressed',c.dataset.k===k));renderPrac()};
+function renderPrac(){
+  const L=Q.filter(q=>filt==='all'||q.t===filt);pok=0;pdone=0;
+  const upd=()=>{$('pok').textContent=bn(pok);$('pdone').textContent=bn(pdone);$('ptot').textContent=bn(L.length)};
+  const box=$('plist');box.innerHTML='';
+  L.forEach((q,i)=>{
+    const s=document.createElement('section');s.className='q';
+    s.innerHTML=`<div class="qh"><span class="num">${bn(i+1)}.</span><p class="qt">${q.q}${srcLine(q)}</p></div><div class="opts"></div>`;
+    const o=s.querySelector('.opts');
+    q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';
+      b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;
+      b.onclick=()=>{[...o.children].forEach(x=>x.disabled=true);o.children[q.a].classList.add('right');
+        const good=j===q.a;if(!good)b.classList.add('wrong');pdone++;if(good)pok++;upd();
+        const e=document.createElement('div');e.className='exp';
+        e.innerHTML=`<span class="${good?'ok':'no'}">${good?'সঠিক।':'ভুল। সঠিক উত্তর: '+K[q.a]+') '+q.o[q.a]+'।'}</span> ${q.e} ${ref(q)}`;s.appendChild(e)};
+      o.appendChild(b)});
+    box.appendChild(s);
+  });
+  upd();
+}
+$('go').onclick=startExam;$('again').onclick=startExam;
+$('submit').onclick=()=>askSubmit();$('submit2').onclick=()=>askSubmit();
+$('home').onclick=$('home2').onclick=()=>{show('start');drawHist();window.scrollTo(0,0)};
+$('practice').onclick=()=>{renderPrac();show('prac');window.scrollTo(0,0)};
+window.addEventListener('beforeunload',e=>{if(!$('exam').hidden){e.preventDefault();e.returnValue=''}});
+</script>
+<script src="/js/book-link.js" data-kind="science" data-chapter="মৌলিক জীববিজ্ঞান" defer></script>
+</body>
+</html>
