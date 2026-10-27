@@ -41,6 +41,10 @@ button{font:inherit;cursor:pointer}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
 .clock{font-family:var(--display);font-size:22px;color:var(--accent);font-variant-numeric:tabular-nums;min-width:4ch}
 .clock.low{color:var(--bad)}
+/* Start screen: the start button comes first and big, rules below it. */
+#start{display:flex;flex-direction:column}
+#start .back{order:-3}#start .selch{order:-2}#start .btns{order:-1;margin:6px 0 16px}
+#start #go{font-size:19px;padding:14px 26px;flex:1 1 220px}
 /* Exam bar sits at the bottom of the screen (Sakib's pick): quiet timer, submit button near the thumb. */
 #exam .bar{position:fixed;top:auto;bottom:0;left:0;right:0;padding:10px max(16px,calc(50% - 340px)) calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--rule);border-bottom:0;box-shadow:0 -4px 14px rgba(0,0,0,.06)}
 #exam{padding-bottom:76px}
