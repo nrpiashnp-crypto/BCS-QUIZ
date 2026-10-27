@@ -166,6 +166,14 @@ h2.post{font-size:20px;margin:22px 0 2px}
 .yrow{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}.yrow .chip{flex:none}
 .tabs{margin:4px 0 4px}.tabs .chip{font-size:15px;padding:6px 16px}
 .qt img{display:block;margin:8px 0}
+.sbg{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:12px 0 4px;text-align:left}
+.sb{border:1px solid var(--rule);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:3px;font-size:14px}
+.sb b{font-size:18px;font-variant-numeric:tabular-nums}.sb .mb{width:100%}.sb.low b{color:var(--bad)}.sb.low .mb i{background:var(--bad)}
+.mb{display:inline-block;width:80px;height:7px;background:var(--soft);border-radius:99px;overflow:hidden;vertical-align:middle}.mb i{display:block;height:100%;background:var(--accent)}
+.wk{border:1px solid var(--rule);border-radius:10px;padding:4px 14px 12px;margin:14px 0;background:var(--card)}
+.wk h2{margin:10px 0 6px;font-size:20px}.wtip{margin:0 0 8px;font-size:15px}
+.wl{margin:0 0 10px;padding-left:20px;font-size:15px}.wl li{margin:6px 0}.wl b{color:var(--bad)}.wn{color:var(--muted);font-size:14px}
+.tipbox ul{margin:0 0 6px;padding-left:20px;font-size:15px}.tipbox li{margin:6px 0}
 [hidden]{display:none !important}
 .sitebar nav.sec{display:flex;gap:2px;flex-shrink:0}.sitebar nav.sec a{color:#e6c97a;text-decoration:none;font-size:13px;font-weight:500;padding:5px 7px;border-radius:7px;white-space:nowrap;line-height:1.2}.sitebar nav.sec a[aria-current]{background:rgba(230,201,122,.2);color:#fff}@media(max-width:360px){.sitebar img{width:88px}.sitebar nav.sec a{font-size:12px;padding:4px 5px}}
 details.older{margin:14px 0 4px}details.older summary{cursor:pointer;list-style:none;text-align:center;border:1px solid var(--rule);border-radius:10px;padding:11px 14px;font-weight:600;color:var(--accent);background:var(--card)}details.older summary::-webkit-details-marker{display:none}details.older summary::after{content:" ▾"}details.older[open] summary::after{content:" ▴"}
@@ -234,7 +242,7 @@ async function exam(kind,id){
    <p class="lbl">নেগেটিভ মার্কিং</p><div class="chips" id="negc"><button type="button" class="chip" data-v="0.5" aria-pressed="true">−০.৫</button><button type="button" class="chip" data-v="0.25" aria-pressed="false">−০.২৫</button><button type="button" class="chip" data-v="0" aria-pressed="false">নেই</button></div>
    <div class="hist" id="hist" hidden></div></section>
   <section id="exam" hidden><div class="bar"><span class="clock" id="clock"></span><span>উত্তর <b id="ans">০</b> / <b>${bn(Q.length)}</b></span><button class="btn" id="submit" type="button">জমা দিন</button></div><main id="elist"></main><div class="btns"><button class="btn" id="submit2" type="button">জমা দিন</button></div></section>
-  <section id="result" hidden><div class="score" id="scorebox"></div><div class="btns"><button class="btn" id="again" type="button">আবার পরীক্ষা দিন</button><a class="btn ghost" href="${back}">অন্য পরীক্ষা</a></div><h2>উত্তর ও ব্যাখ্যা</h2><main id="rlist"></main></section>
+  <section id="result" hidden><div class="score" id="scorebox"></div><div id="weak"></div><div class="btns"><button class="btn" id="again" type="button">আবার পরীক্ষা দিন</button><a class="btn ghost" href="${back}">অন্য পরীক্ষা</a></div><h2>উত্তর ও ব্যাখ্যা</h2><main id="rlist"></main></section>
   <section id="prac" hidden><div class="bar"><span>সঠিক <b id="pok">০</b> / উত্তর <b id="pdone">০</b> / মোট <b id="ptot">০</b></span><button class="btn ghost" id="back" type="button">শুরুর পাতা</button></div><div class="chips" id="chips"></div><main id="plist"></main></section>`;
   NEG=0.5;setNeg(NEG);
   $('negc').onclick=ev=>{const v=ev.target.dataset&&ev.target.dataset.v;if(v===undefined)return;setNeg(parseFloat(v))};
@@ -280,8 +288,16 @@ function finish(){
   const pc=score/n;
   $('scorebox').innerHTML=`<div class="big">${fmt(score)} / ${bn(n)}</div>
    <div class="stats"><span class="ok">সঠিক ${bn(ok)}</span><span class="no">ভুল ${bn(bad)}</span><span class="skip">উত্তর দেননি ${bn(blank)}</span><span>সময় ${bn(Math.floor(used/60))} মিনিট ${bn(used%60)} সেকেন্ড</span></div>
-   <div class="sbj">${Object.entries(bys).map(([k,v])=>`${esc(k)}: ${bn(v[0])}/${bn(v[2])}`).join(' · ')}</div>
-   <p>${pc>=.7?'চমৎকার! এই মানের প্রস্তুতি ধরে রাখুন।':pc>=.5?'ভালো হয়েছে। ভুলগুলোর ব্যাখ্যা পড়ে নিন।':'ব্যাখ্যাগুলো পড়ে কয়েক দিন পর আবার চেষ্টা করুন।'}</p>`;
+   ${Object.keys(bys).length>1?`<div class="sbg">${Object.entries(bys).map(([k,v])=>`<div class="sb${v[0]/v[2]<.5?' low':''}"><span>${esc(k)}</span><b>${bn(v[0])}/${bn(v[2])}</b><span class="mb"><i style="width:${Math.round(v[0]*100/v[2])}%"></i></span></div>`).join('')}</div>`:''}`;
+  // weak = subject under 60% correct with at least 3 questions, weakest first
+  const weak=Object.entries(bys).map(([t,v])=>({t,ok:v[0],n:v[2],r:v[0]/v[2]})).filter(r=>r.n>=3&&r.r<.6).sort((a,b)=>a.r-b.r||b.n-a.n).slice(0,4);
+  const wbox=Object.keys(bys).length>1?`<div class="wk"><h2>দুর্বল জায়গা</h2>${weak.length?`<ul class="wl">${weak.map(r=>`<li><b>${esc(r.t)}</b> <span class="wn">${bn(r.ok)}/${bn(r.n)} সঠিক</span></li>`).join('')}</ul>`:'<p class="wtip">কোনো বিষয়ে বড় দুর্বলতা নেই। চমৎকার!</p>'}</div>`:'';
+  const tip=[];
+  if(weak.length)tip.push(`নিচের ব্যাখ্যায় আগে <b>${esc(weak[0].t)}</b>${weak[1]?' ও <b>'+esc(weak[1].t)+'</b>':''}-এর ভুলগুলো পড়ুন, তারপর "বিষয় অনুযায়ী" অংশ থেকে ওই বিষয়ের একটি সেট দিন।`);
+  if(NEG&&bad>=Math.max(3,ok*.4))tip.push(`ভুলের জন্য ${fmt(bad*NEG)} নম্বর কাটা গেছে। পুরো নিশ্চিত না হলে, অন্তত দুটি অপশন বাদ দিতে না পারলে উত্তর ছেড়ে দিন।`);
+  if(blank>=Math.max(4,n*.2))tip.push(used>=MIN*60-5?`সময় শেষ হয়ে ${bn(blank)}টি প্রশ্ন বাকি ছিল। যেটা জানেন সেটা আগে করুন, কঠিন প্রশ্নে আটকে থাকবেন না।`:`${bn(blank)}টি প্রশ্ন ছেড়ে দিয়েছেন। এগুলোর ব্যাখ্যা পড়ে নিন, বিসিএসে একই ধরনের প্রশ্ন বারবার আসে।`);
+  if(!tip.length)tip.push(pc>=.7?'চমৎকার ফল! ভুল কয়েকটির ব্যাখ্যা দেখে আরেকটি পরীক্ষা দিন।':'ভুল ও ছেড়ে দেওয়া প্রশ্নগুলোর ব্যাখ্যা মন দিয়ে পড়ুন, তারপর আরেকটি পরীক্ষা দিন।');
+  $('weak').innerHTML=wbox+`<div class="wk tipbox"><h2>এখন কী করবেন</h2><ul>${tip.slice(0,3).map(t=>`<li>${t}</li>`).join('')}</ul></div>`;
   const box=$('rlist');box.innerHTML='';
   paper.forEach((qi,i)=>{const q=Q[qi],p=pick[i];
     const s=document.createElement('section');s.className='q';
