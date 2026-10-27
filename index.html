@@ -38,7 +38,8 @@ a{color:var(--accent)}
 .photo{width:min(220px,60vw);aspect-ratio:1;border-radius:50%;overflow:hidden;border:3px solid var(--card);box-shadow:0 0 0 1px var(--gold),0 10px 30px rgba(0,0,0,.12);background:var(--soft);display:grid;place-items:center}
 .photo img{width:100%;height:100%;object-fit:cover;display:block}
 .photo .mono{font-family:var(--display);font-size:min(110px,30vw);color:var(--accent);line-height:1}
-.hero p{max-width:30em;margin:20px 0 0;color:var(--muted);text-wrap:pretty}
+.hero p{max-width:30em;margin:14px 0 0;color:var(--muted);text-wrap:pretty}
+.hero p:first-of-type{margin-top:22px;font-family:var(--display);font-size:20px;color:var(--ink)}
 .hero p b{color:var(--ink);font-weight:500}
 
 /* Sections */
@@ -85,10 +86,11 @@ footer .fb{font-family:var(--display);color:var(--ink);font-size:18px}
 
 <section class="hero">
   <div class="photo">
-    <!-- Photo goes here: img/lyanna.jpg -->
-    <span class="mono" aria-hidden="true">লি</span>
+    <img src="img/lyanna.jpg" alt="লিয়ানা" width="640" height="640">
   </div>
-  <p>আমাদের মেয়ে <b>লিয়ানার</b> নামে এই প্রকাশনী। যত্ন করে লেখা, সহজ ভাষার বই পাঠকের হাতে তুলে দেওয়াই আমাদের লক্ষ্য।</p>
+  <p>আমাদের মেয়ে <b>লিয়ানার</b> নামে এই প্রকাশনী।</p>
+  <p>আমাদের বই শুধু সহজ ভাষায় লেখা নয়। বিগত প্রশ্ন বিশ্লেষণ করে দেখানো হয়েছে কোন বিষয় থেকে কোথায় কী প্রশ্ন আসে, আর সামনের পরীক্ষায় কী আসতে পারে।</p>
+  <p>লক্ষ্য একটাই: একটি বই দিয়েই যেন বিজ্ঞানের জন্য আলাদা কোর্স না লাগে। তাই প্রতিটি অধ্যায়ের অনলাইন পরীক্ষা সবার জন্য বিনামূল্যে।</p>
 </section>
 
 <section>
