@@ -5,12 +5,12 @@
 <meta name="theme-color" content="#13294b">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>লিয়ানা বুকস · Lyanna Books</title>
-<meta name="description" content="লিয়ানা বুকস: বিসিএস বিজ্ঞান বই (লেখক পিয়াস) আর প্রতিটি অধ্যায়ের অনলাইন পরীক্ষা।">
+<meta name="description" content="লিয়ানা বুকস: লিয়ানা বিসিএস বিজ্ঞান বই (লেখক মোঃ নাইমুর রহমান) আর প্রতিটি অধ্যায়ের অনলাইন পরীক্ষা।">
 <link rel="canonical" href="https://lyannabooks.com/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="লিয়ানা বুকস">
-<meta property="og:title" content="বিসিএস বিজ্ঞান · লিয়ানা বুকস">
-<meta property="og:description" content="প্রিলিভিত্তিক লিখিত বিসিএস বিজ্ঞান বই, লেখক পিয়াস। প্রতিটি অধ্যায়ের অনলাইন পরীক্ষা সময় আর নেগেটিভ মার্কিংসহ, বিনামূল্যে।">
+<meta property="og:title" content="লিয়ানা বিসিএস বিজ্ঞান · লিয়ানা বুকস">
+<meta property="og:description" content="লিয়ানা বিসিএস বিজ্ঞান বই, লেখক মোঃ নাইমুর রহমান। প্রতিটি অধ্যায়ের অনলাইন পরীক্ষা সময় আর নেগেটিভ মার্কিংসহ, বিনামূল্যে।">
 <meta property="og:url" content="https://lyannabooks.com/">
 <meta property="og:image" content="https://lyannabooks.com/img/og.png">
 <meta property="og:image:width" content="1200">
@@ -21,7 +21,7 @@
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
 {"@type":"Organization","@id":"https://lyannabooks.com/#org","name":"লিয়ানা বুকস","alternateName":"Lyanna Books","url":"https://lyannabooks.com/","logo":"https://lyannabooks.com/img/logo/final-navy-square.png","contactPoint":{"@type":"ContactPoint","telephone":"+8801754119878","contactType":"customer service","availableLanguage":"bn"}},
-{"@type":"Book","name":"বিসিএস বিজ্ঞান","alternativeHeadline":"প্রিলিভিত্তিক লিখিত","inLanguage":"bn","author":{"@type":"Person","name":"পিয়াস"},"publisher":{"@id":"https://lyannabooks.com/#org"},"url":"https://lyannabooks.com/#book"}
+{"@type":"Book","name":"লিয়ানা বিসিএস বিজ্ঞান","inLanguage":"bn","image":"https://lyannabooks.com/img/cover.jpg","author":{"@type":"Person","name":"মোঃ নাইমুর রহমান","alternateName":"পিয়াস"},"publisher":{"@id":"https://lyannabooks.com/#org"},"url":"https://lyannabooks.com/#book"}
 ]}
 </script>
 <link rel="icon" href="img/logo/final-icon.svg" type="image/svg+xml">
@@ -71,10 +71,8 @@ h2 small{display:block;font-family:var(--body);font-size:14px;color:var(--muted)
 /* Book */
 .book{display:grid;grid-template-columns:150px 1fr;gap:22px;align-items:center;background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:20px}
 @media (max-width:520px){.book{grid-template-columns:1fr;justify-items:center;text-align:center}}
-.cover{width:150px;aspect-ratio:3/4.2;border-radius:4px 8px 8px 4px;background:linear-gradient(135deg,#1b3766,#13294b);color:#fff;padding:16px 12px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:inset 6px 0 0 rgba(0,0,0,.18),0 8px 20px rgba(0,0,0,.18)}
-.cover .t{font-family:var(--display);font-size:24px;line-height:1.25}
-.cover .s{font-size:12px;opacity:.85;line-height:1.4}
-.cover .a{font-family:var(--display);font-size:15px;color:#e0b45c;border-top:1px solid rgba(224,180,92,.5);padding-top:6px}
+.cover{display:block;width:150px;flex-shrink:0;align-self:flex-start}
+.cover img{display:block;width:100%;height:auto;border-radius:3px 6px 6px 3px;box-shadow:0 1px 2px rgba(0,0,0,.2),0 10px 24px rgba(19,41,75,.28)}
 .book h3{font-family:var(--display);font-weight:400;font-size:24px;margin:0}
 .book .by{color:var(--gold);margin:0 0 8px}
 .book ul{margin:0;padding-left:20px;color:var(--muted)}
@@ -174,18 +172,15 @@ footer .fb{font-family:var(--display);color:var(--ink);font-size:18px}
 <section id="book">
   <h2>আমাদের বই<small>প্রথম প্রকাশ</small></h2>
   <div class="book">
-    <div class="cover" aria-hidden="true">
-      <div><div class="t">বিসিএস বিজ্ঞান</div><div class="s">প্রিলিভিত্তিক লিখিত</div></div>
-      <div class="a">পিয়াস</div>
-    </div>
+    <picture class="cover"><source srcset="img/cover.webp" type="image/webp"><img src="img/cover.jpg" width="520" height="735" alt="লিয়ানা বিসিএস বিজ্ঞান বইয়ের প্রচ্ছদ" loading="lazy"></picture>
     <div>
-      <h3>বিসিএস বিজ্ঞান</h3>
-      <p class="by">লেখক: পিয়াস</p>
+      <h3>লিয়ানা বিসিএস বিজ্ঞান</h3>
+      <p class="by">লেখক: মোঃ নাইমুর রহমান</p>
       <ul>
+        <li>বিগত সব প্রশ্ন ঘেঁটে কোন টপিক বেশি, কোনটা কম গুরুত্বপূর্ণ</li>
+        <li>পরীক্ষার আগে অল্প সময়ে পুরো অধ্যায় রিভিশন</li>
+        <li>প্রতি অধ্যায় শেষে QR স্ক্যান করে টাইমারসহ পরীক্ষা</li>
         <li>এক বইয়ে প্রিলি আর লিখিত দুটোরই প্রস্তুতি</li>
-        <li>সহজ বাংলায় গুছিয়ে লেখা, দরকারি ইংরেজি পরিভাষাসহ</li>
-        <li>বিগত বিসিএস প্রশ্ন বাক্যে বাক্যে চিহ্নিত</li>
-        <li>প্রতিটি অধ্যায়ের শেষে QR কোডে অনলাইন পরীক্ষা</li>
       </ul>
       <span class="tag">শীঘ্রই আসছে · ডিসেম্বর ২০২৬</span>
     </div>
@@ -195,10 +190,10 @@ footer .fb{font-family:var(--display);color:var(--ink);font-size:18px}
 <section id="author">
   <h2>লেখক পরিচিতি</h2>
   <div class="about author">
-    <div class="avatar"><picture><source srcset="img/author.webp" type="image/webp"><img src="img/author.jpg" alt="পিয়াস" width="480" height="480" loading="lazy"></picture></div>
+    <div class="avatar"><picture><source srcset="img/author.webp" type="image/webp"><img src="img/author.jpg" alt="মোঃ নাইমুর রহমান" width="480" height="480" loading="lazy"></picture></div>
     <div>
-      <h3>পিয়াস</h3>
-      <p class="role">মোঃ নাইমুর রহমান<br>৪১তম বিসিএস (পরিবার পরিকল্পনা)</p>
+      <h3>মোঃ নাইমুর রহমান</h3>
+      <p class="role">(পিয়াস)<br>৪১তম বিসিএস (পরিবার পরিকল্পনা)</p>
       <p>৪১তম বিসিএসে পরিবার পরিকল্পনা ক্যাডারে যোগ দিয়ে বর্তমানে সেখানেই কর্মরত। বিসিএস পরীক্ষায় বিজ্ঞানে পেয়েছিলেন ৮০-এর বেশি নম্বর, আর সেই অভিজ্ঞতা থেকেই এই বই লেখার পরিকল্পনা আসে।</p>
       <p>ঢাকা রেসিডেন্সিয়াল মডেল কলেজের পর ইসলামিক ইউনিভার্সিটি অব টেকনোলজি (IUT) থেকে ইলেকট্রিক্যাল অ্যান্ড ইলেকট্রনিক ইঞ্জিনিয়ারিংয়ে বিএসসি করেছেন। প্রকৌশলের পড়াশোনা বিজ্ঞান সহজ করে বোঝানোর ভিত্তি গড়ে দিয়েছে।</p>
       <p>স্ত্রী আলিসা জাহান মেঘনা ৪৩তম বিসিএস কর ক্যাডারে কর্মরত। তাঁদের মেয়ে লিয়ানা।</p>
