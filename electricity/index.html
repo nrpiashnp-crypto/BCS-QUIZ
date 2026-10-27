@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>বিদ্যুৎ: অনলাইন পরীক্ষা</title>
+<meta name="description" content="বিসিএস বিজ্ঞান, অধ্যায় ৪ বিদ্যুৎ: বিগত বিসিএস ও চাকরির পরীক্ষার প্রশ্ন, সময় ও নেগেটিভ মার্কিংসহ, ব্যাখ্যাসহ।">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tiro+Bangla&family=Noto+Sans+Bengali:wght@400;500;600&display=swap">
+<style>
+/* Layout: one narrow book-like column. Start screen -> exam (sticky timer bar) -> result + review. Practice mode keeps instant feedback. */
+:root{
+  --paper:#fbfaf7; --ink:#1d1f21; --muted:#5f6366; --rule:#d9d6cf; --card:#ffffff;
+  --accent:#1f4e5f; --accent-ink:#ffffff; --sel:#e3eef2; --good:#1e7a46; --good-bg:#e5f3ea; --bad:#b3261e; --bad-bg:#fbe9e7; --warn:#8a5a00;
+  --display:'Tiro Bangla',Georgia,serif; --body:'Noto Sans Bengali',system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#15181a; --ink:#e9e7e2; --muted:#a3a7aa; --rule:#33383b; --card:#1d2124;
+  --accent:#7fb7c9; --accent-ink:#0f1416; --sel:#1d3138; --good:#6fcf97; --good-bg:#17301f; --bad:#f08a80; --bad-bg:#3a1c1a; --warn:#e0b25a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#15181a; --ink:#e9e7e2; --muted:#a3a7aa; --rule:#33383b; --card:#1d2124;
+  --accent:#7fb7c9; --accent-ink:#0f1416; --sel:#1d3138; --good:#6fcf97; --good-bg:#17301f; --bad:#f08a80; --bad-bg:#3a1c1a; --warn:#e0b25a; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6}
+.wrap{max-width:680px;margin:0 auto;padding-block:20px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{border-bottom:2px solid var(--ink);padding-bottom:12px;margin-bottom:12px}
+.book{font-size:13px;letter-spacing:.04em;color:var(--muted)}
+h1{font-family:var(--display);font-weight:400;font-size:30px;margin:4px 0 2px;text-wrap:balance}
+h2{font-family:var(--display);font-weight:400;font-size:22px;margin:22px 0 8px}
+.sub{color:var(--muted);font-size:15px;margin:0}
+button{font:inherit;cursor:pointer}
+.btn{display:inline-block;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:10px 18px;font-weight:600}
+.btn.ghost{background:none;color:var(--ink);border-color:var(--rule);font-weight:500}
+.btns{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
+.rules{margin:8px 0 0;padding-left:20px}
+.rules li{margin:2px 0}
+.hist{border-top:1px solid var(--rule);margin-top:18px;padding-top:6px;font-size:15px}
+.hist table{border-collapse:collapse;width:100%}
+.hist td,.hist th{border-bottom:1px solid var(--rule);padding:5px 4px;text-align:left;font-variant-numeric:tabular-nums}
+.hist th{color:var(--muted);font-weight:500}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);background:var(--paper);display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--rule);z-index:5;font-size:15px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+.clock{font-family:var(--display);font-size:22px;color:var(--accent);font-variant-numeric:tabular-nums;min-width:4ch}
+.clock.low{color:var(--bad)}
+/* Start screen: the start button comes first and big, rules below it. */
+#start{display:flex;flex-direction:column}
+#start .back{order:-3}#start .selch{order:-2}#start .btns{order:-1;margin:6px 0 16px}
+#start #go{font-size:19px;padding:14px 26px;flex:1 1 220px}
+/* Exam bar sits at the bottom of the screen (Sakib's pick): quiet timer, submit button near the thumb. */
+#exam .bar{position:fixed;top:auto;bottom:0;left:0;right:0;padding:10px max(16px,calc(50% - 340px)) calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--rule);border-bottom:0;box-shadow:0 -4px 14px rgba(0,0,0,.06)}
+#exam{padding-bottom:76px}
+#exam .clock{font-family:var(--body);font-size:16px;font-weight:500;color:var(--ink);min-width:0}
+#exam .clock::before{content:"সময় ";font-size:13px;font-weight:400;color:var(--muted)}
+#exam .clock.low{color:var(--warn)}
+.bar b{font-variant-numeric:tabular-nums}
+.q{padding:18px 0;border-bottom:1px solid var(--rule)}
+.qh{display:flex;gap:10px;align-items:baseline}
+.num{font-family:var(--display);color:var(--accent);min-width:1.6em}
+.qt{font-weight:500;margin:0;min-width:0}
+.src{display:block;font-size:13px;color:var(--muted);font-weight:400}
+.pend{display:inline-block;font-size:12px;color:var(--warn);border:1px dashed var(--warn);border-radius:4px;padding:0 6px;margin-left:4px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 0 2.2em}
+@media (max-width:520px){.opts{grid-template-columns:1fr;margin-left:0}}
+.opt{display:flex;gap:8px;align-items:flex-start;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--rule);border-radius:8px;padding:9px 12px;min-height:44px;width:100%}
+.opt .k{font-family:var(--display);color:var(--muted);min-width:1.2em}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.opt.sel{background:var(--sel);border-color:var(--accent)}
+.opt:disabled{cursor:default}
+.opt.right{background:var(--good-bg);border-color:var(--good)}
+.opt.wrong{background:var(--bad-bg);border-color:var(--bad)}
+.exp{margin:10px 0 0 2.2em;font-size:15px;border-left:3px solid var(--accent);padding:2px 0 2px 10px}
+@media (max-width:520px){.exp{margin-left:0}}
+.ok{color:var(--good);font-weight:600}.no{color:var(--bad);font-weight:600}.skip{color:var(--muted);font-weight:600}
+.ref{color:var(--muted);white-space:nowrap}
+.score{border:1.5px solid var(--ink);border-radius:10px;padding:16px;margin:14px 0;text-align:center}
+.big{font-family:var(--display);font-size:46px;line-height:1.1;font-variant-numeric:tabular-nums}
+.stats{display:flex;justify-content:center;flex-wrap:wrap;gap:6px 18px;font-size:15px;margin-top:6px}
+.msg{margin:10px 0 0;font-size:15px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.chip{border:1px solid var(--rule);background:none;color:var(--ink);border-radius:999px;padding:4px 12px;font-size:14px}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+footer{margin-top:24px;font-size:14px;color:var(--muted)}
+.note{border:1px dashed var(--rule);border-radius:8px;padding:10px 12px;margin-top:14px}
+[hidden]{display:none !important}
+@media (prefers-reduced-motion:no-preference){.exp{animation:in .2s ease-out}@keyframes in{from{opacity:.4}to{opacity:1}}}
+</style>
+<link rel="icon" type="image/svg+xml" href="/img/logo/final-icon.svg">
+<link rel="apple-touch-icon" href="/img/logo/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="লিয়ানা বুকস">
+<meta property="og:title" content="বিদ্যুৎ: অনলাইন পরীক্ষা · লিয়ানা বুকস">
+<meta property="og:description" content="বিসিএস বিজ্ঞান, বিদ্যুৎ অধ্যায়: সময় ও নেগেটিভ মার্কিংসহ অনলাইন পরীক্ষা, ব্যাখ্যাসহ।">
+<meta property="og:url" content="https://lyannabooks.com/electricity/">
+<meta property="og:image" content="https://lyannabooks.com/img/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="bn_BD">
+<meta name="twitter:card" content="summary_large_image">
+<style>.sitebar{background:#13294b;display:flex;align-items:center;justify-content:space-between;padding:8px 16px}.sitebar img{width:110px;height:auto;display:block}.exp .bl{display:block;margin-top:8px;font-size:12.5px;color:var(--muted);text-decoration:none;opacity:.85}.exp .bl:hover{text-decoration:underline}.sitebar a.h{color:#e6c97a;text-decoration:none;font:500 14px 'Noto Sans Bengali',system-ui,sans-serif}</style>
+</head>
+<body>
+<div class="sitebar"><a href="/"><img src="/img/logo/final-onnavy-transparent.svg" alt="লিয়ানা বুকস"></a><a class="h" href="/">← হোম</a></div>
+
+<div class="wrap">
+<header>
+  <div class="book">বিসিএস বিজ্ঞান · পিয়াস · অধ্যায় ৪</div>
+  <h1>বিদ্যুৎ: অনলাইন পরীক্ষা</h1>
+  <p class="sub">বিগত বিসিএস এবং অন্যান্য নিয়োগ ও ভর্তি পরীক্ষার প্রশ্ন, আসল পরীক্ষার নিয়মে।</p>
+</header>
+
+<section id="start">
+  <ul class="rules">
+    <li>প্রতি পরীক্ষায় <b id="nq">২৫</b>টি প্রশ্ন, সময় <b id="nm">১৫</b> মিনিট।</li>
+    <li>সঠিক উত্তরে ১ নম্বর, ভুল উত্তরে −০.৫। উত্তর না দিলে নম্বর কাটা যায় না।</li>
+    <li>জমা দেওয়ার আগে উত্তর বদলানো যায়। সময় শেষ হলে নিজে থেকেই জমা হবে।</li>
+    <li>শেষে ফল, প্রতিটি প্রশ্নের ব্যাখ্যা আর বইয়ের সংশ্লিষ্ট অংশের নাম দেখাবে।</li>
+    <li>প্রতিবার <b id="pool"></b>টি প্রশ্নের ভান্ডার থেকে নতুন করে প্রশ্ন বাছাই হয়, তাই বারবার পরীক্ষা দেওয়া যায়।</li>
+  </ul>
+  <div class="btns">
+    <button class="btn" id="go" type="button">পরীক্ষা শুরু করুন</button>
+    <button class="btn ghost" id="practice" type="button">সব প্রশ্ন অনুশীলন</button>
+  </div>
+  <div class="hist" id="hist" hidden></div>
+</section>
+
+<section id="exam" hidden>
+  <div class="bar"><span class="clock" id="clock">১৫:০০</span><span>উত্তর <b id="ans">০</b> / <b id="tot">২৫</b></span><button class="btn" id="submit" type="button">জমা দিন</button></div>
+  <main id="elist"></main>
+  <div class="btns"><button class="btn" id="submit2" type="button">জমা দিন</button></div>
+</section>
+
+<section id="result" hidden>
+  <div class="score" id="scorebox"></div>
+  <div class="btns"><button class="btn" id="again" type="button">নতুন পরীক্ষা</button><button class="btn ghost" id="home" type="button">শুরুর পাতা</button></div>
+  <h2>উত্তর ও ব্যাখ্যা</h2>
+  <main id="rlist"></main>
+</section>
+
+<section id="prac" hidden>
+  <div class="bar"><span>সঠিক <b id="pok">০</b> / উত্তর <b id="pdone">০</b> / মোট <b id="ptot">০</b></span><button class="btn ghost" id="home2" type="button">শুরুর পাতা</button></div>
+  <div class="chips" id="chips"></div>
+  <main id="plist"></main>
+</section>
+
+<footer>
+  <div class="note">বিসিএস ও অন্য পরীক্ষার প্রশ্নের নিচে পরীক্ষার নাম ও সাল দেওয়া আছে।</div>
+  <p>লিয়ানা বুকস · lyannabooks.com</p>
+</footer>
+</div>
+<script>
+const Q=[{"q": "অ্যানোডে কোন বিক্রিয়া সম্পন্ন হয়?", "o": ["জারণ", "বিজারণ", "প্রশমন", "পানি যোজন"], "a": 0, "e": "তড়িৎ রসায়নে যে তড়িৎদ্বারে জারণ (Oxidation) ঘটে, তাকে অ্যানোড (Anode) বলে। জারণে পরমাণু ইলেকট্রন ছেড়ে দেয়, তাই অ্যানোডে ইলেকট্রন বের হয়ে বাইরের তারের মধ্য দিয়ে চলে যায়। অপর তড়িৎদ্বার ক্যাথোডে (Cathode) এই ইলেকট্রন গ্রহণ করা হয় এবং সেখানে বিজারণ (Reduction) ঘটে। বিদ্যুৎ কোষে অ্যানোড ও ক্যাথোডের চিহ্ন আলাদা। গ্যালভানিক কোষে অ্যানোড ঋণাত্মক ও ক্যাথোড ধনাত্মক, আর তড়িৎ বিশ্লেষণ কোষে অ্যানোড ধনাত্মক ও ক্যাথোড ঋণাত্মক।<br>মনে রাখুন:<br>মনে রাখার সহজ উপায়: অ্যানোড ও জারণ দুটোই স্বরবর্ণ দিয়ে শুরু, আর ক্যাথোড ও বিজারণ দুটোই ব্যঞ্জনবর্ণ দিয়ে শুরু।<br>ইলেকট্রন সব সময় অ্যানোড থেকে ক্যাথোডের দিকে প্রবাহিত হয়।", "t": "b", "s": "৪০তম বিসিএস", "p": "ব্যাটারি ও তড়িৎ কোষ", "v": 0}, {"q": "জারণ প্রক্রিয়া সম্পন্ন হয়-", "o": ["অ্যানোডে", "ক্যাথোডে", "উভয়টিতে", "কোনটিতেই নয়"], "a": 0, "e": "জারণ হলো ইলেকট্রন হারানোর প্রক্রিয়া। তড়িৎ কোষে যে তড়িৎদ্বার ইলেকট্রন ছেড়ে দেয়, সেটি অ্যানোড (Anode)। তাই জারণ হয় অ্যানোডে। উদাহরণ হিসেবে, শুষ্ক কোষে দস্তা (Zn) ইলেকট্রন ছেড়ে Zn²⁺ আয়নে পরিণত হয়, আর এটি জারণের একটি ভালো উদাহরণ।<br>উদাহরণ:<br>Zn → Zn²⁺ + 2e⁻ (অ্যানোডে জারণ) জারণ ও বিজারণ সব সময় একসঙ্গে ঘটে, তাই এই বিক্রিয়াকে জারণ-বিজারণ (Redox) বিক্রিয়া বলে। একটি পদার্থ জারিত হলে আরেকটি অবশ্যই বিজারিত হয়।<br>মনে রাখুন: ক্যাথোডে বিজারণ হয়, কারণ সেখানে ইলেকট্রন গৃহীত হয়।", "t": "b", "s": "৪৩তম বিসিএস", "p": "ব্যাটারি ও তড়িৎ কোষ", "v": 0}, {"q": "তড়িৎ বিশ্লেষণের সূত্র আবিষ্কার করেন -", "o": ["মেন্ডেলিফ", "নিউটন", "অ্যাভোগ্যাড্রো", "ফ্যারাডে"], "a": 3, "e": "ইংরেজ বিজ্ঞানী মাইকেল ফ্যারাডে (Michael Faraday) ১৮৩৩-৩৪ সালে তড়িৎ বিশ্লেষণের পরিমাণগত সূত্র আবিষ্কার করেন। এগুলোকে ফ্যারাডের তড়িৎ বিশ্লেষণ সূত্র বলে। প্রথম সূত্র অনুযায়ী তড়িৎ বিশ্লেষণে কোনো পদার্থ যে পরিমাণে জমা হয়, তা প্রবাহিত তড়িতের পরিমাণের সমানুপাতিক। প্রথম সূত্র অনুযায়ী W = ZQ, যেখানে W জমা হওয়া পদার্থের ভর, Q তড়িতের পরিমাণ এবং Z তড়িৎ রাসায়নিক সমতুল্য। তড়িতের এককের (ফ্যারাডে) নামকরণও তাঁর নামে।<br>মনে রাখুন:<br>ফ্যারাডে তড়িৎচুম্বকীয় আবেশও আবিষ্কার করেন।<br>মেন্ডেলিফ পর্যায় সারণি তৈরি করেন, আর অ্যাভোগ্যাড্রো গ্যাসের আয়তন ও অণুর সংখ্যা নিয়ে সূত্র দেন।", "t": "x", "s": "বাংলাদেশ রেলওয়ের সহকারী লোকোমোটিভ মাস্টার, ২০২৪", "p": "ব্যাটারি ও তড়িৎ কোষ", "v": 0}, {"q": "পানির লবণাক্ততা কোন মাধ্যমে নির্ণয় করা যায়?", "o": ["ক্লোরাইড আয়ন", "Electrical conductivity", "Alkalinity", "(ক) এবং (খ)"], "a": 3, "e": "পানিতে দ্রবীভূত লবণ বেশি থাকলে লবণাক্ততা বেশি হয়। এই লবণ আয়ন হিসেবে থাকে বলে পানি তড়িৎ পরিবহন করে, তাই লবণাক্ততা বাড়লে বিদ্যুৎ পরিবাহিতা (Electrical Conductivity) বাড়ে। এই পরিবাহিতা মেপে সহজে লবণাক্ততা নির্ণয় করা যায়। আবার সাগরের পানিতে প্রধান লবণ NaCl হওয়ায় ক্লোরাইড আয়নের পরিমাণ মেপেও, যেমন সিলভার নাইট্রেট দিয়ে টাইট্রেশন করে, লবণাক্ততা বের করা চলে। তাই দুটি পদ্ধতিই ব্যবহার করা যায়।<br>ক্ষারত্ব (Alkalinity) দিয়ে পানির এসিড প্রশমনের ক্ষমতা মাপা হয়, লবণাক্ততা নয়।<br>মনে রাখুন: সাগরের পানির গড় লবণাক্ততা প্রায় ৩.৫%।", "t": "x", "s": "শিক্ষা মন্ত্রণালয়ের অধীনে উপসহকারী প্রকৌশলী, ২০২২", "p": "pH ও নির্দেশক", "v": 0}, {"q": "সাধারণ ড্রাইসেলে ইলেকট্রোড হিসাবে থাকে -", "o": ["তামার দণ্ড ও দস্তার দণ্ড", "তামার পাত ও দস্তার পাত", "কার্বন দণ্ড ও দস্তার কৌটা", "তামার দণ্ড ও দস্তার কৌটা"], "a": 2, "e": "সাধারণ শুষ্ক কোষে (Dry Cell) দস্তার একটি কৌটা থাকে, যা ঋণাত্মক তড়িৎদ্বার বা অ্যানোড হিসেবে কাজ করে। কৌটার মাঝখানে একটি কার্বন বা গ্রাফাইট দণ্ড থাকে, যা ধনাত্মক তড়িৎদ্বার বা ক্যাথোড। দুটির মাঝখানে অ্যামোনিয়াম ক্লোরাইডের পেস্ট থাকে, যা ইলেকট্রোলাইট হিসেবে কাজ করে। তামার কোনো ইলেকট্রোড এখানে থাকে না। দুই ধরনের কোষ আছে। শুষ্ক কোষের মতো যে কোষ একবার ফুরিয়ে গেলে আর চার্জ করা যায় না, তাকে প্রাথমিক কোষ বলে। আর সীসা-এসিড ব্যাটারির মতো চার্জযোগ্য কোষকে গৌণ কোষ বলে।<br>মনে রাখুন: এই কোষের আবিষ্কারক জর্জেস লেক্লাঞ্চে, তাই একে লেক্লাঞ্চে কোষও বলে।", "t": "x", "s": "১০ম বিসিএস", "p": "ব্যাটারি ও তড়িৎ কোষ", "v": 0}, {"q": "শুষ্ক কোষে কে ইলেকট্রন দান করে?", "o": ["দস্তার খোল", "কার্বন দণ্ড", "ম্যাঙ্গানিজ ডাই-অক্সাইড", "কয়লার গুঁড়া"], "a": 0, "e": "শুষ্ক কোষের দস্তার খোল অ্যানোড হিসেবে কাজ করে। এখানে দস্তা জারিত হয়ে ইলেকট্রন ছেড়ে দেয়, অর্থাৎ Zn → Zn²⁺ + 2e⁻। এই ইলেকট্রন বাইরের তারের মধ্য দিয়ে প্রবাহিত হয়ে কার্বন দণ্ডে পৌঁছায়। কার্বন দণ্ড নিজে কোনো বিক্রিয়ায় অংশ নেয় না, শুধু ইলেকট্রন গ্রহণের স্থান হিসেবে কাজ করে, আর ম্যাঙ্গানিজ ডাই-অক্সাইড এই ইলেকট্রন নিয়ে বিজারিত হয়। শুষ্ক কোষে অ্যামোনিয়াম ক্লোরাইডের পেস্ট থাকে বলে একে শুষ্ক বলা হলেও এটি সম্পূর্ণ শুকনো নয়, এর ভেতরে সামান্য আর্দ্রতা থাকে।<br>মনে রাখুন: দস্তার খোল ক্রমে ক্ষয় হয়, তাই পুরোনো শুষ্ক কোষ থেকে ভেতরের রাসায়নিক পদার্থ বেরিয়ে আসতে পারে।", "t": "x", "s": "প্রাথমিক বিদ্যালয় সহকারী শিক্ষক (ঢাকা বিভাগ), ২০০২", "p": "ব্যাটারি ও তড়িৎ কোষ", "v": 0}, {"q": "শুষ্ক কোষে কার্বন দণ্ডের চারপাশে থাকে-", "o": ["জিংক ক্লোরাইড ও কার্বন পাউডার", "অ্যামোনিয়াম ক্লোরাইড ও কার্বন পাউডার", "দস্তা চূর্ণ ও কার্বন পাউডার", "ম্যাঙ্গানিজ অক্সাইড ও কার্বন পাউডার"], "a": 3, "e": "শুষ্ক কোষে কার্বন দণ্ডের চারপাশে ম্যাঙ্গানিজ ডাই-অক্সাইড (MnO₂) ও কার্বন পাউডারের মিশ্রণ থাকে। MnO₂ ক্যাথোডে হাইড্রোজেন গ্যাস জমতে দেয় না। এটি হাইড্রোজেনকে জারিত করে পানিতে পরিণত করে, তাই একে ডিপোলারাইজার (Depolarizer) বলে। কার্বন পাউডার মিশ্রণের পরিবাহিতা বাড়ায়। দস্তা ও কার্বনের মাঝে থাকা অ্যামোনিয়াম ক্লোরাইড পেস্ট আয়নের চলাচলে সাহায্য করে এবং বিদ্যুৎ পরিবহনের পথ সম্পূর্ণ করে। এর ফলে কোষের ভেতরের বর্তনী পূর্ণ হয়।<br>মনে রাখুন: কার্বন দণ্ড ও দস্তার খোলের মাঝের জায়গায় থাকে অ্যামোনিয়াম ক্লোরাইডের পেস্ট।", "t": "x", "s": "গৃহায়ণ ও গণপূর্ত মন্ত্রণালয়ের ইলেকট্রিক্যাল অ্যান্ড ইলেকট্রনিক্স ইঞ্জিনিয়ারিং, ২০১১", "p": "ব্যাটারি ও তড়িৎ কোষ", "v": 0}, {"q": "ড্রাইসেল ব্যাটারির তড়িচ্চালক শক্তি কত?", "o": ["১.৫ ভোল্ট", "১.১ ভোল্ট", "২ ভোল্ট", "৫ ভোল্ট"], "a": 0, "e": "সাধারণ শুষ্ক কোষ বা ড্রাইসেলের তড়িচ্চালক শক্তি (Electromotive Force) প্রায় ১.৫ ভোল্ট। দস্তা ও কার্বন তড়িৎদ্বার এবং তাদের মধ্যবর্তী রাসায়নিক বিক্রিয়ার কারণে এই বিভব পার্থক্য তৈরি হয়। বেশি ভোল্ট দরকার হলে কয়েকটি কোষ শ্রেণিতে যুক্ত করা হয়, যেমন ৬ ভোল্টের ব্যাটারিতে ৪টি কোষ থাকে। ব্যাটারি বা কোষের মোট বিভব পার্থক্যকে তড়িচ্চালক শক্তি (EMF) বলে। এর একক ভোল্ট। কোষ যখন বিদ্যুৎ দিতে থাকে, তখন ভেতরের রোধের কারণে প্রান্তীয় ভোল্টেজ EMF-এর চেয়ে সামান্য কম হয়।<br>মনে রাখুন: গাড়ির সীসা-এসিড ব্যাটারির প্রতিটি কোষ প্রায় ২ ভোল্ট দেয়, আর ছয়টি কোষ মিলে ১২ ভোল্ট হয়।", "t": "x", "s": "প্রধানমন্ত্রীর কার্যালয়ের পার্সোনাল অফিসার, ২০০৪", "p": "ব্যাটারি ও তড়িৎ কোষ", "v": 0}, {"q": "ব্যাটারি থেকে কোন ধরনের বিদ্যুৎ উৎপন্ন হয়?", "o": ["D.C", "A.C", "E.C", "T.C"], "a": 0, "e": "ব্যাটারির ভেতরে রাসায়নিক বিক্রিয়ায় ইলেকট্রন সব সময় একই দিকে ঋণাত্মক প্রান্ত থেকে ধনাত্মক প্রান্তের দিকে প্রবাহিত হয়। তাই ব্যাটারি থেকে সরাসরি প্রবাহ (Direct Current) বা DC পাওয়া যায়। এর দিক বদলায় না।<br>অন্যদিকে AC বা পরিবর্তী প্রবাহের দিক নির্দিষ্ট সময় পর পর বদলে যায়। বাংলাদেশে বাড়ির সরবরাহের AC-এর কম্পাঙ্ক ৫০ হার্জ। তাই ব্যাটারি দিয়ে সরাসরি টর্চ, ঘড়ি ও মোবাইল ফোন চালানো যায়। কিন্তু ট্রান্সফরমার ব্যবহারের জন্য AC লাগে, সেজন্য ট্রান্সফরমার ব্যাটারির DC-তে কাজ করে না।<br>মনে রাখুন: ইনভার্টার DC-কে AC-তে এবং রেক্টিফায়ার AC-কে DC-তে রূপান্তর করে।", "t": "x", "s": "গৃহায়ণ ও গণপূর্ত মন্ত্রণালয়ের সহকারী প্রকৌশলী (মেকানিক্যাল অ্যান্ড পাওয়ার ইঞ্জিনিয়ারিং), ২০১১", "p": "ব্যাটারি ও তড়িৎ কোষ", "v": 0}, {"q": "সাধারণ স্টোরেজ ব্যাটারিতে সীসার ইলেকট্রোডের সঙ্গে যে তরলটি ব্যবহৃত হয় তা হলো-", "o": ["নাইট্রিক এসিড", "সালফিউরিক এসিড", "অ্যামোনিয়াম ক্লোরাইড", "হাইড্রোক্লোরিক এসিড"], "a": 1, "e": "সীসা-এসিড স্টোরেজ ব্যাটারিতে ইলেকট্রোলাইট হিসেবে লঘু সালফিউরিক এসিড (H₂SO₄) ব্যবহার করা হয়। এর মধ্যে ডোবানো থাকে সীসার পাত (ঋণাত্মক) এবং সীসা ডাই-অক্সাইড (PbO₂) দিয়ে ঢাকা পাত (ধনাত্মক)। ব্যাটারি থেকে বিদ্যুৎ নেওয়ার সময় দুটি পাতই সীসা সালফেট (PbSO₄) তৈরি করে এবং এসিড ক্রমে পানি হয়ে যায়। বিদ্যুৎ নেওয়ার সময় বিক্রিয়াটি হলো Pb + PbO₂ + 2H₂SO₄ → 2PbSO₄ + 2H₂O। চার্জ করার সময় এটি উল্টো দিকে ঘটে এবং সালফিউরিক এসিড আবার তৈরি হয়।<br>মনে রাখুন: স্টোরেজ ব্যাটারি চার্জ করা যায়, অর্থাৎ বিক্রিয়াটিকে উল্টো দিকে চালানো যায়, তাই এটি পুনর্ব্যবহারযোগ্য (Secondary) কোষ।", "t": "b", "s": "১৩তম বিসিএস", "p": "ব্যাটারি ও তড়িৎ কোষ", "v": 0}, {"q": "গাড়ির ব্যাটারিতে ব্যবহৃত এসিড-", "o": ["HNO₃(নাইট্রিক)", "HCl (হাইড্রোক্লোরিক)", "H₂SO₄(সালফিউরিক)", "H₃PO₄(ফসফরিক)"], "a": 2, "e": "গাড়ির ব্যাটারি সাধারণত সীসা-এসিড (Lead-Acid) ব্যাটারি। এতে লঘু সালফিউরিক এসিড (H₂SO₄) ইলেকট্রোলাইট হিসেবে থাকে। সীসার পাত ও সীসা ডাই-অক্সাইডের পাতের সঙ্গে এই এসিডের বিক্রিয়ায় বিদ্যুৎ তৈরি হয়। চার্জ করার সময় বিক্রিয়াটি উল্টো দিকে ঘটে। সীসা-এসিড ব্যাটারি বেশি বিদ্যুৎ দিতে পারে, তাই গাড়ির ইঞ্জিন চালু করার সময় স্টার্টার মোটরকে প্রয়োজনীয় তীব্র প্রবাহ এই ব্যাটারি দেয়। গাড়ি চলার সময় অল্টারনেটর একে চার্জ করে।<br>মনে রাখুন:<br>সম্পূর্ণ চার্জ হওয়া ব্যাটারির এসিডের ঘনত্ব প্রায় ১.২৮ g/cm³।<br>চার্জ কমে গেলে সালফিউরিক এসিডের ঘনত্ব কমে যায়, তাই হাইড্রোমিটার দিয়ে চার্জ পরীক্ষা করা যায়।", "t": "b", "s": "৩৪তম বিসিএস", "p": "ব্যাটারি ও তড়িৎ কোষ", "v": 0}, {"q": "ব্যাটারীর নিয়মিত কি চেক করা উচিত?", "o": ["ভোল্টেজ", "পানি/ইলেকট্রোলাইট লেবেল", "অ্যাম্পিয়ার", "ব্যাটারীর চার্জ"], "a": 1, "e": "সীসা-এসিড ব্যাটারি চালু থাকার সময় তড়িৎ বিশ্লেষণের ফলে ইলেকট্রোলাইটের পানি ধীরে ধীরে কমে যায়। পানি কমে পাতগুলো বাতাসে খোলা পড়ে গেলে সেগুলো নষ্ট হতে পারে এবং ব্যাটারির কর্মক্ষমতা কমে যায়। তাই নিয়মিত ইলেকট্রোলাইটের মাত্রা পরীক্ষা করে প্রয়োজনে পাতিত পানি যোগ করতে হয়। তাছাড়া ব্যাটারির প্রান্তে মরিচা বা সাদা গুঁড়ো জমলে তা পরিষ্কার করা উচিত, কারণ এটি বিদ্যুৎ প্রবাহে বাধা দেয়।<br>মনে রাখুন:<br>ব্যাটারিতে সাধারণ পানির বদলে পাতিত পানি ব্যবহার করা উচিত, কারণ সাধারণ পানির লবণ ব্যাটারির ক্ষতি করে।<br>এসিড কমে যায় না, শুধু পানি কমে, তাই ব্যাটারিতে নতুন এসিড দেওয়া ঠিক নয়।", "t": "x", "s": "বাংলাদেশ অভ্যন্তরীণ নৌপরিবহন কর্পোরেশনের গ্রীজার, ২০২৪", "p": "ব্যাটারি ও তড়িৎ কোষ", "v": 0}];
+const N=12, MIN=7, NB=4;           // প্রশ্নসংখ্যা, মিনিট, ন্যূনতম বিসিএস প্রশ্ন
+const bn=n=>String(n).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+const K=['ক','খ','গ','ঘ','ঙ'];
+const $=id=>document.getElementById(id);
+const show=id=>['start','exam','result','prac'].forEach(s=>$(s).hidden=s!==id);
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const fmtScore=x=>bn(Number.isInteger(x)?x:x.toFixed(1));
+const srcLine=q=>`<span class="src">${q.t==='b'?q.s:q.t==='x'?q.s:'সম্ভাব্য প্রশ্ন'}${q.v?' <span class="pend">অপশন যাচাই বাকি</span>':''}</span>`;
+const ref=q=>`<span class="ref">${/^\d|^[০-৯]/.test(q.p)?'বইয়ের অনুচ্ছেদ '+q.p:'বইয়ের অংশ: '+q.p}</span>`;
+function store(get,val){try{if(get)return JSON.parse(localStorage.getItem('electricity-scores')||'[]');localStorage.setItem('electricity-scores',JSON.stringify(val))}catch(e){return []}}
+function drawHist(){
+  const h=store(true)||[]; const el=$('hist');
+  if(!h.length){el.hidden=true;return}
+  el.hidden=false;
+  el.innerHTML='<b>এই ফোনে আগের পরীক্ষাগুলো</b><table><tr><th>পরীক্ষা</th><th>তারিখ</th><th>নম্বর</th></tr>'+
+    h.slice(-8).map((r,i,a)=>`<tr><td>${bn(h.length-a.length+i+1)}</td><td>${r.d}</td><td>${fmtScore(r.s)} / ${bn(r.n)}</td></tr>`).join('')+'</table>';
+}
+$('nq').textContent=bn(N);$('nm').textContent=bn(MIN);$('pool').textContent=bn(Q.length);$('tot').textContent=bn(N);
+drawHist();
+
+// ---------- পরীক্ষা ----------
+let paper=[],pick=[],timer=null,endAt=0,startAt=0,armed=0;
+function startExam(){
+  const b=shuffle(Q.filter(q=>q.t==='b')), r=shuffle(b.slice(NB).concat(Q.filter(q=>q.t!=='b')));
+  paper=shuffle(b.slice(0,NB).concat(r.slice(0,N-NB)));
+  pick=paper.map(()=>-1);
+  const box=$('elist');box.innerHTML='';
+  paper.forEach((q,i)=>{
+    const s=document.createElement('section');s.className='q';
+    s.innerHTML=`<div class="qh"><span class="num">${bn(i+1)}.</span><p class="qt">${q.q}${srcLine(q)}</p></div><div class="opts"></div>`;
+    const o=s.querySelector('.opts');
+    q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';
+      b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;
+      b.onclick=()=>{pick[i]=pick[i]===j?-1:j;[...o.children].forEach((x,k)=>x.classList.toggle('sel',k===pick[i]));$('ans').textContent=bn(pick.filter(x=>x>=0).length)};
+      o.appendChild(b)});
+    box.appendChild(s);
+  });
+  $('ans').textContent='০';
+  startAt=Date.now();endAt=startAt+MIN*60000;tick();clearInterval(timer);timer=setInterval(tick,500);
+  show('exam');window.scrollTo(0,0);
+}
+function tick(){
+  const left=Math.max(0,endAt-Date.now()),s=Math.ceil(left/1000);
+  $('clock').textContent=bn(String(Math.floor(s/60)).padStart(2,'0'))+':'+bn(String(s%60).padStart(2,'0'));
+  $('clock').classList.toggle('low',s<=60);
+  if(left<=0)finish();
+}
+function askSubmit(btn){
+  const blank=pick.filter(x=>x<0).length;
+  if(armed&&Date.now()-armed<4000){finish();return}
+  armed=Date.now();
+  [$('submit'),$('submit2')].forEach(b=>b.textContent=blank?`${bn(blank)}টি বাকি, তবু জমা দিতে আবার চাপুন`:'নিশ্চিত হলে আবার চাপুন');
+  setTimeout(()=>{if(Date.now()-armed>=4000)[$('submit'),$('submit2')].forEach(b=>b.textContent='জমা দিন')},4100);
+}
+function finish(){
+  clearInterval(timer);armed=0;[$('submit'),$('submit2')].forEach(b=>b.textContent='জমা দিন');
+  let ok=0,bad=0;paper.forEach((q,i)=>{if(pick[i]<0)return;pick[i]===q.a?ok++:bad++});
+  const blank=N-ok-bad, score=ok-bad*0.5, used=Math.min(MIN*60,Math.round((Date.now()-startAt)/1000));
+  const d=new Date(), ds=bn(d.getDate())+'/'+bn(d.getMonth()+1)+'/'+bn(d.getFullYear());
+  const h=store(true)||[];h.push({d:ds,s:score,n:N});store(false,h);
+  const msg=score>=9.6?'চমৎকার! অধ্যায়টি আপনার আয়ত্তে এসেছে।':score>=7.2?'ভালো হয়েছে। ভুল প্রশ্নগুলোর অংশ আবার পড়ে নিন।':'অধ্যায়টি আরেকবার পড়ে কয়েক দিন পর আবার পরীক্ষা দিন।';
+  $('scorebox').innerHTML=`<div class="big">${fmtScore(score)} / ${bn(N)}</div>
+   <div class="stats"><span class="ok">সঠিক ${bn(ok)}</span><span class="no">ভুল ${bn(bad)}</span><span class="skip">উত্তর দেননি ${bn(blank)}</span><span>সময় ${bn(Math.floor(used/60))} মিনিট ${bn(used%60)} সেকেন্ড</span></div>
+   <p class="msg">${msg}</p><p class="msg">বইয়ের শেষ পাতার ছকে লিখে রাখুন: তারিখ ${ds}, নম্বর ${fmtScore(score)}।</p>`;
+  const box=$('rlist');box.innerHTML='';
+  paper.forEach((q,i)=>{
+    const s=document.createElement('section');s.className='q';const p=pick[i];
+    s.innerHTML=`<div class="qh"><span class="num">${bn(i+1)}.</span><p class="qt">${q.q}${srcLine(q)}</p></div><div class="opts">${
+      q.o.map((t,j)=>`<button type="button" class="opt${j===q.a?' right':''}${j===p&&p!==q.a?' wrong':''}" disabled><span class="k">${K[j]}</span><span>${t}</span></button>`).join('')}</div>
+      <div class="exp">${p<0?'<span class="skip">উত্তর দেননি।</span> সঠিক উত্তর: '+K[q.a]+') '+q.o[q.a]+'।':p===q.a?'<span class="ok">সঠিক (+১)।</span>':'<span class="no">ভুল (−০.৫)।</span> সঠিক উত্তর: '+K[q.a]+') '+q.o[q.a]+'।'} ${q.e} ${ref(q)}</div>`;
+    box.appendChild(s);
+  });
+  show('result');window.scrollTo(0,0);drawHist();
+}
+
+// ---------- অনুশীলন ----------
+let filt='all',pok=0,pdone=0;
+const F=[['all','সব'],['b','বিসিএস'],['x','অন্য পরীক্ষা'],['l','সম্ভাব্য']].filter(([k])=>k==='all'||Q.some(q=>q.t===k));
+$('chips').innerHTML=F.map(([k,t])=>`<button type="button" class="chip" data-k="${k}" aria-pressed="${k==='all'}">${t}</button>`).join('');
+$('chips').onclick=e=>{const k=e.target.dataset&&e.target.dataset.k;if(!k)return;filt=k;[...$('chips').children].forEach(c=>c.setAttribute('aria-pressed',c.dataset.k===k));renderPrac()};
+function renderPrac(){
+  const L=Q.filter(q=>filt==='all'||q.t===filt);pok=0;pdone=0;
+  const upd=()=>{$('pok').textContent=bn(pok);$('pdone').textContent=bn(pdone);$('ptot').textContent=bn(L.length)};
+  const box=$('plist');box.innerHTML='';
+  L.forEach((q,i)=>{
+    const s=document.createElement('section');s.className='q';
+    s.innerHTML=`<div class="qh"><span class="num">${bn(i+1)}.</span><p class="qt">${q.q}${srcLine(q)}</p></div><div class="opts"></div>`;
+    const o=s.querySelector('.opts');
+    q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';
+      b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;
+      b.onclick=()=>{[...o.children].forEach(x=>x.disabled=true);o.children[q.a].classList.add('right');
+        const good=j===q.a;if(!good)b.classList.add('wrong');pdone++;if(good)pok++;upd();
+        const e=document.createElement('div');e.className='exp';
+        e.innerHTML=`<span class="${good?'ok':'no'}">${good?'সঠিক।':'ভুল। সঠিক উত্তর: '+K[q.a]+') '+q.o[q.a]+'।'}</span> ${q.e} ${ref(q)}`;s.appendChild(e)};
+      o.appendChild(b)});
+    box.appendChild(s);
+  });
+  upd();
+}
+$('go').onclick=startExam;$('again').onclick=startExam;
+$('submit').onclick=()=>askSubmit();$('submit2').onclick=()=>askSubmit();
+$('home').onclick=$('home2').onclick=()=>{show('start');drawHist();window.scrollTo(0,0)};
+$('practice').onclick=()=>{renderPrac();show('prac');window.scrollTo(0,0)};
+window.addEventListener('beforeunload',e=>{if(!$('exam').hidden){e.preventDefault();e.returnValue=''}});
+</script>
+<script src="/js/book-link.js" data-kind="science" data-chapter="বিদ্যুৎ" defer></script>
+</body>
+</html>

@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>পলিমার: অনলাইন পরীক্ষা</title>
+<meta name="description" content="বিসিএস বিজ্ঞান, অধ্যায় ১২ পলিমার: বিগত বিসিএস ও চাকরির পরীক্ষার প্রশ্ন, সময় ও নেগেটিভ মার্কিংসহ, ব্যাখ্যাসহ।">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tiro+Bangla&family=Noto+Sans+Bengali:wght@400;500;600&display=swap">
+<style>
+/* Layout: one narrow book-like column. Start screen -> exam (sticky timer bar) -> result + review. Practice mode keeps instant feedback. */
+:root{
+  --paper:#fbfaf7; --ink:#1d1f21; --muted:#5f6366; --rule:#d9d6cf; --card:#ffffff;
+  --accent:#1f4e5f; --accent-ink:#ffffff; --sel:#e3eef2; --good:#1e7a46; --good-bg:#e5f3ea; --bad:#b3261e; --bad-bg:#fbe9e7; --warn:#8a5a00;
+  --display:'Tiro Bangla',Georgia,serif; --body:'Noto Sans Bengali',system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#15181a; --ink:#e9e7e2; --muted:#a3a7aa; --rule:#33383b; --card:#1d2124;
+  --accent:#7fb7c9; --accent-ink:#0f1416; --sel:#1d3138; --good:#6fcf97; --good-bg:#17301f; --bad:#f08a80; --bad-bg:#3a1c1a; --warn:#e0b25a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#15181a; --ink:#e9e7e2; --muted:#a3a7aa; --rule:#33383b; --card:#1d2124;
+  --accent:#7fb7c9; --accent-ink:#0f1416; --sel:#1d3138; --good:#6fcf97; --good-bg:#17301f; --bad:#f08a80; --bad-bg:#3a1c1a; --warn:#e0b25a; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6}
+.wrap{max-width:680px;margin:0 auto;padding-block:20px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{border-bottom:2px solid var(--ink);padding-bottom:12px;margin-bottom:12px}
+.book{font-size:13px;letter-spacing:.04em;color:var(--muted)}
+h1{font-family:var(--display);font-weight:400;font-size:30px;margin:4px 0 2px;text-wrap:balance}
+h2{font-family:var(--display);font-weight:400;font-size:22px;margin:22px 0 8px}
+.sub{color:var(--muted);font-size:15px;margin:0}
+button{font:inherit;cursor:pointer}
+.btn{display:inline-block;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:10px 18px;font-weight:600}
+.btn.ghost{background:none;color:var(--ink);border-color:var(--rule);font-weight:500}
+.btns{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
+.rules{margin:8px 0 0;padding-left:20px}
+.rules li{margin:2px 0}
+.hist{border-top:1px solid var(--rule);margin-top:18px;padding-top:6px;font-size:15px}
+.hist table{border-collapse:collapse;width:100%}
+.hist td,.hist th{border-bottom:1px solid var(--rule);padding:5px 4px;text-align:left;font-variant-numeric:tabular-nums}
+.hist th{color:var(--muted);font-weight:500}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);background:var(--paper);display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--rule);z-index:5;font-size:15px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+.clock{font-family:var(--display);font-size:22px;color:var(--accent);font-variant-numeric:tabular-nums;min-width:4ch}
+.clock.low{color:var(--bad)}
+/* Start screen: the start button comes first and big, rules below it. */
+#start{display:flex;flex-direction:column}
+#start .back{order:-3}#start .selch{order:-2}#start .btns{order:-1;margin:6px 0 16px}
+#start #go{font-size:19px;padding:14px 26px;flex:1 1 220px}
+/* Exam bar sits at the bottom of the screen (Sakib's pick): quiet timer, submit button near the thumb. */
+#exam .bar{position:fixed;top:auto;bottom:0;left:0;right:0;padding:10px max(16px,calc(50% - 340px)) calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--rule);border-bottom:0;box-shadow:0 -4px 14px rgba(0,0,0,.06)}
+#exam{padding-bottom:76px}
+#exam .clock{font-family:var(--body);font-size:16px;font-weight:500;color:var(--ink);min-width:0}
+#exam .clock::before{content:"সময় ";font-size:13px;font-weight:400;color:var(--muted)}
+#exam .clock.low{color:var(--warn)}
+.bar b{font-variant-numeric:tabular-nums}
+.q{padding:18px 0;border-bottom:1px solid var(--rule)}
+.qh{display:flex;gap:10px;align-items:baseline}
+.num{font-family:var(--display);color:var(--accent);min-width:1.6em}
+.qt{font-weight:500;margin:0;min-width:0}
+.src{display:block;font-size:13px;color:var(--muted);font-weight:400}
+.pend{display:inline-block;font-size:12px;color:var(--warn);border:1px dashed var(--warn);border-radius:4px;padding:0 6px;margin-left:4px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 0 2.2em}
+@media (max-width:520px){.opts{grid-template-columns:1fr;margin-left:0}}
+.opt{display:flex;gap:8px;align-items:flex-start;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--rule);border-radius:8px;padding:9px 12px;min-height:44px;width:100%}
+.opt .k{font-family:var(--display);color:var(--muted);min-width:1.2em}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.opt.sel{background:var(--sel);border-color:var(--accent)}
+.opt:disabled{cursor:default}
+.opt.right{background:var(--good-bg);border-color:var(--good)}
+.opt.wrong{background:var(--bad-bg);border-color:var(--bad)}
+.exp{margin:10px 0 0 2.2em;font-size:15px;border-left:3px solid var(--accent);padding:2px 0 2px 10px}
+@media (max-width:520px){.exp{margin-left:0}}
+.ok{color:var(--good);font-weight:600}.no{color:var(--bad);font-weight:600}.skip{color:var(--muted);font-weight:600}
+.ref{color:var(--muted);white-space:nowrap}
+.score{border:1.5px solid var(--ink);border-radius:10px;padding:16px;margin:14px 0;text-align:center}
+.big{font-family:var(--display);font-size:46px;line-height:1.1;font-variant-numeric:tabular-nums}
+.stats{display:flex;justify-content:center;flex-wrap:wrap;gap:6px 18px;font-size:15px;margin-top:6px}
+.msg{margin:10px 0 0;font-size:15px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.chip{border:1px solid var(--rule);background:none;color:var(--ink);border-radius:999px;padding:4px 12px;font-size:14px}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+footer{margin-top:24px;font-size:14px;color:var(--muted)}
+.note{border:1px dashed var(--rule);border-radius:8px;padding:10px 12px;margin-top:14px}
+[hidden]{display:none !important}
+@media (prefers-reduced-motion:no-preference){.exp{animation:in .2s ease-out}@keyframes in{from{opacity:.4}to{opacity:1}}}
+</style>
+<link rel="icon" type="image/svg+xml" href="/img/logo/final-icon.svg">
+<link rel="apple-touch-icon" href="/img/logo/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="লিয়ানা বুকস">
+<meta property="og:title" content="পলিমার: অনলাইন পরীক্ষা · লিয়ানা বুকস">
+<meta property="og:description" content="বিসিএস বিজ্ঞান, পলিমার অধ্যায়: সময় ও নেগেটিভ মার্কিংসহ অনলাইন পরীক্ষা, ব্যাখ্যাসহ।">
+<meta property="og:url" content="https://lyannabooks.com/polymer/">
+<meta property="og:image" content="https://lyannabooks.com/img/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="bn_BD">
+<meta name="twitter:card" content="summary_large_image">
+<style>.sitebar{background:#13294b;display:flex;align-items:center;justify-content:space-between;padding:8px 16px}.sitebar img{width:110px;height:auto;display:block}.exp .bl{display:block;margin-top:8px;font-size:12.5px;color:var(--muted);text-decoration:none;opacity:.85}.exp .bl:hover{text-decoration:underline}.sitebar a.h{color:#e6c97a;text-decoration:none;font:500 14px 'Noto Sans Bengali',system-ui,sans-serif}</style>
+</head>
+<body>
+<div class="sitebar"><a href="/"><img src="/img/logo/final-onnavy-transparent.svg" alt="লিয়ানা বুকস"></a><a class="h" href="/">← হোম</a></div>
+
+<div class="wrap">
+<header>
+  <div class="book">বিসিএস বিজ্ঞান · পিয়াস · অধ্যায় ১২</div>
+  <h1>পলিমার: অনলাইন পরীক্ষা</h1>
+  <p class="sub">বিগত বিসিএস এবং অন্যান্য নিয়োগ ও ভর্তি পরীক্ষার প্রশ্ন, আসল পরীক্ষার নিয়মে।</p>
+</header>
+
+<section id="start">
+  <ul class="rules">
+    <li>প্রতি পরীক্ষায় <b id="nq">২৫</b>টি প্রশ্ন, সময় <b id="nm">১৫</b> মিনিট।</li>
+    <li>সঠিক উত্তরে ১ নম্বর, ভুল উত্তরে −০.৫। উত্তর না দিলে নম্বর কাটা যায় না।</li>
+    <li>জমা দেওয়ার আগে উত্তর বদলানো যায়। সময় শেষ হলে নিজে থেকেই জমা হবে।</li>
+    <li>শেষে ফল, প্রতিটি প্রশ্নের ব্যাখ্যা আর বইয়ের সংশ্লিষ্ট অংশের নাম দেখাবে।</li>
+    <li>প্রতিবার <b id="pool"></b>টি প্রশ্নের ভান্ডার থেকে নতুন করে প্রশ্ন বাছাই হয়, তাই বারবার পরীক্ষা দেওয়া যায়।</li>
+  </ul>
+  <div class="btns">
+    <button class="btn" id="go" type="button">পরীক্ষা শুরু করুন</button>
+    <button class="btn ghost" id="practice" type="button">সব প্রশ্ন অনুশীলন</button>
+  </div>
+  <div class="hist" id="hist" hidden></div>
+</section>
+
+<section id="exam" hidden>
+  <div class="bar"><span class="clock" id="clock">১৫:০০</span><span>উত্তর <b id="ans">০</b> / <b id="tot">২৫</b></span><button class="btn" id="submit" type="button">জমা দিন</button></div>
+  <main id="elist"></main>
+  <div class="btns"><button class="btn" id="submit2" type="button">জমা দিন</button></div>
+</section>
+
+<section id="result" hidden>
+  <div class="score" id="scorebox"></div>
+  <div class="btns"><button class="btn" id="again" type="button">নতুন পরীক্ষা</button><button class="btn ghost" id="home" type="button">শুরুর পাতা</button></div>
+  <h2>উত্তর ও ব্যাখ্যা</h2>
+  <main id="rlist"></main>
+</section>
+
+<section id="prac" hidden>
+  <div class="bar"><span>সঠিক <b id="pok">০</b> / উত্তর <b id="pdone">০</b> / মোট <b id="ptot">০</b></span><button class="btn ghost" id="home2" type="button">শুরুর পাতা</button></div>
+  <div class="chips" id="chips"></div>
+  <main id="plist"></main>
+</section>
+
+<footer>
+  <div class="note">বিসিএস ও অন্য পরীক্ষার প্রশ্নের নিচে পরীক্ষার নাম ও সাল দেওয়া আছে।</div>
+  <p>লিয়ানা বুকস · lyannabooks.com</p>
+</footer>
+</div>
+<script>
+const Q=[{"q": "ল্যাবরেটরিতে হাইড্রোজেন তৈরিতে সালফিউরিক এসিডের সাথে কোন মৌলের বিক্রিয়া ঘটানো হয়?", "o": ["জিঙ্ক", "আয়রন", "সোডিয়াম", "পটাশিয়াম"], "a": 0, "e": "হাইড্রোজেন গ্যাস বেশি সক্রিয় ধাতুর সঙ্গে লঘু এসিডের বিক্রিয়ায় পাওয়া যায়। ল্যাবরেটরিতে সাধারণত জিঙ্ক বা দস্তার সঙ্গে লঘু সালফিউরিক এসিডের বিক্রিয়া ঘটিয়ে এ গ্যাস তৈরি করা হয়। বিক্রিয়াটি হলো Zn + H₂SO₄ → ZnSO₄ + H₂। এতে গ্যাস মাঝারি গতিতে বের হয়, তাই এটি নিয়ন্ত্রণ করা সহজ।<br>সোডিয়াম ও পটাশিয়াম এত সক্রিয় যে এসিডের সঙ্গে বিক্রিয়া বিস্ফোরণের মতো হয়। তাই নিরাপত্তার কারণে এগুলো ব্যবহার করা হয় না।<br>মনে রাখুন: হাইড্রোজেন সবচেয়ে হালকা গ্যাস, বাতাসে জ্বলে পানি তৈরি করে এবং জ্বলার সময় 'পট' শব্দ করে।", "t": "x", "s": "ডিপ্লোমা ইন নার্সিং, ২০২৪-২৫", "p": "হাইড্রোজেন প্রস্তুতি", "v": 0}, {"q": "পলিথিন কি দিয়ে তৈরি?", "o": ["ইথিলিন", "ইথিলিন গ্লাইকল", "ক্লোরাইথিন", "ইথাইন"], "a": 0, "e": "পলিথিন (Polythene) তৈরি হয় ইথিলিন (C₂H₄) থেকে। অনেক ইথিলিন অণু উচ্চ চাপ ও তাপমাত্রায় এবং অনুঘটকের উপস্থিতিতে একটির সঙ্গে আরেকটি যুক্ত হয়ে লম্বা শিকলের মতো পলিমার তৈরি করে। এই প্রক্রিয়াকে পলিমারকরণ (Polymerization) বলে, আর ইথিলিন এখানে মনোমার (Monomer)।<br>উদাহরণ:<br>n CH₂=CH₂ → (–CH₂–CH₂–)n পলিথিন হালকা, নমনীয় ও পানিরোধী, তাই প্যাকেট ও ব্যাগ তৈরিতে এর ব্যবহার বেশি। কিন্তু এটি পচে না বলে পরিবেশের জন্য ক্ষতিকর, সে কারণে বাংলাদেশে পলিথিন শপিং ব্যাগ নিষিদ্ধ করা হয়েছে।<br>মনে রাখুন: ইথিলিন গ্লাইকল দিয়ে পলিয়েস্টার ও গাড়ির কুল্যান্ট তৈরি হয়। আর ইথাইন বা অ্যাসিটিলিন দিয়ে ওয়েল্ডিংয়ের গ্যাস পাওয়া যায়।", "t": "x", "s": "BSCIC-এর শিল্পনগরী কর্মকর্তা, ২০২৩", "p": "পলিমার", "v": 0}, {"q": "PVC- এর পূর্ণরূপ কী?", "o": ["Poly Vinyl Card", "Poly Vinyl Chloride", "Poly Vinyl Core", "Poly Vinyl Chord"], "a": 1, "e": "PVC-এর পূর্ণরূপ Poly Vinyl Chloride, অর্থাৎ পলিভিনাইল ক্লোরাইড। ভিনাইল ক্লোরাইড (CH₂=CHCl) নামের মনোমারের বহু অণু যুক্ত হয়ে এই পলিমার তৈরি হয়। নামের শুরুতে 'পলি' শব্দের অর্থ অনেক, তাই নামটিই বলে দেয় এটি অনেক ভিনাইল ক্লোরাইড অণুর সমন্বয়ে গঠিত।<br>PVC শক্ত, টেকসই এবং রাসায়নিকের আক্রমণে সহজে নষ্ট হয় না। এ কারণে পানির পাইপ, বিদ্যুতের তারের আবরণ ও জানালার ফ্রেম এর তৈরি। PVC ব্যবহারে দুটি ধরন আছে। শক্ত PVC পাইপ ও ফ্রেমে লাগে, আর প্লাস্টিসাইজার মিশিয়ে নরম করা PVC তারের আবরণ ও রেইনকোটে লাগে।<br>মনে রাখুন: PVC-এর ক্লোরিন থাকায় এটি পোড়ালে বিষাক্ত গ্যাস বের হয়।", "t": "x", "s": "PWD-এর উপ-সহকারী প্রকৌশলী (ই/এম), ২০২৫", "p": "পলিমার", "v": 0}, {"q": "PVC এর উপাদান কোনটি?", "o": ["CH ≡ CH", "CH₂ = CHCH₂Cl", "ClCH = CHCl", "CH₂ = CHCl"], "a": 3, "e": "PVC তৈরির মূল উপাদান বা মনোমার হলো ভিনাইল ক্লোরাইড, যার সংকেত CH₂=CHCl। এতে একটি দ্বিবন্ধন আছে, আর এই দ্বিবন্ধন ভেঙে অণুগুলো একে অপরের সঙ্গে যুক্ত হতে পারে। ফলে যুক্ত হয়ে পলিভিনাইল ক্লোরাইড তৈরি হয়।<br>উদাহরণ:<br>n CH₂=CHCl → (–CH₂–CHCl–)n সংকেত থেকে দেখা যায়, ভিনাইল ক্লোরাইড ইথিলিনের একটি হাইড্রোজেনের বদলে ক্লোরিন বসালে পাওয়া যায়। অ্যালিল ক্লোরাইড (CH₂=CHCH₂Cl) ও ভিনাইল ক্লোরাইড এক নয়, কারণ অ্যালিলে একটি বাড়তি কার্বন আছে।<br>মনে রাখুন: CH≡CH অর্থাৎ ইথাইনের সঙ্গে HCl যুক্ত করেও ভিনাইল ক্লোরাইড তৈরি করা যায়।", "t": "x", "s": "ঢাবি (ক ইউনিট) ভর্তি, ২০১৬-১৭", "p": "পলিমার", "v": 0}, {"q": "ভিনাইল ক্লোরাইড নামক মনোমার থেকে তৈরি-", "o": ["পলিথিন", "পিভিসি পাইপ", "বৈদ্যুতিক সুইচ", "মেলামাইন"], "a": 1, "e": "ভিনাইল ক্লোরাইড (CH₂=CHCl) একটি মনোমার, যার বহু অণু যুক্ত হয়ে পলিভিনাইল ক্লোরাইড বা PVC তৈরি হয়। এই পলিমার থেকে পানির পাইপ, ড্রেনের পাইপ ও বিদ্যুতের তারের আবরণ তৈরি হয়। পলিথিনের মনোমার ভিন্ন, সেটি হলো ইথিলিন। যে ছোট অণু বারবার যুক্ত হয়ে পলিমার তৈরি করে, তাকে মনোমার (Monomer) বলে। আর যুক্ত হওয়ার এই প্রক্রিয়ার নাম পলিমারকরণ।<br>মনে রাখুন:<br>মেলামাইন তৈরি হয় মেলামাইন ও ফরমালডিহাইড থেকে, এটি তাপে শক্ত হওয়া প্লাস্টিক।<br>বৈদ্যুতিক সুইচ সাধারণত বেকেলাইট বা তাপে শক্ত হওয়া প্লাস্টিক দিয়ে তৈরি।", "t": "x", "s": "বিমান বাংলাদেশ এয়ারলাইন্স লি.-এর এডমিন অ্যাসিস্ট্যান্ট, ২০২৩", "p": "পলিমার", "v": 0}, {"q": "প্লাস্টিক কে আবিষ্কার করেন -", "o": ["ভাদিমির জেকরিকিন", "ফ্রেডরিক উইলিয়াম", "জেমস হ্যারিসন", "আলেকজান্ডার পার্কস"], "a": 3, "e": "ইংরেজ রসায়নবিদ আলেকজান্ডার পার্কস (Alexander Parkes) ১৮৫৬ সালে প্রথম মানবসৃষ্ট প্লাস্টিকের পেটেন্ট নেন। সেলুলোজ নাইট্রেট থেকে তৈরি এই পদার্থের নাম ছিল পার্কেসিন (Parkesine), যা ১৮৬২ সালে লন্ডনের প্রদর্শনীতে দেখানো হয়। এ কারণে তাকে প্লাস্টিকের আবিষ্কারক হিসেবে ধরা হয়। প্লাস্টিক দুই ধরনের। থার্মোপ্লাস্টিক তাপে নরম হয় এবং আবার ছাঁচে ঢালা যায়, যেমন পলিথিন ও PVC। থার্মোসেটিং প্লাস্টিক একবার শক্ত হলে আর নরম হয় না, যেমন বেকেলাইট।<br>মনে রাখুন:<br>লিও বেকল্যান্ড ১৯০৭ সালে বেকেলাইট আবিষ্কার করেন, যা প্রথম সম্পূর্ণ কৃত্রিম প্লাস্টিক।<br>প্লাস্টিক শব্দটি এসেছে গ্রিক শব্দ plastikos থেকে, যার অর্থ ছাঁচে ঢালা যায় এমন।", "t": "x", "s": "রাবি (সমাজকর্ম বিভাগ) ভর্তি, ২০০৩-০৪", "p": "পলিমার", "v": 0}, {"q": "PET বোতল তৈরিতে একটি উপাদান হলো -", "o": ["থ্যালিক এসিড", "টেরেফথ্যালিক এসিড", "বেনজোয়িক এসিড", "অ্যাসেটিক এসিড"], "a": 1, "e": "PET-এর পূর্ণরূপ পলিইথিলিন টেরেফথ্যালেট (Polyethylene Terephthalate)। এটি এক ধরনের পলিয়েস্টার, যা টেরেফথ্যালিক এসিড ও ইথিলিন গ্লাইকলের বিক্রিয়ায় তৈরি হয়। দুটি পদার্থের অণু বারবার যুক্ত হয় এবং প্রতিবার সামান্য পানি বেরিয়ে যায়, এই ধরনের পলিমারকরণকে ঘনীভবন পলিমারকরণ বলে।<br>PET হালকা, শক্ত ও স্বচ্ছ, তাই পানির বোতল ও কোমল পানীয়ের বোতল তৈরিতে এর ব্যবহার বেশি। PET পুনর্ব্যবহার করা সহজ, তাই ব্যবহৃত বোতল গলিয়ে আবার সুতা ও নতুন বোতল তৈরি করা যায়। বোতলের তলায় ত্রিভুজ চিহ্নের ভেতর ১ লেখা থাকলে সেটি PET।<br>মনে রাখুন: একই পলিমার থেকে সুতা তৈরি করলে তা ডেক্রন বা পলিয়েস্টার কাপড়ের কাজে লাগে।", "t": "x", "s": "BPSC-এর জুনিয়র ইন্সট্রাক্টর, ২০২৩", "p": "পলিমার", "v": 0}, {"q": "নিচের কোন পদার্থ প্রকৃতিতে পাওয়া যায়?", "o": ["প্লাস্টিক", "রাবার", "গ্লিসারিন", "কাগজ"], "a": 1, "e": "রাবার গাছ থেকে যে সাদা আঠালো রস পাওয়া যায়, তাকে ল্যাটেক্স (Latex) বলে। এই ল্যাটেক্স জমিয়ে প্রাকৃতিক রাবার তৈরি হয়, তাই রাবার প্রকৃতিতে পাওয়া যায়। প্রাকৃতিক রাবার আসলে আইসোপ্রিন নামের মনোমারের পলিমার।<br>প্লাস্টিক ও গ্লিসারিন মানুষ কারখানায় তৈরি করে, আর কাগজ গাছের মণ্ড থেকে প্রক্রিয়াজাত করে বানানো হয়। রাবার সাধারণ অবস্থায় গরমে নরম ও ঠান্ডায় শক্ত হয়ে যায়। চার্লস গুডইয়ার সালফারের সঙ্গে গরম করে একে আরও শক্ত ও টেকসই করার পদ্ধতি বের করেন, যাকে ভালকানাইজেশন (Vulcanization) বলে।<br>মনে রাখুন: ব্রাজিলে প্রথম রাবার গাছ পাওয়া গিয়েছিল, পরে এটি এশিয়ায় আনা হয়। কৃত্রিম রাবারের উদাহরণ নিওপ্রিন ও বুনা রাবার।", "t": "x", "s": "শ্রম অধিদপ্তরের শ্রম কর্মকর্তা, ২০০৩", "p": "পলিমার", "v": 0}, {"q": "Which one is not a natural fibre?", "o": ["Acryl", "Jute", "Cotton", "Wool"], "a": 0, "e": "Acryl বা অ্যাক্রিলিক একটি কৃত্রিম তন্তু, যা কারখানায় রাসায়নিক পদার্থ থেকে তৈরি হয়। এর মনোমার অ্যাক্রিলোনাইট্রাইল। তাই এটি প্রাকৃতিক তন্তু নয়। Jute বা পাট, Cotton বা তুলা এবং Wool বা পশম সবই প্রকৃতি থেকে পাওয়া তন্তু। পাট ও তুলা পাওয়া যায় উদ্ভিদ থেকে, আর পশম পাওয়া যায় প্রাণী থেকে। কৃত্রিম তন্তু সাধারণত পেট্রোলিয়াম থেকে তৈরি। এগুলো শক্ত, কম দামি এবং সহজে কুঁচকায় না। কিন্তু এরা ঘাম শোষণ করে না, তাই গরমের দিনে সুতি কাপড়ই বেশি আরামদায়ক।<br>মনে রাখুন:<br>কৃত্রিম তন্তু: নাইলন, পলিয়েস্টার, অ্যাক্রিলিক।<br>প্রাকৃতিক তন্তু: পাট, তুলা, রেশম, পশম।", "t": "x", "s": "সোস্যাল ইনভেস্টমেন্ট ব্যাংক অফিসার, ২০০৪", "p": "পলিমার", "v": 0}];
+const N=9, MIN=5, NB=0;           // প্রশ্নসংখ্যা, মিনিট, ন্যূনতম বিসিএস প্রশ্ন
+const bn=n=>String(n).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+const K=['ক','খ','গ','ঘ','ঙ'];
+const $=id=>document.getElementById(id);
+const show=id=>['start','exam','result','prac'].forEach(s=>$(s).hidden=s!==id);
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const fmtScore=x=>bn(Number.isInteger(x)?x:x.toFixed(1));
+const srcLine=q=>`<span class="src">${q.t==='b'?q.s:q.t==='x'?q.s:'সম্ভাব্য প্রশ্ন'}${q.v?' <span class="pend">অপশন যাচাই বাকি</span>':''}</span>`;
+const ref=q=>`<span class="ref">${/^\d|^[০-৯]/.test(q.p)?'বইয়ের অনুচ্ছেদ '+q.p:'বইয়ের অংশ: '+q.p}</span>`;
+function store(get,val){try{if(get)return JSON.parse(localStorage.getItem('polymer-scores')||'[]');localStorage.setItem('polymer-scores',JSON.stringify(val))}catch(e){return []}}
+function drawHist(){
+  const h=store(true)||[]; const el=$('hist');
+  if(!h.length){el.hidden=true;return}
+  el.hidden=false;
+  el.innerHTML='<b>এই ফোনে আগের পরীক্ষাগুলো</b><table><tr><th>পরীক্ষা</th><th>তারিখ</th><th>নম্বর</th></tr>'+
+    h.slice(-8).map((r,i,a)=>`<tr><td>${bn(h.length-a.length+i+1)}</td><td>${r.d}</td><td>${fmtScore(r.s)} / ${bn(r.n)}</td></tr>`).join('')+'</table>';
+}
+$('nq').textContent=bn(N);$('nm').textContent=bn(MIN);$('pool').textContent=bn(Q.length);$('tot').textContent=bn(N);
+drawHist();
+
+// ---------- পরীক্ষা ----------
+let paper=[],pick=[],timer=null,endAt=0,startAt=0,armed=0;
+function startExam(){
+  const b=shuffle(Q.filter(q=>q.t==='b')), r=shuffle(b.slice(NB).concat(Q.filter(q=>q.t!=='b')));
+  paper=shuffle(b.slice(0,NB).concat(r.slice(0,N-NB)));
+  pick=paper.map(()=>-1);
+  const box=$('elist');box.innerHTML='';
+  paper.forEach((q,i)=>{
+    const s=document.createElement('section');s.className='q';
+    s.innerHTML=`<div class="qh"><span class="num">${bn(i+1)}.</span><p class="qt">${q.q}${srcLine(q)}</p></div><div class="opts"></div>`;
+    const o=s.querySelector('.opts');
+    q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';
+      b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;
+      b.onclick=()=>{pick[i]=pick[i]===j?-1:j;[...o.children].forEach((x,k)=>x.classList.toggle('sel',k===pick[i]));$('ans').textContent=bn(pick.filter(x=>x>=0).length)};
+      o.appendChild(b)});
+    box.appendChild(s);
+  });
+  $('ans').textContent='০';
+  startAt=Date.now();endAt=startAt+MIN*60000;tick();clearInterval(timer);timer=setInterval(tick,500);
+  show('exam');window.scrollTo(0,0);
+}
+function tick(){
+  const left=Math.max(0,endAt-Date.now()),s=Math.ceil(left/1000);
+  $('clock').textContent=bn(String(Math.floor(s/60)).padStart(2,'0'))+':'+bn(String(s%60).padStart(2,'0'));
+  $('clock').classList.toggle('low',s<=60);
+  if(left<=0)finish();
+}
+function askSubmit(btn){
+  const blank=pick.filter(x=>x<0).length;
+  if(armed&&Date.now()-armed<4000){finish();return}
+  armed=Date.now();
+  [$('submit'),$('submit2')].forEach(b=>b.textContent=blank?`${bn(blank)}টি বাকি, তবু জমা দিতে আবার চাপুন`:'নিশ্চিত হলে আবার চাপুন');
+  setTimeout(()=>{if(Date.now()-armed>=4000)[$('submit'),$('submit2')].forEach(b=>b.textContent='জমা দিন')},4100);
+}
+function finish(){
+  clearInterval(timer);armed=0;[$('submit'),$('submit2')].forEach(b=>b.textContent='জমা দিন');
+  let ok=0,bad=0;paper.forEach((q,i)=>{if(pick[i]<0)return;pick[i]===q.a?ok++:bad++});
+  const blank=N-ok-bad, score=ok-bad*0.5, used=Math.min(MIN*60,Math.round((Date.now()-startAt)/1000));
+  const d=new Date(), ds=bn(d.getDate())+'/'+bn(d.getMonth()+1)+'/'+bn(d.getFullYear());
+  const h=store(true)||[];h.push({d:ds,s:score,n:N});store(false,h);
+  const msg=score>=7.2?'চমৎকার! অধ্যায়টি আপনার আয়ত্তে এসেছে।':score>=5.4?'ভালো হয়েছে। ভুল প্রশ্নগুলোর অংশ আবার পড়ে নিন।':'অধ্যায়টি আরেকবার পড়ে কয়েক দিন পর আবার পরীক্ষা দিন।';
+  $('scorebox').innerHTML=`<div class="big">${fmtScore(score)} / ${bn(N)}</div>
+   <div class="stats"><span class="ok">সঠিক ${bn(ok)}</span><span class="no">ভুল ${bn(bad)}</span><span class="skip">উত্তর দেননি ${bn(blank)}</span><span>সময় ${bn(Math.floor(used/60))} মিনিট ${bn(used%60)} সেকেন্ড</span></div>
+   <p class="msg">${msg}</p><p class="msg">বইয়ের শেষ পাতার ছকে লিখে রাখুন: তারিখ ${ds}, নম্বর ${fmtScore(score)}।</p>`;
+  const box=$('rlist');box.innerHTML='';
+  paper.forEach((q,i)=>{
+    const s=document.createElement('section');s.className='q';const p=pick[i];
+    s.innerHTML=`<div class="qh"><span class="num">${bn(i+1)}.</span><p class="qt">${q.q}${srcLine(q)}</p></div><div class="opts">${
+      q.o.map((t,j)=>`<button type="button" class="opt${j===q.a?' right':''}${j===p&&p!==q.a?' wrong':''}" disabled><span class="k">${K[j]}</span><span>${t}</span></button>`).join('')}</div>
+      <div class="exp">${p<0?'<span class="skip">উত্তর দেননি।</span> সঠিক উত্তর: '+K[q.a]+') '+q.o[q.a]+'।':p===q.a?'<span class="ok">সঠিক (+১)।</span>':'<span class="no">ভুল (−০.৫)।</span> সঠিক উত্তর: '+K[q.a]+') '+q.o[q.a]+'।'} ${q.e} ${ref(q)}</div>`;
+    box.appendChild(s);
+  });
+  show('result');window.scrollTo(0,0);drawHist();
+}
+
+// ---------- অনুশীলন ----------
+let filt='all',pok=0,pdone=0;
+const F=[['all','সব'],['b','বিসিএস'],['x','অন্য পরীক্ষা'],['l','সম্ভাব্য']].filter(([k])=>k==='all'||Q.some(q=>q.t===k));
+$('chips').innerHTML=F.map(([k,t])=>`<button type="button" class="chip" data-k="${k}" aria-pressed="${k==='all'}">${t}</button>`).join('');
+$('chips').onclick=e=>{const k=e.target.dataset&&e.target.dataset.k;if(!k)return;filt=k;[...$('chips').children].forEach(c=>c.setAttribute('aria-pressed',c.dataset.k===k));renderPrac()};
+function renderPrac(){
+  const L=Q.filter(q=>filt==='all'||q.t===filt);pok=0;pdone=0;
+  const upd=()=>{$('pok').textContent=bn(pok);$('pdone').textContent=bn(pdone);$('ptot').textContent=bn(L.length)};
+  const box=$('plist');box.innerHTML='';
+  L.forEach((q,i)=>{
+    const s=document.createElement('section');s.className='q';
+    s.innerHTML=`<div class="qh"><span class="num">${bn(i+1)}.</span><p class="qt">${q.q}${srcLine(q)}</p></div><div class="opts"></div>`;
+    const o=s.querySelector('.opts');
+    q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';
+      b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;
+      b.onclick=()=>{[...o.children].forEach(x=>x.disabled=true);o.children[q.a].classList.add('right');
+        const good=j===q.a;if(!good)b.classList.add('wrong');pdone++;if(good)pok++;upd();
+        const e=document.createElement('div');e.className='exp';
+        e.innerHTML=`<span class="${good?'ok':'no'}">${good?'সঠিক।':'ভুল। সঠিক উত্তর: '+K[q.a]+') '+q.o[q.a]+'।'}</span> ${q.e} ${ref(q)}`;s.appendChild(e)};
+      o.appendChild(b)});
+    box.appendChild(s);
+  });
+  upd();
+}
+$('go').onclick=startExam;$('again').onclick=startExam;
+$('submit').onclick=()=>askSubmit();$('submit2').onclick=()=>askSubmit();
+$('home').onclick=$('home2').onclick=()=>{show('start');drawHist();window.scrollTo(0,0)};
+$('practice').onclick=()=>{renderPrac();show('prac');window.scrollTo(0,0)};
+window.addEventListener('beforeunload',e=>{if(!$('exam').hidden){e.preventDefault();e.returnValue=''}});
+</script>
+<script src="/js/book-link.js" data-kind="science" data-chapter="পলিমার" defer></script>
+</body>
+</html>
