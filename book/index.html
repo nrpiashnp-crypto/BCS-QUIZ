@@ -84,6 +84,15 @@ footer{text-align:center;color:var(--muted);font-size:14px;margin-top:40px}
 footer a{color:inherit}
 @media (min-width:760px){.top{grid-template-columns:260px 1fr;text-align:left;justify-items:start}.cover{width:260px}.feat{grid-template-columns:1fr 1fr}.links{grid-template-columns:1fr 1fr}}
 </style>
+<script>
+/* Open at the top unless the visitor just tapped a link on this site that points to a section. */
+(function(){try{
+  if('scrollRestoration' in history)history.scrollRestoration='manual';
+  var nav=(performance.getEntriesByType&&performance.getEntriesByType('navigation')[0])||{},internal=document.referrer.indexOf(location.origin)===0;
+  if(location.hash&&!(nav.type==='navigate'&&internal)){history.replaceState(null,'',location.pathname+location.search);scrollTo(0,0);addEventListener('load',function(){scrollTo(0,0)})}
+  else if(!location.hash){addEventListener('load',function(){scrollTo(0,0)})}
+}catch(e){}})();
+</script>
 </head>
 <body>
 <div class="bar"><a href="/"><img src="/img/logo/final-onnavy-transparent.svg" alt="লিয়ানা বুকস" width="110" height="80"></a><a class="h" href="/">← হোম</a></div>

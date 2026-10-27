@@ -196,6 +196,15 @@ footer .fb{font-family:var(--display);color:var(--ink);font-size:18px}
 @media (prefers-reduced-motion:reduce){.stars i,.peek,.peek .eye{animation:none}.stars i{opacity:.5}}
 .photo picture,.avatar picture{display:contents}
 </style>
+<script>
+/* Open at the top unless the visitor just tapped a link on this site that points to a section. */
+(function(){try{
+  if('scrollRestoration' in history)history.scrollRestoration='manual';
+  var nav=(performance.getEntriesByType&&performance.getEntriesByType('navigation')[0])||{},internal=document.referrer.indexOf(location.origin)===0;
+  if(location.hash&&!(nav.type==='navigate'&&internal)){history.replaceState(null,'',location.pathname+location.search);scrollTo(0,0);addEventListener('load',function(){scrollTo(0,0)})}
+  else if(!location.hash){addEventListener('load',function(){scrollTo(0,0)})}
+}catch(e){}})();
+</script>
 </head>
 <body>
 <header class="brand">
