@@ -159,10 +159,15 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const fmt=x=>bn(Number.isInteger(x)?x:(Math.round(x*100)/100).toString());
 const CAT={bank:{t:'ব্যাংকের পরীক্ষা',m:'বাংলাদেশ ব্যাংক, রাষ্ট্রায়ত্ত ও বেসরকারি ব্যাংকের বিগত নিয়োগ পরীক্ষা',subs:{gb:'সরকারি ব্যাংক ও আর্থিক প্রতিষ্ঠান',pb:'বেসরকারি ব্যাংক'}},
-           gov:{t:'সরকারি অন্যান্য চাকরি',m:'মন্ত্রণালয়, কর্পোরেশন, কর্তৃপক্ষ ও সংস্থার ৯ম-১০ম গ্রেডের সাধারণ পদ',subs:{'9':'৯ম গ্রেড','10':'১০ম গ্রেড'}}};
+           gov:{t:'সরকারি অন্যান্য চাকরি',m:'মন্ত্রণালয়, কর্পোরেশন, কর্তৃপক্ষ ও সংস্থার ৯ম-১০ম গ্রেডের সাধারণ পদ',subs:{'9':'৯ম গ্রেড','10':'১০ম গ্রেড'}},
+           psc:{t:'পিএসসি নন-ক্যাডার',m:'সরকারি কর্ম কমিশনের (পিএসসি) নন-ক্যাডার নিয়োগ পরীক্ষার বিগত প্রশ্ন',subs:{all:'সব পরীক্ষা'},flat:1}};
 let CATALOG=null;
 const exams=()=>CATALOG.exams;
-const inSub=(e,c,s)=>c==='bank'?e.cat===s:(e.cat==='gov'&&String(e.grade)===s);
+const catOf=e=>e.cat==='gov'||e.cat==='psc'?e.cat:'bank';
+const subOf=e=>e.cat==='gov'?String(e.grade):e.cat==='psc'?'all':e.cat;
+const inSub=(e,c,s)=>catOf(e)===c&&subOf(e)===s;
+// flat categories (psc) skip the sub-category level in links and breadcrumbs
+const subCrumb=(c,s)=>CAT[c].flat?[]:[[`#/${c}/${s}`,CAT[c].subs[s]]];
 const crumb=parts=>'<nav class="crumb"><a href="#/">প্রশ্নব্যাংক</a>'+parts.map(([h,t])=>h?`<span><a href="${h}">${t}</a></span>`:`<span>${t}</span>`).join('')+'</nav>';
 const sum=L=>L.reduce((a,e)=>a+e.n,0);
 
@@ -170,11 +175,12 @@ function home(){
   const L=exams();
   V().innerHTML=`<h1>চাকরির প্রশ্নব্যাংক</h1>
   <p class="sub">ব্যাংক আর সরকারি চাকরির বিগত প্রশ্নে আসল পরীক্ষার মতো অনলাইন পরীক্ষা: সময় আর নেগেটিভ মার্কিংসহ, শেষে ফল আর প্রতিটি প্রশ্নের ব্যাখ্যা। মোট ${bn(L.length)}টি পরীক্ষা, ${bn(sum(L))}টি প্রশ্ন।</p>
-  <div class="grid">${Object.entries(CAT).map(([k,c])=>{const l=L.filter(e=>k==='bank'?e.cat!=='gov':e.cat==='gov');
+  <div class="grid">${Object.entries(CAT).map(([k,c])=>{const l=L.filter(e=>catOf(e)===k);if(!l.length)return '';
     return `<a class="card big" href="#/${k}"><span class="t">${c.t}</span><span class="m">${c.m}</span><span class="m">${bn(l.length)}টি পরীক্ষা · ${bn(sum(l))}টি প্রশ্ন</span><span class="go">পরীক্ষা দিন →</span></a>`}).join('')}</div>
   <p class="note">এখন সাধারণ (নন-টেকনিক্যাল) পদের পরীক্ষাগুলো আছে। প্রতিটি উত্তর যাচাই করা, ব্যাখ্যা নিজেদের লেখা। নতুন পরীক্ষা নিয়মিত যোগ হবে।</p>`;
 }
 function cat(c){
+  if(CAT[c].flat)return flatList(c);
   const C=CAT[c],L=exams();
   V().innerHTML=crumb([[null,C.t]])+`<h1>${C.t}</h1><p class="sub">${C.m}</p><div class="grid">${Object.entries(C.subs).map(([s,t])=>{const l=L.filter(e=>inSub(e,c,s));
     return `<a class="card big" href="#/${c}/${s}"><span class="t">${t}</span><span class="m">${bn(new Set(l.map(e=>e.org)).size)}টি প্রতিষ্ঠান · ${bn(l.length)}টি পরীক্ষা</span><span class="go">দেখুন →</span></a>`}).join('')}</div>`;
@@ -190,14 +196,28 @@ function sub(c,s){
     return `<a class="oc" href="#/${c}/${s}/${k}" title="${esc(o.bn)}"><span class="n">${n}${ab?`<span class="ab">${ab}</span>`:''}</span><span class="f">${bn(o.l.length)}টি পরীক্ষা <span class="cnt">${bn(sum(o.l))} প্রশ্ন</span><span class="go">→</span></span></a>`};
   const G={};O.forEach(x=>{const g=c==='bank'?groupOf(x[1].bn):'';(G[g]=G[g]||[]).push(x)});
   const keys=Object.keys(G).sort((a,b)=>GORDER.indexOf(a)-GORDER.indexOf(b));
-  V().innerHTML=crumb([['#/'+c,C.t],[null,C.subs[s]]])+`<h1>${C.subs[s]}</h1><p class="sub">প্রতিষ্ঠান বেছে নিন: ${bn(O.length)}টি প্রতিষ্ঠান, ${bn(L.length)}টি পরীক্ষা।</p>`+
+  V().innerHTML=crumb(C.flat?[[null,C.t]]:[['#/'+c,C.t],[null,C.subs[s]]])+`<h1>${C.flat?C.t:C.subs[s]}</h1><p class="sub">প্রতিষ্ঠান বেছে নিন: ${bn(O.length)}টি প্রতিষ্ঠান, ${bn(L.length)}টি পরীক্ষা।</p>`+
     keys.map(g=>(keys.length>1?`<h2 class="grp">${g}</h2>`:'')+`<div class="ogrid three">${G[g].map(card).join('')}</div>`).join('');
+}
+// flat category: every exam as a card, newest first, with a search box and year chips
+function flatList(c){
+  const C=CAT[c],L=exams().filter(e=>catOf(e)===c).sort((a,b)=>(b.date||b.year).localeCompare(a.date||a.year));
+  const years=[...new Set(L.map(e=>e.year).filter(y=>y!=='misc'))].sort().reverse();
+  const card=e=>`<a class="oc ex" href="#/x/${e.id}" data-y="${e.year}" data-k="${esc((e.orgbn+' '+e.postbn+' '+(e.note||'')).toLowerCase())}"><span class="yr">${e.year==='misc'?'বিবিধ':bn(e.year)}</span><span class="mid"><span class="n">${e.postbn}<span class="ab">${e.orgbn}</span></span>${e.note?`<span class="src">${e.note}</span>`:''}<span class="cnt">${bn(e.n)} প্রশ্ন</span></span><span class="go">শুরু →</span></a>`;
+  V().innerHTML=crumb([[null,C.t]])+`<h1>${C.t}</h1><p class="sub">${C.m}: ${bn(L.length)}টি পরীক্ষা, ${bn(sum(L))}টি প্রশ্ন।</p>
+  <input id="fq" type="search" placeholder="পদ বা মন্ত্রণালয়ের নাম লিখে খুঁজুন" style="width:100%;font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--rule);border-radius:10px;background:var(--card);color:var(--ink)">
+  <div class="chips" id="fy"><button type="button" class="chip" data-y="" aria-pressed="true">সব বছর</button>${years.map(y=>`<button type="button" class="chip" data-y="${y}" aria-pressed="false">${bn(y)}</button>`).join('')}</div>
+  <div class="ogrid three" id="fl">${L.map(card).join('')}</div><p class="load" id="fnone" hidden>কিছু পাওয়া যায়নি।</p>`;
+  let yr='';
+  const apply=()=>{const q=$('fq').value.trim().toLowerCase();let n=0;[...$('fl').children].forEach(a=>{const ok=(!yr||a.dataset.y===yr)&&(!q||a.dataset.k.includes(q));a.hidden=!ok;n+=ok});$('fnone').hidden=n>0};
+  $('fq').oninput=apply;
+  $('fy').onclick=ev=>{const b=ev.target.closest('.chip');if(!b)return;yr=b.dataset.y;[...$('fy').children].forEach(x=>x.setAttribute('aria-pressed',x===b));apply()};
 }
 function org(c,s,o){
   const C=CAT[c],L=exams().filter(e=>inSub(e,c,s)&&e.org===o);
   if(!L.length)return notFound();
   const posts={};L.forEach(e=>{(posts[e.postbn]=posts[e.postbn]||[]).push(e)});
-  V().innerHTML=crumb([['#/'+c,C.t],[`#/${c}/${s}`,C.subs[s]],[null,L[0].orgbn]])+`<h1>${L[0].orgbn}</h1><p class="sub">পরীক্ষা বেছে নিন। <span class="pill full">পূর্ণ</span> মানে পুরো প্রশ্নপত্র; বাকিগুলোতে ওই পরীক্ষার সংগৃহীত প্রশ্ন।</p>`+
+  V().innerHTML=crumb([['#/'+c,C.t],...subCrumb(c,s),[null,L[0].orgbn]])+`<h1>${L[0].orgbn}</h1><p class="sub">পরীক্ষা বেছে নিন। <span class="pill full">পূর্ণ</span> মানে পুরো প্রশ্নপত্র; বাকিগুলোতে ওই পরীক্ষার সংগৃহীত প্রশ্ন।</p>`+
     Object.entries(posts).map(([p,l])=>`<h2 class="post">${p}</h2><div class="ogrid three">${l.sort((a,b)=>b.year.localeCompare(a.year)).map(e=>
       `<a class="oc ex" href="#/x/${e.id}"><span class="yr">${e.year==='misc'?'বিবিধ':bn(e.year)}</span><span class="mid"><span class="n">${e.title||(e.full?'পূর্ণ প্রশ্নপত্র':'সংগৃহীত প্রশ্ন')}${e.full?'<span class="pill full">পূর্ণ</span>':''}</span><span class="cnt">${bn(e.n)} প্রশ্ন</span></span><span class="go">শুরু →</span></a>`).join('')}</div>`).join('');
 }
@@ -213,10 +233,10 @@ async function exam(id){
   E=exams().find(e=>e.id===id); if(!E)return notFound();
   V().innerHTML='<p class="load">প্রশ্ন লোড হচ্ছে…</p>';
   try{Q=await (await fetch('data/e/'+id+'.json')).json()}catch(err){V().innerHTML='<p class="load">প্রশ্ন লোড হয়নি। ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।</p>';return}
-  const c=E.cat==='gov'?'gov':'bank', s=E.cat==='gov'?String(E.grade):E.cat;
-  MIN=minutesFor(Q.length);
+  const c=catOf(E), s=subOf(E);
+  MIN=E.time?+E.time:minutesFor(Q.length);
   document.title=title(E)+' · প্রশ্নব্যাংক';
-  V().innerHTML=crumb([['#/'+c,CAT[c].t],[`#/${c}/${s}`,CAT[c].subs[s]],[`#/${c}/${s}/${E.org}`,E.orgbn],[null,E.year==='misc'?'বিবিধ':bn(E.year)]])+
+  V().innerHTML=crumb([['#/'+c,CAT[c].t],...subCrumb(c,s),...(CAT[c].flat?[]:[[`#/${c}/${s}/${E.org}`,E.orgbn]]),[null,E.year==='misc'?'বিবিধ':bn(E.year)]])+
   `<section id="start"><h1>${title(E)}</h1>
    <p class="sub">${E.full?'পুরো প্রশ্নপত্র':'এই পরীক্ষার সংগৃহীত প্রশ্ন'} · ${bn(Q.length)}টি প্রশ্ন</p>
    <div class="btns start"><button class="btn" id="go" type="button">পরীক্ষা শুরু করুন →</button><button class="btn ghost" id="practice" type="button">অনুশীলন (সঙ্গে সঙ্গে উত্তর)</button></div>
@@ -226,9 +246,9 @@ async function exam(id){
    <p class="lbl">নেগেটিভ মার্কিং</p><div class="chips" id="negc"><button type="button" class="chip" data-v="0.5" aria-pressed="true">−০.৫</button><button type="button" class="chip" data-v="0.25" aria-pressed="false">−০.২৫</button><button type="button" class="chip" data-v="0" aria-pressed="false">নেই</button></div>
    <div class="hist" id="hist" hidden></div></section>
   <section id="exam" hidden><div class="bar"><span class="clock" id="clock"></span><span>উত্তর <b id="ans">০</b> / <b>${bn(Q.length)}</b></span><button class="btn" id="submit" type="button">জমা দিন</button></div><main id="elist"></main><div class="btns"><button class="btn" id="submit2" type="button">জমা দিন</button></div></section>
-  <section id="result" hidden><div class="score" id="scorebox"></div><div class="btns"><button class="btn" id="again" type="button">আবার পরীক্ষা দিন</button><a class="btn ghost" href="#/${c}/${s}/${E.org}">অন্য পরীক্ষা</a></div><h2>উত্তর ও ব্যাখ্যা</h2><main id="rlist"></main></section>
+  <section id="result" hidden><div class="score" id="scorebox"></div><div class="btns"><button class="btn" id="again" type="button">আবার পরীক্ষা দিন</button><a class="btn ghost" href="${CAT[c].flat?'#/'+c:`#/${c}/${s}/${E.org}`}">অন্য পরীক্ষা</a></div><h2>উত্তর ও ব্যাখ্যা</h2><main id="rlist"></main></section>
   <section id="prac" hidden><div class="bar"><span>সঠিক <b id="pok">০</b> / উত্তর <b id="pdone">০</b> / মোট <b id="ptot">০</b></span><button class="btn ghost" id="back" type="button">শুরুর পাতা</button></div><div class="chips" id="chips"></div><main id="plist"></main></section>`;
-  try{NEG=parseFloat(localStorage.getItem('job-neg')||'0.5')}catch(e){NEG=0.5}
+  const dn=E.neg!=null?String(E.neg):'0.5';try{NEG=parseFloat(localStorage.getItem('job-neg')||dn)}catch(e){NEG=parseFloat(dn)}
   setNeg(NEG);
   $('negc').onclick=ev=>{const v=ev.target.dataset&&ev.target.dataset.v;if(v===undefined)return;setNeg(parseFloat(v));try{localStorage.setItem('job-neg',v)}catch(e){}};
   $('go').onclick=$('again').onclick=startExam;
