@@ -251,7 +251,7 @@ function finish(){
   paper.forEach((qi,i)=>{const q=Q[qi],p=pick[i];
     const s=document.createElement('section');s.className='q';
     s.innerHTML=qhtml(q,i)+`<div class="opts">${q.o.map((t,j)=>`<button type="button" class="opt${j===q.a?' right':''}${j===p&&p!==q.a?' wrong':''}" disabled><span class="k">${K[j]}</span><span>${t}</span></button>`).join('')}</div>
-     <div class="exp">${p<0?'<span class="skip">উত্তর দেননি।</span> সঠিক উত্তর: '+K[q.a]+'।':p===q.a?'<span class="ok">সঠিক (+১)।</span>':'<span class="no">ভুল ('+(NEG?'−'+bn(NEG):'০')+')।</span> সঠিক উত্তর: '+K[q.a]+'।'} ${q.e||''}<a class="bl" href="../#book">লিয়ানা বুকস · ‘লিয়ানা বিসিএস বিজ্ঞান’ বইটি দেখুন →</a></div>`;
+     <div class="exp">${p<0?'<span class="skip">উত্তর দেননি।</span> সঠিক উত্তর: '+K[q.a]+'।':p===q.a?'<span class="ok">সঠিক (+১)।</span>':'<span class="no">ভুল ('+(NEG?'−'+bn(NEG):'০')+')।</span> সঠিক উত্তর: '+K[q.a]+'।'} ${q.e||''}<a class="bl" href="../book/">লিয়ানা বুকস · ‘লিয়ানা বিসিএস বিজ্ঞান’ বইটি দেখুন →</a></div>`;
     box.appendChild(s)});
   show('result');drawHist();
 }
@@ -266,7 +266,7 @@ function renderPrac(f){
     const o=s.querySelector('.opts');
     q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;
       b.onclick=()=>{[...o.children].forEach(x=>x.disabled=true);o.children[q.a].classList.add('right');const g=j===q.a;if(!g)b.classList.add('wrong');done++;if(g)ok++;upd();
-        const e=document.createElement('div');e.className='exp';e.innerHTML=`<span class="${g?'ok':'no'}">${g?'সঠিক।':'ভুল। সঠিক উত্তর: '+K[q.a]+'।'}</span> ${q.e||''}<a class="bl" href="../#book">লিয়ানা বুকস · ‘লিয়ানা বিসিএস বিজ্ঞান’ বইটি দেখুন →</a>`;s.appendChild(e)};o.appendChild(b)});
+        const e=document.createElement('div');e.className='exp';e.innerHTML=`<span class="${g?'ok':'no'}">${g?'সঠিক।':'ভুল। সঠিক উত্তর: '+K[q.a]+'।'}</span> ${q.e||''}<a class="bl" href="../book/">লিয়ানা বুকস · ‘লিয়ানা বিসিএস বিজ্ঞান’ বইটি দেখুন →</a>`;s.appendChild(e)};o.appendChild(b)});
     box.appendChild(s)});
   upd();
 }
