@@ -66,6 +66,18 @@ h2{font-family:var(--display);font-weight:400;font-size:24px;margin:38px 0 12px;
 .tot{margin:0;text-align:center;font-weight:600;color:var(--navy)}
 .err{margin:0;color:#b3261e;text-align:center;font-size:15px}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .tot,:root:not([data-theme="light"]) .price b{color:#e6c97a}}
+.f select{font:inherit;font-size:16px;padding:10px 8px;border:1px solid var(--rule);border-radius:10px;background:var(--paper);color:var(--ink);width:100%}
+.f .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:420px){.f .row2{grid-template-columns:1fr}}
+.f .row{grid-template-columns:90px 1fr}
+.zone{margin:0;font-size:14px;color:#1e7a46;font-weight:600}
+.done{text-align:center;padding:10px 4px}
+.done .ck{width:56px;height:56px;margin:0 auto 6px;border-radius:50%;background:#1f9d55;color:#fff;display:grid;place-items:center;font-size:30px}
+.done h3{font-family:var(--display);font-weight:400;font-size:24px;margin:0 0 6px}
+.done p{margin:0 0 8px;color:var(--muted)}
+.done .oid{font-family:ui-monospace,Menlo,monospace;font-size:26px;letter-spacing:.06em;color:var(--ink);background:var(--soft);border-radius:10px;padding:8px;display:inline-block}
+.done .wa{display:inline-flex;margin-top:6px}
+.f .wa:disabled{opacity:.6}
 .note{font-size:13px;color:var(--muted);margin:0;text-align:center}
 .hero-po{display:inline-block;margin-top:14px;background:var(--gold-hi);color:#13294b;text-decoration:none;font-weight:600;border-radius:10px;padding:11px 22px}
 footer{text-align:center;color:var(--muted);font-size:14px;margin-top:40px}
@@ -108,19 +120,32 @@ footer a{color:inherit}
   </div>
   <ol class="steps">
     <li><b>বিকাশে টাকা পাঠান</b> <span>০১৭৫৪-১১৯৮৭৮ নম্বরে সেন্ড মানি, প্রতি কপি ৳৩৫০</span></li>
-    <li><b>নিচের ফর্মটি পূরণ করুন</b> <span>বিকাশের ট্রানজেকশন আইডিসহ</span></li>
-    <li><b>"WhatsApp-এ পাঠান" চাপুন</b> <span>আপনার তথ্য তৈরি হয়ে WhatsApp-এ চলে যাবে, আমরা নিশ্চিত করে জানাব</span></li>
+    <li><b>নিচের ফর্মটি পূরণ করে জমা দিন</b> <span>আপনার একটি অর্ডার নম্বর তৈরি হবে</span></li>
+    <li><b>WhatsApp-এ নিশ্চিত করুন</b> <span>অর্ডার নম্বরসহ বার্তা তৈরি হয়ে যাবে, শুধু পাঠিয়ে দিন</span></li>
   </ol>
   <form class="f" id="pof" novalidate>
-    <label>নাম<input id="pn" autocomplete="name" placeholder="আপনার নাম"></label>
-    <label>মোবাইল নম্বর<input id="pp" autocomplete="tel" placeholder="০১XXXXXXXXX" inputmode="tel"></label>
-    <label>ঠিকানা<textarea id="pa" rows="2" autocomplete="street-address" placeholder="বাসা, রোড, এলাকা, থানা, জেলা"></textarea></label>
-    <div class="row"><label>কত কপি<input id="pq" value="১" inputmode="numeric"></label><label>বিকাশ ট্রানজেকশন আইডি<input id="pt" autocapitalize="characters" placeholder="যেমন 9AB12CD3EF"></label></div>
+    <label>আপনার নাম *<input id="pn" autocomplete="name" placeholder="পুরো নাম"></label>
+    <div class="row2"><label>মোবাইল নম্বর *<input id="pp" autocomplete="tel" placeholder="০১XXXXXXXXX" inputmode="tel"></label><label>বিকল্প নম্বর<input id="pp2" placeholder="না থাকলে খালি রাখুন" inputmode="tel"></label></div>
+    <div class="row2"><label>বিভাগ *<select id="pdv"><option value="">বাছুন</option></select></label><label>জেলা *<select id="pds" disabled><option value="">আগে বিভাগ বাছুন</option></select></label></div>
+    <label>উপজেলা / থানা *<select id="pup" disabled><option value="">আগে জেলা বাছুন</option></select></label>
+    <label>বিস্তারিত ঠিকানা *<textarea id="pa" rows="2" autocomplete="street-address" placeholder="বাসা/হোল্ডিং, রোড, এলাকা বা গ্রাম, ডাকঘর"></textarea></label>
+    <p class="zone" id="pzone" hidden></p>
+    <div class="row"><label>কত কপি *<input id="pq" value="১" inputmode="numeric"></label><label>যে বিকাশ নম্বর থেকে পাঠিয়েছেন *<input id="pb" placeholder="০১XXXXXXXXX" inputmode="tel"></label></div>
+    <label>বিকাশ ট্রানজেকশন আইডি *<input id="pt" autocapitalize="characters" placeholder="যেমন 9AB12CD3EF"></label>
+    <input id="hp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px">
     <p class="tot" id="ptot">মোট পাঠাবেন: ৳৩৫০ (ডেলিভারি ফ্রি)</p>
     <p class="err" id="perr" hidden></p>
-    <button type="submit" class="wa">WhatsApp-এ পাঠান →</button>
-    <p class="note">কোনো তথ্য এই সাইটে জমা থাকে না; সরাসরি আমাদের WhatsApp-এ যায়।</p>
+    <button type="submit" class="wa" id="psub">অর্ডার জমা দিন →</button>
+    <p class="note">আপনার তথ্য শুধু বই পৌঁছানোর জন্য লিয়ানা বুকস-এর অর্ডার খাতায় রাখা হয়, আর কোথাও দেওয়া হয় না।</p>
   </form>
+  <div class="done" id="pdone" hidden>
+    <div class="ck">✓</div>
+    <h3>অর্ডার জমা হয়েছে</h3>
+    <p>আপনার অর্ডার নম্বর</p>
+    <p class="oid" id="poid"></p>
+    <p>নম্বরটি লিখে বা স্ক্রিনশট রেখে দিন। এখন WhatsApp-এ পাঠিয়ে অর্ডারটি নিশ্চিত করুন, আমরা বিকাশ মিলিয়ে উত্তর দেব।</p>
+    <a class="wa" id="pwa" href="#" target="_blank" rel="noopener">WhatsApp-এ নিশ্চিত করুন →</a>
+  </div>
 </section>
 
 <h2>এখনই যা করতে পারেন</h2>
@@ -133,18 +158,41 @@ footer a{color:inherit}
 </div>
 <script>
 (function(){
-var P=350,PH='8801754119878',$=function(i){return document.getElementById(i)};
+// Paste the Google Apps Script web-app URL here once deployed (see website/প্রি-অর্ডার/ guide). Empty = WhatsApp only.
+var SHEET_URL='';
+var P=350,PH='8801754119878',$=function(i){return document.getElementById(i)},G=null;
 var en=function(x){return String(x).replace(/[০-৯]/g,function(d){return '০১২৩৪৫৬৭৮৯'.indexOf(d)})};
 var bn=function(x){return String(x).replace(/[0-9]/g,function(d){return '০১২৩৪৫৬৭৮৯'[d]})};
+var mob=function(v){v=en(v).replace(/[^0-9]/g,'').replace(/^88(?=01)/,'');return /^01[3-9][0-9]{8}$/.test(v)?v:''};
 var qty=function(){var n=parseInt(en($('pq').value),10);return n>0&&n<100?n:0};
+var opts=function(sel,list,ph){sel.innerHTML='<option value="">'+ph+'</option>'+list.map(function(x){return '<option value="'+x[0]+'">'+x[1]+'</option>'}).join('');sel.disabled=!list.length};
+var txt=function(sel){return sel.value?sel.options[sel.selectedIndex].text:''};
+fetch('/js/bd-geo.json').then(function(r){return r.json()}).then(function(g){G=g;
+  opts($('pdv'),g.v.slice().sort(function(a,b){return a[1].localeCompare(b[1],'bn')}),'বাছুন');});
+$('pdv').addEventListener('change',function(){var v=+this.value;
+  opts($('pds'),v?G.d.filter(function(d){return d[1]===v}).map(function(d){return [d[0],d[2]]}).sort(function(a,b){return a[1].localeCompare(b[1],'bn')}):[], v?'বাছুন':'আগে বিভাগ বাছুন');
+  opts($('pup'),[],'আগে জেলা বাছুন');zone();});
+$('pds').addEventListener('change',function(){var d=this.value,u=d&&G.u[d]?G.u[d]:[];
+  var m=u.filter(function(x){return x.indexOf('ঢাকা মহানগর')===0}),r=u.filter(function(x){return x.indexOf('ঢাকা মহানগর')!==0}).sort(function(a,b){return a.localeCompare(b,'bn')});
+  opts($('pup'),d?m.concat(r).concat(['অন্য (ঠিকানায় লিখুন)']).map(function(x){return [x,x]}):[],d?'বাছুন':'আগে জেলা বাছুন');zone();});
+function zoneOf(){return $('pds').value?(+$('pds').value===G.dhaka?'ঢাকার ভেতরে':'ঢাকার বাইরে'):''}
+function zone(){var z=zoneOf();$('pzone').hidden=!z;$('pzone').textContent=z?z+' · ডেলিভারি ফ্রি':''}
 $('pq').addEventListener('input',function(){var n=qty();$('ptot').textContent=n?'মোট পাঠাবেন: ৳'+bn(n*P)+' (ডেলিভারি ফ্রি)':'কত কপি, সংখ্যায় লিখুন'});
+function oid(){var d=new Date(),p=function(n){return ('0'+n).slice(-2)};
+  return 'LB-'+String(d.getFullYear()).slice(2)+p(d.getMonth()+1)+p(d.getDate())+'-'+Math.random().toString(36).slice(2,6).toUpperCase()}
 $('pof').addEventListener('submit',function(e){e.preventDefault();
-  var n=$('pn').value.trim(),p=en($('pp').value).replace(/[^0-9+]/g,''),a=$('pa').value.trim(),t=$('pt').value.trim(),q=qty(),miss=[];
-  if(!n)miss.push('নাম');if(!/^(\+?88)?01[3-9][0-9]{8}$/.test(p))miss.push('সঠিক মোবাইল নম্বর');if(a.length<6)miss.push('ঠিকানা');if(!q)miss.push('কপির সংখ্যা');if(t.length<6)miss.push('বিকাশ ট্রানজেকশন আইডি');
-  if(miss.length){$('perr').hidden=false;$('perr').textContent='দয়া করে লিখুন: '+miss.join(', ');return}
+  var n=$('pn').value.trim(),p=mob($('pp').value),p2raw=$('pp2').value.trim(),p2=mob(p2raw),a=$('pa').value.trim(),q=qty(),b=mob($('pb').value),t=$('pt').value.trim().toUpperCase(),miss=[];
+  if(n.length<2)miss.push('নাম');if(!p)miss.push('সঠিক মোবাইল নম্বর (১১ সংখ্যা, ০১ দিয়ে শুরু)');if(p2raw&&!p2)miss.push('সঠিক বিকল্প নম্বর');
+  if(!$('pdv').value)miss.push('বিভাগ');if(!$('pds').value)miss.push('জেলা');if(!$('pup').value)miss.push('উপজেলা/থানা');if(a.length<6)miss.push('বিস্তারিত ঠিকানা');
+  if(!q)miss.push('কপির সংখ্যা');if(!b)miss.push('যে বিকাশ নম্বর থেকে পাঠিয়েছেন');if(t.length<6)miss.push('বিকাশ ট্রানজেকশন আইডি');
+  if(miss.length){$('perr').hidden=false;$('perr').textContent='দয়া করে ঠিক করুন: '+miss.join(', ');return}
   $('perr').hidden=true;
-  var m='প্রি-অর্ডার: লিয়ানা বিসিএস বিজ্ঞান\nনাম: '+n+'\nমোবাইল: '+p+'\nঠিকানা: '+a+'\nকপি: '+bn(q)+' (মোট ৳'+bn(q*P)+', ডেলিভারি ফ্রি)\nবিকাশ ট্রানজেকশন আইডি: '+t;
-  location.href='https://wa.me/'+PH+'?text='+encodeURIComponent(m);
+  var o={id:oid(),name:n,phone:p,phone2:p2,division:txt($('pdv')),district:txt($('pds')),upazila:$('pup').value,address:a,zone:zoneOf(),qty:q,total:q*P,bkash:b,txid:t,hp:$('hp').value,page:location.href};
+  var m='প্রি-অর্ডার: লিয়ানা বিসিএস বিজ্ঞান\nঅর্ডার নম্বর: '+o.id+'\nনাম: '+n+'\nমোবাইল: '+p+(p2?' / '+p2:'')+'\nঠিকানা: '+a+', '+o.upazila+', '+o.district+' ('+o.division+')\nকপি: '+bn(q)+' (মোট ৳'+bn(q*P)+', ডেলিভারি ফ্রি)\nবিকাশ নম্বর: '+b+'\nট্রানজেকশন আইডি: '+t;
+  var show=function(){$('pof').hidden=true;$('poid').textContent=o.id;$('pwa').href='https://wa.me/'+PH+'?text='+encodeURIComponent(m);$('pdone').hidden=false;$('pdone').scrollIntoView({behavior:'smooth',block:'center'})};
+  $('psub').disabled=true;$('psub').textContent='জমা হচ্ছে…';
+  if(!SHEET_URL){show();return}
+  fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(o)}).then(show,show);
 });
 })();
 </script>
