@@ -84,6 +84,12 @@ button{font:inherit;cursor:pointer}
 .bar{position:sticky;top:0;background:var(--paper);display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--rule);z-index:5;font-size:15px}
 .clock{font-family:var(--display);font-size:22px;color:var(--accent);font-variant-numeric:tabular-nums;min-width:4ch}
 .clock.low{color:var(--bad)}
+#exam .bar{position:fixed;top:auto;bottom:0;left:0;right:0;padding:10px max(16px,calc(50% - 380px)) calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--rule);border-bottom:0;box-shadow:0 -4px 14px rgba(0,0,0,.06)}
+#exam{padding-bottom:76px}
+#exam .clock{font-family:var(--body);font-size:16px;font-weight:500;color:var(--ink);min-width:0}
+#exam .clock::before{content:'সময় ';font-size:13px;font-weight:400;color:var(--muted)}
+#exam .clock.low{color:#8a5a00}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) #exam .clock.low{color:#e0b25a}}
 .q{padding:18px 0;border-bottom:1px solid var(--rule)}
 .qh{display:flex;gap:10px;align-items:baseline}
 .num{font-family:var(--display);color:var(--accent);min-width:1.8em}
@@ -205,7 +211,7 @@ async function exam(id){
 }
 function setNeg(v){NEG=v;[...$('negc').children].forEach(c=>c.setAttribute('aria-pressed',parseFloat(c.dataset.v)===v));$('negt').textContent=v?'−'+bn(v):'০ (নেগেটিভ নেই)'}
 const show=id=>{['start','exam','result','prac'].forEach(s=>$(s).hidden=s!==id);window.scrollTo(0,0)};
-const qhtml=(q,i)=>`<div class="qh"><span class="num">${bn(i+1)}.</span><div class="qt">${q.q.includes('<table')?'<div class="tb">'+q.q+'</div>':q.q}<span class="src">${esc(q.s||'')}</span></div></div>`;
+const qhtml=(q,i)=>`<div class="qh"><span class="num">${bn(i+1)}.</span><div class="qt">${q.q.includes('<table')?'<div class="tb">'+q.q+'</div>':q.q}<span class="src">${esc(q.s||'')}${q.x?' · '+esc(q.x):''}</span></div></div>`;
 function drawHist(){
   const h=store(true)||[],el=$('hist');if(!h.length){el.hidden=true;return}
   el.hidden=false;el.innerHTML='<b>এই ফোনে আগের ফল</b><table><tr><th>তারিখ</th><th>নম্বর</th><th>নেগেটিভ</th></tr>'+h.slice(-8).map(r=>`<tr><td>${r.d}</td><td>${fmt(r.s)} / ${bn(r.n)}</td><td>${r.g?'−'+bn(r.g):'নেই'}</td></tr>`).join('')+'</table>';
