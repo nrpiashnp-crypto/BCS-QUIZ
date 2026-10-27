@@ -52,6 +52,19 @@ a{color:var(--accent)}
 .brand .en{font-family:var(--latin);font-size:clamp(14px,3.8vw,18px);letter-spacing:.34em;text-transform:uppercase;color:var(--gold-hi);margin:10px 0 0;padding-left:.34em}
 
 /* Intro */
+.free{position:relative;margin:24px 0 4px;background:linear-gradient(135deg,#1b3766,#13294b);color:#fff;border:1px solid rgba(224,180,92,.6);border-radius:16px;padding:24px 18px 22px;text-align:center;box-shadow:0 12px 30px rgba(19,41,75,.22);overflow:hidden}
+.free::before{content:"";position:absolute;inset:6px;border:1px dashed rgba(224,180,92,.35);border-radius:11px;pointer-events:none}
+.free .k{display:inline-block;background:var(--gold-hi);color:#13294b;font-weight:600;font-size:13px;letter-spacing:.04em;border-radius:99px;padding:3px 12px;margin-bottom:10px}
+.free h2{font-family:var(--display);font-weight:400;font-size:clamp(30px,8vw,46px);line-height:1.2;margin:0 0 6px;color:#fff}
+.free h2 b{color:var(--gold-hi);font-weight:400}
+.free p{margin:0 auto 14px;max-width:30em;color:#dfe5ef;font-size:16px}
+.free ul{list-style:none;padding:0;margin:0 0 18px;display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.free li{border:1px solid rgba(224,180,92,.55);border-radius:99px;padding:5px 12px;font-size:14px;color:#fff;background:rgba(255,255,255,.05)}
+.free li::before{content:"✓ ";color:var(--gold-hi)}
+.free a{display:inline-block;background:var(--gold-hi);color:#13294b;text-decoration:none;font-weight:600;border-radius:10px;padding:11px 22px}
+.free a:hover{background:#ebc677}
+@media (min-width:900px){.free{padding:34px 28px 30px}.free h2{font-size:54px}.free p{max-width:40em;font-size:18px}.free li{font-size:15px;padding:6px 14px}}
+.ch .free-tag{margin-left:auto;font-size:12px;font-weight:600;color:#13294b;background:var(--gold-hi);border-radius:99px;padding:2px 9px}
 .hero{text-align:center;padding:26px 0 30px;border-bottom:1px solid var(--rule)}
 .hero p{max-width:30em;margin:0 auto 12px;color:var(--muted);text-wrap:pretty}
 .hero p:first-child{font-family:var(--display);font-size:19px;color:var(--ink)}
@@ -163,6 +176,14 @@ footer .fb{font-family:var(--display);color:var(--ink);font-size:18px}
 </header>
 <div class="wrap">
 
+<section class="free" aria-label="সব পরীক্ষা ফ্রি">
+  <span class="k">কোনো শর্ত নেই</span>
+  <h2>সব পরীক্ষা <b>সম্পূর্ণ ফ্রি</b></h2>
+  <p>এই ওয়েবসাইটের প্রতিটি পরীক্ষা সবার জন্য খোলা। বই না কিনলেও দিতে পারবেন।</p>
+  <ul><li>রেজিস্ট্রেশন লাগে না</li><li>লগইন লাগে না</li><li>যতবার খুশি দেওয়া যায়</li><li>কোনো টাকা লাগে না</li></ul>
+  <a href="#quiz">এখনই পরীক্ষা দিন →</a>
+</section>
+
 <section class="hero">
   <p>আমাদের বই শুধু সহজ ভাষায় লেখা নয়। বিগত প্রশ্ন বিশ্লেষণ করে দেখানো হয়েছে কোন বিষয় থেকে কোথায় কী প্রশ্ন আসে, আর সামনের পরীক্ষায় কী আসতে পারে।</p>
   <p>লক্ষ্য একটাই: একটি বই দিয়েই যেন বিজ্ঞানের জন্য আলাদা কোর্স না লাগে। তাই প্রতিটি অধ্যায়ের অনলাইন পরীক্ষা সবার জন্য বিনামূল্যে।</p>
@@ -204,11 +225,11 @@ footer .fb{font-family:var(--display);color:var(--ink);font-size:18px}
 </div>
 
 <section id="quiz">
-  <h2>অধ্যায়ভিত্তিক অনলাইন পরীক্ষা</h2>
+  <h2>অধ্যায়ভিত্তিক অনলাইন পরীক্ষা<small>সম্পূর্ণ ফ্রি</small></h2>
   <p class="lead">বইয়ের QR কোড স্ক্যান করলে এখানে আসবেন। সময় আর নেগেটিভ মার্কিংসহ আসল পরীক্ষার মতো, শেষে প্রতিটি প্রশ্নের ব্যাখ্যা আর বইয়ের অনুচ্ছেদ নম্বর।</p>
   <div class="chapters">
-    <a class="ch" href="light/"><span class="n">১</span><span><span class="nm">আলো</span><span class="st">এক্সট্রা এমসিকিউ →</span></span></a>
-    <a class="ch" href="sound/"><span class="n">২</span><span><span class="nm">শব্দ</span><span class="st">পরীক্ষা দিন →</span></span></a>
+    <a class="ch" href="light/"><span class="n">১</span><span><span class="nm">আলো</span><span class="st">এক্সট্রা এমসিকিউ →</span></span><span class="free-tag">ফ্রি</span></a>
+    <a class="ch" href="sound/"><span class="n">২</span><span><span class="nm">শব্দ</span><span class="st">পরীক্ষা দিন →</span></span><span class="free-tag">ফ্রি</span></a>
     <div class="ch soon"><span class="n">·</span><span><span class="nm">রোগ</span><span class="st">শীঘ্রই</span></span></div>
     <div class="ch soon"><span class="n">·</span><span><span class="nm">আরও অধ্যায়</span><span class="st">একে একে যোগ হবে</span></span></div>
   </div>
