@@ -49,3 +49,6 @@ if errors:
 catalog['exams'] = list(byid.values())
 json.dump(catalog, open(cat_path, 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
 print('catalog exams', len(catalog['exams']))
+# keep the home-page question counter in step with the catalog
+import subprocess
+subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'tools', 'stats.py')])
