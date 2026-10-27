@@ -1,0 +1,117 @@
+<title>শব্দ: বিগত প্রিলি প্রশ্ন</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tiro+Bangla&family=Hind+Siliguri:wght@400;500;600&display=swap">
+<style>
+/* Layout: one narrow column like a book page; each question is a ruled block, options are full-width tap targets */
+:root{
+  --paper:#fbfaf7; --ink:#1d1f21; --muted:#5f6366; --rule:#d9d6cf; --card:#ffffff;
+  --accent:#1f4e5f; --good:#1e7a46; --good-bg:#e5f3ea; --bad:#b3261e; --bad-bg:#fbe9e7;
+  --display:'Tiro Bangla',Georgia,serif; --body:'Hind Siliguri','Noto Sans Bengali',system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#15181a; --ink:#e9e7e2; --muted:#a3a7aa; --rule:#33383b; --card:#1d2124;
+  --accent:#7fb7c9; --good:#6fcf97; --good-bg:#17301f; --bad:#f08a80; --bad-bg:#3a1c1a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#15181a; --ink:#e9e7e2; --muted:#a3a7aa; --rule:#33383b; --card:#1d2124;
+  --accent:#7fb7c9; --good:#6fcf97; --good-bg:#17301f; --bad:#f08a80; --bad-bg:#3a1c1a; color-scheme:dark}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6}
+.wrap{max-width:680px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{border-bottom:2px solid var(--ink);padding-bottom:12px;margin-bottom:8px}
+.book{font-size:13px;letter-spacing:.04em;color:var(--muted)}
+h1{font-family:var(--display);font-weight:400;font-size:30px;margin:4px 0 2px;text-wrap:balance}
+.sub{color:var(--muted);font-size:15px;margin:0}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);background:var(--paper);display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--rule);z-index:5;font-size:15px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+.score b{font-variant-numeric:tabular-nums;color:var(--accent)}
+button{font:inherit;cursor:pointer}
+.reset{background:none;border:1px solid var(--rule);color:var(--ink);border-radius:6px;padding:4px 12px}
+.q{padding:18px 0;border-bottom:1px solid var(--rule)}
+.qh{display:flex;gap:10px;align-items:baseline}
+.num{font-family:var(--display);color:var(--accent);min-width:1.6em}
+.qt{font-weight:500;margin:0;min-width:0}
+.pend{display:inline-block;font-size:12px;color:var(--muted);border:1px dashed var(--rule);border-radius:4px;padding:0 6px;margin-left:4px}
+.tag{display:inline-block;font-size:13px;color:var(--muted);margin-left:4px;white-space:nowrap}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 0 2.2em}
+@media (max-width:520px){.opts{grid-template-columns:1fr;margin-left:0}}
+.opt{display:flex;gap:8px;align-items:flex-start;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--rule);border-radius:8px;padding:9px 12px;min-height:44px}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.opt .k{font-family:var(--display);color:var(--muted)}
+.opt:disabled{cursor:default}
+.opt.right{background:var(--good-bg);border-color:var(--good);color:var(--ink)}
+.opt.wrong{background:var(--bad-bg);border-color:var(--bad);color:var(--ink)}
+.exp{margin:10px 0 0 2.2em;font-size:15px;color:var(--ink);border-left:3px solid var(--accent);padding:2px 0 2px 10px}
+@media (max-width:520px){.exp{margin-left:0}}
+.exp .ok{color:var(--good);font-weight:600}.exp .no{color:var(--bad);font-weight:600}
+.exp .ref{color:var(--muted)}
+footer{margin-top:24px;font-size:14px;color:var(--muted)}
+.note{border:1px dashed var(--rule);border-radius:8px;padding:10px 12px;margin-top:14px}
+@media (prefers-reduced-motion:no-preference){.exp{animation:in .2s ease-out}@keyframes in{from{opacity:.4}to{opacity:1}}}
+</style>
+<div class="wrap">
+<header>
+  <div class="book">বিসিএস বিজ্ঞান · পিয়াস · অধ্যায় ২</div>
+  <h1>শব্দ: বিগত বিসিএস প্রিলি প্রশ্ন</h1>
+  <p class="sub">১১তম থেকে ৪৭তম বিসিএস পর্যন্ত এই অধ্যায় থেকে আসা সব প্রশ্ন। অপশনে চাপ দিলেই উত্তর আর বইয়ের অনুচ্ছেদ দেখাবে।</p>
+</header>
+<div class="bar"><span class="score">সঠিক <b id="ok">০</b> / উত্তর দেওয়া <b id="done">০</b> / মোট <b id="tot">০</b></span><button class="reset" id="reset" type="button">আবার শুরু</button></div>
+<main id="list"></main>
+<footer>
+  <div class="note">এটি নমুনা পাতা। ১৪টি প্রশ্নে আসল পরীক্ষার অপশন বসানো হয়েছে। "অপশন যাচাই বাকি" চিহ্নিত ৬টির অপশন আসল প্রশ্নপত্র থেকে পরে মিলিয়ে নেওয়া হবে।</div>
+</footer>
+</div>
+<script>
+const Q=[
+["শব্দের গতি কোন মাধ্যমে সবচেয়ে বেশি?","১৩ প্রিলি",["শূন্য মাধ্যমে","তরল মাধ্যমে","কঠিন মাধ্যমে","বায়বীয় মাধ্যমে"],2,"কঠিনের কণাগুলো সবচেয়ে কাছাকাছি আর দৃঢ়ভাবে যুক্ত, তাই কম্পন সবচেয়ে দ্রুত ছড়ায়।","২.৪"],
+["কোন মাধ্যমে শব্দের গতি সবচেয়ে বেশি?","২৫ প্রিলি",["শূন্যতায়","লোহা","পানি","বাতাস"],1,"লোহায় শব্দের বেগ প্রায় ৫১৩০ মিটার/সেকেন্ড, বাতাসের প্রায় ১৫ গুণ।","২.৪"],
+["কোন মাধ্যমে শব্দের গতি সবচেয়ে কম?","১৪ ও ৩০ প্রিলি",["শূন্যতায়","কঠিন পদার্থে","তরল পদার্থে","বায়বীয় পদার্থে"],3,"শূন্যে শব্দ চলেই না, তাই মাধ্যমগুলোর মধ্যে সবচেয়ে কম গতি বায়বীয় পদার্থে।","২.৪"],
+["শূন্য মাধ্যমে শব্দের বেগ কত?","৩৭ প্রিলি",["২৮০ m/s","শূন্য","৩৩২ m/s","১১২০ m/s"],1,"শব্দ যান্ত্রিক তরঙ্গ, চলতে মাধ্যম লাগে। শূন্যে শব্দ চলে না।","২.১"],
+["চাঁদে কোনো শব্দ করলে তা শোনা যাবে না কেন?","১৬ প্রিলি",["চাঁদে কোনো জীব নেই তাই","চাঁদের মাধ্যাকর্ষণজনিত ত্বরণ পৃথিবীর চেয়ে কম তাই","চাঁদে বায়ুমণ্ডল নেই তাই","চাঁদে কোনো পানি নেই তাই"],2,"চাঁদে বাতাস নেই, তাই শব্দ বয়ে নেওয়ার মাধ্যমও নেই।","২.১"],
+["একটি বন্দুকের গুলি প্রতি সেকেন্ডে ১৫৪০ ফুট বেগে লক্ষ্য ভেদ করে। বন্দুক ছোড়ার ৩ সেকেন্ড পরে লক্ষ্য ভেদের শব্দ শোনা যায়। শব্দের বেগ প্রতি সেকেন্ডে ১১০০ ফুট হলে লক্ষ্যের দূরত্ব কত?","১১ প্রিলি",["২০২৫ ফুট","১৯২৫ ফুট","১৯৭৫ ফুট","১৮৭৫ ফুট"],1,"গুলি যেতে আর শব্দ ফিরতে মোট ৩ সেকেন্ড: d/1540 + d/1100 = 3, তাই d = 1925 ফুট।","২.৪"],
+["সমটানসম্পন্ন একটি টানা তারের দৈর্ঘ্য দ্বিগুণ করলে কম্পাঙ্কের কী পরিবর্তন হবে?","১৩ প্রিলি",["অর্ধেক হবে","দ্বিগুণ হবে","তিনগুণ হবে","চারগুণ হবে"],0,"মারসেনের সূত্রে কম্পাঙ্ক দৈর্ঘ্যের ব্যস্তানুপাতিক।","২.৬"],
+["আমাদের মস্তিষ্কে শব্দের স্থায়িত্বকাল কত?","২৮ প্রিলি",["১ সেকেন্ড","০.১ সেকেন্ড","০.০১ সেকেন্ড","০.০০১ সেকেন্ড"],1,"একে শব্দানুভূতির স্থায়িত্বকাল বলে। এ কারণেই প্রতিধ্বনির জন্য দেয়াল অন্তত ১৬.৬ মিটার দূরে লাগে।","২.৭"],
+["কিসের সাহায্যে সমুদ্র ও কুয়ার গভীরতা নির্ণয় করা হয়?","১৪ প্রিলি",["প্রতিফলন","প্রতিধ্বনি","প্রতিসরণ","প্রতিসরাঙ্ক"],1,"শব্দ পাঠিয়ে প্রতিধ্বনি ফেরার সময় মেপে h = vt/2 থেকে গভীরতা বের করা হয়।","২.৮"],
+["সমুদ্রের গভীরতা মাপার যন্ত্রের নাম কী?","২০ প্রিলি",["অল্টিমিটার","ফ্যাদোমিটার","ব্যারোমিটার","হাইগ্রোমিটার"],1,"জাহাজের তলা থেকে শব্দোত্তর তরঙ্গ পাঠিয়ে প্রতিধ্বনির সময় মাপে ফ্যাদোমিটার।","২.৮",1],
+["লোকভর্তি হলঘরে শূন্য ঘরের চেয়ে শব্দ ক্ষীণ হয়, কারণ","২৩ প্রিলি",["শূন্য ঘর নীরব থাকে","লোকভর্তি ঘরে মানুষের শোরগোল হয়","শূন্য ঘরে শব্দের শোষণ কম হয়","শূন্য ঘরে শব্দের শোষণ বেশি হয়"],2,"মানুষের শরীর আর পোশাক শব্দ শুষে নেয়; শূন্য ঘরে শোষণ কম, তাই সেখানে শব্দ জোরালো।","২.৯"],
+["বাদুড় অন্ধকারে চলাফেরা করে কীভাবে?","২৭ প্রিলি",["সৃষ্ট শব্দের প্রতিধ্বনি শুনে","ক্রমাগত শব্দ উৎপন্নের মাধ্যমে অবস্থান নির্ণয় করে","অলৌকিকভাবে","তীক্ষ্ণ দৃষ্টিসম্পন্ন চোখের সাহায্যে"],0,"বাদুড় শব্দোত্তর তরঙ্গ ছেড়ে বাধা থেকে ফেরা প্রতিধ্বনি শুনে পথ চেনে।","২.১০"],
+["আল্ট্রাসনোগ্রাফি কী?","১৫ প্রিলি",["নতুন ধরনের এক্স-রে","ছোট তরঙ্গদৈর্ঘ্যের শব্দের দ্বারা ইমেজিং","শরীরের অভ্যন্তরের শব্দ বিশ্লেষণ","শক্তিশালী শব্দ দিয়ে পিত্তপাথর বিচূর্ণীকরণ"],1,"উচ্চ কম্পাঙ্কের, অর্থাৎ ছোট তরঙ্গদৈর্ঘ্যের শব্দোত্তর তরঙ্গের প্রতিধ্বনি থেকে ছবি তৈরি হয়।","২.১০"],
+["আল্ট্রাসনোগ্রাফিতে ব্যবহৃত শব্দের কম্পাঙ্ক কত?","৪৭ প্রিলি",["০.০১-১ মেগাহার্জ","১-১০ মেগাহার্জ","১০-২০ মেগাহার্জ","২০-৩০ মেগাহার্জ"],1,"রোগনির্ণয়ের আল্ট্রাসাউন্ডে সাধারণত ১ থেকে ১০ মেগাহার্জ ব্যবহার হয়।","২.১০"],
+["রেলস্টেশনে আগমনরত ইঞ্জিন বাঁশি বাজাতে থাকলে প্ল্যাটফর্মে দাঁড়ানো ব্যক্তির কাছে বাঁশির কম্পাঙ্ক","১৪ প্রিলি",["আসলের সমান হবে","আসলের চেয়ে বেশি হবে","আসলের চেয়ে কম হবে","আসল গতির সঙ্গে সম্পর্কযুক্তভাবে কমে যাবে"],1,"এটি ডপলার প্রভাব: উৎস কাছে এলে তরঙ্গ ঘন হয়, শোনা কম্পাঙ্ক বাড়ে।","২.১১"],
+["শব্দের তীব্রতা মাপার যন্ত্র কোনটি?","২৬ প্রিলি",["অডিওমিটার","ফ্যাদোমিটার","সিসমোগ্রাফ","ট্যাকোমিটার"],0,"অডিওমিটার দিয়ে শ্রবণশক্তি আর শব্দের তীব্রতা মাপা হয়।","২.১৪",1],
+["একটানা কত ডেসিবেল বা তার বেশি শব্দে মানুষ বধির হয়ে যেতে পারে?","১২ প্রিলি",["৩০ ডেসিবেল","৫০ ডেসিবেল","৭০ ডেসিবেল","১০৫ ডেসিবেল"],3,"সাধারণ কথোপকথন প্রায় ৬০ ডেসিবেল; একটানা ১০৫ ডেসিবেল শ্রবণশক্তি নষ্ট করতে পারে।","২.১৪",1],
+["কোন যন্ত্র তড়িৎ শক্তিকে শব্দ শক্তিতে রূপান্তর করে?","২০ ও ৪০ প্রিলি",["মাইক্রোফোন","লাউডস্পিকার","অ্যামপ্লিফায়ার","ট্রান্সফরমার"],1,"মাইক্রোফোন শব্দকে তড়িতে বদলায়, লাউডস্পিকার করে উল্টোটা।","২.১৬",1],
+["ফনোগ্রাফ কে আবিষ্কার করেন?","২৩ প্রিলি",["টমাস আলভা এডিসন","গ্রাহাম বেল","মার্কনি","ফ্যারাডে"],0,"১৮৭৭ সালে এডিসন ফনোগ্রাফ আবিষ্কার করেন।","২.১৬",1],
+["ক্যাসেটের ফিতায় শব্দ কীভাবে রক্ষিত থাকে?","২৩ প্রিলি",["চৌম্বক ক্ষেত্র হিসেবে","তড়িৎ ক্ষেত্র হিসেবে","আলোক সংকেত হিসেবে","যান্ত্রিক খাঁজ হিসেবে"],0,"ফিতার গায়ে আয়রন অক্সাইডের প্রলেপ থাকে, শব্দ সেখানে চৌম্বক নকশা হিসেবে জমা থাকে।","২.১৬",1]
+];
+const bn=n=>String(n).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+const K=['ক','খ','গ','ঘ'];
+const list=document.getElementById('list');
+let ok=0,done=0;
+function upd(){document.getElementById('ok').textContent=bn(ok);document.getElementById('done').textContent=bn(done);document.getElementById('tot').textContent=bn(Q.length);}
+function render(){
+  list.innerHTML='';ok=0;done=0;
+  Q.forEach((q,i)=>{
+    const s=document.createElement('section');s.className='q';
+    s.innerHTML=`<div class="qh"><span class="num">${bn(i+1)}.</span><p class="qt">${q[0]} <span class="tag">[${q[1]}]</span>${q[6]?' <span class="pend">অপশন যাচাই বাকি</span>':''}</p></div><div class="opts"></div>`;
+    const box=s.querySelector('.opts');
+    q[2].forEach((o,j)=>{
+      const b=document.createElement('button');b.type='button';b.className='opt';b.id=`q${i}o${j}`;
+      b.innerHTML=`<span class="k">${K[j]}</span><span>${o}</span>`;
+      b.onclick=()=>{
+        box.querySelectorAll('button').forEach(x=>x.disabled=true);
+        box.children[q[3]].classList.add('right');
+        const good=j===q[3]; if(!good)b.classList.add('wrong');
+        done++; if(good)ok++; upd();
+        const e=document.createElement('div');e.className='exp';
+        e.innerHTML=`<span class="${good?'ok':'no'}">${good?'সঠিক।':'ভুল। সঠিক উত্তর: '+K[q[3]]+') '+q[2][q[3]]+'।'}</span> ${q[4]} <span class="ref">বইয়ের অনুচ্ছেদ ${q[5]}</span>`;
+        s.appendChild(e);
+      };
+      box.appendChild(b);
+    });
+    list.appendChild(s);
+  });
+  upd();
+}
+document.getElementById('reset').onclick=()=>{render();window.scrollTo(0,0)};
+render();
+</script>
