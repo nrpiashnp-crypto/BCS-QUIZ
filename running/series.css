@@ -147,3 +147,10 @@ h2.post{font-size:20px;margin:22px 0 2px}
 .wk th{color:var(--muted);font-weight:500}.wk tr.low td:first-child{color:var(--bad);font-weight:600}
 .mb{display:inline-block;width:80px;height:7px;background:var(--soft);border-radius:99px;overflow:hidden;vertical-align:middle}.mb i{display:block;height:100%;background:var(--accent)}
 .wk tr.low .mb i{background:var(--bad)}
+.sbg{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:12px 0 4px;text-align:left}
+.sb{border:1px solid var(--rule);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:3px;font-size:14px}
+.sb b{font-size:18px;font-variant-numeric:tabular-nums}.sb .mb{width:100%}.sb.low b{color:var(--bad)}.sb.low .mb i{background:var(--bad)}
+.wl{margin:0 0 10px;padding-left:20px;font-size:15px}.wl li{margin:6px 0}.wl b{color:var(--bad)}.wn{color:var(--muted);font-size:14px}
+.wk details{margin:4px 0 2px;font-size:15px}.wk summary{cursor:pointer;color:var(--accent);padding:4px 0}
+.tipbox ul{margin:0 0 6px;padding-left:20px;font-size:15px}.tipbox li{margin:6px 0}
+.myres .st{color:var(--muted);font-size:13px}

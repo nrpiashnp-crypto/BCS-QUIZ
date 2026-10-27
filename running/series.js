@@ -24,6 +24,15 @@ const tname=c=>(P.topics&&P.topics[c])||c||'অন্যান্য';
 const lab=e=>e.label||('টাস্ক '+bn(e.day));
 const nextTask=st=>P.exams.find(e=>e.ready&&!(st[e.id]&&st[e.id].length));
 
+// past results kept on this device: latest attempted first
+function myRes(st){
+  const L=P.exams.filter(e=>st[e.id]&&st[e.id].length).map(e=>{const h=st[e.id],l=h[h.length-1];return {e,l,b:best(st,e.id),k:h.length}}).sort((a,b)=>(b.l.ts||0)-(a.l.ts||0)||b.e.day-a.e.day);
+  const avg=Math.round(L.reduce((a,x)=>a+x.l.p,0)*100/L.length);
+  const row=x=>`<tr><td><a href="#/x/${x.e.id}">${lab(x.e)}</a> <span class="st">${esc(x.e.title)}</span></td><td>${fmt(x.l.s)}/${bn(x.l.n)}<span class="st"> ${x.l.d}</span></td><td>${x.k>1?fmt(x.b.s)+'/'+bn(x.b.n):'–'}</td></tr>`;
+  return `<div class="wk myres"><h2>আমার আগের ফল</h2><p class="wtip">${bn(L.length)}টি টাস্ক দিয়েছেন, শেষবারের গড় ${bn(avg)}%।</p>
+   <table><tr><th>টাস্ক</th><th>শেষবার</th><th>সেরা</th></tr>${L.slice(0,5).map(row).join('')}</table>
+   ${L.length>5?`<details><summary>বাকি ${bn(L.length-5)}টি টাস্কের ফল</summary><table>${L.slice(5).map(row).join('')}</table></details>`:''}</div>`;
+}
 function home(){
   const st=load(),L=P.exams,done=L.filter(e=>st[e.id]&&st[e.id].length).length,nx=nextTask(st);
   document.title=P.title+' · লিয়ানা বুকস';
@@ -33,7 +42,8 @@ function home(){
   <h1>${esc(P.title)}</h1><p class="sub">${P.sub||''}</p>
   <div class="prog"><div class="pbar"><i style="width:${pc}%"></i></div><span>${bn(done)} / ${bn(L.length)} টাস্ক শেষ</span></div>
   ${nx?`<a class="card big today" href="#/x/${nx.id}"><span class="m">${done?'আজকের টাস্ক':'এখান থেকে শুরু করুন'}</span><span class="t">${lab(nx)} · ${esc(nx.title)}</span><span class="m">${esc(nx.topic||'')}</span><span class="m">${bn(nx.n)}টি প্রশ্ন · ${bn(nx.min)} মিনিট</span><span class="go">শুরু করুন →</span></a>`:done?'<p class="note">সব তৈরি টাস্ক শেষ! দুর্বল টপিকের টাস্কগুলো আবার দিয়ে দেখুন।</p>':''}
-  <p class="note">যেদিন শুরু করবেন সেদিনই আপনার টাস্ক ১। প্রতিদিন একটা করে দিলে ${bn(Math.ceil(L.length/5))} সপ্তাহে শেষ হবে (সপ্তাহে ৫টি)। কোন টাস্ক দিয়েছেন আর কত পেয়েছেন, তা এই ফোনেই মনে থাকে।</p>
+  <p class="note">যেদিন শুরু করবেন সেদিনই আপনার টাস্ক ১। প্রতিদিন একটা করে দিলে ${bn(Math.ceil(L.length/5))} সপ্তাহে শেষ হবে (সপ্তাহে ৫টি)। কোন টাস্ক দিয়েছেন আর কত পেয়েছেন, তা আপনার ফোনের মেমোরিতে সংরক্ষিত থাকে। যখনই এই পাতায় ফিরে আসবেন, আগের সব ফল দেখতে পাবেন। (ব্রাউজারের ডেটা মুছে ফেললে বা অন্য ফোন/ব্রাউজারে খুললে আগের ফল দেখাবে না।)</p>
+  ${done?myRes(st):''}
   ${Object.entries(weeks).map(([w,l])=>`<h2 class="grp">সপ্তাহ ${bn(w)}</h2><div class="tlist">${l.map(e=>{const b=best(st,e.id);
     return `<a class="tl${b?' done':''}${e.ready?'':' soon'}" ${e.ready?`href="#/x/${e.id}"`:'aria-disabled="true"'}><span class="dn">${bn(e.day)}</span><span class="body"><span class="tt">${esc(e.title)}</span><span class="st">${esc(e.topic||'')}</span><span class="st">${phOf(e)} · ${bn(e.n)} প্রশ্ন · ${bn(e.min)} মিনিট${b?` · <b>সেরা ${fmt(b.s)}/${bn(b.n)}</b>`:''}</span></span><span class="gobtn">${!e.ready?'শীঘ্রই':b?'আবার':'শুরু →'}</span></a>`}).join('')}</div>`).join('')}
   ${P.practice&&P.practice.length?`<h2 class="grp">আসল প্রশ্নপত্রে অনুশীলন</h2><p class="sub">${esc(P.practiceNote||'')}</p><div class="tlist">${P.practice.map(x=>`<a class="tl" href="${x.href}"><span class="body"><span class="tt">${esc(x.t)}</span><span class="st">${esc(x.m||'')}</span></span><span class="gobtn">শুরু →</span></a>`).join('')}</div>`:''}
@@ -69,7 +79,7 @@ const show=id=>{['start','exam','result'].forEach(s=>$(s).hidden=s!==id);window.
 const qhtml=(q,i)=>`<div class="qh"><span class="num">${bn(i+1)}.</span><div class="qt">${q.q.includes('<table')?'<div class="tb">'+q.q+'</div>':q.q}</div></div>`;
 function drawHist(){
   const h=load()[E.id]||[],el=$('hist');if(!h.length){el.hidden=true;return}
-  el.hidden=false;el.innerHTML='<b>এই ফোনে আগের ফল</b><table><tr><th>তারিখ</th><th>নম্বর</th><th>নেগেটিভ</th></tr>'+h.slice(-8).map(r=>`<tr><td>${r.d}</td><td>${fmt(r.s)} / ${bn(r.n)}</td><td>${r.g?'−'+bn(r.g):'নেই'}</td></tr>`).join('')+'</table>';
+  el.hidden=false;el.innerHTML='<b>আপনার আগের ফল (এই ফোনে সংরক্ষিত)</b><table><tr><th>তারিখ</th><th>নম্বর</th><th>নেগেটিভ</th></tr>'+h.slice(-8).map(r=>`<tr><td>${r.d}</td><td>${fmt(r.s)} / ${bn(r.n)}</td><td>${r.g?'−'+bn(r.g):'নেই'}</td></tr>`).join('')+'</table>';
 }
 function startExam(){
   pick=Q.map(()=>-1);const box=$('elist');box.innerHTML='';
@@ -98,19 +108,27 @@ function finish(){
     if(pick[i]<0)return;if(pick[i]===q.a){ok++;T[0]++;S[0]++}else{bad++;T[1]++}});
   const n=Q.length,blank=n-ok-bad,score=ok-bad*NEG,used=Math.min(MIN*60,Math.round((Date.now()-startAt)/1000));
   const d=new Date(),ds=bn(d.getDate())+'/'+bn(d.getMonth()+1)+'/'+bn(d.getFullYear());
-  const st=load();(st[E.id]=st[E.id]||[]).push({d:ds,s:score,n,g:NEG,p:score/n,sb:byS});save(st);
-  const pc=score/n;
+  const st=load();(st[E.id]=st[E.id]||[]).push({d:ds,s:score,n,g:NEG,p:score/n,sb:byS,ts:Date.now()});save(st);
+  const pc=score/n,pct=x=>bn(Math.round(x*100));
   $('scorebox').innerHTML=`<p class="kick">${lab(E)} · ${esc(E.title)}</p><div class="big">${fmt(score)} / ${bn(n)}</div>
    <div class="stats"><span class="ok">সঠিক ${bn(ok)}</span><span class="no">ভুল ${bn(bad)}</span><span class="skip">উত্তর দেননি ${bn(blank)}</span><span>সময় ${bn(Math.floor(used/60))} মিনিট ${bn(used%60)} সেকেন্ড</span></div>
-   ${Object.keys(byS).length>1?`<div class="sbj">${Object.entries(byS).map(([k,v])=>`${esc(k)}: ${bn(v[0])}/${bn(v[1])}`).join(' · ')}</div>`:''}
-   <p>${pc>=.7?'চমৎকার! এই মানের প্রস্তুতি ধরে রাখুন।':pc>=.5?'ভালো হয়েছে। ভুলগুলোর ব্যাখ্যা পড়ে নিন।':'ব্যাখ্যাগুলো মন দিয়ে পড়ুন, কয়েক দিন পর টাস্কটা আবার দিন।'}</p>`;
-  // topic table, weakest first; weak = below 60% correct among at least 2 questions
+   ${Object.keys(byS).length>1?`<div class="sbg">${Object.entries(byS).map(([k,v])=>`<div class="sb${v[0]/v[1]<.5?' low':''}"><span>${esc(k||'অন্যান্য')}</span><b>${bn(v[0])}/${bn(v[1])}</b><span class="mb"><i style="width:${Math.round(v[0]*100/v[1])}%"></i></span></div>`).join('')}</div>`:''}`;
+  // weak = below 60% correct among at least 2 questions of a topic, weakest first
   const rows=Object.entries(byT).map(([t,v])=>({t,ok:v[0],n:v[2],r:v[0]/v[2]})).sort((a,b)=>a.r-b.r||b.n-a.n);
-  const weak=rows.filter(r=>r.n>=2&&r.r<.6).slice(0,3);
-  $('weak').innerHTML=rows.length>1?`<div class="wk"><h2>টপিক ধরে ফল</h2>
-    ${weak.length?`<p class="wtip">সবচেয়ে দুর্বল: <b>${weak.map(r=>esc(tname(r.t))).join(', ')}</b>। ${weak.map(r=>{const x=taskFor(r.t);return x&&x.id!==E.id?`<a href="#/x/${x.id}">${lab(x)} (${esc(x.title)})</a>`:''}).filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join(', ')||'নিচের ব্যাখ্যাগুলো আগে পড়ুন'}${weak.some(r=>{const x=taskFor(r.t);return x&&x.id!==E.id})?' আবার দিয়ে দেখুন।':'।'}</p>`:'<p class="wtip">কোনো টপিকে বড় দুর্বলতা নেই। চমৎকার!</p>'}
-    <table>${rows.map(r=>`<tr class="${r.n>=2&&r.r<.6?'low':''}"><td>${esc(tname(r.t))}</td><td>${bn(r.ok)}/${bn(r.n)}</td><td><span class="mb"><i style="width:${Math.round(r.r*100)}%"></i></span></td></tr>`).join('')}</table></div>`:'';
-  $('weak').insertAdjacentHTML('afterbegin',benchCmp(st));
+  const weak=rows.filter(r=>r.n>=2&&r.r<.6).slice(0,5);
+  const wlink=r=>{const x=taskFor(r.t);return x&&x.id!==E.id?` <a href="#/x/${x.id}">${lab(x)} দিন →</a>`:''};
+  const wbox=rows.length>1?`<div class="wk weakbox"><h2>দুর্বল জায়গা</h2>${weak.length?`<ul class="wl">${weak.map(r=>`<li><b>${esc(tname(r.t))}</b> <span class="wn">${bn(r.ok)}/${bn(r.n)} সঠিক</span>${wlink(r)}</li>`).join('')}</ul>`:'<p class="wtip">কোনো টপিকে বড় দুর্বলতা নেই। চমৎকার!</p>'}
+    <details><summary>সব টপিকের ফল</summary><table>${rows.map(r=>`<tr class="${r.n>=2&&r.r<.6?'low':''}"><td>${esc(tname(r.t))}</td><td>${bn(r.ok)}/${bn(r.n)}</td><td><span class="mb"><i style="width:${Math.round(r.r*100)}%"></i></span></td></tr>`).join('')}</table></details></div>`:'';
+  // short advice from this attempt
+  const tip=[],lost=bad*NEG;
+  if(weak.length)tip.push(`নিচের ব্যাখ্যায় আগে <b>${esc(tname(weak[0].t))}</b>${weak[1]?' ও <b>'+esc(tname(weak[1].t))+'</b>':''}-এর ভুলগুলো পড়ুন, তারপর ২-৩ দিন পর সেই টাস্কটা আবার দিন।`);
+  if(NEG&&bad>=Math.max(3,ok*.4))tip.push(`ভুলের জন্য ${fmt(lost)} নম্বর কাটা গেছে। পুরো নিশ্চিত না হলে, অন্তত দুটি অপশন বাদ দিতে না পারলে উত্তর ছেড়ে দিন।`);
+  if(blank>=Math.max(4,n*.2))tip.push(used>=MIN*60-5?`সময় শেষ হয়ে ${bn(blank)}টি প্রশ্ন বাকি ছিল। যেটা জানেন সেটা আগে করুন, কঠিন প্রশ্নে আটকে থাকবেন না।`:`${bn(blank)}টি প্রশ্ন ছেড়ে দিয়েছেন। এগুলোর ব্যাখ্যা পড়ে নিন, পরীক্ষায় এ ধরনের প্রশ্ন আবার আসে।`);
+  const sw=Object.entries(byS).filter(([k,v])=>v[1]>=5).sort((a,b)=>a[1][0]/a[1][1]-b[1][0]/b[1][1])[0];
+  if(Object.keys(byS).length>1&&sw&&sw[1][0]/sw[1][1]<.5)tip.push(`বিষয় হিসেবে <b>${esc(sw[0])}</b>-এ সবচেয়ে কম (${pct(sw[1][0]/sw[1][1])}%)। পরের কয়েক দিন এর টপিক টাস্কগুলোতে বেশি সময় দিন।`);
+  if(!tip.length)tip.push(pc>=.7?'চমৎকার ফল! ভুল কয়েকটির ব্যাখ্যা দেখে পরের টাস্কে চলে যান।':'ভুল ও ছেড়ে দেওয়া প্রশ্নগুলোর ব্যাখ্যা মন দিয়ে পড়ুন, তারপর পরের টাস্কে যান।');
+  const tbox=`<div class="wk tipbox"><h2>এখন কী করবেন</h2><ul>${tip.slice(0,3).map(t=>`<li>${t}</li>`).join('')}</ul></div>`;
+  $('weak').innerHTML=benchCmp(st)+wbox+tbox;
   const nx=nextTask(load());const nb=$('nextbtn');if(nx){nb.href='#/x/'+nx.id;nb.textContent='পরের টাস্ক: '+lab(nx)+' →'}else{nb.textContent='সব টাস্ক →'}
   const box=$('rlist');box.innerHTML='';
   Q.forEach((q,i)=>{const p=pick[i];const s=document.createElement('section');s.className='q';
