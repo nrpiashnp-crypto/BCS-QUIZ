@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>পানি: অনলাইন পরীক্ষা</title>
+<meta name="description" content="বিসিএস বিজ্ঞান, অধ্যায় ১১ পানি: বিগত বিসিএস ও চাকরির পরীক্ষার প্রশ্ন, সময় ও নেগেটিভ মার্কিংসহ, ব্যাখ্যাসহ।">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tiro+Bangla&family=Noto+Sans+Bengali:wght@400;500;600&display=swap">
+<style>
+/* Layout: one narrow book-like column. Start screen -> exam (sticky timer bar) -> result + review. Practice mode keeps instant feedback. */
+:root{
+  --paper:#fbfaf7; --ink:#1d1f21; --muted:#5f6366; --rule:#d9d6cf; --card:#ffffff;
+  --accent:#1f4e5f; --accent-ink:#ffffff; --sel:#e3eef2; --good:#1e7a46; --good-bg:#e5f3ea; --bad:#b3261e; --bad-bg:#fbe9e7; --warn:#8a5a00;
+  --display:'Tiro Bangla',Georgia,serif; --body:'Noto Sans Bengali',system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#15181a; --ink:#e9e7e2; --muted:#a3a7aa; --rule:#33383b; --card:#1d2124;
+  --accent:#7fb7c9; --accent-ink:#0f1416; --sel:#1d3138; --good:#6fcf97; --good-bg:#17301f; --bad:#f08a80; --bad-bg:#3a1c1a; --warn:#e0b25a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#15181a; --ink:#e9e7e2; --muted:#a3a7aa; --rule:#33383b; --card:#1d2124;
+  --accent:#7fb7c9; --accent-ink:#0f1416; --sel:#1d3138; --good:#6fcf97; --good-bg:#17301f; --bad:#f08a80; --bad-bg:#3a1c1a; --warn:#e0b25a; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6}
+.wrap{max-width:680px;margin:0 auto;padding-block:20px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{border-bottom:2px solid var(--ink);padding-bottom:12px;margin-bottom:12px}
+.book{font-size:13px;letter-spacing:.04em;color:var(--muted)}
+h1{font-family:var(--display);font-weight:400;font-size:30px;margin:4px 0 2px;text-wrap:balance}
+h2{font-family:var(--display);font-weight:400;font-size:22px;margin:22px 0 8px}
+.sub{color:var(--muted);font-size:15px;margin:0}
+button{font:inherit;cursor:pointer}
+.btn{display:inline-block;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:10px 18px;font-weight:600}
+.btn.ghost{background:none;color:var(--ink);border-color:var(--rule);font-weight:500}
+.btns{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
+.rules{margin:8px 0 0;padding-left:20px}
+.rules li{margin:2px 0}
+.hist{border-top:1px solid var(--rule);margin-top:18px;padding-top:6px;font-size:15px}
+.hist table{border-collapse:collapse;width:100%}
+.hist td,.hist th{border-bottom:1px solid var(--rule);padding:5px 4px;text-align:left;font-variant-numeric:tabular-nums}
+.hist th{color:var(--muted);font-weight:500}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);background:var(--paper);display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--rule);z-index:5;font-size:15px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+.clock{font-family:var(--display);font-size:22px;color:var(--accent);font-variant-numeric:tabular-nums;min-width:4ch}
+.clock.low{color:var(--bad)}
+/* Start screen: the start button comes first and big, rules below it. */
+#start{display:flex;flex-direction:column}
+#start .back{order:-3}#start .selch{order:-2}#start .btns{order:-1;margin:6px 0 16px}
+#start #go{font-size:19px;padding:14px 26px;flex:1 1 220px}
+/* Exam bar sits at the bottom of the screen (Sakib's pick): quiet timer, submit button near the thumb. */
+#exam .bar{position:fixed;top:auto;bottom:0;left:0;right:0;padding:10px max(16px,calc(50% - 340px)) calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--rule);border-bottom:0;box-shadow:0 -4px 14px rgba(0,0,0,.06)}
+#exam{padding-bottom:76px}
+#exam .clock{font-family:var(--body);font-size:16px;font-weight:500;color:var(--ink);min-width:0}
+#exam .clock::before{content:"সময় ";font-size:13px;font-weight:400;color:var(--muted)}
+#exam .clock.low{color:var(--warn)}
+.bar b{font-variant-numeric:tabular-nums}
+.q{padding:18px 0;border-bottom:1px solid var(--rule)}
+.qh{display:flex;gap:10px;align-items:baseline}
+.num{font-family:var(--display);color:var(--accent);min-width:1.6em}
+.qt{font-weight:500;margin:0;min-width:0}
+.src{display:block;font-size:13px;color:var(--muted);font-weight:400}
+.pend{display:inline-block;font-size:12px;color:var(--warn);border:1px dashed var(--warn);border-radius:4px;padding:0 6px;margin-left:4px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 0 2.2em}
+@media (max-width:520px){.opts{grid-template-columns:1fr;margin-left:0}}
+.opt{display:flex;gap:8px;align-items:flex-start;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--rule);border-radius:8px;padding:9px 12px;min-height:44px;width:100%}
+.opt .k{font-family:var(--display);color:var(--muted);min-width:1.2em}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.opt.sel{background:var(--sel);border-color:var(--accent)}
+.opt:disabled{cursor:default}
+.opt.right{background:var(--good-bg);border-color:var(--good)}
+.opt.wrong{background:var(--bad-bg);border-color:var(--bad)}
+.exp{margin:10px 0 0 2.2em;font-size:15px;border-left:3px solid var(--accent);padding:2px 0 2px 10px}
+@media (max-width:520px){.exp{margin-left:0}}
+.ok{color:var(--good);font-weight:600}.no{color:var(--bad);font-weight:600}.skip{color:var(--muted);font-weight:600}
+.ref{color:var(--muted);white-space:nowrap}
+.score{border:1.5px solid var(--ink);border-radius:10px;padding:16px;margin:14px 0;text-align:center}
+.big{font-family:var(--display);font-size:46px;line-height:1.1;font-variant-numeric:tabular-nums}
+.stats{display:flex;justify-content:center;flex-wrap:wrap;gap:6px 18px;font-size:15px;margin-top:6px}
+.msg{margin:10px 0 0;font-size:15px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.chip{border:1px solid var(--rule);background:none;color:var(--ink);border-radius:999px;padding:4px 12px;font-size:14px}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+footer{margin-top:24px;font-size:14px;color:var(--muted)}
+.note{border:1px dashed var(--rule);border-radius:8px;padding:10px 12px;margin-top:14px}
+[hidden]{display:none !important}
+@media (prefers-reduced-motion:no-preference){.exp{animation:in .2s ease-out}@keyframes in{from{opacity:.4}to{opacity:1}}}
+</style>
+<link rel="icon" type="image/svg+xml" href="/img/logo/final-icon.svg">
+<link rel="apple-touch-icon" href="/img/logo/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="লিয়ানা বুকস">
+<meta property="og:title" content="পানি: অনলাইন পরীক্ষা · লিয়ানা বুকস">
+<meta property="og:description" content="বিসিএস বিজ্ঞান, পানি অধ্যায়: সময় ও নেগেটিভ মার্কিংসহ অনলাইন পরীক্ষা, ব্যাখ্যাসহ।">
+<meta property="og:url" content="https://lyannabooks.com/water/">
+<meta property="og:image" content="https://lyannabooks.com/img/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="bn_BD">
+<meta name="twitter:card" content="summary_large_image">
+<style>.sitebar{background:#13294b;display:flex;align-items:center;justify-content:space-between;padding:8px 16px}.sitebar img{width:110px;height:auto;display:block}.exp .bl{display:block;margin-top:8px;font-size:12.5px;color:var(--muted);text-decoration:none;opacity:.85}.exp .bl:hover{text-decoration:underline}.sitebar a.h{color:#e6c97a;text-decoration:none;font:500 14px 'Noto Sans Bengali',system-ui,sans-serif}</style>
+</head>
+<body>
+<div class="sitebar"><a href="/"><img src="/img/logo/final-onnavy-transparent.svg" alt="লিয়ানা বুকস"></a><a class="h" href="/">← হোম</a></div>
+
+<div class="wrap">
+<header>
+  <div class="book">বিসিএস বিজ্ঞান · পিয়াস · অধ্যায় ১১</div>
+  <h1>পানি: অনলাইন পরীক্ষা</h1>
+  <p class="sub">বিগত বিসিএস এবং অন্যান্য নিয়োগ ও ভর্তি পরীক্ষার প্রশ্ন, আসল পরীক্ষার নিয়মে।</p>
+</header>
+
+<section id="start">
+  <ul class="rules">
+    <li>প্রতি পরীক্ষায় <b id="nq">২৫</b>টি প্রশ্ন, সময় <b id="nm">১৫</b> মিনিট।</li>
+    <li>সঠিক উত্তরে ১ নম্বর, ভুল উত্তরে −০.৫। উত্তর না দিলে নম্বর কাটা যায় না।</li>
+    <li>জমা দেওয়ার আগে উত্তর বদলানো যায়। সময় শেষ হলে নিজে থেকেই জমা হবে।</li>
+    <li>শেষে ফল, প্রতিটি প্রশ্নের ব্যাখ্যা আর বইয়ের সংশ্লিষ্ট অংশের নাম দেখাবে।</li>
+    <li>প্রতিবার <b id="pool"></b>টি প্রশ্নের ভান্ডার থেকে নতুন করে প্রশ্ন বাছাই হয়, তাই বারবার পরীক্ষা দেওয়া যায়।</li>
+  </ul>
+  <div class="btns">
+    <button class="btn" id="go" type="button">পরীক্ষা শুরু করুন</button>
+    <button class="btn ghost" id="practice" type="button">সব প্রশ্ন অনুশীলন</button>
+  </div>
+  <div class="hist" id="hist" hidden></div>
+</section>
+
+<section id="exam" hidden>
+  <div class="bar"><span class="clock" id="clock">১৫:০০</span><span>উত্তর <b id="ans">০</b> / <b id="tot">২৫</b></span><button class="btn" id="submit" type="button">জমা দিন</button></div>
+  <main id="elist"></main>
+  <div class="btns"><button class="btn" id="submit2" type="button">জমা দিন</button></div>
+</section>
+
+<section id="result" hidden>
+  <div class="score" id="scorebox"></div>
+  <div class="btns"><button class="btn" id="again" type="button">নতুন পরীক্ষা</button><button class="btn ghost" id="home" type="button">শুরুর পাতা</button></div>
+  <h2>উত্তর ও ব্যাখ্যা</h2>
+  <main id="rlist"></main>
+</section>
+
+<section id="prac" hidden>
+  <div class="bar"><span>সঠিক <b id="pok">০</b> / উত্তর <b id="pdone">০</b> / মোট <b id="ptot">০</b></span><button class="btn ghost" id="home2" type="button">শুরুর পাতা</button></div>
+  <div class="chips" id="chips"></div>
+  <main id="plist"></main>
+</section>
+
+<footer>
+  <div class="note">বিসিএস ও অন্য পরীক্ষার প্রশ্নের নিচে পরীক্ষার নাম ও সাল দেওয়া আছে।</div>
+  <p>লিয়ানা বুকস · lyannabooks.com</p>
+</footer>
+</div>
+<script>
+const Q=[{"q": "খর পানি বলতে কি বুঝায়?", "o": ["যে পানি বিষাদ", "যে পানি ঘোলা ও লবণাক্ত", "যে পানিতে চিনির শরবত তৈরি করা যায় না", "যে পানিতে সাবানের ফেনা হয় না"], "a": 3, "e": "যে পানিতে সাবান দিলে সহজে ফেনা হয় না, তাকে খর পানি (Hard Water) বলে। এই পানিতে ক্যালসিয়াম ও ম্যাগনেসিয়ামের দ্রবীভূত লবণ থাকে। সাবানের সঙ্গে এই লবণের বিক্রিয়ায় অদ্রবণীয় ক্যালসিয়াম ও ম্যাগনেসিয়াম সাবান তৈরি হয়, যা ফেনার বদলে সাদা গাদের মতো জমা হয়। যতক্ষণ এই লবণ শেষ না হয়, ততক্ষণ ফেনা তৈরি হয় না।<br>যে পানিতে সহজে ফেনা হয়, তার নাম মৃদু পানি (Soft Water)। খর পানি ব্যবহারে আরও সমস্যা আছে। এতে সাবান বেশি লাগে, কাপড়ে দাগ পড়ে এবং কেটলি বা বয়লারে স্কেল জমে। পানির খরতা সাধারণত ppm বা mg/L এককে মাপা হয়।<br>মনে রাখুন: বৃষ্টির পানি মৃদু পানির ভালো উদাহরণ।", "t": "x", "s": "আবহাওয়া অধিদপ্তরের সহকারী আবহাওয়াবিদ, ২০০৭", "p": "পানির খরতা", "v": 0}, {"q": "পানিতে কোনটির উপস্থিতি স্থায়ী খরতার কারণ?", "o": ["পটাশিয়াম ক্লোরেট", "সোডিয়াম বাই-কার্বনেট", "ক্যালসিয়াম ক্লোরাইড", "সোডিয়াম ক্লোরাইড"], "a": 2, "e": "পানির স্থায়ী খরতা (Permanent Hardness) সৃষ্টি করে ক্যালসিয়াম ও ম্যাগনেসিয়ামের ক্লোরাইড ও সালফেট লবণ। তাই CaCl₂ স্থায়ী খরতার কারণ। এই লবণগুলো ফুটালেও পানি থেকে সরে যায় না বলে খরতাকে স্থায়ী বলা হয়।<br>অন্যদিকে ক্যালসিয়াম ও ম্যাগনেসিয়ামের বাইকার্বনেট লবণ অস্থায়ী খরতা ঘটায়। ফুটালে এরা ভেঙে অদ্রবণীয় কার্বনেট তৈরি করে এবং খরতা দূর হয়। স্থায়ী খরতা দূর করার জন্য সোডিয়াম কার্বনেট (কাপড় ধোয়ার সোডা) ব্যবহার করা হয়। এটি ক্যালসিয়াম ও ম্যাগনেসিয়াম আয়নকে কার্বনেট হিসেবে থিতিয়ে ফেলে।<br>মনে রাখুন:<br>স্থায়ী খরতা: CaCl₂, MgCl₂, CaSO₄, MgSO₄।<br>অস্থায়ী খরতা: Ca(HCO₃)₂, Mg(HCO₃)₂।", "t": "x", "s": "ডিপ্লোমা ইন নার্সিং, ২০২৪-২৫", "p": "পানির খরতা", "v": 0}, {"q": "কোনটি খর পানিতে উত্তম ফেনা দেয়?", "o": ["টয়লেট সাবান", "ডিটারজেন্ট", "লন্ড্রি সাবান", "তরল সাবান"], "a": 1, "e": "সাবান খর পানির ক্যালসিয়াম ও ম্যাগনেসিয়াম আয়নের সঙ্গে বিক্রিয়া করে অদ্রবণীয় লবণ তৈরি করে, তাই সাবানে ফেনা হয় না। কিন্তু ডিটারজেন্ট (Detergent) অন্যভাবে কাজ করে। এর সালফোনেট বা সালফেট ধরনের লবণ ক্যালসিয়াম ও ম্যাগনেসিয়ামের সঙ্গে অদ্রবণীয় গাদ তৈরি করে না। তাই খর পানিতেও ডিটারজেন্ট ভালো ফেনা দেয় এবং কাপড় পরিষ্কার করে। ডিটারজেন্ট সাধারণত পেট্রোলিয়াম থেকে তৈরি হয়, তাই এটি কৃত্রিম পরিষ্কারক। সাবান তৈরি হয় চর্বি বা তেলের সঙ্গে NaOH-এর বিক্রিয়ায়। এই বিক্রিয়াকে সাবানীকরণ (Saponification) বলে।<br>মনে রাখুন: সাবান ও ডিটারজেন্ট দুটোই পৃষ্ঠটান কমিয়ে ময়লা তুলতে সাহায্য করে, কিন্তু সাবান খর পানিতে অকার্যকর।", "t": "x", "s": "প্রাক-প্রাথমিক সহকারী শিক্ষক (কচুয়া, দাজলা), ২০১৩", "p": "পানির খরতা", "v": 0}, {"q": "সাগরের পানির গড় লবণাক্ততা কত?", "o": ["১%", "২.৫%", "৩.৫%", "৫%"], "a": 2, "e": "সাগরের পানিতে মোট দ্রবীভূত লবণের পরিমাণকে লবণাক্ততা (Salinity) বলে। হিসাব করে দেখা গেছে, সাগরের পানিতে গড়ে প্রতি ১০০০ গ্রাম পানিতে প্রায় ৩৫ গ্রাম লবণ থাকে। তাই গড় লবণাক্ততা ৩.৫%। এর মধ্যে সবচেয়ে বেশি থাকে সোডিয়াম ক্লোরাইড (NaCl)। সমুদ্রের পানি পান করা যায় না, কারণ এর লবণ শরীরের কোষ থেকে পানি টেনে নেয়। তাই সমুদ্রের পানিকে পাতন বা বিপরীত অভিস্রবণ পদ্ধতিতে বিশুদ্ধ করে পানের উপযোগী করা হয়।<br>মনে রাখুন:<br>স্থানভেদে লবণাক্ততা বদলায়। যেখানে নদী এসে মিশেছে, সেখানে লবণাক্ততা কম।<br>মৃত সাগরের লবণাক্ততা প্রায় ৩৪%, যা সাধারণ সাগরের চেয়ে অনেক বেশি।", "t": "x", "s": "সাধারণ বীমা কর্পোরেশনের সহকারী ব্যবস্থাপক, ২০২৪", "p": "পানির খরতা", "v": 0}, {"q": "হার্ড ওয়াটারকে সফট করতে লাগে-", "o": ["কাপড় ধোয়ার সোডা", "ম্যাগনেসিয়াম কার্বনেট", "ক্যালসিয়াম অক্সাইড", "সোডিয়াম বাই কার্বনেট"], "a": 0, "e": "খর পানিকে মৃদু করার জন্য এর ক্যালসিয়াম ও ম্যাগনেসিয়াম আয়ন সরাতে হয়। কাপড় ধোয়ার সোডা অর্থাৎ সোডিয়াম কার্বনেট (Na₂CO₃) এই কাজে ব্যবহার করা হয়। এটি ক্যালসিয়াম ও ম্যাগনেসিয়াম লবণের সঙ্গে বিক্রিয়া করে অদ্রবণীয় CaCO₃ ও MgCO₃ তৈরি করে, যা থিতিয়ে পড়ে। এই পদ্ধতিতে অস্থায়ী ও স্থায়ী, দুই ধরনের খরতাই দূর হয়।<br>উদাহরণ:<br>CaCl₂ + Na₂CO₃ → CaCO₃↓ + 2NaCl<br>মনে রাখুন: ক্লার্কের পদ্ধতিতে চুন (Ca(OH)₂) মিশিয়ে শুধু অস্থায়ী খরতা দূর করা হয়। আয়ন বিনিময়কারী রেজিনও খরতা দূর করে।", "t": "x", "s": "জেলা দুর্নীতি দমন অফিসার, ২০১৪", "p": "পানির খরতা", "v": 0}, {"q": "Water hardness is mainly due to the presence of the following in water:", "o": ["Iron", "Calcium &amp; Magnesium salt", "Aluminium nitrates", "Manganese"], "a": 1, "e": "পানির খরতা (Hardness) প্রধানত পানিতে দ্রবীভূত ক্যালসিয়াম ও ম্যাগনেসিয়াম লবণের কারণে হয়। বৃষ্টির পানি চুনাপাথর ও ডলোমাইটের মতো শিলার ওপর দিয়ে বয়ে গেলে এই লবণ পানিতে মিশে যায়। এই আয়নগুলো সাবানের সঙ্গে বিক্রিয়া করে অদ্রবণীয় গাদ তৈরি করে, তাই সাবান ফেনা দেয় না।<br>আয়রন ও ম্যাঙ্গানিজও পানিতে কিছুটা খরতা ঘটাতে পারে, কিন্তু এদের ভূমিকা অনেক কম। খরতার জন্য দায়ী ক্যালসিয়াম ও ম্যাগনেসিয়াম আয়নগুলো দ্বিযোজী ধনাত্মক আয়ন। এদের সরিয়ে দিলেই পানি মৃদু হয়ে যায়। পানির খরতা অস্থায়ী ও স্থায়ী, এই দুই ধরনের হয়।<br>মনে রাখুন: পানির খরতা mg/L (CaCO₃ হিসেবে) এককে মাপা হয়।", "t": "x", "s": "ভূতাত্ত্বিক জরিপ অধিদপ্তরের সহকারী ড্রিলিং প্রকৌশলী, ২০১৮", "p": "পানির খরতা", "v": 0}, {"q": "পানিতে কী দ্রবীভূত থাকলে খরতা (hardness) হয়?", "o": ["CaSO₄", "Ca(HCO₃)₂", "MgCl₂", "সবগুলো"], "a": 3, "e": "পানিতে ক্যালসিয়াম বা ম্যাগনেসিয়ামের যেকোনো দ্রবণীয় লবণ থাকলে পানি খর হয়। এখানে তিনটি যৌগেই এমন আয়ন আছে। Ca(HCO₃)₂ অস্থায়ী খরতা সৃষ্টি করে, আর CaSO₄ ও MgCl₂ স্থায়ী খরতা সৃষ্টি করে। তাই তিনটিই খরতার কারণ। পানি খর কি না, তা সহজে বোঝার উপায় হলো সাবানের ফেনা দেখা। কম ফেনা হলে পানি খর। ক্যালসিয়াম ও ম্যাগনেসিয়ামের মোট পরিমাণ মেপে খরতা প্রকাশ করা হয়।<br>মনে রাখুন:<br>অস্থায়ী খরতা ফুটিয়ে দূর করা যায়।<br>স্থায়ী খরতা দূর করতে সোডিয়াম কার্বনেট বা আয়ন বিনিময়ের মতো রাসায়নিক পদ্ধতি লাগে।", "t": "x", "s": "সংস্কৃতি বিষয়ক মন্ত্রণালয়ের উপ-সহকারী প্রকৌশলী (সিভিল), ২০১৯", "p": "পানির খরতা", "v": 0}, {"q": "নিচের কোনটি পানিতে দ্রবীভূত হয় না?", "o": ["ক্যালসিয়াম কার্বনেট", "সোডিয়াম ক্লোরাইড", "চিনি", "সালফিউরিক এসিড"], "a": 0, "e": "ক্যালসিয়াম কার্বনেট (CaCO₃) পানিতে প্রায় অদ্রবণীয়। এটি চুনাপাথর ও মার্বেলের প্রধান উপাদান, আর এই পাথর পানিতে সহজে গলে না। তাই এই পদার্থটি পানিতে দ্রবীভূত হয় না বলে ধরা হয়।<br>অন্যদিকে NaCl ও চিনি পানিতে খুব ভালোভাবে দ্রবীভূত হয়, আর সালফিউরিক এসিড পানির সঙ্গে সব অনুপাতে মেশে। চুনাপাথর, মার্বেল ও ঝিনুকের খোলস প্রধানত CaCO₃ দিয়ে তৈরি। এসিডের সংস্পর্শে এলে এটি CO₂ ছেড়ে ক্ষয় হয়, এ কারণেই অম্লবৃষ্টিতে মার্বেলের ভাস্কর্য নষ্ট হয়।<br>মনে রাখুন: পানি কার্বন-ডাইঅক্সাইড মিশে থাকলে CaCO₃ দ্রবণীয় Ca(HCO₃)₂ হয়ে যায়, আর এভাবেই পানিতে অস্থায়ী খরতা সৃষ্টি হয়।", "t": "b", "s": "৪১তম ও ২৮তম বিসিএস", "p": "পানির খরতা", "v": 0}, {"q": "বয়লার অথবা কেটলির তলায় কিসের স্তর পড়ে?", "o": ["সোডিয়াম সালফেট", "ম্যাগনেসিয়াম হাইড্রোক্সাইড", "ক্যালসিয়াম কার্বনেট", "সোডিয়াম কার্বনেট"], "a": 2, "e": "খর পানি ফুটালে অস্থায়ী খরতা সৃষ্টিকারী Ca(HCO₃)₂ ভেঙে অদ্রবণীয় ক্যালসিয়াম কার্বনেট (CaCO₃) তৈরি করে। বিক্রিয়াটি হলো Ca(HCO₃)₂ → CaCO₃ + H₂O + CO₂। এই CaCO₃ কেটলি বা বয়লারের তলায় ও দেয়ালে শক্ত স্তর হিসেবে জমে, যাকে স্কেল (Scale) বলে।<br>এই স্তর তাপ পরিবহনে বাধা দেয়, ফলে জ্বালানি বেশি খরচ হয় এবং বয়লার ফেটে যাওয়ার ঝুঁকিও থাকে। স্কেল দূর করতে লঘু এসিড, যেমন লঘু HCl, ব্যবহার করা হয়, কারণ CaCO₃ এসিডের সঙ্গে বিক্রিয়ায় দ্রবণীয় লবণে পরিণত হয়। বয়লারে মৃদু পানি ব্যবহারই সবচেয়ে ভালো প্রতিরোধ।<br>মনে রাখুন: তাই বয়লারে সাধারণত মৃদু পানি ব্যবহার করা হয়।", "t": "x", "s": "বিভিন্ন মন্ত্রণালয়ের ব্যক্তিগত কর্মকর্তা, ২০১৮", "p": "পানির খরতা", "v": 0}, {"q": "প্রাকৃতিক কোন উৎস থেকে সবচেয়ে বেশি মৃদু পানি পাওয়া যায়?", "o": ["সাগর", "হ্রদ", "নদী", "বৃষ্টিপাত"], "a": 3, "e": "বৃষ্টির পানি জলীয় বাষ্প থেকে আসে, আর বাষ্পীভবনের সময় লবণ পেছনে পড়ে থাকে। তাই বৃষ্টির পানিতে ক্যালসিয়াম বা ম্যাগনেসিয়ামের লবণ প্রায় থাকে না এবং এটি প্রাকৃতিক মৃদু পানির সবচেয়ে ভালো উৎস। নদী, হ্রদ বা সাগরের পানি মাটি ও শিলার সংস্পর্শে আসে, সেখান থেকে লবণ দ্রবীভূত হয় বলে এগুলো তুলনায় খর। বৃষ্টির পানি পড়ার সময় বাতাসের CO₂ কিছুটা মিশিয়ে নেয়, তাই এটি সামান্য অম্লীয় হয়। তবু এতে খরতা সৃষ্টিকারী লবণ না থাকায় সাবান দিয়ে ধোয়ার জন্য এটি চমৎকার।<br>মনে রাখুন:<br>পাতিত পানি (Distilled Water) কৃত্রিম উপায়ে তৈরি সম্পূর্ণ মৃদু পানি।<br>সাগরের পানিতে লবণ অনেক বেশি, তাই এটি পানের অযোগ্য।", "t": "b", "s": "৩৪তম ও ২৩তম বিসিএস", "p": "পানির খরতা", "v": 0}, {"q": "সমুদ্রের পানিতে সর্বাধিক পরিমাণে যে রাসায়নিক পদার্থ থাকে, তার নাম কী?", "o": ["NaCl", "MgCl₂", "KCl", "HCl"], "a": 0, "e": "সাগরের পানিতে অনেক ধরনের লবণ দ্রবীভূত থাকে, আর এর মধ্যে সবচেয়ে বেশি পরিমাণে থাকে সোডিয়াম ক্লোরাইড (NaCl), অর্থাৎ খাবার লবণ। সাগরের মোট দ্রবীভূত লবণের বেশির ভাগই NaCl। সাগরের পানির নোনা স্বাদ মূলত এই NaCl থেকেই আসে।<br>এর পরে বেশি থাকে ম্যাগনেসিয়াম ক্লোরাইড (MgCl₂), ম্যাগনেসিয়াম সালফেট ও ক্যালসিয়াম সালফেট। এসব লবণের কারণেই সাগরের পানি খর। সমুদ্রের পানি বাষ্পীভূত করে লবণ সংগ্রহ করা হয়। বাংলাদেশের কক্সবাজার ও চট্টগ্রাম উপকূলে এভাবে লবণ চাষ হয়। সমুদ্রের পানির ঘনত্ব স্বাদু পানির চেয়ে বেশি।<br>মনে রাখুন: সাগরের পানির গড় লবণাক্ততা প্রায় ৩.৫%।", "t": "x", "s": "জাতীয় বিশ্ববিদ্যালয় (বিজ্ঞান) ভর্তি, ২০২৪-২৫", "p": "পানির খরতা", "v": 0}];
+const N=11, MIN=7, NB=2;           // প্রশ্নসংখ্যা, মিনিট, ন্যূনতম বিসিএস প্রশ্ন
+const bn=n=>String(n).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+const K=['ক','খ','গ','ঘ','ঙ'];
+const $=id=>document.getElementById(id);
+const show=id=>['start','exam','result','prac'].forEach(s=>$(s).hidden=s!==id);
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const fmtScore=x=>bn(Number.isInteger(x)?x:x.toFixed(1));
+const srcLine=q=>`<span class="src">${q.t==='b'?q.s:q.t==='x'?q.s:'সম্ভাব্য প্রশ্ন'}${q.v?' <span class="pend">অপশন যাচাই বাকি</span>':''}</span>`;
+const ref=q=>`<span class="ref">${/^\d|^[০-৯]/.test(q.p)?'বইয়ের অনুচ্ছেদ '+q.p:'বইয়ের অংশ: '+q.p}</span>`;
+function store(get,val){try{if(get)return JSON.parse(localStorage.getItem('water-scores')||'[]');localStorage.setItem('water-scores',JSON.stringify(val))}catch(e){return []}}
+function drawHist(){
+  const h=store(true)||[]; const el=$('hist');
+  if(!h.length){el.hidden=true;return}
+  el.hidden=false;
+  el.innerHTML='<b>এই ফোনে আগের পরীক্ষাগুলো</b><table><tr><th>পরীক্ষা</th><th>তারিখ</th><th>নম্বর</th></tr>'+
+    h.slice(-8).map((r,i,a)=>`<tr><td>${bn(h.length-a.length+i+1)}</td><td>${r.d}</td><td>${fmtScore(r.s)} / ${bn(r.n)}</td></tr>`).join('')+'</table>';
+}
+$('nq').textContent=bn(N);$('nm').textContent=bn(MIN);$('pool').textContent=bn(Q.length);$('tot').textContent=bn(N);
+drawHist();
+
+// ---------- পরীক্ষা ----------
+let paper=[],pick=[],timer=null,endAt=0,startAt=0,armed=0;
+function startExam(){
+  const b=shuffle(Q.filter(q=>q.t==='b')), r=shuffle(b.slice(NB).concat(Q.filter(q=>q.t!=='b')));
+  paper=shuffle(b.slice(0,NB).concat(r.slice(0,N-NB)));
+  pick=paper.map(()=>-1);
+  const box=$('elist');box.innerHTML='';
+  paper.forEach((q,i)=>{
+    const s=document.createElement('section');s.className='q';
+    s.innerHTML=`<div class="qh"><span class="num">${bn(i+1)}.</span><p class="qt">${q.q}${srcLine(q)}</p></div><div class="opts"></div>`;
+    const o=s.querySelector('.opts');
+    q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';
+      b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;
+      b.onclick=()=>{pick[i]=pick[i]===j?-1:j;[...o.children].forEach((x,k)=>x.classList.toggle('sel',k===pick[i]));$('ans').textContent=bn(pick.filter(x=>x>=0).length)};
+      o.appendChild(b)});
+    box.appendChild(s);
+  });
+  $('ans').textContent='০';
+  startAt=Date.now();endAt=startAt+MIN*60000;tick();clearInterval(timer);timer=setInterval(tick,500);
+  show('exam');window.scrollTo(0,0);
+}
+function tick(){
+  const left=Math.max(0,endAt-Date.now()),s=Math.ceil(left/1000);
+  $('clock').textContent=bn(String(Math.floor(s/60)).padStart(2,'0'))+':'+bn(String(s%60).padStart(2,'0'));
+  $('clock').classList.toggle('low',s<=60);
+  if(left<=0)finish();
+}
+function askSubmit(btn){
+  const blank=pick.filter(x=>x<0).length;
+  if(armed&&Date.now()-armed<4000){finish();return}
+  armed=Date.now();
+  [$('submit'),$('submit2')].forEach(b=>b.textContent=blank?`${bn(blank)}টি বাকি, তবু জমা দিতে আবার চাপুন`:'নিশ্চিত হলে আবার চাপুন');
+  setTimeout(()=>{if(Date.now()-armed>=4000)[$('submit'),$('submit2')].forEach(b=>b.textContent='জমা দিন')},4100);
+}
+function finish(){
+  clearInterval(timer);armed=0;[$('submit'),$('submit2')].forEach(b=>b.textContent='জমা দিন');
+  let ok=0,bad=0;paper.forEach((q,i)=>{if(pick[i]<0)return;pick[i]===q.a?ok++:bad++});
+  const blank=N-ok-bad, score=ok-bad*0.5, used=Math.min(MIN*60,Math.round((Date.now()-startAt)/1000));
+  const d=new Date(), ds=bn(d.getDate())+'/'+bn(d.getMonth()+1)+'/'+bn(d.getFullYear());
+  const h=store(true)||[];h.push({d:ds,s:score,n:N});store(false,h);
+  const msg=score>=8.8?'চমৎকার! অধ্যায়টি আপনার আয়ত্তে এসেছে।':score>=6.6?'ভালো হয়েছে। ভুল প্রশ্নগুলোর অংশ আবার পড়ে নিন।':'অধ্যায়টি আরেকবার পড়ে কয়েক দিন পর আবার পরীক্ষা দিন।';
+  $('scorebox').innerHTML=`<div class="big">${fmtScore(score)} / ${bn(N)}</div>
+   <div class="stats"><span class="ok">সঠিক ${bn(ok)}</span><span class="no">ভুল ${bn(bad)}</span><span class="skip">উত্তর দেননি ${bn(blank)}</span><span>সময় ${bn(Math.floor(used/60))} মিনিট ${bn(used%60)} সেকেন্ড</span></div>
+   <p class="msg">${msg}</p><p class="msg">বইয়ের শেষ পাতার ছকে লিখে রাখুন: তারিখ ${ds}, নম্বর ${fmtScore(score)}।</p>`;
+  const box=$('rlist');box.innerHTML='';
+  paper.forEach((q,i)=>{
+    const s=document.createElement('section');s.className='q';const p=pick[i];
+    s.innerHTML=`<div class="qh"><span class="num">${bn(i+1)}.</span><p class="qt">${q.q}${srcLine(q)}</p></div><div class="opts">${
+      q.o.map((t,j)=>`<button type="button" class="opt${j===q.a?' right':''}${j===p&&p!==q.a?' wrong':''}" disabled><span class="k">${K[j]}</span><span>${t}</span></button>`).join('')}</div>
+      <div class="exp">${p<0?'<span class="skip">উত্তর দেননি।</span> সঠিক উত্তর: '+K[q.a]+') '+q.o[q.a]+'।':p===q.a?'<span class="ok">সঠিক (+১)।</span>':'<span class="no">ভুল (−০.৫)।</span> সঠিক উত্তর: '+K[q.a]+') '+q.o[q.a]+'।'} ${q.e} ${ref(q)}</div>`;
+    box.appendChild(s);
+  });
+  show('result');window.scrollTo(0,0);drawHist();
+}
+
+// ---------- অনুশীলন ----------
+let filt='all',pok=0,pdone=0;
+const F=[['all','সব'],['b','বিসিএস'],['x','অন্য পরীক্ষা'],['l','সম্ভাব্য']].filter(([k])=>k==='all'||Q.some(q=>q.t===k));
+$('chips').innerHTML=F.map(([k,t])=>`<button type="button" class="chip" data-k="${k}" aria-pressed="${k==='all'}">${t}</button>`).join('');
+$('chips').onclick=e=>{const k=e.target.dataset&&e.target.dataset.k;if(!k)return;filt=k;[...$('chips').children].forEach(c=>c.setAttribute('aria-pressed',c.dataset.k===k));renderPrac()};
+function renderPrac(){
+  const L=Q.filter(q=>filt==='all'||q.t===filt);pok=0;pdone=0;
+  const upd=()=>{$('pok').textContent=bn(pok);$('pdone').textContent=bn(pdone);$('ptot').textContent=bn(L.length)};
+  const box=$('plist');box.innerHTML='';
+  L.forEach((q,i)=>{
+    const s=document.createElement('section');s.className='q';
+    s.innerHTML=`<div class="qh"><span class="num">${bn(i+1)}.</span><p class="qt">${q.q}${srcLine(q)}</p></div><div class="opts"></div>`;
+    const o=s.querySelector('.opts');
+    q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';
+      b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;
+      b.onclick=()=>{[...o.children].forEach(x=>x.disabled=true);o.children[q.a].classList.add('right');
+        const good=j===q.a;if(!good)b.classList.add('wrong');pdone++;if(good)pok++;upd();
+        const e=document.createElement('div');e.className='exp';
+        e.innerHTML=`<span class="${good?'ok':'no'}">${good?'সঠিক।':'ভুল। সঠিক উত্তর: '+K[q.a]+') '+q.o[q.a]+'।'}</span> ${q.e} ${ref(q)}`;s.appendChild(e)};
+      o.appendChild(b)});
+    box.appendChild(s);
+  });
+  upd();
+}
+$('go').onclick=startExam;$('again').onclick=startExam;
+$('submit').onclick=()=>askSubmit();$('submit2').onclick=()=>askSubmit();
+$('home').onclick=$('home2').onclick=()=>{show('start');drawHist();window.scrollTo(0,0)};
+$('practice').onclick=()=>{renderPrac();show('prac');window.scrollTo(0,0)};
+window.addEventListener('beforeunload',e=>{if(!$('exam').hidden){e.preventDefault();e.returnValue=''}});
+</script>
+<script src="/js/book-link.js" data-kind="science" data-chapter="পানি" defer></script>
+</body>
+</html>
