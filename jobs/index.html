@@ -120,6 +120,25 @@ button{font:inherit;cursor:pointer}
 .note{border:1px dashed var(--rule);border-radius:8px;padding:10px 12px;margin-top:14px;font-size:14px;color:var(--muted)}
 footer{margin-top:28px;font-size:14px;color:var(--muted)}
 .load{color:var(--muted);padding:30px 0}
+/* org + exam cards: equal height, 2-line names, count badge */
+.ogrid{display:grid;grid-template-columns:1fr;gap:10px;margin:12px 0 6px}
+@media (min-width:560px){.ogrid{grid-template-columns:1fr 1fr;grid-auto-rows:1fr}}
+@media (min-width:900px){.ogrid.three{grid-template-columns:1fr 1fr 1fr}}
+.oc{display:flex;flex-direction:column;justify-content:space-between;gap:8px;min-height:78px;padding:12px 14px 11px;background:var(--card);border:1px solid var(--rule);border-left:4px solid var(--gold-hi);border-radius:10px;text-decoration:none;color:var(--ink);transition:border-color .15s,box-shadow .15s}
+.oc:hover{border-color:var(--gold);box-shadow:0 3px 12px rgba(19,41,75,.08)}
+.oc:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.oc .n{font-weight:600;font-size:16px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.oc .ab{font-weight:400;font-size:13px;color:var(--muted);margin-left:4px}
+.oc .f{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--muted)}
+.oc .f .go{margin-left:auto;color:var(--accent);font-weight:600}
+.cnt{display:inline-block;background:var(--soft);color:var(--accent);border-radius:99px;padding:1px 9px;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.oc.ex{flex-direction:row;align-items:center;gap:12px;min-height:68px;padding:10px 14px}
+.oc.ex .yr{font-family:var(--display);font-size:22px;line-height:1.1;color:var(--accent);min-width:2.6em}
+.oc.ex .mid{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:3px}
+.oc.ex .n{font-size:15px;font-weight:500}
+.oc.ex .go{color:var(--accent);font-weight:600;font-size:14px;white-space:nowrap}
+.grp{font-family:var(--body);font-size:14px;font-weight:600;letter-spacing:.02em;color:var(--gold);margin:20px 0 0;padding-bottom:4px;border-bottom:1px solid var(--rule)}
+h2.post{font-size:20px;margin:22px 0 2px}
 [hidden]{display:none !important}
 </style>
 </head>
@@ -158,20 +177,27 @@ function cat(c){
   V().innerHTML=crumb([[null,C.t]])+`<h1>${C.t}</h1><p class="sub">${C.m}</p><div class="grid">${Object.entries(C.subs).map(([s,t])=>{const l=L.filter(e=>inSub(e,c,s));
     return `<a class="card big" href="#/${c}/${s}"><span class="t">${t}</span><span class="m">${bn(new Set(l.map(e=>e.org)).size)}টি প্রতিষ্ঠান · ${bn(l.length)}টি পরীক্ষা</span><span class="go">দেখুন →</span></a>`}).join('')}</div>`;
 }
+function splitName(n){const m=n.match(/^(.*?)\s*\(([^)]+)\)\s*$/);return m?[m[1],m[2]]:[n,'']}
+const groupOf=n=>/^সম্মিলিত/.test(n)?'সম্মিলিত নিয়োগ পরীক্ষা':/ব্যাংক/.test(n)?'ব্যাংক':'অন্যান্য প্রতিষ্ঠান';
+const GORDER=['ব্যাংক','সম্মিলিত নিয়োগ পরীক্ষা','অন্যান্য প্রতিষ্ঠান'];
 function sub(c,s){
   const C=CAT[c],L=exams().filter(e=>inSub(e,c,s));
   const orgs={};L.forEach(e=>{(orgs[e.org]=orgs[e.org]||{bn:e.orgbn,l:[]}).l.push(e)});
   const O=Object.entries(orgs).sort((a,b)=>sum(b[1].l)-sum(a[1].l));
-  V().innerHTML=crumb([['#/'+c,C.t],[null,C.subs[s]]])+`<h1>${C.subs[s]}</h1><p class="sub">প্রতিষ্ঠান বেছে নিন।</p><div class="grid">${
-    O.map(([k,o])=>`<a class="card" href="#/${c}/${s}/${k}"><span class="t">${o.bn}</span><span class="m">${bn(o.l.length)}টি পরীক্ষা · ${bn(sum(o.l))}টি প্রশ্ন</span></a>`).join('')}</div>`;
+  const card=([k,o])=>{const [n,ab]=splitName(o.bn);
+    return `<a class="oc" href="#/${c}/${s}/${k}" title="${esc(o.bn)}"><span class="n">${n}${ab?`<span class="ab">${ab}</span>`:''}</span><span class="f">${bn(o.l.length)}টি পরীক্ষা <span class="cnt">${bn(sum(o.l))} প্রশ্ন</span><span class="go">→</span></span></a>`};
+  const G={};O.forEach(x=>{const g=c==='bank'?groupOf(x[1].bn):'';(G[g]=G[g]||[]).push(x)});
+  const keys=Object.keys(G).sort((a,b)=>GORDER.indexOf(a)-GORDER.indexOf(b));
+  V().innerHTML=crumb([['#/'+c,C.t],[null,C.subs[s]]])+`<h1>${C.subs[s]}</h1><p class="sub">প্রতিষ্ঠান বেছে নিন: ${bn(O.length)}টি প্রতিষ্ঠান, ${bn(L.length)}টি পরীক্ষা।</p>`+
+    keys.map(g=>(keys.length>1?`<h2 class="grp">${g}</h2>`:'')+`<div class="ogrid three">${G[g].map(card).join('')}</div>`).join('');
 }
 function org(c,s,o){
   const C=CAT[c],L=exams().filter(e=>inSub(e,c,s)&&e.org===o);
   if(!L.length)return notFound();
   const posts={};L.forEach(e=>{(posts[e.postbn]=posts[e.postbn]||[]).push(e)});
   V().innerHTML=crumb([['#/'+c,C.t],[`#/${c}/${s}`,C.subs[s]],[null,L[0].orgbn]])+`<h1>${L[0].orgbn}</h1><p class="sub">পরীক্ষা বেছে নিন। <span class="pill full">পূর্ণ</span> মানে পুরো প্রশ্নপত্র; বাকিগুলোতে ওই পরীক্ষার সংগৃহীত প্রশ্ন।</p>`+
-    Object.entries(posts).map(([p,l])=>`<h2>${p}</h2><div class="list">${l.sort((a,b)=>b.year.localeCompare(a.year)).map(e=>
-      `<a class="row" href="#/x/${e.id}"><span class="y">${e.year==='misc'?'বিবিধ':bn(e.year)}</span><span class="p">${e.title||(e.full?'পূর্ণ প্রশ্নপত্র':'সংগৃহীত প্রশ্ন')}${e.full?'<span class="pill full">পূর্ণ</span>':''}</span><span class="c">${bn(e.n)}টি প্রশ্ন →</span></a>`).join('')}</div>`).join('');
+    Object.entries(posts).map(([p,l])=>`<h2 class="post">${p}</h2><div class="ogrid three">${l.sort((a,b)=>b.year.localeCompare(a.year)).map(e=>
+      `<a class="oc ex" href="#/x/${e.id}"><span class="yr">${e.year==='misc'?'বিবিধ':bn(e.year)}</span><span class="mid"><span class="n">${e.title||(e.full?'পূর্ণ প্রশ্নপত্র':'সংগৃহীত প্রশ্ন')}${e.full?'<span class="pill full">পূর্ণ</span>':''}</span><span class="cnt">${bn(e.n)} প্রশ্ন</span></span><span class="go">শুরু →</span></a>`).join('')}</div>`).join('');
 }
 function notFound(){V().innerHTML=crumb([[null,'পাওয়া যায়নি']])+'<h1>পাতাটি পাওয়া যায়নি</h1><p><a href="#/">প্রশ্নব্যাংকে ফিরে যান</a></p>'}
 
