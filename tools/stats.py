@@ -5,15 +5,18 @@ R = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 bn = lambda n: f'{n:,}'.translate(str.maketrans('0123456789', '০১২৩৪৫৬৭৮৯'))
 cat = json.load(open(os.path.join(R, 'jobs/data/catalog.json'), encoding='utf-8'))
 jobs = sum(e.get('n', 0) for e in cat['exams'])
+# BCS prelim papers: bcs/data/catalog.json, same shape (exams[].n)
+bcat = json.load(open(os.path.join(R, 'bcs/data/catalog.json'), encoding='utf-8'))
+bcs = sum(e.get('n', 0) for e in bcat['exams'])
 # chapter quizzes and job-science keep their questions inline in index.html
-SKIP = {'jobs', 'running', 'exams', 'science', 'book', 'sample', 'fonts', 'img', 'js', 'qr', 'tools', '_mock'}
+SKIP = {'jobs', 'bcs', 'running', 'exams', 'science', 'book', 'sample', 'fonts', 'img', 'js', 'qr', 'tools', '_mock'}
 ch = 0
 for d in sorted(os.listdir(R)):
     f = os.path.join(R, d, 'index.html')
     if d in SKIP or not os.path.isfile(f): continue
     ch += len(re.findall(r'"q":', open(f, encoding='utf-8').read()))
-total = jobs + ch
-stats = {'questions': total, 'jobs': jobs, 'chapters': ch, 'exams': len(cat['exams']),
+total = jobs + bcs + ch
+stats = {'questions': total, 'jobs': jobs, 'bcs': bcs, 'chapters': ch, 'exams': len(cat['exams']), 'bcs_exams': len(bcat['exams']),
          'updated': datetime.date.today().isoformat()}
 json.dump(stats, open(os.path.join(R, 'js/stats.json'), 'w'), separators=(',', ':'))
 for page in ('index.html',):

@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="theme-color" content="#13294b">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>বিসিএস প্রিলি প্রশ্নব্যাংক · লিয়ানা বুকস</title>
+<meta name="description" content="১০ম থেকে ৫০তম বিসিএস প্রিলিমিনারির সব প্রশ্ন: আসল পরীক্ষার মতো সময় আর −০.৫ নেগেটিভ মার্কিংসহ অনলাইন পরীক্ষা, প্রতিটি প্রশ্নের ব্যাখ্যাসহ। পরীক্ষা ও বিষয় অনুযায়ী। সম্পূর্ণ ফ্রি।">
+<link rel="canonical" href="https://lyannabooks.com/bcs/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="লিয়ানা বুকস">
+<meta property="og:title" content="বিসিএস প্রিলি প্রশ্নব্যাংক · লিয়ানা বুকস">
+<meta property="og:description" content="১০ম-৫০তম বিসিএস প্রিলির প্রশ্নে অনলাইন পরীক্ষা, ব্যাখ্যাসহ, ফ্রি।">
+<meta property="og:url" content="https://lyannabooks.com/bcs/">
+<meta property="og:image" content="https://lyannabooks.com/img/og.png">
+<meta property="og:locale" content="bn_BD">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/svg+xml" href="/img/logo/final-icon.svg">
+<link rel="apple-touch-icon" href="/img/logo/apple-touch-icon.png">
+<link rel="preload" href="/fonts/NotoSansBengali-bengali.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/TiroBangla-400-bengali.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+/* BCS prelim 10th-50th: exam list + subject sets -> exam (timed, -0.5) / practice. Styles copied from /jobs/. */
+:root{
+  --paper:#fbfaf7; --ink:#1d1f21; --muted:#5f6366; --rule:#d9d6cf; --card:#ffffff;
+  --accent:#13294b; --accent-ink:#ffffff; --soft:#e9edf4; --gold:#a8792a; --gold-hi:#e0b45c; --sel:#e3e9f3;
+  --good:#1e7a46; --good-bg:#e5f3ea; --bad:#b3261e; --bad-bg:#fbe9e7;
+  --display:'Tiro Bangla',Georgia,serif; --body:'Noto Sans Bengali',system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#15181a; --ink:#e9e7e2; --muted:#a3a7aa; --rule:#33383b; --card:#1d2124;
+  --accent:#9db4dc; --accent-ink:#0f1416; --soft:#1c2536; --gold:#e0b45c; --sel:#1f2b40;
+  --good:#6fcf97; --good-bg:#17301f; --bad:#f08a80; --bad-bg:#3a1c1a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#15181a; --ink:#e9e7e2; --muted:#a3a7aa; --rule:#33383b; --card:#1d2124;
+  --accent:#9db4dc; --accent-ink:#0f1416; --soft:#1c2536; --gold:#e0b45c; --sel:#1f2b40;
+  --good:#6fcf97; --good-bg:#17301f; --bad:#f08a80; --bad-bg:#3a1c1a; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6}
+.sitebar{background:#13294b;display:flex;align-items:center;justify-content:space-between;padding:8px 16px;padding-top:max(8px,env(safe-area-inset-top,0px))}
+.sitebar img{width:110px;height:auto;display:block}
+.sitebar a.h{color:#e6c97a;text-decoration:none;font-size:14px;font-weight:500}
+.wrap{max-width:760px;margin:0 auto;padding-block:16px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+a{color:var(--accent)}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(26px,6vw,34px);line-height:1.25;margin:6px 0 4px;text-wrap:balance}
+h2{font-family:var(--display);font-weight:400;font-size:22px;margin:22px 0 8px}
+.sub{color:var(--muted);font-size:15px;margin:0 0 10px}
+.crumb{font-size:14px;color:var(--muted);margin:0 0 4px;display:flex;flex-wrap:wrap;gap:4px 6px}
+.crumb a{color:var(--muted)}
+.crumb span::before{content:"›";margin-right:6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin:14px 0}
+.card{display:flex;flex-direction:column;gap:2px;text-decoration:none;color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:14px 16px;min-height:72px}
+.card:hover{border-color:var(--gold)}
+.card:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.card .t{font-family:var(--display);font-size:20px;line-height:1.3}
+.card .m{font-size:14px;color:var(--muted)}
+.card.big{background:linear-gradient(135deg,#1b3766,#13294b);color:#fff;border-color:rgba(224,180,92,.6);min-height:120px;justify-content:center}
+.card.big .t{font-size:24px}
+.card.big .m{color:#dfe5ef}
+.card.big .go{color:var(--gold-hi);font-weight:600;font-size:15px;margin-top:6px}
+.list{margin:10px 0;border-top:1px solid var(--rule)}
+.row{display:flex;align-items:center;gap:10px;padding:11px 4px;border-bottom:1px solid var(--rule);text-decoration:none;color:var(--ink)}
+.row:hover{background:var(--soft)}
+.row .y{font-family:var(--display);font-size:19px;color:var(--accent);min-width:3.2em}
+.row .p{flex:1;min-width:0}
+.row .c{font-size:14px;color:var(--muted);white-space:nowrap}
+.pill{display:inline-block;font-size:12px;border-radius:99px;padding:1px 8px;background:var(--soft);color:var(--accent);margin-left:6px;vertical-align:2px}
+.pill.full{background:var(--gold-hi);color:#13294b}
+.rules{margin:8px 0 0;padding-left:20px}
+.rules li{margin:2px 0}
+button{font:inherit;cursor:pointer}
+.btn{display:inline-block;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:10px 18px;font-weight:600}
+.btn.ghost{background:none;color:var(--ink);border-color:var(--rule);font-weight:500}
+.btns{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
+.btns.start #go{font-size:19px;padding:14px 26px;border-radius:10px;flex:1 1 100%;max-width:420px}
+.btns.start #practice{flex:0 1 auto}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.chip{border:1px solid var(--rule);background:none;color:var(--ink);border-radius:999px;padding:4px 12px;font-size:14px}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.lbl{font-size:14px;color:var(--muted);margin:14px 0 0}
+.hist{border-top:1px solid var(--rule);margin-top:18px;padding-top:6px;font-size:15px}
+.hist table{border-collapse:collapse;width:100%}
+.hist td,.hist th{border-bottom:1px solid var(--rule);padding:5px 4px;text-align:left;font-variant-numeric:tabular-nums}
+.hist th{color:var(--muted);font-weight:500}
+.bar{position:sticky;top:0;background:var(--paper);display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--rule);z-index:5;font-size:15px}
+.clock{font-family:var(--display);font-size:22px;color:var(--accent);font-variant-numeric:tabular-nums;min-width:4ch}
+.clock.low{color:var(--bad)} .exp .bl{display:block;margin-top:8px;font-size:12.5px;color:var(--muted,#777);text-decoration:none;opacity:.85} .exp .bl:hover{text-decoration:underline}
+#exam .bar{position:fixed;top:auto;bottom:0;left:0;right:0;padding:10px max(16px,calc(50% - 380px)) calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--rule);border-bottom:0;box-shadow:0 -4px 14px rgba(0,0,0,.06)}
+#exam{padding-bottom:76px}
+#exam .clock{font-family:var(--body);font-size:16px;font-weight:500;color:var(--ink);min-width:0}
+#exam .clock::before{content:'সময় ';font-size:13px;font-weight:400;color:var(--muted)}
+#exam .clock.low{color:#8a5a00}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) #exam .clock.low{color:#e0b25a}}
+.q{padding:18px 0;border-bottom:1px solid var(--rule)}
+.qh{display:flex;gap:10px;align-items:baseline}
+.num{font-family:var(--display);color:var(--accent);min-width:1.8em}
+.qt{font-weight:500;margin:0;min-width:0;overflow-wrap:anywhere}
+.qt p{margin:0 0 6px}
+.qt table,.exp table{border-collapse:collapse;margin:6px 0;font-size:15px;font-weight:400}
+.qt td,.qt th,.exp td,.exp th{border:1px solid var(--rule);padding:3px 8px}
+.tb{overflow-x:auto}
+.src{display:block;font-size:13px;color:var(--muted);font-weight:400}
+.opts{display:grid;gap:8px;margin:10px 0 0 2.4em}
+@media (max-width:520px){.opts{margin-left:0}}
+.opt{display:flex;gap:8px;align-items:flex-start;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--rule);border-radius:8px;padding:9px 12px;min-height:44px;width:100%}
+.opt .k{font-family:var(--display);color:var(--muted);min-width:1.2em}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.opt.sel{background:var(--sel);border-color:var(--accent)}
+.opt:disabled{cursor:default}
+.opt.right{background:var(--good-bg);border-color:var(--good)}
+.opt.wrong{background:var(--bad-bg);border-color:var(--bad)}
+.exp{margin:10px 0 0 2.4em;font-size:15px;border-left:3px solid var(--gold);padding:2px 0 2px 10px;overflow-wrap:anywhere}
+.exp p{margin:0 0 6px}
+@media (max-width:520px){.exp{margin-left:0}}
+.ok{color:var(--good);font-weight:600}.no{color:var(--bad);font-weight:600}.skip{color:var(--muted);font-weight:600}
+.score{border:1.5px solid var(--ink);border-radius:10px;padding:16px;margin:14px 0;text-align:center}
+.big{font-family:var(--display);font-size:46px;line-height:1.1;font-variant-numeric:tabular-nums}
+.stats{display:flex;justify-content:center;flex-wrap:wrap;gap:6px 18px;font-size:15px;margin-top:6px}
+.sbj{font-size:14px;margin-top:8px;color:var(--muted)}
+.note{border:1px dashed var(--rule);border-radius:8px;padding:10px 12px;margin-top:14px;font-size:14px;color:var(--muted)}
+footer{margin-top:28px;font-size:14px;color:var(--muted)}
+.load{color:var(--muted);padding:30px 0}
+/* org + exam cards: equal height, 2-line names, count badge */
+.ogrid{display:grid;grid-template-columns:1fr;gap:10px;margin:12px 0 6px}
+@media (min-width:560px){.ogrid{grid-template-columns:1fr 1fr;grid-auto-rows:1fr}}
+@media (min-width:900px){.ogrid.three{grid-template-columns:1fr 1fr 1fr}}
+.oc{display:flex;flex-direction:column;justify-content:space-between;gap:8px;min-height:78px;padding:12px 14px 11px;background:var(--card);border:1px solid var(--rule);border-left:4px solid var(--gold-hi);border-radius:10px;text-decoration:none;color:var(--ink);transition:border-color .15s,box-shadow .15s}
+.oc:hover{border-color:var(--gold);box-shadow:0 3px 12px rgba(19,41,75,.08)}
+.oc:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.oc .n{font-weight:600;font-size:16px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.oc .ab{font-weight:400;font-size:13px;color:var(--muted);margin-left:4px}
+.oc .f{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--muted)}
+.oc .f .go{margin-left:auto;color:var(--accent);font-weight:600}
+.cnt{display:inline-block;background:var(--soft);color:var(--accent);border-radius:99px;padding:1px 9px;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.oc.ex{flex-direction:row;align-items:center;gap:12px;min-height:68px;padding:10px 14px}
+.oc.ex .yr{font-family:var(--display);font-size:22px;line-height:1.1;color:var(--accent);min-width:2.6em}
+.oc.ex .mid{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:3px}
+.oc.ex .n{font-size:15px;font-weight:500}
+.oc.ex .go{color:var(--accent);font-weight:600;font-size:14px;white-space:nowrap}
+.grp{font-family:var(--body);font-size:14px;font-weight:600;letter-spacing:.02em;color:var(--gold);margin:20px 0 0;padding-bottom:4px;border-bottom:1px solid var(--rule)}
+h2.post{font-size:20px;margin:22px 0 2px}
+.badge{flex:none;width:46px;height:46px;border-radius:50%;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;color:#fff;font-weight:600;line-height:1.05;padding:3px;overflow:hidden;font-size:14px;letter-spacing:-.01em}
+.badge.lg{width:60px;height:60px;font-size:17px}
+.oc.org{flex-direction:row;align-items:center;gap:12px;border-left-width:1px}
+.oc.org .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.ohead{display:flex;align-items:center;gap:14px;margin:6px 0 4px}
+.ohead h1{margin:0}
+.tl{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--card);border:1px solid var(--rule);border-radius:12px;text-decoration:none;color:var(--ink);min-height:74px}
+.tl:hover{border-color:var(--gold);box-shadow:0 3px 12px rgba(19,41,75,.08)}
+.tl .body{flex:1;min-width:0}
+.tl .tt{display:block;font-weight:600;font-size:17px;line-height:1.35}
+.tl .st{display:block;font-size:13.5px;color:var(--muted);line-height:1.45;margin-top:2px}
+.tl .gobtn{flex:none;background:#13294b;color:#fff;border-radius:8px;padding:7px 12px;font-size:14px;font-weight:600;white-space:nowrap}
+.tlist{display:grid;grid-template-columns:1fr;gap:10px;margin:14px 0}
+@media (min-width:760px){.tlist{grid-template-columns:1fr 1fr}}
+.hero{background:linear-gradient(135deg,#1b3766,#13294b);color:#fff;border-radius:14px;padding:20px 18px 22px;margin:8px 0 18px;border:1px solid rgba(224,180,92,.5)}
+.hero h1{color:#fff;margin:0 0 8px}
+.hero p{margin:0 0 14px;color:#dfe5ef;font-size:15.5px}
+.stats3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 16px}
+.stats3 span{background:rgba(255,255,255,.08);border-radius:10px;padding:8px 6px;text-align:center;font-size:13.5px;color:#dfe5ef}
+.stats3 b{display:block;font-family:var(--display);font-weight:400;font-size:24px;color:#e0b45c;line-height:1.2}
+.allbtn{display:block;text-align:center;background:#e0b45c;color:#13294b;font-weight:600;font-size:18px;border-radius:10px;padding:13px 16px;text-decoration:none}
+.allbtn:hover{background:#ecc677}
+.yrow{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}.yrow .chip{flex:none}
+.tabs{margin:4px 0 4px}.tabs .chip{font-size:15px;padding:6px 16px}
+.qt img{display:block;margin:8px 0}
+[hidden]{display:none !important}
+</style>
+</head>
+<body>
+<div class="sitebar"><a href="/"><img src="/img/logo/final-onnavy-transparent.svg" alt="লিয়ানা বুকস"></a><a class="h" href="/">← হোম</a></div>
+<div class="wrap">
+  <div id="view"><p class="load">লোড হচ্ছে…</p></div>
+  <footer><p>লিয়ানা বুকস · lyannabooks.com · সব পরীক্ষা ফ্রি</p></footer>
+</div>
+<script>
+/* বিসিএস প্রিলি: home (exam list + subject sets) -> exam (timed) / practice. Hash routes, data fetched per exam. Engine shared in spirit with /jobs/. */
+const bn=n=>String(n).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+const bnc=n=>bn(n.toLocaleString('en-IN'));
+const K=['ক','খ','গ','ঘ','ঙ'];
+const $=id=>document.getElementById(id);
+const V=()=>$('view');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=x=>bn(Number.isInteger(x)?x:(Math.round(x*100)/100).toString());
+const sum=L=>L.reduce((a,e)=>a+e.n,0);
+const BOOK='<a class="bl" href="/book/">লিয়ানা বুকস · ‘লিয়ানা বিসিএস বিজ্ঞান’ বইটি দেখুন →</a>';
+let CATALOG=null;
+const crumb=parts=>'<nav class="crumb"><a href="#/">বিসিএস প্রিলি</a>'+parts.map(([h,t])=>h?`<span><a href="${h}">${t}</a></span>`:`<span>${t}</span>`).join('')+'</nav>';
+const nth=n=>bn(n)+'তম';
+const subjects=()=>{const m={};CATALOG.sets.forEach(s=>{(m[s.k]=m[s.k]||{k:s.k,t:s.s,l:[]}).l.push(s)});return Object.values(m)};
+
+function home(tab){
+  const L=CATALOG.exams,S=subjects();tab=tab||'x';
+  V().innerHTML=`<section class="hero"><h1>বিসিএস প্রিলিমিনারি: ১০ম থেকে ৫০তম</h1>
+  <p>বিগত সব বিসিএস প্রিলির প্রশ্নে আসল পরীক্ষার মতো অনলাইন পরীক্ষা: নির্ধারিত সময়, ভুলে −০.৫ নম্বর, শেষে ফল আর প্রতিটি প্রশ্নের ব্যাখ্যা। সব ফ্রি।</p>
+  <div class="stats3"><span><b>${bn(L.length)}</b>টি পরীক্ষা</span><span><b>${bnc(sum(L))}</b>টি প্রশ্ন</span><span><b>${bn(S.length)}</b>টি বিষয়</span></div></section>
+  <div class="chips tabs" id="tabs"><button type="button" class="chip" data-t="x" aria-pressed="${tab==='x'}">পরীক্ষা অনুযায়ী</button><button type="button" class="chip" data-t="s" aria-pressed="${tab==='s'}">বিষয় অনুযায়ী</button></div>
+  <div id="tx"${tab==='x'?'':' hidden'}><div class="ogrid three">${L.map(e=>`<a class="oc ex" href="#/x/${e.id}"><span class="yr">${nth(e.no)}</span><span class="mid"><span class="n">${e.special?'বিশেষ বিসিএস':'বিসিএস'} প্রিলি${e.special&&/\(/.test(e.title)?' '+e.title.replace(/^.*?(\(.*\)).*$/,'$1'):''}</span><span class="src">${bn(e.year)} · ${bn(e.time)} মিনিট</span><span class="cnt">${bn(e.n)} প্রশ্ন</span></span><span class="go">শুরু →</span></a>`).join('')}</div></div>
+  <div id="ts"${tab==='s'?'':' hidden'}><p class="sub">একই বিষয়ের প্রশ্ন সব বিসিএস থেকে এক জায়গায়, নতুন পরীক্ষা আগে। প্রতিটি সেটে প্রায় ১০০টি প্রশ্ন।</p><div class="ogrid">${S.map(s=>`<a class="oc" href="#/s/${s.k}"><span class="n">${s.t}</span><span class="f">${bn(s.l.length)}টি সেট <span class="cnt">${bnc(sum(s.l))} প্রশ্ন</span><span class="go">→</span></span></a>`).join('')}</div></div>
+  <p class="note">প্রতিটি উত্তর যাচাই করা, ব্যাখ্যা নিজেদের লেখা। যে প্রশ্ন বাতিল হয়েছিল বা চিত্র ছাড়া বোঝা যায় না, সেগুলো রাখা হয়নি, তাই কোনো কোনো পরীক্ষায় প্রশ্ন ২০০ বা ১০০-এর চেয়ে কয়েকটি কম।</p>`;
+  $('tabs').onclick=ev=>{const b=ev.target.closest('.chip');if(!b)return;history.replaceState(null,'',b.dataset.t==='s'?'#/subjects':'#/');home(b.dataset.t)};
+}
+function subject(k){
+  const s=subjects().find(x=>x.k===k);if(!s)return notFound();
+  V().innerHTML=crumb([['#/subjects','বিষয় অনুযায়ী'],[null,s.t]])+`<h1>${s.t}</h1><p class="sub">১০ম থেকে ৫০তম বিসিএসের ${bnc(sum(s.l))}টি প্রশ্ন, ${bn(s.l.length)}টি সেটে।</p><div class="tlist">${s.l.map(x=>`<a class="tl" href="#/p/${x.id}"><span class="body"><span class="tt">সেট ${bn(x.part)}</span><span class="st">${x.from}${x.from!==x.to?' থেকে '+x.to:''} · ${bn(x.n)}টি প্রশ্ন</span></span><span class="gobtn">শুরু →</span></a>`).join('')}</div>`;
+}
+function notFound(){V().innerHTML=crumb([[null,'পাওয়া যায়নি']])+'<h1>পাতাটি পাওয়া যায়নি</h1><p><a href="#/">বিসিএস প্রিলির তালিকায় ফিরে যান</a></p>'}
+
+// ---------- পরীক্ষা ----------
+let E=null,Q=[],paper=[],pick=[],timer=null,endAt=0,startAt=0,armed=0,NEG=0.5,MIN=0;
+const histKey=()=>'bcs-'+E.id;
+function store(get,val){try{if(get)return JSON.parse(localStorage.getItem(histKey())||'[]');localStorage.setItem(histKey(),JSON.stringify(val))}catch(e){return []}}
+async function exam(kind,id){
+  let back,cr;
+  if(kind==='x'){const e=CATALOG.exams.find(e=>e.id===id);if(!e)return notFound();
+    E={id,title:e.title,full:1,time:e.time,file:'data/e/'+id+'.json'};back='#/';cr=[[null,e.title]]}
+  else{const s=CATALOG.sets.find(s=>s.id===id);if(!s)return notFound();
+    E={id:'s-'+id,title:`${s.s}: সেট ${bn(s.part)}`,time:Math.max(5,Math.round(s.n*0.6)),file:'data/s/'+id+'.json'};back='#/s/'+s.k;cr=[['#/subjects','বিষয় অনুযায়ী'],['#/s/'+s.k,s.s],[null,'সেট '+bn(s.part)]]}
+  V().innerHTML='<p class="load">প্রশ্ন লোড হচ্ছে…</p>';
+  try{Q=await (await fetch(E.file)).json()}catch(err){V().innerHTML='<p class="load">প্রশ্ন লোড হয়নি। ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।</p>';return}
+  MIN=E.time;document.title=E.title+' · লিয়ানা বুকস';
+  V().innerHTML=crumb(cr)+
+  `<section id="start"><h1>${E.title}</h1>
+   <p class="sub">${E.full?'আসল প্রশ্নপত্র':'বিষয়ভিত্তিক সেট'} · ${bn(Q.length)}টি প্রশ্ন</p>
+   <div class="btns start"><button class="btn" id="go" type="button">পরীক্ষা শুরু করুন →</button><button class="btn ghost" id="practice" type="button">অনুশীলন (সঙ্গে সঙ্গে উত্তর)</button></div>
+   <ul class="rules"><li>প্রশ্ন ${bn(Q.length)}টি, সময় <b>${bn(MIN)}</b> মিনিট। সময় শেষ হলে নিজে থেকেই জমা হবে।</li>
+   <li>সঠিক উত্তরে ১ নম্বর, ভুল উত্তরে <b id="negt">−০.৫</b> (বিসিএসের নিয়ম)। উত্তর না দিলে নম্বর কাটা যায় না।</li>
+   <li>শেষে ফল, বিষয়ভিত্তিক হিসাব আর প্রতিটি প্রশ্নের ব্যাখ্যা দেখাবে।</li></ul>
+   <p class="lbl">নেগেটিভ মার্কিং</p><div class="chips" id="negc"><button type="button" class="chip" data-v="0.5" aria-pressed="true">−০.৫</button><button type="button" class="chip" data-v="0.25" aria-pressed="false">−০.২৫</button><button type="button" class="chip" data-v="0" aria-pressed="false">নেই</button></div>
+   <div class="hist" id="hist" hidden></div></section>
+  <section id="exam" hidden><div class="bar"><span class="clock" id="clock"></span><span>উত্তর <b id="ans">০</b> / <b>${bn(Q.length)}</b></span><button class="btn" id="submit" type="button">জমা দিন</button></div><main id="elist"></main><div class="btns"><button class="btn" id="submit2" type="button">জমা দিন</button></div></section>
+  <section id="result" hidden><div class="score" id="scorebox"></div><div class="btns"><button class="btn" id="again" type="button">আবার পরীক্ষা দিন</button><a class="btn ghost" href="${back}">অন্য পরীক্ষা</a></div><h2>উত্তর ও ব্যাখ্যা</h2><main id="rlist"></main></section>
+  <section id="prac" hidden><div class="bar"><span>সঠিক <b id="pok">০</b> / উত্তর <b id="pdone">০</b> / মোট <b id="ptot">০</b></span><button class="btn ghost" id="back" type="button">শুরুর পাতা</button></div><div class="chips" id="chips"></div><main id="plist"></main></section>`;
+  NEG=0.5;setNeg(NEG);
+  $('negc').onclick=ev=>{const v=ev.target.dataset&&ev.target.dataset.v;if(v===undefined)return;setNeg(parseFloat(v))};
+  $('go').onclick=$('again').onclick=startExam;
+  $('submit').onclick=$('submit2').onclick=askSubmit;
+  $('practice').onclick=()=>{renderPrac('all');show('prac')};
+  $('back').onclick=()=>{show('start');drawHist()};
+  drawHist();window.scrollTo(0,0);
+}
+function setNeg(v){NEG=v;[...$('negc').children].forEach(c=>c.setAttribute('aria-pressed',parseFloat(c.dataset.v)===v));$('negt').textContent=v?'−'+bn(v):'০ (নেগেটিভ নেই)'}
+const show=id=>{['start','exam','result','prac'].forEach(s=>$(s).hidden=s!==id);window.scrollTo(0,0)};
+const qhtml=(q,i)=>`<div class="qh"><span class="num">${bn(i+1)}.</span><div class="qt">${q.q}<span class="src">${esc(q.s||'')}${q.x?' · '+esc(q.x):''}</span></div></div>`;
+function drawHist(){
+  const h=store(true)||[],el=$('hist');if(!h.length){el.hidden=true;return}
+  el.hidden=false;el.innerHTML='<b>এই ফোনে আগের ফল</b><table><tr><th>তারিখ</th><th>নম্বর</th><th>নেগেটিভ</th></tr>'+h.slice(-8).map(r=>`<tr><td>${r.d}</td><td>${fmt(r.s)} / ${bn(r.n)}</td><td>${r.g?'−'+bn(r.g):'নেই'}</td></tr>`).join('')+'</table>';
+}
+function startExam(){
+  paper=Q.map((q,i)=>i); pick=paper.map(()=>-1);
+  const box=$('elist');box.innerHTML='';
+  paper.forEach((qi,i)=>{const q=Q[qi];
+    const s=document.createElement('section');s.className='q';s.innerHTML=qhtml(q,i)+'<div class="opts"></div>';
+    const o=s.querySelector('.opts');
+    q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;
+      b.onclick=()=>{pick[i]=pick[i]===j?-1:j;[...o.children].forEach((x,k)=>x.classList.toggle('sel',k===pick[i]));$('ans').textContent=bn(pick.filter(x=>x>=0).length)};o.appendChild(b)});
+    box.appendChild(s)});
+  $('ans').textContent='০';startAt=Date.now();endAt=startAt+MIN*60000;tick();clearInterval(timer);timer=setInterval(tick,500);show('exam');
+}
+function tick(){const left=Math.max(0,endAt-Date.now()),s=Math.ceil(left/1000);
+  $('clock').textContent=bn(String(Math.floor(s/60)).padStart(2,'0'))+':'+bn(String(s%60).padStart(2,'0'));$('clock').classList.toggle('low',s<=60);if(left<=0)finish()}
+function askSubmit(){
+  const blank=pick.filter(x=>x<0).length;
+  if(armed&&Date.now()-armed<4000){finish();return}
+  armed=Date.now();[$('submit'),$('submit2')].forEach(b=>b.textContent=blank?`${bn(blank)}টি বাকি, তবু জমা দিতে আবার চাপুন`:'নিশ্চিত হলে আবার চাপুন');
+  setTimeout(()=>{if(Date.now()-armed>=4000)[$('submit'),$('submit2')].forEach(b=>b.textContent='জমা দিন')},4100);
+}
+function finish(){
+  clearInterval(timer);timer=null;armed=0;
+  let ok=0,bad=0;const bys={};
+  paper.forEach((qi,i)=>{const q=Q[qi],k=q.s||'অন্যান্য';bys[k]=bys[k]||[0,0,0];bys[k][2]++;if(pick[i]<0)return;if(pick[i]===q.a){ok++;bys[k][0]++}else{bad++;bys[k][1]++}});
+  const n=paper.length,blank=n-ok-bad,score=ok-bad*NEG,used=Math.min(MIN*60,Math.round((Date.now()-startAt)/1000));
+  const d=new Date(),ds=bn(d.getDate())+'/'+bn(d.getMonth()+1)+'/'+bn(d.getFullYear());
+  const h=store(true)||[];h.push({d:ds,s:score,n,g:NEG});store(false,h);
+  const pc=score/n;
+  $('scorebox').innerHTML=`<div class="big">${fmt(score)} / ${bn(n)}</div>
+   <div class="stats"><span class="ok">সঠিক ${bn(ok)}</span><span class="no">ভুল ${bn(bad)}</span><span class="skip">উত্তর দেননি ${bn(blank)}</span><span>সময় ${bn(Math.floor(used/60))} মিনিট ${bn(used%60)} সেকেন্ড</span></div>
+   <div class="sbj">${Object.entries(bys).map(([k,v])=>`${esc(k)}: ${bn(v[0])}/${bn(v[2])}`).join(' · ')}</div>
+   <p>${pc>=.7?'চমৎকার! এই মানের প্রস্তুতি ধরে রাখুন।':pc>=.5?'ভালো হয়েছে। ভুলগুলোর ব্যাখ্যা পড়ে নিন।':'ব্যাখ্যাগুলো পড়ে কয়েক দিন পর আবার চেষ্টা করুন।'}</p>`;
+  const box=$('rlist');box.innerHTML='';
+  paper.forEach((qi,i)=>{const q=Q[qi],p=pick[i];
+    const s=document.createElement('section');s.className='q';
+    s.innerHTML=qhtml(q,i)+`<div class="opts">${q.o.map((t,j)=>`<button type="button" class="opt${j===q.a?' right':''}${j===p&&p!==q.a?' wrong':''}" disabled><span class="k">${K[j]}</span><span>${t}</span></button>`).join('')}</div>
+     <div class="exp">${p<0?'<span class="skip">উত্তর দেননি।</span> সঠিক উত্তর: '+K[q.a]+'।':p===q.a?'<span class="ok">সঠিক (+১)।</span>':'<span class="no">ভুল ('+(NEG?'−'+bn(NEG):'০')+')।</span> সঠিক উত্তর: '+K[q.a]+'।'} ${q.e||''}${BOOK}</div>`;
+    box.appendChild(s)});
+  show('result');drawHist();
+}
+function renderPrac(f){
+  const subs=[...new Set(Q.map(q=>q.s).filter(Boolean))];
+  $('chips').innerHTML=subs.length>1?[['all','সব'],...subs.map(s=>[s,s])].map(([k,t])=>`<button type="button" class="chip" data-k="${esc(k)}" aria-pressed="${k===f}">${esc(t)}</button>`).join(''):'';
+  $('chips').onclick=ev=>{const k=ev.target.dataset&&ev.target.dataset.k;if(k)renderPrac(k)};
+  const L=Q.filter(q=>f==='all'||q.s===f);let ok=0,done=0;
+  const upd=()=>{$('pok').textContent=bn(ok);$('pdone').textContent=bn(done);$('ptot').textContent=bn(L.length)};
+  const box=$('plist');box.innerHTML='';
+  L.forEach((q,i)=>{const s=document.createElement('section');s.className='q';s.innerHTML=qhtml(q,i)+'<div class="opts"></div>';
+    const o=s.querySelector('.opts');
+    q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;
+      b.onclick=()=>{[...o.children].forEach(x=>x.disabled=true);o.children[q.a].classList.add('right');const g=j===q.a;if(!g)b.classList.add('wrong');done++;if(g)ok++;upd();
+        const e=document.createElement('div');e.className='exp';e.innerHTML=`<span class="${g?'ok':'no'}">${g?'সঠিক।':'ভুল। সঠিক উত্তর: '+K[q.a]+'।'}</span> ${q.e||''}${BOOK}`;s.appendChild(e)};o.appendChild(b)});
+    box.appendChild(s)});
+  upd();
+}
+
+// ---------- রাউটার ----------
+function route(){
+  if(timer){clearInterval(timer);timer=null}
+  document.title='বিসিএস প্রিলি প্রশ্নব্যাংক · লিয়ানা বুকস';
+  const p=location.hash.replace(/^#\/?/,'').split('/').filter(Boolean);
+  if(!p.length)return home('x');
+  if(p[0]==='subjects')return home('s');
+  if(p[0]==='x'||p[0]==='p')return exam(p[0],p[1]);
+  if(p[0]==='s')return subject(p[1]);
+  notFound();
+}
+window.addEventListener('hashchange',()=>{route();window.scrollTo(0,0)});
+window.addEventListener('beforeunload',e=>{if($('exam')&&!$('exam').hidden){e.preventDefault();e.returnValue=''}});
+fetch('data/catalog.json').then(r=>r.json()).then(c=>{CATALOG=c;route()}).catch(()=>{V().innerHTML='<p class="load">তালিকা লোড হয়নি। আবার চেষ্টা করুন।</p>'});
+</script>
+</body>
+</html>
