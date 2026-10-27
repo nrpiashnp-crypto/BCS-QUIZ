@@ -33,6 +33,7 @@ h1{font-family:var(--display);font-weight:400;font-size:30px;margin:4px 0 2px;te
 .ch2 .ic{width:56px;height:56px;border-radius:50%;background:var(--gold-hi);color:#13294b;display:grid;place-items:center;font-family:var(--display);font-size:24px;white-space:nowrap}
 .ch2 b{font-family:var(--display);font-weight:400;font-size:28px;line-height:1.2}
 .ch2 small{color:#dfe5ef;font-size:14px;line-height:1.5}
+@media (max-width:699px){.ch2{display:grid;grid-template-columns:56px 1fr;grid-template-rows:auto auto;column-gap:14px;row-gap:2px;align-items:center;text-align:left;min-height:0;padding:16px}.ch2 .ic{grid-row:1/3}.ch2 b{font-size:26px}.ch2 small{font-size:13.5px}}
 .ch2[aria-expanded="true"]{box-shadow:0 0 0 3px var(--gold-hi),0 8px 22px rgba(19,41,75,.25)}
 .tiles{display:grid;grid-template-columns:1fr;gap:10px}
 .tile{display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:12px;min-height:72px;padding:12px 12px 12px 14px;background:var(--card);color:var(--ink);border:1px solid var(--rule);border-radius:12px;text-decoration:none}
