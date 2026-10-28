@@ -195,7 +195,7 @@ details.older{margin:14px 0 4px}details.older summary{cursor:pointer;list-style:
 <div class="sitebar"><a href="/"><img src="/img/logo/final-onnavy-transparent.svg" alt="লিয়ানা বুকস"></a><nav class="sec" aria-label="সাইটের অংশ"><a href="/bcs/" aria-current="page">বিসিএস</a><a href="/jobs/">চাকরি</a><a href="/science/">বিজ্ঞান</a><a href="/running/">চলমান</a></nav></div>
 <div class="wrap">
   <div id="view"><p class="load">লোড হচ্ছে…</p></div>
-  <footer><p>লিয়ানা বুকস · lyannabooks.com · সব পরীক্ষা ফ্রি</p></footer>
+  
 </div>
 <script>
 /* বিসিএস প্রিলি: home (exam list + subject sets) -> exam (timed) / practice. Hash routes, data fetched per exam. Engine shared in spirit with /jobs/. */
@@ -220,8 +220,7 @@ function home(tab){
   <div class="stats3"><span><b>${bn(L.length)}</b>টি পরীক্ষা</span><span><b>${bnc(sum(L))}</b>টি প্রশ্ন</span><span><b>${bn(S.length)}</b>টি বিষয়</span></div></section>
   <div class="chips tabs" id="tabs"><button type="button" class="chip" data-t="x" aria-pressed="${tab==='x'}">পরীক্ষা অনুযায়ী</button><button type="button" class="chip" data-t="s" aria-pressed="${tab==='s'}">বিষয় অনুযায়ী</button></div>
   <div id="tx"${tab==='x'?'':' hidden'}><div class="ogrid three">${L.filter(e=>e.no>=41).map(card).join('')}</div><details class="older"><summary>আরও পুরোনো বিসিএস (১০ম-৪০তম) দেখুন</summary><div class="ogrid three">${L.filter(e=>e.no<41).map(card).join('')}</div></details></div>
-  <div id="ts"${tab==='s'?'':' hidden'}><p class="sub">একই বিষয়ের প্রশ্ন সব বিসিএস থেকে এক জায়গায়, নতুন পরীক্ষা আগে। প্রতিটি সেটে প্রায় ১০০টি প্রশ্ন।</p><div class="ogrid">${S.map(s=>`<a class="oc sj" href="#/s/${s.k}"><span class="nm">${s.t}</span></a>`).join('')}</div></div>
-  <p class="note">প্রতিটি উত্তর যাচাই করা, ব্যাখ্যা নিজেদের লেখা। যে প্রশ্ন বাতিল হয়েছিল বা চিত্র ছাড়া বোঝা যায় না, সেগুলো রাখা হয়নি, তাই কোনো কোনো পরীক্ষায় প্রশ্ন ২০০ বা ১০০-এর চেয়ে কয়েকটি কম।</p>`;
+  <div id="ts"${tab==='s'?'':' hidden'}><p class="sub">একই বিষয়ের প্রশ্ন সব বিসিএস থেকে এক জায়গায়, নতুন পরীক্ষা আগে। প্রতিটি সেটে প্রায় ১০০টি প্রশ্ন।</p><div class="ogrid">${S.map(s=>`<a class="oc sj" href="#/s/${s.k}"><span class="nm">${s.t}</span></a>`).join('')}</div></div>`;
   $('tabs').onclick=ev=>{const b=ev.target.closest('.chip');if(!b)return;history.replaceState(null,'',b.dataset.t==='s'?'#/subjects':'#/');home(b.dataset.t)};
 }
 function subject(k){
@@ -349,6 +348,6 @@ fetch('data/catalog.json').then(r=>r.json()).then(c=>{CATALOG=c;route()}).catch(
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "6b92edeb250b475e9d759f64df8eb91e"}'></script><!-- End Cloudflare Web Analytics -->
 <script src="/js/score-mark.js" defer></script>
 <script src="/js/account.js" defer></script>
-<!--seo-links--><nav style="max-width:760px;margin:24px auto 0;padding:0 16px 24px;text-align:center;font:13px/1.8 'Noto Sans Bengali',system-ui,sans-serif"><a href="/questions/#bcs" style="color:inherit;opacity:.75">বিসিএস প্রিলির প্রশ্ন ও সমাধান পড়ুন</a> · <a href="/questions/" style="color:inherit;opacity:.75">সব প্রশ্ন ও সমাধান</a> · <a href="https://www.facebook.com/profile.php?id=61595898604238" target="_blank" rel="noopener" style="color:inherit;opacity:.75"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true" style="vertical-align:-2px;margin-right:4px"><path fill="currentColor" d="M13.5 22v-8.2h2.8l.4-3.3h-3.2V8.4c0-.9.3-1.6 1.6-1.6h1.7V3.9a23 23 0 0 0-2.5-.1c-2.5 0-4.2 1.5-4.2 4.3v2.4H7.3v3.3h2.8V22h3.4Z"/></svg>ফেসবুক পেজ</a></nav><!--/seo-links-->
+<!--seo-links--><nav style="max-width:760px;margin:24px auto 0;padding:0 16px 24px;text-align:center;font:13px/1.8 'Noto Sans Bengali',system-ui,sans-serif"><a href="/" style="color:inherit;opacity:.75">লিয়ানা বুকস</a> · <a href="/questions/#bcs" style="color:inherit;opacity:.75">বিসিএস প্রিলির প্রশ্ন ও সমাধান পড়ুন</a> · <a href="/questions/" style="color:inherit;opacity:.75">সব প্রশ্ন ও সমাধান</a> · <a href="https://www.facebook.com/profile.php?id=61595898604238" target="_blank" rel="noopener" style="color:inherit;opacity:.75"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true" style="vertical-align:-2px;margin-right:4px"><path fill="currentColor" d="M13.5 22v-8.2h2.8l.4-3.3h-3.2V8.4c0-.9.3-1.6 1.6-1.6h1.7V3.9a23 23 0 0 0-2.5-.1c-2.5 0-4.2 1.5-4.2 4.3v2.4H7.3v3.3h2.8V22h3.4Z"/></svg>ফেসবুক পেজ</a></nav><!--/seo-links-->
 </body>
 </html>
