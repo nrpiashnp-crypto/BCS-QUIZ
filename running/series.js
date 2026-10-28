@@ -60,10 +60,7 @@ async function exam(id){
   V().innerHTML=`<nav class="crumb"><a href="/running/">চলমান নিয়োগ</a><span><a href="#/">${esc(P.short||P.title)}</a></span><span>${lab(E)}</span></nav>
   <section id="start"><p class="kick">${lab(E)} · ${phOf(E)}</p><h1>${esc(E.title)}</h1><p class="sub">${esc(E.topic||'')}</p>
    <div class="btns start"><button class="btn" id="go" type="button">পরীক্ষা শুরু করুন →</button></div>
-   <ul class="rules"><li>প্রশ্ন ${bn(Q.length)}টি, সময় <b>${bn(MIN)}</b> মিনিট। সময় শেষ হলে নিজে থেকেই জমা হবে।</li>
-   <li>সঠিক উত্তরে ১ নম্বর, ভুল উত্তরে <b id="negt"></b>। উত্তর না দিলে নম্বর কাটা যায় না।</li>
-   <li>একবার দাগানো উত্তর আর বদলানো যায় না, ঠিক OMR শিটের মতো।</li>
-   <li>শেষে ফল, কোন টপিকে দুর্বল আর প্রতিটি প্রশ্নের ব্যাখ্যা দেখাবে।</li></ul>
+   <div class="facts"><div class="fact"><b>${bn(Q.length)}</b><span>প্রশ্ন</span></div><div class="fact"><b>${bn(MIN)}</b><span>মিনিট</span></div></div><b id="negt" hidden></b>
    <p class="lbl">নেগেটিভ মার্কিং</p><div class="chips" id="negc"><button type="button" class="chip" data-v="0.5">−০.৫</button><button type="button" class="chip" data-v="0.25">−০.২৫</button><button type="button" class="chip" data-v="0">নেই</button></div>
    <div class="hist" id="hist" hidden></div></section>
   <section id="exam" hidden><div class="bar"><span class="clock" id="clock"></span><span>উত্তর <b id="ans">০</b> / <b>${bn(Q.length)}</b></span><button class="btn" id="submit" type="button">জমা দিন</button></div><main id="elist"></main><div class="btns"><button class="btn" id="submit2" type="button">জমা দিন</button></div></section>

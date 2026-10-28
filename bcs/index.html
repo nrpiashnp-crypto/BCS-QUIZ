@@ -67,8 +67,10 @@ h2{font-family:var(--display);font-weight:400;font-size:22px;margin:22px 0 8px}
 .row .c{font-size:14px;color:var(--muted);white-space:nowrap}
 .pill{display:inline-block;font-size:12px;border-radius:99px;padding:1px 8px;background:var(--soft);color:var(--accent);margin-left:6px;vertical-align:2px}
 .pill.full{background:var(--gold-hi);color:#13294b}
-.rules{margin:8px 0 0;padding-left:20px}
-.rules li{margin:2px 0}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin:4px 0 0}
+.fact{border:1px solid var(--rule);border-radius:10px;padding:12px 8px 10px;text-align:center;background:var(--card)}
+.fact b{display:block;font-family:var(--display);font-weight:400;font-size:26px;line-height:1.15;color:var(--accent);font-variant-numeric:tabular-nums}
+.fact span{display:block;font-size:13px;color:var(--muted)}
 button{font:inherit;cursor:pointer}
 .btn{display:inline-block;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:10px 18px;font-weight:600}
 .btn.ghost{background:none;color:var(--ink);border-color:var(--rule);font-weight:500}
@@ -237,10 +239,7 @@ async function exam(kind,id){
   `<section id="start"><h1>${E.title}</h1>
    <p class="sub">${E.full?'আসল প্রশ্নপত্র':'বিষয়ভিত্তিক সেট'} · ${bn(Q.length)}টি প্রশ্ন</p>
    <div class="btns start"><button class="btn" id="go" type="button">পরীক্ষা শুরু করুন →</button><button class="btn ghost" id="practice" type="button">অনুশীলন (সঙ্গে সঙ্গে উত্তর)</button></div>
-   <ul class="rules"><li>প্রশ্ন ${bn(Q.length)}টি, সময় <b>${bn(MIN)}</b> মিনিট। সময় শেষ হলে নিজে থেকেই জমা হবে।</li>
-   <li>সঠিক উত্তরে ১ নম্বর, ভুল উত্তরে <b id="negt">−০.৫</b> (বিসিএসের নিয়ম)। উত্তর না দিলে নম্বর কাটা যায় না।</li>
-   <li>একবার দাগানো উত্তর আর বদলানো যায় না, ঠিক OMR শিটের মতো।</li>
-   <li>শেষে ফল, বিষয়ভিত্তিক হিসাব আর প্রতিটি প্রশ্নের ব্যাখ্যা দেখাবে।</li></ul>
+   <div class="facts"><div class="fact"><b>${bn(Q.length)}</b><span>প্রশ্ন</span></div><div class="fact"><b>${bn(MIN)}</b><span>মিনিট</span></div></div><b id="negt" hidden></b>
    <p class="lbl">নেগেটিভ মার্কিং</p><div class="chips" id="negc"><button type="button" class="chip" data-v="0.5" aria-pressed="true">−০.৫</button><button type="button" class="chip" data-v="0.25" aria-pressed="false">−০.২৫</button><button type="button" class="chip" data-v="0" aria-pressed="false">নেই</button></div>
    <div class="hist" id="hist" hidden></div></section>
   <section id="exam" hidden><div class="bar"><span class="clock" id="clock"></span><span>উত্তর <b id="ans">০</b> / <b>${bn(Q.length)}</b></span><button class="btn" id="submit" type="button">জমা দিন</button></div><main id="elist"></main><div class="btns"><button class="btn" id="submit2" type="button">জমা দিন</button></div></section>
