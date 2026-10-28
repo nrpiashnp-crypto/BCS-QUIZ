@@ -177,10 +177,12 @@ h2.post{font-size:20px;margin:22px 0 2px}
 .wk details{margin:4px 0 2px;font-size:15px}.wk summary{cursor:pointer;color:var(--accent);padding:4px 0}
 .tipbox ul{margin:0 0 6px;padding-left:20px;font-size:15px}.tipbox li{margin:6px 0}
 [hidden]{display:none !important}
+.sitebar nav.sec{display:flex;gap:2px;flex-shrink:0}.sitebar nav.sec a{color:#e6c97a;text-decoration:none;font-size:13px;font-weight:500;padding:5px 7px;border-radius:7px;white-space:nowrap;line-height:1.2}.sitebar nav.sec a[aria-current]{background:rgba(230,201,122,.2);color:#fff}@media(max-width:360px){.sitebar img{width:88px}.sitebar nav.sec a{font-size:12px;padding:4px 5px}}
+.chips.cats{margin:14px 0 4px}.chips.cats a.chip{text-decoration:none;font-weight:600;color:var(--accent);background:var(--card);padding:7px 14px;font-size:15px}.chips.cats a.chip:first-child{background:var(--accent);color:#fff;border-color:var(--accent)}h2.lh{font-size:19px;margin:16px 0 6px}
 </style>
 </head>
 <body>
-<div class="sitebar"><a href="/"><img src="/img/logo/final-onnavy-transparent.svg" alt="লিয়ানা বুকস"></a><a class="h" href="/">← হোম</a></div>
+<div class="sitebar"><a href="/"><img src="/img/logo/final-onnavy-transparent.svg" alt="লিয়ানা বুকস"></a><nav class="sec" aria-label="সাইটের অংশ"><a href="/bcs/">বিসিএস</a><a href="/jobs/" aria-current="page">চাকরি</a><a href="/science/">বিজ্ঞান</a><a href="/running/">চলমান</a></nav></div>
 <div class="wrap">
   <div id="view"><p class="load">লোড হচ্ছে…</p></div>
   <footer><p>লিয়ানা বুকস · lyannabooks.com · সব পরীক্ষা ফ্রি</p></footer>
@@ -213,12 +215,10 @@ function home(){
   const L=exams(),orgs=new Set(L.map(e=>catOf(e)+e.org)).size;
   V().innerHTML=`<section class="hero"><h1>সব চাকরির পরীক্ষার প্রশ্ন, এক জায়গায়</h1>
   <p>ব্যাংক, সরকারি চাকরি আর পিএসসি নন-ক্যাডারের বিগত প্রশ্নে আসল পরীক্ষার মতো অনলাইন পরীক্ষা: সময়, নেগেটিভ মার্কিং, শেষে ফল আর প্রতিটি প্রশ্নের ব্যাখ্যা। সব ফ্রি।</p>
-  <div class="stats3"><span><b>${bnc(L.length)}</b>টি পরীক্ষা</span><span><b>${bnc(sum(L))}</b>টি প্রশ্ন</span><span><b>${bnc(orgs)}</b>টি প্রতিষ্ঠান</span></div>
-  <a class="allbtn" href="#/all">সব পরীক্ষার তালিকা দেখুন →</a></section>
-  <h2>ধরন অনুযায়ী বেছে নিন</h2>
-  <div class="grid">${Object.entries(CAT).map(([k,c])=>{const l=L.filter(e=>catOf(e)===k);if(!l.length)return '';
-    return `<a class="card big" href="#/${k}"><span class="t">${c.t}</span><span class="m">${c.m}</span><span class="m">${bnc(l.length)}টি পরীক্ষা · ${bnc(sum(l))}টি প্রশ্ন</span><span class="go">পরীক্ষা দিন →</span></a>`}).join('')}</div>
-  <p class="note">সাধারণ (নন-টেকনিক্যাল) পদের পরীক্ষাগুলো আছে। প্রতিটি উত্তর যাচাই করা, ব্যাখ্যা নিজেদের লেখা। নতুন পরীক্ষা নিয়মিত যোগ হচ্ছে।</p>`;
+  <div class="stats3"><span><b>${bnc(L.length)}</b>টি পরীক্ষা</span><span><b>${bnc(sum(L))}</b>টি প্রশ্ন</span><span><b>${bnc(orgs)}</b>টি প্রতিষ্ঠান</span></div></section>
+  <div class="chips cats"><a class="chip" href="#/all">সব পরীক্ষা</a>${Object.entries(CAT).map(([k,c])=>`<a class="chip" href="#/${k}">${c.t}</a>`).join('')}</div>
+  `+listHTML('all',true);
+  bindList();
 }
 function cat(c){
   if(CAT[c].flat)return flatList(c);
@@ -248,19 +248,22 @@ function sub(c,s){
     keys.map(g=>(keys.length>1?`<h2 class="grp">${g}</h2>`:'')+`<div class="ogrid three">${G[g].map(card).join('')}</div>`).join('');
 }
 // flat category: every exam as a card, newest first, with a search box and year chips
-function flatList(c){
+function listHTML(c,home){
   const C=c==='all'?{t:'সব চাকরির পরীক্ষা',m:'ব্যাংক, সরকারি চাকরি ও পিএসসি নন-ক্যাডার মিলিয়ে সব পরীক্ষা'}:CAT[c],L=exams().filter(e=>c==='all'||catOf(e)===c).sort((a,b)=>(b.year==='misc'?'0':b.date||b.year).localeCompare(a.year==='misc'?'0':a.date||a.year)||b.n-a.n);
   const years=[...new Set(L.map(e=>e.year).filter(y=>y!=='misc'))].sort().reverse();
   const card=e=>`<a class="oc ex" href="#/x/${e.id}" data-y="${e.year}" data-k="${esc((e.orgbn+' '+e.postbn+' '+(e.note||'')).toLowerCase())}"><span class="yr">${e.year==='misc'?'বিবিধ':bn(e.year)}</span><span class="mid"><span class="n">${e.orgbn}</span><span class="src">${e.postbn}${e.note?' · '+e.note:''}</span><span class="cnt">${bn(e.n)} প্রশ্ন</span></span><span class="go">শুরু →</span></a>`;
-  V().innerHTML=crumb([[null,C.t]])+`<h1>${C.t}</h1><p class="sub">${C.m}: ${bnc(L.length)}টি পরীক্ষা, ${bnc(sum(L))}টি প্রশ্ন।</p>
+  return (home?`<h2 class="lh">সব পরীক্ষা, নতুন আগে</h2>`:crumb([[null,C.t]])+`<h1>${C.t}</h1><p class="sub">${C.m}: ${bnc(L.length)}টি পরীক্ষা, ${bnc(sum(L))}টি প্রশ্ন।</p>`)+`
   <input id="fq" type="search" placeholder="পদ বা মন্ত্রণালয়ের নাম লিখে খুঁজুন" style="width:100%;font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--rule);border-radius:10px;background:var(--card);color:var(--ink)">
   <div class="chips yrow" id="fy"><button type="button" class="chip" data-y="" aria-pressed="true">সব বছর</button>${years.map(y=>`<button type="button" class="chip" data-y="${y}" aria-pressed="false">${bn(y)}</button>`).join('')}</div>
   <div class="ogrid three" id="fl">${L.map(card).join('')}</div><p class="load" id="fnone" hidden>কিছু পাওয়া যায়নি।</p>`;
+}
+function bindList(){
   let yr='';
   const apply=()=>{const q=$('fq').value.trim().toLowerCase();let n=0;[...$('fl').children].forEach(a=>{const ok=(!yr||a.dataset.y===yr)&&(!q||a.dataset.k.includes(q));a.hidden=!ok;n+=ok});$('fnone').hidden=n>0};
   $('fq').oninput=apply;
   $('fy').onclick=ev=>{const b=ev.target.closest('.chip');if(!b)return;yr=b.dataset.y;[...$('fy').children].forEach(x=>x.setAttribute('aria-pressed',x===b));apply()};
 }
+function flatList(c){V().innerHTML=listHTML(c);bindList()}
 function org(c,s,o){
   const C=CAT[c],L=exams().filter(e=>inSub(e,c,s)&&e.org===o);
   if(!L.length)return notFound();
