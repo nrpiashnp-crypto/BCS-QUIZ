@@ -145,6 +145,13 @@ footer{margin-top:28px;font-size:14px;color:var(--muted)}
 h2.post{font-size:20px;margin:22px 0 2px}
 .badge{flex:none;width:46px;height:46px;border-radius:50%;white-space:nowrap;display:flex;align-items:center;justify-content:center;text-align:center;color:#fff;font-weight:600;line-height:1.05;padding:3px;overflow:hidden;font-size:14px;letter-spacing:-.01em}
 .badge.lg{width:60px;height:60px;font-size:17px}
+.oc.ex,.oc.sj{flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:64px;padding:12px 10px;border-left-width:1px;text-align:center}
+.oc .nm{font-family:var(--display);font-size:21px;line-height:1.3;color:var(--ink)}
+.oc .tg{font-size:13px;color:var(--muted)}
+#tx .ogrid,#ts .ogrid{grid-template-columns:1fr 1fr;grid-auto-rows:1fr}
+@media (min-width:700px){#tx .ogrid,#ts .ogrid{grid-template-columns:repeat(3,1fr)}}
+@media (min-width:980px){#tx .ogrid{grid-template-columns:repeat(4,1fr)}}
+@media (max-width:380px){.oc .nm{font-size:18px}}
 .oc.org{flex-direction:row;align-items:center;gap:12px;border-left-width:1px}
 .oc.org .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
 .ohead{display:flex;align-items:center;gap:14px;margin:6px 0 4px}
@@ -206,13 +213,13 @@ const nth=n=>bn(n)+'তম';
 const subjects=()=>{const m={};CATALOG.sets.forEach(s=>{(m[s.k]=m[s.k]||{k:s.k,t:s.s,l:[]}).l.push(s)});return Object.values(m)};
 
 function home(tab){
-  const card=e=>`<a class="oc ex" href="#/x/${e.id}"><span class="yr">${nth(e.no)}</span><span class="mid"><span class="n">${e.special?'বিশেষ বিসিএস':'বিসিএস'} প্রিলি${e.special&&/\(/.test(e.title)?' '+e.title.replace(/^.*?(\(.*\)).*$/,'$1'):''}</span><span class="src">${bn(e.year)} · ${bn(e.time)} মিনিট</span><span class="cnt">${bn(e.n)} প্রশ্ন</span></span><span class="go">শুরু →</span></a>`;
+  const card=e=>{const m=e.title.match(/\(([^)]*)\)/);return `<a class="oc ex" href="#/x/${e.id}"><span class="nm">${nth(e.no)} ${e.special?'বিশেষ ':''}বিসিএস</span>${m?`<span class="tg">${m[1]}</span>`:''}</a>`};
   const L=CATALOG.exams,S=subjects();tab=tab||'x';
   V().innerHTML=`<section class="hero"><h1>বিসিএস প্রিলিমিনারি: ১০ম থেকে ৫০তম</h1>
   <div class="stats3"><span><b>${bn(L.length)}</b>টি পরীক্ষা</span><span><b>${bnc(sum(L))}</b>টি প্রশ্ন</span><span><b>${bn(S.length)}</b>টি বিষয়</span></div></section>
   <div class="chips tabs" id="tabs"><button type="button" class="chip" data-t="x" aria-pressed="${tab==='x'}">পরীক্ষা অনুযায়ী</button><button type="button" class="chip" data-t="s" aria-pressed="${tab==='s'}">বিষয় অনুযায়ী</button></div>
   <div id="tx"${tab==='x'?'':' hidden'}><div class="ogrid three">${L.filter(e=>e.no>=41).map(card).join('')}</div><details class="older"><summary>আরও পুরোনো বিসিএস (১০ম-৪০তম) দেখুন</summary><div class="ogrid three">${L.filter(e=>e.no<41).map(card).join('')}</div></details></div>
-  <div id="ts"${tab==='s'?'':' hidden'}><p class="sub">একই বিষয়ের প্রশ্ন সব বিসিএস থেকে এক জায়গায়, নতুন পরীক্ষা আগে। প্রতিটি সেটে প্রায় ১০০টি প্রশ্ন।</p><div class="ogrid">${S.map(s=>`<a class="oc" href="#/s/${s.k}"><span class="n">${s.t}</span><span class="f">${bn(s.l.length)}টি সেট <span class="cnt">${bnc(sum(s.l))} প্রশ্ন</span><span class="go">→</span></span></a>`).join('')}</div></div>
+  <div id="ts"${tab==='s'?'':' hidden'}><p class="sub">একই বিষয়ের প্রশ্ন সব বিসিএস থেকে এক জায়গায়, নতুন পরীক্ষা আগে। প্রতিটি সেটে প্রায় ১০০টি প্রশ্ন।</p><div class="ogrid">${S.map(s=>`<a class="oc sj" href="#/s/${s.k}"><span class="nm">${s.t}</span></a>`).join('')}</div></div>
   <p class="note">প্রতিটি উত্তর যাচাই করা, ব্যাখ্যা নিজেদের লেখা। যে প্রশ্ন বাতিল হয়েছিল বা চিত্র ছাড়া বোঝা যায় না, সেগুলো রাখা হয়নি, তাই কোনো কোনো পরীক্ষায় প্রশ্ন ২০০ বা ১০০-এর চেয়ে কয়েকটি কম।</p>`;
   $('tabs').onclick=ev=>{const b=ev.target.closest('.chip');if(!b)return;history.replaceState(null,'',b.dataset.t==='s'?'#/subjects':'#/');home(b.dataset.t)};
 }
