@@ -19,8 +19,10 @@ total = jobs + bcs + ch
 stats = {'questions': total, 'jobs': jobs, 'bcs': bcs, 'chapters': ch, 'exams': len(cat['exams']), 'bcs_exams': len(bcat['exams']),
          'updated': datetime.date.today().isoformat()}
 json.dump(stats, open(os.path.join(R, 'js/stats.json'), 'w'), separators=(',', ':'))
-for page in ('index.html',):
+# numbers shown on pages: <b class="qc-n"> (home total), <span class="n-bcs">/<span class="n-jobs"> (exams cards)
+SHOW = {'qc-n': total, 'n-bcs': bcs, 'n-jobs': jobs}
+for page in ('index.html', 'exams/index.html'):
     p = os.path.join(R, page); s = open(p, encoding='utf-8').read()
-    t = re.sub(r'(<b class="qc-n">)[^<]*(</b>)', lambda m: m.group(1) + bn(total) + m.group(2), s)
+    t = re.sub(r'(<(b|span) class="(qc-n|n-bcs|n-jobs)">)[^<]*(</\2>)', lambda m: m.group(1) + bn(SHOW[m.group(3)]) + m.group(4), s)
     if t != s: open(p, 'w', encoding='utf-8').write(t)
 print(stats)
