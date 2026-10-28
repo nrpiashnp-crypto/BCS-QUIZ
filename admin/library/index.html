@@ -79,6 +79,12 @@ details.card summary{cursor:pointer;font-weight:600}
   <p class="count" id="count"></p>
   <div class="res" id="res"></div>
   <div class="pager" id="pager"></div>
+  <section id="mcqs" hidden>
+    <h2>সংশ্লিষ্ট এমসিকিউ <small class="msg" id="mcount"></small></h2>
+    <p class="sub">সাইটের প্রশ্নব্যাংক (বিসিএস, চাকরি, চলমান, অধ্যায়) থেকে একই শব্দ মেলে এমন প্রশ্ন। টিক দিলে এক্সপোর্টে লিখিত অংশের পরে যাবে। <button type="button" class="chip" id="mall">এই পাতার সব বাছাই</button></p>
+    <div class="res" id="mres"></div>
+    <div class="pager" id="mpager"></div>
+  </section>
 
   <h2>নতুন অংশ তোলা</h2>
   <details class="card" id="imp">
@@ -88,6 +94,13 @@ details.card summary{cursor:pointer;font-weight:600}
     <p id="impMsg" class="msg"></p>
     <div class="prog" hidden><i id="bar"></i></div>
     <button class="btn" id="go" hidden>তুলুন</button>
+  </details>
+  <details class="card" id="msync" style="margin-top:10px">
+    <summary>এমসিকিউ ব্যাংক হালনাগাদ</summary>
+    <p class="sub" style="margin-top:8px">সাইটে নতুন প্রশ্ন যোগ হলে একবার চাপুন। সাইটের সব প্রশ্নের ফাইল পড়ে লাইব্রেরিতে তোলে; একই প্রশ্ন কয়েক পরীক্ষায় থাকলে একবারই থাকে, সাথে সব উৎস। <span id="mstat"></span></p>
+    <p id="syncMsg" class="msg"></p>
+    <div class="prog" hidden id="sprog"><i id="sbar"></i></div>
+    <button class="btn" id="sync">হালনাগাদ করুন</button>
   </details>
 </div>
 </main>
@@ -106,7 +119,7 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;',
 const BN='০১২৩৪৫৬৭৮৯',bn=n=>String(n).replace(/\d/g,d=>BN[d]);
 const KIND={section:'লেখা',question:'প্রশ্নোত্তর',past_questions:'বিগত প্রশ্ন'};
 const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-let sel=store.get('lib:sel',[]),state={q:'',subject:'',kind:'',tag:'',offset:0},last=null;
+let sel=store.get('lib:sel',[]),msel=store.get('lib:msel',[]),moff=0,state={q:'',subject:'',kind:'',tag:'',offset:0},last=null;
 
 async function api(path,body){
   const r=await fetch('/api/'+path,body?{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{credentials:'same-origin',cache:'no-store'});
@@ -144,6 +157,7 @@ function showStats(s){
   const sub=$('subject');sub.length=1;s.subjects.forEach(x=>sub.add(new Option(x.subject,x.subject)));
   $('tags').innerHTML=s.tags.slice(0,16).map(t=>'<button type="button" class="chip" data-tag="'+esc(t.tag)+'">'+esc(t.tag)+' '+bn(t.n)+'</button>').join('');
   if(!total)$('count').textContent='লাইব্রেরি এখনো খালি। নিচে থেকে ফাইল তুলুন।';
+  const m=s.mcq||{};$('mstat').textContent='এখন আছে '+bn(m.n||0)+'টি প্রশ্ন'+(m.synced?', শেষ হালনাগাদ '+new Date(+m.synced).toLocaleDateString('bn-BD'):'')+'।';
 }
 
 // ---- খোঁজা ----
@@ -173,6 +187,25 @@ async function search(){
   $('count').textContent=total?('মিলেছে '+bn(total)+'টি অংশ'+(state.tag?' · ট্যাগ: '+state.tag:'')+(total>items.length?' · দেখানো হচ্ছে '+bn(offset+1)+'–'+bn(offset+items.length):'')):'কিছু মেলেনি।';
   $('res').innerHTML=items.map(card).join('');
   $('pager').innerHTML=(offset?'<button class="btn ghost" data-off="'+Math.max(0,offset-30)+'">← আগের</button>':'')+(offset+items.length<total?'<button class="btn ghost" data-off="'+(offset+30)+'">পরের →</button>':'');
+  if(!offset){moff=0;mcq()}
+}
+// একই শব্দ দিয়ে এমসিকিউ ব্যাংকেও খোঁজা (ট্যাগ বাছাই থাকলে ট্যাগের নাম দিয়ে)
+let mlast=null;
+async function mcq(){
+  const q=state.q||state.tag;$('mcqs').hidden=!q;if(!q)return;
+  $('mcount').textContent='খোঁজা হচ্ছে…';
+  try{mlast=await api('lib/mcq?'+new URLSearchParams({q,offset:moff}))}catch(e){$('mcount').textContent='';$('mres').innerHTML='';return}
+  const {total,items,offset}=mlast;
+  $('mcount').textContent=total?bn(total)+'টি'+(total>items.length?' · '+bn(offset+1)+'–'+bn(offset+items.length):''):'মেলেনি';
+  $('mres').innerHTML=items.map(mcard).join('');
+  $('mpager').innerHTML=(offset?'<button class="btn ghost" data-moff="'+Math.max(0,offset-30)+'">← আগের</button>':'')+(offset+items.length<total?'<button class="btn ghost" data-moff="'+(offset+30)+'">পরের →</button>':'');
+}
+const L='কখগঘঙচ';
+function mcard(m){
+  const on=msel.includes(m.id);
+  return '<article class="it mq'+(on?' on':'')+'" data-mid="'+esc(m.id)+'"><input type="checkbox" aria-label="বাছাই"'+(on?' checked':'')+'>'+
+    '<div><h3>'+hi(m.q)+'</h3><div class="meta">'+m.o.map((o,i)=>(i===m.a?'<b>':'')+L[i]+') '+hi(o)+(i===m.a?' ✓</b>':'')).join(' · ')+'</div>'+
+    '<div class="meta">'+esc([m.s,m.t].filter(Boolean).join(' › '))+(m.src.length?' · '+m.src.slice(0,3).map(x=>'<a href="'+esc(x[1])+'" target="_blank">'+esc(x[0])+'</a>').join(', ')+(m.src.length>3?' +'+bn(m.src.length-3):''):'')+'</div></div></article>';
 }
 function card(t){
   const on=sel.includes(t.id);
@@ -188,6 +221,8 @@ $('qf').onsubmit=e=>{e.preventDefault();state.q=$('q').value.trim();state.subjec
 document.addEventListener('click',async e=>{
   const tag=e.target.closest('[data-tag]');
   if(tag){state.tag=state.tag===tag.dataset.tag?'':tag.dataset.tag;state.offset=0;search();return}
+  const mo=e.target.closest('[data-moff]');if(mo){moff=+mo.dataset.moff;mcq();$('mcqs').scrollIntoView();return}
+  if(e.target.id==='mall'&&mlast){mlast.items.forEach(m=>{if(!msel.includes(m.id))msel.push(m.id)});store.set('lib:msel',msel);tray();$('mres').innerHTML=mlast.items.map(mcard).join('');return}
   const off=e.target.closest('[data-off]');if(off){state.offset=+off.dataset.off;search();scrollTo(0,0);return}
   const more=e.target.closest('.more');
   if(more){
@@ -201,23 +236,32 @@ document.addEventListener('click',async e=>{
 });
 document.addEventListener('change',e=>{
   if(!e.target.matches('.it input'))return;
-  const it=e.target.closest('.it'),id=it.dataset.id;
-  sel=sel.filter(x=>x!==id);if(e.target.checked)sel.push(id);
-  it.classList.toggle('on',e.target.checked);store.set('lib:sel',sel);tray();
+  const it=e.target.closest('.it');
+  if(it.dataset.mid){const id=it.dataset.mid;msel=msel.filter(x=>x!==id);if(e.target.checked)msel.push(id);store.set('lib:msel',msel)}
+  else{const id=it.dataset.id;sel=sel.filter(x=>x!==id);if(e.target.checked)sel.push(id);store.set('lib:sel',sel)}
+  it.classList.toggle('on',e.target.checked);tray();
 });
 addEventListener('hashchange',()=>{readHash();search()});
 
 // ---- বাছাই করা অংশ নামানো ----
-function tray(){$('tray').hidden=!sel.length;$('nsel').textContent=bn(sel.length)+'টি অংশ বাছাই'}
+function tray(){$('tray').hidden=!sel.length&&!msel.length;$('nsel').textContent=[sel.length?bn(sel.length)+'টি অংশ':'',msel.length?bn(msel.length)+'টি এমসিকিউ':''].filter(Boolean).join(' + ')+' বাছাই'}
 async function markdown(){
   const out=[];
   for(let i=0;i<sel.length;i+=90)out.push(...(await api('lib/get',{ids:sel.slice(i,i+90)})).items);
+  const mq=[];for(let i=0;i<msel.length;i+=90)mq.push(...(await api('lib/mcq-get',{ids:msel.slice(i,i+90)})).items);
   const title=state.q||state.tag||'বাছাই করা অংশ';
-  let md='# টপিক: '+title+'\n\n'+'> রেফারেন্স হিসেবে '+bn(out.length)+'টি অংশ, '+[...new Set(out.map(t=>t.source.replace(/,?\s*অধ্যায়.*$/,'')))].join(', ')+' থেকে। লেকচার শিট নিজের ভাষায় নতুন করে লেখা হবে, হুবহু কপি নয়।\n\n';
+  let md='# টপিক: '+title+'\n\n'+'> রেফারেন্স হিসেবে '+bn(out.length)+'টি লিখিত অংশ'+(mq.length?' ও '+bn(mq.length)+'টি এমসিকিউ':'')+', '+[...new Set(out.map(t=>t.source.replace(/,?\s*অধ্যায়.*$/,'')))].join(', ')+' থেকে। লেকচার শিট নিজের ভাষায় নতুন করে লেখা হবে, হুবহু কপি নয়।\n\n';
   for(const t of out){
     md+='---\n\n## '+(t.section_no?t.section_no+' ':'')+t.section_title+'\n\n'+
       '- উৎস: '+t.source+', পৃষ্ঠা '+t.pages+'\n- '+t.subject+' · অধ্যায় '+t.chapter+': '+t.chapter_title+(t.parent_section?' › '+t.parent_section:'')+'\n'+
       '- ট্যাগ: '+t.tags.join('; ')+'\n- id: `'+t.id+'`\n\n'+t.text.trim()+'\n\n';
+  }
+  if(mq.length){
+    md+='---\n\n# সংশ্লিষ্ট এমসিকিউ (প্রিলিমিনারি)\n\n';
+    mq.forEach((m,i)=>{
+      md+='**'+bn(i+1)+'. '+m.q+'**\n\n'+m.o.map((o,j)=>L[j]+') '+o).join('  \n')+'\n\n'+(m.a>=0?'উত্তর: '+L[m.a]+') '+m.o[m.a]+'\n\n':'')+
+        (m.e?'ব্যাখ্যা: '+m.e.replace(/<br\s*\/?>/gi,'  \n').replace(/<\/?b>/gi,'**').replace(/<[^>]+>/g,'').trim()+'\n\n':'')+'_'+[[m.s,m.t].filter(Boolean).join(' › '),m.src.map(x=>x[0]).join('; ')].filter(Boolean).join(' · ')+'_\n\n';
+    });
   }
   return {md,title};
 }
@@ -231,7 +275,7 @@ $('cp').onclick=async()=>{
   try{await navigator.clipboard.writeText((await markdown()).md);$('cp').textContent='কপি হয়েছে ✓'}catch(e){$('cp').textContent='কপি হয়নি'}
   setTimeout(()=>$('cp').textContent='কপি করুন',2000);
 };
-$('clr').onclick=()=>{sel=[];store.set('lib:sel',sel);tray();document.querySelectorAll('.it').forEach(it=>{it.classList.remove('on');it.querySelector('input').checked=false})};
+$('clr').onclick=()=>{sel=[];msel=[];store.set('lib:sel',sel);store.set('lib:msel',msel);tray();document.querySelectorAll('.it').forEach(it=>{it.classList.remove('on');it.querySelector('input').checked=false})};
 
 // ---- ফাইল তোলা ----
 function parseCSV(s){
@@ -267,6 +311,59 @@ $('go').onclick=async()=>{
   }
   $('impMsg').textContent='✓ '+bn(done)+'টি অংশ তোলা হয়েছে।';b.hidden=true;b.disabled=false;
   showStats(await api('lib/stats'));search();
+};
+
+// ---- এমসিকিউ ব্যাংক: সাইটের প্রশ্নের ফাইল পড়ে তোলা (tools/stats.py যেভাবে গোনে, সেভাবেই সব উৎস) ----
+const getJ=u=>fetch(u,{cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null);
+const bnn=s=>String(s).replace(/\d/g,d=>BN[d]);
+async function collect(msg){
+  const files=[];// [url, label, link, subject, topic, isHtml]
+  const bc=await getJ('/bcs/data/catalog.json')||{exams:[],sets:[]};
+  bc.exams.forEach(e=>files.push(['/bcs/data/e/'+e.id+'.json',e.title,'/bcs/'+e.no+'/']));
+  (bc.sets||[]).forEach(x=>files.push(['/bcs/data/s/'+x.id+'.json','বিসিএস প্রশ্নব্যাংক: '+x.s+' সেট '+bnn(x.part),'/bcs/#/s/'+x.k,x.s]));
+  const jc=await getJ('/jobs/data/catalog.json')||{exams:[]};
+  jc.exams.forEach(e=>files.push(['/jobs/data/e/'+e.id+'.json',[e.orgbn,e.postbn,bnn(e.year||'')].filter(Boolean).join(' '),'/jobs/'+e.id+'/']));
+  for(const k of ['petrobangla','sub-registrar']){
+    const pl=await getJ('/running/'+k+'/data/plan.json');if(!pl)continue;
+    const ids=new Set();JSON.stringify(pl).replace(/"id":"([a-z]{1,3}\d{1,3})"/g,(m,x)=>ids.add(x));
+    ids.forEach(x=>files.push(['/running/'+k+'/data/x/'+x+'.json',(pl.short||k)+' টাস্ক '+bnn(x.replace(/\D/g,'')),'/running/'+k+'/']));
+  }
+  const sc=await getJ('/subject/data/science.json');
+  if(sc)sc.topics.forEach(t=>{(t.sets||[]).forEach(x=>files.push(['/subject/data/t/'+t.id+'/'+x.id+'.json','বিজ্ঞান: '+t.name,t.page||'/subject/','সাধারণ বিজ্ঞান',t.name]));
+    if(t.page)files.push([t.page,'অধ্যায়: '+t.name,t.page,'সাধারণ বিজ্ঞান',t.name,1])});
+  const rows=new Map();
+  const key=async(q,ans)=>{const b=await crypto.subtle.digest('SHA-1',new TextEncoder().encode((q.replace(/[\s\p{P}]+/gu,'').toLowerCase()+'|'+ans).normalize('NFC')));return [...new Uint8Array(b)].slice(0,10).map(x=>x.toString(16).padStart(2,'0')).join('')};
+  let done=0;
+  const one=async f=>{
+    let qs=null;
+    if(f[5]){const h=await fetch(f[0],{cache:'no-store'}).then(r=>r.ok?r.text():'').catch(()=>'');const m=h.match(/const Q=(\[[\s\S]*?\]);\s*\n/);if(m)try{qs=JSON.parse(m[1])}catch(e){}}
+    else qs=await getJ(f[0]);
+    if(Array.isArray(qs))for(const q of qs){
+      if(!q||!q.q||!Array.isArray(q.o))continue;
+      const a=Number.isInteger(q.a)?q.a:-1,id=await key(q.q,q.o[a]||'');
+      const subj=typeof q.s==='string'&&!/তম বিসিএস$/.test(q.s)?q.s:(f[3]||''),top=typeof q.t==='string'&&q.t.length>1?q.t:(f[4]||'');
+      const r=rows.get(id);
+      if(r){if(!r.src.some(x=>x[0]===f[1]))r.src.push([f[1],f[2]]);if(!r.t&&top)r.t=top;if(!r.s&&subj)r.s=subj}
+      else rows.set(id,{id,q:q.q,o:q.o.map(String),a,e:(q.e||'').slice(0,1500),s:subj,t:top,src:[[f[1],f[2]]]});
+    }
+    msg('ফাইল পড়া হচ্ছে: '+bn(++done)+' / '+bn(files.length));
+  };
+  for(let i=0;i<files.length;i+=8)await Promise.all(files.slice(i,i+8).map(one));
+  return [...rows.values()];
+}
+$('sync').onclick=async()=>{
+  const b=$('sync'),m=t=>$('syncMsg').textContent=t;b.disabled=true;$('sprog').hidden=false;
+  try{
+    const rows=await collect(m),ver=Date.now();
+    for(let i=0;i<rows.length;i+=220){
+      for(let tries=0;;tries++){try{await api('lib/mcq-import',{ver,rows:rows.slice(i,i+220)});break}catch(e){if(tries>=2)throw e;await new Promise(r=>setTimeout(r,1500))}}
+      $('sbar').style.width=(100*Math.min(rows.length,i+220)/rows.length)+'%';m('তোলা হচ্ছে: '+bn(Math.min(rows.length,i+220))+' / '+bn(rows.length));
+    }
+    const pr=await api('lib/mcq-prune',{ver});
+    m('✓ '+bn(rows.length)+'টি প্রশ্ন হালনাগাদ হয়েছে'+(pr.removed?', পুরোনো '+bn(pr.removed)+'টি সরানো হয়েছে':'')+'।');
+    showStats(await api('lib/stats'));if(state.q||state.tag)mcq();
+  }catch(e){m('থেমে গেছে ('+e.message+')। আবার চাপলে নতুন করে শুরু হবে।')}
+  b.disabled=false;
 };
 
 tray();start();

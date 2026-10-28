@@ -12,7 +12,10 @@
    GET  /api/lib/search?q=&subject=&kind=&chapter=&tag=&offset=  → মিলে যাওয়া অংশ (পুরো লেখা নয়, এক টুকরো)
    POST /api/lib/get    {ids:[…]}   → পুরো লেখাসহ অংশগুলো
    POST /api/lib/import {topics:[…]} → একই id আবার এলে হালনাগাদ, ডুপ্লিকেট নয় (এক বারে ১৫টি)
-   POST /api/lib/remove {ids:[…]} */
+   POST /api/lib/remove {ids:[…]}
+   সাইটের এমসিকিউ ব্যাংকও একই জায়গা থেকে খোঁজা যায়: অ্যাডমিন পাতা সাইটের JSON থেকে প্রশ্ন পড়ে lib_mcq-তে তোলে
+   POST /api/lib/mcq-import {ver, rows:[{id,q,o,a,e,s,t,src}]} (এক বারে ২২০টি) · POST /api/lib/mcq-prune {ver} → এই ver-এ না আসা পুরোনো প্রশ্ন মুছে যায়
+   GET  /api/lib/mcq?q=&offset=  · POST /api/lib/mcq-get {ids:[…]} */
 const COOKIE = 'lb_s', AGE = 180 * 86400;
 const MAX_BATCH = 300, MAX_ROWS = 3000;
 
@@ -27,10 +30,12 @@ const LIB_SCHEMA = [
   'CREATE TABLE IF NOT EXISTS lib_topics(id TEXT PRIMARY KEY, source_id TEXT, subject TEXT, exam TEXT, chapter INTEGER, chapter_title TEXT, section_no TEXT, section_title TEXT, parent_section TEXT, kind TEXT, pages TEXT, source TEXT, tags TEXT, text TEXT, updated INTEGER)',
   'CREATE TABLE IF NOT EXISTS lib_tags(topic_id TEXT NOT NULL, tag TEXT NOT NULL, PRIMARY KEY(topic_id, tag))',
   'CREATE INDEX IF NOT EXISTS lib_tags_tag ON lib_tags(tag)',
-  'CREATE INDEX IF NOT EXISTS lib_topics_sub ON lib_topics(subject, chapter)'
+  'CREATE INDEX IF NOT EXISTS lib_topics_sub ON lib_topics(subject, chapter)',
+  'CREATE TABLE IF NOT EXISTS lib_mcq(id TEXT PRIMARY KEY, q TEXT, o TEXT, a INTEGER, e TEXT, s TEXT, t TEXT, src TEXT, ver INTEGER)',
+  'CREATE TABLE IF NOT EXISTS lib_meta(k TEXT PRIMARY KEY, v TEXT)'
 ];
 // D1-এর সীমা: ফ্রি প্ল্যানে এক অনুরোধে ৫০টি কোয়েরি, এক কোয়েরিতে ১০০টি প্যারামিটার
-const LIB_PAGE = 30, LIB_IMPORT = 15, LIB_IDS = 90;
+const LIB_PAGE = 30, LIB_IMPORT = 15, LIB_IDS = 90, MCQ_IMPORT = 220, MCQ_PER_STMT = 11;
 
 const json = (o, status = 200, headers = {}) => new Response(JSON.stringify(o), {
   status, headers: {'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...headers}
@@ -203,29 +208,95 @@ async function libSearch(url, db) {
 }
 
 async function libStats(db) {
+  await db.batch(LIB_SCHEMA.map(s => db.prepare(s)));
   const q = s => db.prepare(s).all().then(r => r.results);
-  const [subjects, sources, tags, kinds] = await Promise.all([
+  const [subjects, sources, tags, kinds, mcq] = await Promise.all([
     q('SELECT subject, COUNT(*) n, COUNT(DISTINCT chapter) ch FROM lib_topics GROUP BY subject ORDER BY n DESC'),
     q('SELECT s.id, s.title, s.subject, s.exam, COUNT(t.id) n FROM lib_sources s LEFT JOIN lib_topics t ON t.source_id = s.id GROUP BY s.id ORDER BY s.subject, s.id'),
     q('SELECT tag, COUNT(*) n FROM lib_tags GROUP BY tag HAVING n > 1 ORDER BY n DESC LIMIT 60'),
-    q('SELECT kind, COUNT(*) n FROM lib_topics GROUP BY kind ORDER BY n DESC')
+    q('SELECT kind, COUNT(*) n FROM lib_topics GROUP BY kind ORDER BY n DESC'),
+    q("SELECT (SELECT COUNT(*) FROM lib_mcq) n, (SELECT v FROM lib_meta WHERE k = 'mcq_synced') synced")
   ]);
-  return json({subjects, sources, tags, kinds});
+  return json({subjects, sources, tags, kinds, mcq: mcq[0]});
+}
+
+// ---------- এমসিকিউ ----------
+const mcqOut = r => ({...r, o: JSON.parse(r.o || '[]'), src: JSON.parse(r.src || '[]')});
+
+async function mcqImport(req, db) {
+  const body = await req.json().catch(() => ({}));
+  const ver = Math.round(+body.ver) || 0;
+  const rows = (Array.isArray(body.rows) ? body.rows : []).slice(0, MCQ_IMPORT).map(r => {
+    if (!r || typeof r !== 'object' || !/^[a-f0-9]{8,40}$/.test(r.id) || !nfc(r.q) || !Array.isArray(r.o)) return null;
+    return [r.id, nfc(r.q).slice(0, 4000), JSON.stringify(r.o.slice(0, 8).map(x => nfc(String(x)).slice(0, 1000))),
+      Number.isInteger(r.a) ? r.a : -1, nfc(r.e).slice(0, 1500), nfc(r.s).slice(0, 80), nfc(r.t).slice(0, 160),
+      JSON.stringify((Array.isArray(r.src) ? r.src : []).slice(0, 40).map(x => [nfc(String(x[0])).slice(0, 200), nfc(String(x[1])).slice(0, 200)])), ver];
+  }).filter(Boolean);
+  const st = [];
+  for (let i = 0; i < rows.length; i += MCQ_PER_STMT) {
+    const part = rows.slice(i, i + MCQ_PER_STMT);
+    st.push(db.prepare('INSERT INTO lib_mcq(id, q, o, a, e, s, t, src, ver) VALUES' + part.map(() => '(?,?,?,?,?,?,?,?,?)').join(',') +
+      ' ON CONFLICT(id) DO UPDATE SET q=excluded.q, o=excluded.o, a=excluded.a, e=excluded.e, s=excluded.s, t=excluded.t, src=excluded.src, ver=excluded.ver')
+      .bind(...part.flat()));
+  }
+  if (st.length) await db.batch(st);
+  return json({ok: true, saved: rows.length});
+}
+
+async function mcqSearch(url, db) {
+  const words = nfc(url.searchParams.get('q') || '').split(/\s+/).filter(Boolean).slice(0, 6);
+  const off = Math.max(0, Math.min(5000, parseInt(url.searchParams.get('offset')) || 0));
+  if (!words.length) return json({total: 0, offset: 0, items: []});
+  const where = [], args = [], score = [], sargs = [];
+  for (const w of words) {
+    const l = '%' + likeEsc(w) + '%';
+    where.push("(q LIKE ? ESCAPE '\\' OR o LIKE ? ESCAPE '\\' OR t LIKE ? ESCAPE '\\')"); args.push(l, l, l);
+    score.push("(CASE WHEN t LIKE ? ESCAPE '\\' THEN 5 ELSE 0 END + CASE WHEN q LIKE ? ESCAPE '\\' THEN 3 ELSE 0 END + 1)"); sargs.push(l, l);
+  }
+  const w = 'WHERE ' + where.join(' AND ');
+  const total = (await db.prepare(`SELECT COUNT(*) n FROM lib_mcq ${w}`).bind(...args).first()).n;
+  const {results} = await db.prepare(`SELECT id, q, o, a, e, s, t, src, ${score.join(' + ')} score FROM lib_mcq ${w}
+      ORDER BY score DESC, length(src) DESC, id LIMIT ? OFFSET ?`).bind(...sargs, ...args, LIB_PAGE, off).all();
+  return json({total, offset: off, items: results.map(mcqOut)});
 }
 
 async function lib(path, req, url, env, db, u) {
   if (!u) return json({error: 'login'}, 401);
   if (!isAdmin(u, env)) return json({error: 'admin'}, 403);
-  await db.batch(LIB_SCHEMA.map(s => db.prepare(s)));
   const m = req.method;
   if (path === 'lib/stats' && m === 'GET') return libStats(db);
+  try { return await libRoute(path, m, req, url, db); }
+  catch (e) {
+    // টেবিল এখনো তৈরি হয়নি: একবার তৈরি করে আবার চেষ্টা (stats পাতা খুললেই তৈরি হয়, তাই সাধারণত লাগে না)
+    if (!/no such table/i.test(String(e && e.message))) throw e;
+    await db.batch(LIB_SCHEMA.map(s => db.prepare(s)));
+    return await libRoute(path, m, req, url, db);
+  }
+}
+
+async function libRoute(path, m, req, url, db) {
   if (path === 'lib/search' && m === 'GET') return libSearch(url, db);
-  if (path === 'lib/import' && m === 'POST') return libImport(req, db);
-  const ids = m === 'POST' ? await req.json().then(b => (Array.isArray(b.ids) ? b.ids : []).map(String).slice(0, LIB_IDS)).catch(() => []) : [];
+  if (path === 'lib/import' && m === 'POST') return libImport(req.clone(), db);
+  if (path === 'lib/mcq' && m === 'GET') return mcqSearch(url, db);
+  if (path === 'lib/mcq-import' && m === 'POST') return mcqImport(req.clone(), db);
+  if (path === 'lib/mcq-prune' && m === 'POST') {
+    const {ver} = await req.clone().json().catch(() => ({}));
+    if (!(+ver > 0)) return json({error: 'ver'}, 400);
+    const r = await db.prepare('DELETE FROM lib_mcq WHERE ver IS NOT ?').bind(Math.round(+ver)).run();
+    await db.prepare("INSERT INTO lib_meta(k, v) VALUES('mcq_synced', ?) ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(String(Date.now())).run();
+    return json({ok: true, removed: r.meta && r.meta.changes || 0});
+  }
+  const ids = m === 'POST' ? await req.clone().json().then(b => (Array.isArray(b.ids) ? b.ids : []).map(String).slice(0, LIB_IDS)).catch(() => []) : [];
   if (path === 'lib/get' && m === 'POST') {
     if (!ids.length) return json({items: []});
     const {results} = await db.prepare(`SELECT * FROM lib_topics WHERE id IN (${ids.map(() => '?').join(',')})`).bind(...ids).all();
     const by = Object.fromEntries(results.map(r => [r.id, {...r, tags: r.tags.split('; ').filter(Boolean)}]));
+    return json({items: ids.map(i => by[i]).filter(Boolean)});
+  }
+  if (path === 'lib/mcq-get' && m === 'POST') {
+    if (!ids.length) return json({items: []});
+    const {results} = await db.prepare(`SELECT * FROM lib_mcq WHERE id IN (${ids.map(() => '?').join(',')})`).bind(...ids).all();
+    const by = Object.fromEntries(results.map(r => [r.id, mcqOut(r)]));
     return json({items: ids.map(i => by[i]).filter(Boolean)});
   }
   if (path === 'lib/remove' && m === 'POST') {
