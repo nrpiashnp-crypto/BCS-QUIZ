@@ -336,5 +336,6 @@ window.addEventListener('hashchange',()=>{route();window.scrollTo(0,0)});
 window.addEventListener('beforeunload',e=>{if($('exam')&&!$('exam').hidden){e.preventDefault();e.returnValue=''}});
 fetch('data/catalog.json').then(r=>r.json()).then(c=>{CATALOG=c;route()}).catch(()=>{V().innerHTML='<p class="load">তালিকা লোড হয়নি। আবার চেষ্টা করুন।</p>'});
 </script>
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "6b92edeb250b475e9d759f64df8eb91e"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
 </html>
