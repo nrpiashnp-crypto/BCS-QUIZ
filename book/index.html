@@ -87,6 +87,15 @@ h2{font-family:var(--display);font-weight:400;font-size:24px;margin:38px 0 12px;
 footer{text-align:center;color:var(--muted);font-size:14px;margin-top:40px}
 footer a{color:inherit}
 @media (min-width:760px){.top{grid-template-columns:260px 1fr;text-align:left;justify-items:start}.cover{width:260px}.feat{grid-template-columns:1fr 1fr}.links{grid-template-columns:1fr 1fr}}
+/* FAQ: plain question rows, answer opens below */
+.faq{max-width:640px;margin-left:auto;margin-right:auto}
+.faq details{border-bottom:1px solid var(--rule)}
+.faq summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:12px;padding:14px 0;font-weight:600}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";color:var(--gold);font-weight:400;font-size:1.3em;line-height:1}
+.faq details[open] summary::after{content:"−"}
+.faq details p{margin:0 0 16px;color:var(--muted)}
+.faq h2{margin-bottom:4px}
 </style>
 <script>
 /* Open at the top unless the visitor just tapped a link on this site that points to a section. */
@@ -161,6 +170,14 @@ footer a{color:inherit}
     <p>নম্বরটি লিখে বা স্ক্রিনশট রেখে দিন। এখন WhatsApp-এ পাঠিয়ে অর্ডারটি নিশ্চিত করুন, আমরা বিকাশ মিলিয়ে উত্তর দেব।</p>
     <a class="wa" id="pwa" href="#" target="_blank" rel="noopener">WhatsApp-এ নিশ্চিত করুন →</a>
   </div>
+</section>
+
+<section id="faq" class="faq">
+  <h2>সাধারণ জিজ্ঞাসা</h2>
+  <details><summary>বই কবে হাতে পাব?</summary><p>এটি প্রি-অর্ডারের বই। ১০ জানুয়ারি ২০২৭-এর মধ্যে আপনার ঠিকানায় পৌঁছে দিতে আমরা সর্বোচ্চ চেষ্টা করছি, সারা দেশে ডেলিভারি ফ্রি। দেরি হলে আমরা নিজেরাই ফোন করব, আর আপনি চাইলে পুরো টাকা ফেরত দেব।</p></details>
+  <details><summary>টাকা কীভাবে পাঠাব?</summary><p>আপাতত শুধু বিকাশে। ০১৭৫৪-১১৯৮৭৮ নম্বরে সেন্ড মানি করুন, প্রতি কপি ৳৩৫০। তারপর প্রি-অর্ডার ফর্মে বিকাশ নম্বর আর ট্রানজেকশন আইডি দিয়ে WhatsApp-এ পাঠান, আমরা মিলিয়ে নিশ্চিত করব।</p></details>
+  <details><summary>বইয়ে কি লিখিত পরীক্ষার অংশ আছে?</summary><p>হ্যাঁ। প্রিলির পর লিখিতের প্রস্তুতির সময় খুব কম থাকে, তাই প্রিলির বিজ্ঞানের যে অংশ লিখিতের সাথে মেলে, তার পুরোটাই এই বইয়ে আছে। লিখিতে যে অংশ শুধু আলাদা, তার জন্য পরে আলাদা বই বের হবে।</p></details>
+  <details><summary>কেনার আগে বইটা দেখা যায়?</summary><p>হ্যাঁ। বইয়ের <a href="/sample/sound/">শব্দ অধ্যায়টি পুরোটা ফ্রি পড়তে পারেন</a>, আর সাইটের সব অধ্যায়ভিত্তিক পরীক্ষা রেজিস্ট্রেশন ছাড়াই ফ্রি।</p></details>
 </section>
 
 <h2>এখনই যা করতে পারেন</h2>
