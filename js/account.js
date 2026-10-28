@@ -33,6 +33,10 @@
     var st=document.createElement('style');
     st.textContent='.lba-note{margin:12px auto 4px;max-width:560px;padding:10px 14px;border:1px dashed var(--rule,#d9d6cf);border-radius:12px;font-size:14.5px;line-height:1.6;text-align:center;color:var(--muted,#5f6366)}'+
       '.lba-note a{color:var(--navy,#13294b);font-weight:600;white-space:nowrap}'+
+      '.lba-card{display:flex;flex-direction:column;align-items:center;gap:8px;border-style:solid;border-color:#e6c97a;background:rgba(230,201,122,.10);padding:16px 16px 12px}'+
+      '.lba-card b{font-size:17px;color:var(--ink,#1d1f21)}.lba-card small{font-size:13px}.lba-g{min-height:44px;display:grid;place-items:center}'+
+      '.lba-x{background:none;border:0;padding:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer}'+
+      '@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .lba-card b{color:#f1efe9}}:root[data-theme="dark"] .lba-card b{color:#f1efe9}'+
       '@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .lba-note a{color:#e6c97a}}:root[data-theme="dark"] .lba-note a{color:#e6c97a}'+
       'nav.sec a.lba-me{display:grid;place-items:center;flex-shrink:0;width:30px;height:30px;margin-left:4px;border-radius:50%;background:rgba(230,201,122,.18);color:#e6c97a;text-decoration:none;overflow:hidden;padding:0;align-self:center}'+
       '.lba-me img{width:100%;height:100%;object-fit:cover}.lba-me svg{width:18px;height:18px}'+
@@ -40,15 +44,65 @@
     document.head.appendChild(st);
   }
 
-  // ফলের নিচে এক লাইন: লগইন না থাকলে কী পাবেন, থাকলে জমা হয়েছে
-  function note(){
-    var box=document.getElementById('scorebox');if(!box)return;
+  // ফলের নিচে: লগইন থাকলে এক লাইন "জমা হলো"; না থাকলে একটা কার্ড, সেখানেই Google বোতাম (পাতা ছেড়ে যেতে হয় না)।
+  // সার্ভারে লগইন চালু না থাকলে (cid নেই) কিছুই দেখায় না, তাই অর্ধেক কাজ করা বোতাম কেউ দেখে না।
+  var cidP=null;
+  function cid(){
+    if(!cidP)cidP=fetch('/api/me',{credentials:'same-origin',cache:'no-store'}).then(function(r){return r.ok?r.json():{}})
+      .then(function(j){if(j.user)set('lb:u',j.user);return j.cid||''}).catch(function(){return ''});
+    return cidP;
+  }
+  function slot(){
+    var box=document.getElementById('scorebox');if(!box)return null;
     style();
     var el=box.parentNode.querySelector('.lba-note');
-    if(!el){el=document.createElement('p');el.className='lba-note';box.after(el)}
-    el.innerHTML=user()
-      ?'✓ ফলটি আপনার ড্যাশবোর্ডে জমা হলো। <a href="/account/">ড্যাশবোর্ড দেখুন →</a>'
-      :'লগইন করলে প্রতিটি ফল, অধ্যায়ভিত্তিক অগ্রগতি আর দুর্বল জায়গা সব ফোনে জমা থাকবে। <a href="/account/">লগইন করুন →</a>';
+    if(!el){el=document.createElement('div');el.className='lba-note';box.after(el)}
+    return el;
+  }
+  function done(el){
+    el.className='lba-note';
+    el.innerHTML='✓ ফলটি আপনার ড্যাশবোর্ডে জমা হলো। <a href="/account/">ড্যাশবোর্ড দেখুন →</a>';
+  }
+  function note(){
+    var el=slot();if(!el)return;
+    if(user())return done(el);
+    if(get('lb:nolog',0)>Date.now()){el.remove();return}
+    el.hidden=true;
+    cid().then(function(id){
+      if(user()){el.hidden=false;return done(el)}
+      if(!id){el.remove();return}
+      el.className='lba-note lba-card';el.hidden=false;
+      el.innerHTML='<b>আপনার অগ্রগতি সেভ করে রাখুন</b>'+
+        '<span>Google দিয়ে একবার লগইন করলে এই ফলসহ সব পরীক্ষার হিসাব, অধ্যায়ভিত্তিক অগ্রগতি আর দুর্বল জায়গা জমা থাকবে। ফোন বদলালেও হারাবে না।</span>'+
+        '<span class="lba-g"></span>'+
+        '<small>লগইন ছাড়াও সব পরীক্ষা দেওয়া যাবে। পাসওয়ার্ড লাগে না। <button type="button" class="lba-x">এখন না</button></small>';
+      el.querySelector('.lba-x').onclick=function(){set('lb:nolog',Date.now()+7*864e5);el.remove()};
+      gis(id,el);
+    });
+  }
+  function gis(id,el){
+    var g=el.querySelector('.lba-g');
+    var go=function(){
+      google.accounts.id.initialize({client_id:id,ux_mode:'popup',context:'signin',callback:function(res){login(res,el)}});
+      google.accounts.id.renderButton(g,{theme:'filled_blue',size:'large',shape:'pill',text:'continue_with',locale:'bn',width:260});
+    };
+    if(window.google&&google.accounts)return go();
+    var s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.async=true;s.onload=go;
+    s.onerror=function(){g.innerHTML='<a href="/account/">লগইন করুন →</a>'};document.head.appendChild(s);
+  }
+  function login(res,el){
+    var g=el.querySelector('.lba-g');g.textContent='লগইন হচ্ছে…';
+    fetch('/api/login',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({credential:res.credential})})
+      .then(function(r){return r.json().then(function(j){if(!r.ok||!j.user)throw 0;return j})})
+      .then(function(j){
+        set('lb:u',j.user);
+        // এই ফোনে 'lb:att'-এ যা আছে (এইমাত্র দেওয়া পরীক্ষাসহ) সব পাঠানো হয়; একই k সার্ভারে দুবার থাকে না
+        var q=get('lb:q',[]),have={};q.forEach(function(a){have[a.k]=1});
+        get('lb:att',[]).forEach(function(a){if(!have[a.k])q.push(a)});
+        set('lb:q',q.slice(-1000));flush();done(el);
+        var b=document.querySelector('.lba-me');if(b&&j.user.pic)b.innerHTML='<img src="'+j.user.pic.replace(/"/g,'')+'" alt="" referrerpolicy="no-referrer">';
+      })
+      .catch(function(){g.innerHTML='লগইন হয়নি। <a href="/account/">আবার চেষ্টা করুন →</a>'});
   }
 
   function save(r){
