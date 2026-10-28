@@ -79,6 +79,11 @@ h2{font-family:var(--display);font-weight:400;font-size:24px;margin:38px 0 12px;
 .done .oid{font-family:ui-monospace,Menlo,monospace;font-size:26px;letter-spacing:.06em;color:var(--ink);background:var(--soft);border-radius:10px;padding:8px;display:inline-block}
 .done .wa{display:inline-flex;margin-top:6px}
 .f .wa:disabled{opacity:.6}
+.pst{margin:4px auto 12px;max-width:440px;border-radius:12px;padding:10px 14px;font-size:16px;background:var(--soft);color:var(--ink)}
+.pst.ok{background:#e3f4ea;color:#14532d}.pst.bad{background:#fdecea;color:#7f1d1d}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .pst.ok{background:#173524;color:#bfe8cf}:root:not([data-theme="light"]) .pst.bad{background:#3a1d1b;color:#f6c9c4}}
+:root[data-theme="dark"] .pst.ok{background:#173524;color:#bfe8cf}:root[data-theme="dark"] .pst.bad{background:#3a1d1b;color:#f6c9c4}
+.pst .again{display:block;margin:8px auto 0;background:none;border:1px solid currentColor;color:inherit;border-radius:8px;padding:6px 14px;font:inherit;font-size:15px;cursor:pointer}
 .note{font-size:13px;color:var(--muted);margin:0;text-align:center}
 .hero-po{display:inline-block;margin-top:14px;background:var(--gold-hi);color:#13294b;text-decoration:none;font-weight:600;border-radius:10px;padding:11px 22px}
 footer{text-align:center;color:var(--muted);font-size:14px;margin-top:40px}
@@ -154,7 +159,8 @@ footer a{color:inherit}
     <h3>অর্ডার জমা হয়েছে</h3>
     <p>আপনার অর্ডার নম্বর</p>
     <p class="oid" id="poid"></p>
-    <p>নম্বরটি লিখে বা স্ক্রিনশট রেখে দিন। এখন WhatsApp-এ পাঠিয়ে অর্ডারটি নিশ্চিত করুন, আমরা বিকাশ মিলিয়ে উত্তর দেব।</p>
+    <div class="pst" id="pst" role="status" hidden></div>
+    <p id="pmsg">নম্বরটি লিখে বা স্ক্রিনশট রেখে দিন। এখন WhatsApp-এ পাঠিয়ে অর্ডারটি নিশ্চিত করুন, আমরা বিকাশ মিলিয়ে উত্তর দেব।</p>
     <a class="wa" id="pwa" href="#" target="_blank" rel="noopener">WhatsApp-এ নিশ্চিত করুন →</a>
   </div>
 </section>
@@ -203,8 +209,28 @@ $('pof').addEventListener('submit',function(e){e.preventDefault();
   var show=function(){$('pof').hidden=true;$('poid').textContent=o.id;$('pwa').href='https://wa.me/'+PH+'?text='+encodeURIComponent(m);$('pdone').hidden=false;$('pdone').scrollIntoView({behavior:'smooth',block:'center'})};
   $('psub').disabled=true;$('psub').textContent='জমা হচ্ছে…';
   if(!SHEET_URL){show();return}
-  fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(o)}).then(show,show);
+  // খাতা এখনই বিকাশের এসএমএসের সঙ্গে TrxID মিলিয়ে উত্তর দেয়; উত্তর পড়া না গেলে আগের মতো WhatsApp-এ নিশ্চিত করা
+  fetch(SHEET_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(o)})
+    .then(function(r){return r.json()}).then(function(j){show();tries=0;state(j&&j.status,o)},function(){show()});
 });
+var tries=0;
+function state(st,o){var b=$('pst'),k=st==='paid'?'ok':(st==='short'||st==='used'?'bad':''),wa='',again=false;
+  if(!st||st==='manual')return;
+  if(st==='paid'){b.innerHTML='<b>✓ বিকাশ পেমেন্ট মিলেছে।</b> আপনার প্রি-অর্ডার নিশ্চিত, আর কিছু করতে হবে না।';wa='কোনো প্রশ্ন থাকলে WhatsApp-এ লিখতে পারেন।'}
+  else if(st==='wait'){tries++;
+    if(tries<=18){b.textContent='বিকাশের পেমেন্ট মিলিয়ে দেখা হচ্ছে… সাধারণত এক মিনিটের মধ্যে হয়ে যায়।';setTimeout(function(){
+      fetch(SHEET_URL+'?id='+encodeURIComponent(o.id)).then(function(r){return r.json()}).then(function(j){state(j&&j.status,o)},function(){state('wait',o)})},10000)}
+    else b.textContent='এই আইডির পেমেন্ট এখনো আমাদের কাছে পৌঁছায়নি। চিন্তা করবেন না, অর্ডার জমা আছে; বিকাশ মিলিয়ে আমরা আপনাকে জানাব।';
+    wa='চাইলে WhatsApp-এ অর্ডার নম্বর পাঠিয়ে রাখুন।'}
+  else if(st==='short'){b.innerHTML='<b>পাঠানো টাকা অর্ডারের চেয়ে কম পেয়েছি।</b> বাকি টাকা পাঠিয়ে WhatsApp-এ অর্ডার নম্বর আর নতুন ট্রানজেকশন আইডি জানান।'}
+  else if(st==='used'){b.innerHTML='<b>এই ট্রানজেকশন আইডি দিয়ে আগেই একটি অর্ডার জমা হয়েছে।</b> ভুল হলে সঠিক আইডি দিয়ে আবার জমা দিন, না হলে WhatsApp-এ জানান।';again=true}
+  else if(st==='check'){b.innerHTML='<b>টাকা পেয়েছি</b>, তবে যে নম্বর থেকে এসেছে সেটা ফর্মের নম্বরের সঙ্গে মেলেনি। আমরা মিলিয়ে দেখে আপনাকে ফোন করব।';wa='চাইলে WhatsApp-এ জানিয়ে রাখুন।'}
+  b.className='pst '+k;b.hidden=false;$('pmsg').hidden=!wa;$('pmsg').textContent=wa;
+  var d=$('pdone');d.querySelector('.ck').style.display=again?'none':'';d.querySelector('h3').textContent=again?'ট্রানজেকশন আইডি মেলেনি':'অর্ডার জমা হয়েছে';
+  $('pwa').textContent=st==='paid'?'WhatsApp-এ লিখুন →':'WhatsApp-এ নিশ্চিত করুন →';
+  if(again){var a=document.createElement('button');a.className='again';a.type='button';a.textContent='আবার জমা দিন';
+    a.onclick=function(){$('pdone').hidden=true;$('pof').hidden=false;$('psub').disabled=false;$('psub').textContent='অর্ডার জমা দিন →';$('pt').focus()};b.appendChild(a)}
+}
 })();
 </script>
 </body>
