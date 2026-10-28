@@ -32,6 +32,7 @@ body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);f
 .bar{background:var(--navy);display:flex;align-items:center;justify-content:space-between;padding:8px 16px;padding-top:max(8px,env(safe-area-inset-top,0px))}
 .bar img{width:110px;height:auto;display:block}
 .bar a.h{color:#e6c97a;text-decoration:none;font-size:14px;font-weight:500}
+.bar nav.sec{display:flex;gap:2px;flex-shrink:0}.bar nav.sec a{color:#e6c97a;text-decoration:none;font-size:13px;font-weight:500;padding:5px 7px;border-radius:7px;white-space:nowrap;line-height:1.2}.bar nav.sec a[aria-current]{background:rgba(230,201,122,.2);color:#fff}@media(max-width:360px){.bar img{width:88px}.bar nav.sec a{font-size:12px;padding:4px 5px}}
 .wrap{max-width:860px;margin:0 auto;padding:26px 16px 60px}
 
 .wrap{max-width:760px}
@@ -60,7 +61,7 @@ h1{font-family:var(--display);font-weight:400;font-size:30px;margin:4px 0 2px;te
 </style>
 </head>
 <body>
-<div class="bar"><a href="/"><img src="/img/logo/final-onnavy-transparent.svg" alt="লিয়ানা বুকস" width="110" height="80"></a><a class="h" href="/">← হোম</a></div>
+<div class="bar"><a href="/"><img src="/img/logo/final-onnavy-transparent.svg" alt="লিয়ানা বুকস" width="110" height="80"></a><nav class="sec" aria-label="সাইটের অংশ"><a href="/bcs/">বিসিএস</a><a href="/jobs/">চাকরি</a><a href="/science/">বিজ্ঞান</a><a href="/running/">চলমান</a></nav></div>
 <div class="wrap">
 <h1>কোন পরীক্ষা দেবেন?</h1>
 <p class="sub">সব পরীক্ষা সম্পূর্ণ ফ্রি · রেজিস্ট্রেশন লাগে না</p>
