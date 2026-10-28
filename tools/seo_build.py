@@ -273,7 +273,7 @@ for e in jobs_ok:
     title = f'{name}: প্রশ্ন ও সমাধান · লিয়ানা বুকস'
     desc = (f'{name}{part}: {bn(len(Q))}টি এমসিকিউ প্রশ্নের সঠিক উত্তর আর বিস্তারিত ব্যাখ্যা। '
             f'{kind} প্রস্তুতির জন্য ফ্রি অনলাইন মডেল টেস্ট, সময় আর নেগেটিভ মার্কিংসহ।')
-    note = (f' {esc(e["note"])}।' if e.get('note') else '') + ('' if e.get('full') else ' পরীক্ষার যতগুলো প্রশ্ন পাওয়া গেছে, ততগুলোই দেওয়া হয়েছে।')
+    note = f' {esc(e["note"])}।' if e.get('note') else ''
     body, toc = by_subject(Q)
     same = [x for x in jobs_ok if x['org'] == e['org'] and x['id'] != e['id']]
     near = [x for x in jobs_ok if x['cat'] == e['cat'] and x['org'] != e['org']][:30]
@@ -315,7 +315,7 @@ for slug, L in series.items():
         f'{(bdate(x["date"]) + " · ") if x.get("date") else ""}{bn(len(jq(x)))}টি প্রশ্ন{"" if x.get("full") else " (প্রাপ্ত)"}</span></li>' for x in L)
     tbl = subject_table(full, jq)
     basis = (f'নিচের হিসাব {bn(len(full))}টি পূর্ণ প্রশ্নপত্র থেকে।' if any(x.get('full') for x in L)
-             else 'সব প্রশ্নপত্র পূর্ণ পাওয়া যায়নি, তাই হিসাবটা প্রাপ্ত প্রশ্ন থেকে, মোটামুটি ধারণার জন্য।')
+             else '')
     near = [x for x in series if x != slug and series[x][0]['cat'] == e0['cat']]
     rel = (f'<h2>আরও {esc(CATN[e0["cat"]])} পরীক্ষা: সব বছর একসঙ্গে</h2><ul class="list">' +
            ''.join(f'<li><a href="/jobs/{x}/">{esc(sname(series[x][0]))}</a></li>' for x in near) + '</ul>') if near else ''
@@ -324,7 +324,7 @@ for slug, L in series.items():
 <h2>সাল অনুযায়ী প্রশ্ন ও সমাধান</h2>
 <ul class="list">{rows}</ul>
 <h2>কোন বিষয় থেকে কত প্রশ্ন আসে</h2>
-<p>{basis} প্রস্তুতির সময় কোন বিষয়ে কতটা জোর দেবেন, তা ঠিক করতে কাজে লাগবে।</p>
+<p>{basis + ' ' if basis else ''}প্রস্তুতির সময় কোন বিষয়ে কতটা জোর দেবেন, তা ঠিক করতে কাজে লাগবে।</p>
 {tbl}
 <a class="cta" href="/jobs/{e0['id']}/">সাম্প্রতিক পরীক্ষার প্রশ্ন দেখুন →</a>
 {rel}"""
@@ -351,7 +351,7 @@ body = f"""<h1>বিসিএস প্রিলিমিনারি প্র
 <p class="lead">{bn(len(bcat))}টি বিসিএস প্রিলিমিনারি পরীক্ষার {bn(nq)}টি প্রশ্ন, সঠিক উত্তর আর প্রতিটির ব্যাখ্যা। প্রতিটি পরীক্ষা আসল সময় আর −০.৫ নেগেটিভ মার্কিংসহ ফ্রি দেওয়া যায়।</p>
 <a class="cta" href="/bcs/">সময় ধরে পরীক্ষা দিন →</a>
 <h2>কোন বিষয় থেকে কত প্রশ্ন আসে</h2>
-<p>৩৫তম বিসিএস থেকে প্রিলি ২০০ নম্বরের, ১০টি বিষয়ে। নিচের গড় {bn(len(new))}টি সাধারণ বিসিএস প্রশ্নপত্র ({bn(min(e['no'] for e in new))}তম-{bn(max(e['no'] for e in new))}তম, বিশেষ বিসিএস বাদে) থেকে গোনা। বাতিল হওয়া প্রশ্ন বাদ, তাই কোনো কোনো বিষয়ে নির্ধারিত নম্বরের চেয়ে সামান্য কম দেখাতে পারে।</p>
+<p>৩৫তম বিসিএস থেকে প্রিলি ২০০ নম্বরের, ১০টি বিষয়ে। নিচের গড় {bn(len(new))}টি সাধারণ বিসিএস প্রশ্নপত্র ({bn(min(e['no'] for e in new))}তম-{bn(max(e['no'] for e in new))}তম, বিশেষ বিসিএস বাদে) থেকে গোনা।</p>
 {subject_table(new, bq)}
 <h2>সব বিসিএস প্রিলির প্রশ্ন ও সমাধান</h2>
 <ul class="list">{rows}</ul>"""
@@ -479,6 +479,11 @@ for d in hand:
     elif d == 'jobs':
         extra = '<a href="/questions/#gb" style="color:inherit;opacity:.75">ব্যাংক ও সরকারি চাকরির প্রশ্ন ও সমাধান পড়ুন</a> · '
     s = re.sub(r'<!--seo-links-->.*?<!--/seo-links-->\n?', '', s, flags=re.S)
+    # a plain "লিয়ানা বুকস · lyannabooks.com" footer would sit right above this block as a second footer line;
+    # drop it and put the name at the start of the block instead (pages with a fuller footer, like home, keep theirs)
+    s = re.sub(r'\n?<footer>\s*(?:<p>)?[^<]*(?:<a href="/">)?lyannabooks\.com(?:</a>)?[^<]*(?:</p>)?\s*</footer>', '', s)
+    if not re.search(r'<footer\b[^>]*>(?:(?!</footer>).)*lyannabooks\.com', s, flags=re.S):
+        extra = '<a href="/" style="color:inherit;opacity:.75">লিয়ানা বুকস</a> · ' + extra
     block = LINKS.format(extra=extra, fb='' if FB in s else FB_LINK)
     s = s.replace('</body>', block + '\n</body>', 1)
     if s != o: wr(p, s)
