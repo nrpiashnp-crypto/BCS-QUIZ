@@ -205,7 +205,6 @@ function home(tab){
   const card=e=>`<a class="oc ex" href="#/x/${e.id}"><span class="yr">${nth(e.no)}</span><span class="mid"><span class="n">${e.special?'বিশেষ বিসিএস':'বিসিএস'} প্রিলি${e.special&&/\(/.test(e.title)?' '+e.title.replace(/^.*?(\(.*\)).*$/,'$1'):''}</span><span class="src">${bn(e.year)} · ${bn(e.time)} মিনিট</span><span class="cnt">${bn(e.n)} প্রশ্ন</span></span><span class="go">শুরু →</span></a>`;
   const L=CATALOG.exams,S=subjects();tab=tab||'x';
   V().innerHTML=`<section class="hero"><h1>বিসিএস প্রিলিমিনারি: ১০ম থেকে ৫০তম</h1>
-  <p>বিগত সব বিসিএস প্রিলির প্রশ্নে আসল পরীক্ষার মতো অনলাইন পরীক্ষা: নির্ধারিত সময়, ভুলে −০.৫ নম্বর, শেষে ফল আর প্রতিটি প্রশ্নের ব্যাখ্যা। সব ফ্রি।</p>
   <div class="stats3"><span><b>${bn(L.length)}</b>টি পরীক্ষা</span><span><b>${bnc(sum(L))}</b>টি প্রশ্ন</span><span><b>${bn(S.length)}</b>টি বিষয়</span></div></section>
   <div class="chips tabs" id="tabs"><button type="button" class="chip" data-t="x" aria-pressed="${tab==='x'}">পরীক্ষা অনুযায়ী</button><button type="button" class="chip" data-t="s" aria-pressed="${tab==='s'}">বিষয় অনুযায়ী</button></div>
   <div id="tx"${tab==='x'?'':' hidden'}><div class="ogrid three">${L.filter(e=>e.no>=41).map(card).join('')}</div><details class="older"><summary>আরও পুরোনো বিসিএস (১০ম-৪০তম) দেখুন</summary><div class="ogrid three">${L.filter(e=>e.no<41).map(card).join('')}</div></details></div>

@@ -215,7 +215,6 @@ const bnc=n=>bn(n.toLocaleString('en-IN'));
 function home(){
   const L=exams(),orgs=new Set(L.map(e=>catOf(e)+e.org)).size;
   V().innerHTML=`<section class="hero"><h1>সব চাকরির পরীক্ষার প্রশ্ন, এক জায়গায়</h1>
-  <p>ব্যাংক, সরকারি চাকরি, পিএসসি নন-ক্যাডার আর শিক্ষক নিয়োগ ও নিবন্ধনের বিগত প্রশ্নে আসল পরীক্ষার মতো অনলাইন পরীক্ষা: সময়, নেগেটিভ মার্কিং, শেষে ফল আর প্রতিটি প্রশ্নের ব্যাখ্যা। সব ফ্রি।</p>
   <div class="stats3"><span><b>${bnc(L.length)}</b>টি পরীক্ষা</span><span><b>${bnc(sum(L))}</b>টি প্রশ্ন</span><span><b>${bnc(orgs)}</b>টি প্রতিষ্ঠান</span></div></section>
   <div class="chips cats"><a class="chip" href="#/all">সব পরীক্ষা</a>${Object.entries(CAT).map(([k,c])=>`<a class="chip" href="#/${k}">${c.t}</a>`).join('')}</div>
   `+listHTML('all',true);
