@@ -149,7 +149,7 @@ footer a{color:inherit}
     <p class="resp">এই প্রি-অর্ডার, সময়মতো বই পৌঁছানো আর প্রয়োজনে টাকা ফেরতের সম্পূর্ণ দায়িত্ব <b>লিয়ানা বুকস</b>-এর।</p>
   </div>
   <ol class="steps">
-    <li><b>বিকাশে টাকা পাঠান</b> <span>০১৭৫৪-১১৯৮৭৮ নম্বরে সেন্ড মানি, প্রতি কপি ৳৩৫০</span></li>
+    <li><b>বিকাশে টাকা পাঠান</b> <span>০১৭৫৪-১১৯৮৭৮ নম্বরে সেন্ড মানি, প্রতি কপি <span id="pstep">৳৩৫০</span></span></li>
     <li><b>নিচের ফর্মটি পূরণ করে জমা দিন</b> <span>আপনার একটি অর্ডার নম্বর তৈরি হবে</span></li>
     <li><b>WhatsApp-এ নিশ্চিত করুন</b> <span>অর্ডার নম্বরসহ বার্তা তৈরি হয়ে যাবে, শুধু পাঠিয়ে দিন</span></li>
   </ol>
@@ -161,6 +161,8 @@ footer a{color:inherit}
     <label>বিস্তারিত ঠিকানা *<textarea id="pa" rows="2" autocomplete="street-address" placeholder="বাসা/হোল্ডিং, রোড, এলাকা বা গ্রাম, ডাকঘর"></textarea></label>
     <p class="zone" id="pzone" hidden></p>
     <div class="row"><label>কত কপি *<input id="pq" value="১" inputmode="numeric"></label><label>যে বিকাশ নম্বর থেকে পাঠিয়েছেন *<input id="pb" placeholder="০১XXXXXXXXX" inputmode="tel"></label></div>
+    <label>ছাড়ের কোড<input id="pc" autocapitalize="characters" autocomplete="off" placeholder="থাকলে লিখুন, যেমন LB-SOUND"></label>
+    <p class="zone" id="pcm" hidden></p>
     <label>বিকাশ ট্রানজেকশন আইডি *<input id="pt" autocapitalize="characters" placeholder="যেমন 9AB12CD3EF"></label>
     <input id="hp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px">
     <p class="tot" id="ptot">মোট পাঠাবেন: ৳৩৫০ (ডেলিভারি ফ্রি)</p>
@@ -198,7 +200,12 @@ footer a{color:inherit}
 (function(){
 // Paste the Google Apps Script web-app URL here once deployed (see website/প্রি-অর্ডার/ guide). Empty = WhatsApp only.
 var SHEET_URL='';
-var P=350,PH='8801754119878',$=function(i){return document.getElementById(i)},G=null;
+// কোন পাতা থেকে অর্ডার এল: ?from=sound-result, না থাকলে আগে জমা রাখা উৎস, না থাকলে আগের পাতার ঠিকানা
+var SRC=(function(){var q=new URLSearchParams(location.search).get('from')||'',k='lb:from';
+  try{if(q)localStorage.setItem(k,q);else q=localStorage.getItem(k)||''}catch(e){}
+  if(!q&&document.referrer.indexOf(location.origin)===0)q=new URL(document.referrer).pathname;
+  return q.replace(/[^\w\/-]/g,'').slice(0,40)})();
+var P0=350,OFF=20,P=P0,PH='8801754119878',$=function(i){return document.getElementById(i)},G=null;
 var en=function(x){return String(x).replace(/[০-৯]/g,function(d){return '০১২৩৪৫৬৭৮৯'.indexOf(d)})};
 var bn=function(x){return String(x).replace(/[0-9]/g,function(d){return '০১২৩৪৫৬৭৮৯'[d]})};
 var mob=function(v){v=en(v).replace(/[^0-9]/g,'').replace(/^88(?=01)/,'');return /^01[3-9][0-9]{8}$/.test(v)?v:''};
@@ -215,7 +222,15 @@ $('pds').addEventListener('change',function(){var d=this.value,u=d&&G.u[d]?G.u[d
   opts($('pup'),d?m.concat(r).concat(['অন্য (ঠিকানায় লিখুন)']).map(function(x){return [x,x]}):[],d?'বাছুন':'আগে জেলা বাছুন');zone();});
 function zoneOf(){return $('pds').value?(+$('pds').value===G.dhaka?'ঢাকার ভেতরে':'ঢাকার বাইরে'):''}
 function zone(){var z=zoneOf();$('pzone').hidden=!z;$('pzone').textContent=z?z+' · ডেলিভারি ফ্রি':''}
-$('pq').addEventListener('input',function(){var n=qty();$('ptot').textContent=n?'মোট পাঠাবেন: ৳'+bn(n*P)+' (ডেলিভারি ফ্রি)':'কত কপি, সংখ্যায় লিখুন'});
+// পরীক্ষার রেজাল্ট কার্ডের কোড (LB-<অধ্যায়>): প্রতি কপিতে ৳২০ ছাড়। নতুন অধ্যায় এলে CODES-এ নাম যোগ করুন।
+var CODES='SOUND LIGHT MAGNET ELECTRICITY MEASURE HEAT MODERN MATTER METALS ACID WATER POLYMER RESOURCES BIOLOGY PLANTS HUMANBODY FOOD GENETICS DISEASE AIR EARTH JOBSCIENCE'.split(' ');
+var code=function(){var c=$('pc').value.trim().toUpperCase().replace(/\s+/g,'');return /^LB-/.test(c)&&CODES.indexOf(c.slice(3))>=0?c:''};
+function price(){var c=code(),raw=$('pc').value.trim();P=c?P0-OFF:P0;$('pstep').textContent='৳'+bn(P);
+  $('pcm').hidden=!raw;$('pcm').textContent=c?'কোড '+c+' চালু: প্রতি কপি ৳'+bn(P)+' (৳'+bn(OFF)+' ছাড়)':'এই কোডটি মিলছে না, দাম ৳'+bn(P0)+' ধরা হবে';
+  var n=qty();$('ptot').textContent=n?'মোট পাঠাবেন: ৳'+bn(n*P)+' (ডেলিভারি ফ্রি)':'কত কপি, সংখ্যায় লিখুন'}
+(function(){var q=new URLSearchParams(location.search).get('code')||'';try{if(q)localStorage.setItem('lb:code',q);else q=localStorage.getItem('lb:code')||''}catch(e){}
+  if(q)$('pc').value=q.toUpperCase().replace(/[^A-Z-]/g,'').slice(0,20);price()})();
+$('pq').addEventListener('input',price);$('pc').addEventListener('input',price);
 function oid(){var d=new Date(),p=function(n){return ('0'+n).slice(-2)};
   return 'LB-'+String(d.getFullYear()).slice(2)+p(d.getMonth()+1)+p(d.getDate())+'-'+Math.random().toString(36).slice(2,6).toUpperCase()}
 $('pof').addEventListener('submit',function(e){e.preventDefault();
@@ -225,8 +240,8 @@ $('pof').addEventListener('submit',function(e){e.preventDefault();
   if(!q)miss.push('কপির সংখ্যা');if(!b)miss.push('যে বিকাশ নম্বর থেকে পাঠিয়েছেন');if(t.length<6)miss.push('বিকাশ ট্রানজেকশন আইডি');
   if(miss.length){$('perr').hidden=false;$('perr').textContent='দয়া করে ঠিক করুন: '+miss.join(', ');return}
   $('perr').hidden=true;
-  var o={id:oid(),name:n,phone:p,phone2:p2,division:txt($('pdv')),district:txt($('pds')),upazila:$('pup').value,address:a,zone:zoneOf(),qty:q,total:q*P,bkash:b,txid:t,hp:$('hp').value,page:location.href};
-  var m='প্রি-অর্ডার: লিয়ানা বিসিএস বিজ্ঞান\nঅর্ডার নম্বর: '+o.id+'\nনাম: '+n+'\nমোবাইল: '+p+(p2?' / '+p2:'')+'\nঠিকানা: '+a+', '+o.upazila+', '+o.district+' ('+o.division+')\nকপি: '+bn(q)+' (মোট ৳'+bn(q*P)+', ডেলিভারি ফ্রি)\nবিকাশ নম্বর: '+b+'\nট্রানজেকশন আইডি: '+t;
+  var o={id:oid(),name:n,phone:p,phone2:p2,division:txt($('pdv')),district:txt($('pds')),upazila:$('pup').value,address:a,zone:zoneOf(),qty:q,total:q*P,bkash:b,txid:t,hp:$('hp').value,page:location.href,src:SRC,code:code()};
+  var m='প্রি-অর্ডার: লিয়ানা বিসিএস বিজ্ঞান\nঅর্ডার নম্বর: '+o.id+'\nনাম: '+n+'\nমোবাইল: '+p+(p2?' / '+p2:'')+'\nঠিকানা: '+a+', '+o.upazila+', '+o.district+' ('+o.division+')\nকপি: '+bn(q)+' (মোট ৳'+bn(q*P)+', ডেলিভারি ফ্রি)\nবিকাশ নম্বর: '+b+'\nট্রানজেকশন আইডি: '+t+(code()?'\nছাড়ের কোড: '+code()+' (প্রতি কপি ৳'+bn(OFF)+' ছাড়)':'')+(SRC?'\nউৎস: '+SRC:'');
   var show=function(){$('pof').hidden=true;$('poid').textContent=o.id;$('pwa').href='https://wa.me/'+PH+'?text='+encodeURIComponent(m);$('pdone').hidden=false;$('pdone').scrollIntoView({behavior:'smooth',block:'center'})};
   $('psub').disabled=true;$('psub').textContent='জমা হচ্ছে…';
   if(!SHEET_URL){show();return}
