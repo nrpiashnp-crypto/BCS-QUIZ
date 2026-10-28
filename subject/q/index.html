@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="theme-color" content="#13294b">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>অনুশীলন · বিষয়ভিত্তিক প্রস্তুতি · লিয়ানা বুকস</title>
+<meta name="robots" content="noindex">
+<meta name="description" content="টপিক ধরে অনুশীলন আর টপিক টেস্ট, ব্যাখ্যাসহ, ফ্রি।">
+<link rel="canonical" href="https://lyannabooks.com/subject/q/">
+<meta property="og:type" content="website"><meta property="og:site_name" content="লিয়ানা বুকস">
+<meta property="og:title" content="অনুশীলন · বিষয়ভিত্তিক প্রস্তুতি · লিয়ানা বুকস"><meta property="og:description" content="টপিক ধরে অনুশীলন আর টপিক টেস্ট, ব্যাখ্যাসহ, ফ্রি।">
+<meta property="og:url" content="https://lyannabooks.com/subject/q/"><meta property="og:image" content="https://lyannabooks.com/img/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/img/logo/apple-touch-icon.png">
+<link rel="preload" href="/fonts/NotoSansBengali-bengali.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/TiroBangla-400-bengali.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/fonts/fonts.css">
+<link rel="stylesheet" href="/subject/s.css">
+<link rel="manifest" href="/manifest.webmanifest">
+<script src="/js/app.js" defer></script>
+<script src="/js/account.js" defer></script>
+</head>
+<body>
+<div class="sitebar"><a href="/"><img src="/img/logo/final-onnavy-transparent.svg" alt="লিয়ানা বুকস" width="110" height="80"></a><nav class="sec" aria-label="সাইটের অংশ"><a href="/bcs/">বিসিএস</a><a href="/jobs/">চাকরি</a><a href="/science/">বিজ্ঞান</a><a href="/running/">চলমান</a></nav></div>
+<div class="wrap" id="view">
+<a class="back" id="back" href="/subject/science/">← রোডম্যাপ</a>
+<h1 id="ttl">লোড হচ্ছে…</h1>
+<p class="sub" id="sub"></p>
+<section id="run"></section>
+<section id="result" hidden></section>
+<div class="btns" id="after" hidden></div>
+</div>
+<div class="bar" id="bar" hidden></div>
+<script>
+/* এক পাতায় তিন কাজ: অনুশীলন সেট (?t=<টপিক>&s=<সেট>), টপিক টেস্ট (?t=<টপিক>&s=test), ভুলের খাতা (?w=sci)।
+   অনুশীলনে সময় নেই, উত্তর দিলেই ব্যাখ্যা; টেস্টে সময় আর −০.৫। অগ্রগতি 'subj:v1', ভুল প্রশ্ন 'subj:w' = {<id>: প্রশ্ন + tp}। */
+const bn=n=>String(n).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+const fmt=x=>(x<0?'−':'')+bn(Number.isInteger(Math.abs(x))?Math.abs(x):Math.abs(x).toFixed(1));
+const K=['ক','খ','গ','ঘ','ঙ'],$=id=>document.getElementById(id);
+const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}};
+const put=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const U=new URLSearchParams(location.search),TP=U.get('t'),SET=U.get('s'),WR=U.get('w');
+const SUBJ={sci:'science'},sub=(TP||WR||'sci').split('-')[0],ROAD='/subject/'+SUBJ[sub]+'/';
+const src=q=>`<span class="src">${q.t==='l'?'সম্ভাব্য প্রশ্ন':q.s||''}</span>`;
+function markWrong(q,good,tp){const W=get('subj:w',{});if(good)delete W[q.id];else W[q.id]=Object.assign({},q,{tp:tp||q.tp});
+  const ks=Object.keys(W);if(ks.length>400)ks.slice(0,ks.length-400).forEach(k=>delete W[k]);put('subj:w',W)}
+function prog(fn){const P=get('subj:v1',{});P.t=P.t||{};const p=P.t[TP]=P.t[TP]||{s:{}};p.s=p.s||{};fn(p);put('subj:v1',P);return p}
+function qbox(q,i){const s=document.createElement('section');s.className='q';
+  s.innerHTML=`<div class="qh"><span class="num">${bn(i+1)}.</span><p class="qt">${q.q}${src(q)}</p></div><div class="opts"></div>`;
+  const o=s.querySelector('.opts');q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;o.appendChild(b)});return s}
+function expHTML(q,p){return (p<0?'<span class="skip">উত্তর দেননি।</span> সঠিক উত্তর: '+K[q.a]+') '+q.o[q.a]+'।':p===q.a?'<span class="ok">সঠিক।</span>':'<span class="no">ভুল।</span> সঠিক উত্তর: '+K[q.a]+') '+q.o[q.a]+'।')+' '+q.e}
+function after(links){$('after').innerHTML=links.map(([h,t,c])=>`<a class="btn${c?' ghost':''}" href="${h}">${t}</a>`).join('');$('after').hidden=false}
+
+// ---------- অনুশীলন (সেট বা ভুলের খাতা) ----------
+function practice(L,onDone){
+  let ok=0,done=0;const run=$('run'),bar=$('bar');bar.hidden=false;run.className='pad';
+  const upd=()=>{bar.innerHTML=`<span class="mode">অনুশীলন</span><span>সঠিক <b>${bn(ok)}</b> · উত্তর <b>${bn(done)}</b>/${bn(L.length)}</span>`};
+  L.forEach((q,i)=>{const s=qbox(q,i),o=s.querySelector('.opts');
+    [...o.children].forEach((b,j)=>b.onclick=()=>{[...o.children].forEach(x=>x.disabled=true);o.children[q.a].classList.add('right');
+      const good=j===q.a;if(!good)b.classList.add('wrong');done++;if(good)ok++;markWrong(q,good,TP);upd();
+      const e=document.createElement('div');e.className='exp';e.innerHTML=expHTML(q,j);s.appendChild(e);
+      if(done===L.length)onDone(ok)});
+    run.appendChild(s)});
+  upd();
+}
+
+// ---------- টপিক টেস্ট ----------
+function test(pool,D,T,next){
+  const N=Math.min(D.test,pool.length),MIN=Math.max(5,Math.round(N*0.6));
+  const paper=shuffle(pool).slice(0,N),pick=paper.map(()=>-1),run=$('run'),bar=$('bar');let armed=0,endAt=Date.now()+MIN*60000,t0=Date.now(),timer;
+  $('sub').innerHTML=`<span class="mode t">টপিক টেস্ট</span> ${bn(N)} প্রশ্ন · ${bn(MIN)} মিনিট · ভুলে −০.৫`;
+  run.className='pad';bar.hidden=false;
+  bar.innerHTML=`<span id="clock"></span><span>উত্তর <b id="ans">০</b>/${bn(N)}</span><button class="btn" id="sb" type="button">জমা দিন</button>`;
+  paper.forEach((q,i)=>{const s=qbox(q,i),o=s.querySelector('.opts');
+    [...o.children].forEach((b,j)=>b.onclick=()=>{if(pick[i]>=0)return;pick[i]=j;b.classList.add('sel');[...o.children].forEach(x=>x.disabled=true);$('ans').textContent=bn(pick.filter(x=>x>=0).length)});
+    run.appendChild(s)});
+  const tick=()=>{const l=Math.max(0,endAt-Date.now()),s=Math.ceil(l/1000);$('clock').textContent='সময় '+bn(String(Math.floor(s/60)).padStart(2,'0'))+':'+bn(String(s%60).padStart(2,'0'));if(l<=0)finish()};
+  timer=setInterval(tick,500);tick();
+  $('sb').onclick=()=>{const blank=pick.filter(x=>x<0).length;if(armed&&Date.now()-armed<4000)return finish();armed=Date.now();
+    $('sb').textContent=blank?`${bn(blank)}টি বাকি, আবার চাপুন`:'নিশ্চিত? আবার চাপুন';setTimeout(()=>{if(Date.now()-armed>=4000)$('sb').textContent='জমা দিন'},4100)};
+  window.onbeforeunload=e=>{e.preventDefault();e.returnValue=''};
+  function finish(){
+    clearInterval(timer);window.onbeforeunload=null;bar.hidden=true;run.hidden=true;
+    let ok=0,no=0;paper.forEach((q,i)=>{if(pick[i]<0)return;pick[i]===q.a?ok++:no++;markWrong(q,pick[i]===q.a,TP)});
+    paper.forEach((q,i)=>{if(pick[i]<0)markWrong(q,false,TP)});
+    const score=ok-no*0.5,pass=score>=D.pass*N,sec=Math.round((Date.now()-t0)/1000);
+    const p=prog(p=>{p.best=Math.max(p.best==null?-99:p.best,score);if(pass)p.pass=true;p.ts=Date.now()});
+    window.LBA&&LBA.save({k:'subj-'+TP+'#'+Date.now(),c:'subj',t:T.name,s:score,n:N,ok,no,sec});
+    const r=$('result');r.hidden=false;
+    r.innerHTML=`<div class="score"><div class="big">${fmt(score)} / ${bn(N)}</div><div class="stats"><span class="ok">সঠিক ${bn(ok)}</span><span class="no">ভুল ${bn(no)}</span><span class="skip">উত্তর দেননি ${bn(N-ok-no)}</span></div>
+      <p class="msg">${pass?'অভিনন্দন! টপিকটি সম্পন্ন হয়েছে।':`সম্পন্ন হতে লাগবে ${fmt(D.pass*N)}। ভুলগুলো দেখে আরেকটি সেট অনুশীলন করে আবার টেস্ট দিন।`}</p></div><h2>উত্তর ও ব্যাখ্যা</h2>`;
+    paper.forEach((q,i)=>{const s=qbox(q,i),o=s.querySelector('.opts');[...o.children].forEach((b,j)=>{b.disabled=true;if(j===q.a)b.classList.add('right');if(j===pick[i]&&j!==q.a)b.classList.add('wrong')});
+      const e=document.createElement('div');e.className='exp';e.innerHTML=expHTML(q,pick[i]);s.appendChild(e);r.appendChild(s)});
+    after(pass&&next?[[ROAD+'#'+next.id,'পরের ধাপ: '+next.name+' →'],[ROAD,'রোডম্যাপ',1]]:[[ROAD+'#'+TP,'পরের ধাপ: আবার অনুশীলন →'],[location.href,'নতুন টেস্ট',1]]);
+    window.scrollTo(0,0);
+  }
+}
+
+fetch('/subject/data/'+SUBJ[sub]+'.json').then(r=>r.json()).then(D=>{
+  if(WR){
+    const L=Object.values(get('subj:w',{})).filter(q=>(q.tp||'').startsWith(WR+'-'));
+    document.title='ভুলের খাতা · লিয়ানা বুকস';$('ttl').textContent='ভুলের খাতা';
+    $('sub').textContent=L.length?'আগে যেগুলো ভুল হয়েছে। সঠিক হলে খাতা থেকে বাদ যায়।':'খাতা খালি। চমৎকার!';
+    practice(L,()=>after([[ROAD,'রোডম্যাপে ফিরুন →']]));return;
+  }
+  const i=D.topics.findIndex(x=>x.id===TP),T=D.topics[i],next=D.topics[i+1];if(!T)throw 0;
+  $('back').href=ROAD+'#'+TP;$('ttl').textContent=T.name;
+  if(SET==='test'){document.title=T.name+': টপিক টেস্ট · লিয়ানা বুকস';
+    return fetch('/subject/data/t/'+TP+'/test.json').then(r=>r.json()).then(pool=>test(pool,D,T,next))}
+  const k=T.sets.findIndex(x=>x.id===SET),S=T.sets[k];if(!S)throw 0;
+  const GL={b:'বিসিএসের প্রশ্ন',x:'অন্য পরীক্ষার প্রশ্ন',l:'সম্ভাব্য প্রশ্ন'};
+  document.title=T.name+': '+GL[S.kind]+' সেট '+bn(S.k)+' · লিয়ানা বুকস';
+  $('sub').innerHTML=`<span class="mode">অনুশীলন</span> ${GL[S.kind]} · সেট ${bn(S.k)} · সময় নেই, উত্তর দিলেই ব্যাখ্যা`;
+  return fetch('/subject/data/t/'+TP+'/'+SET+'.json').then(r=>r.json()).then(L=>practice(L,ok=>{
+    prog(p=>{p.s[SET]=[ok,L.length,Date.now()]});
+    const ns=T.sets[k+1];
+    after(ns?[['?t='+TP+'&s='+ns.id,'পরের ধাপ: '+GL[ns.kind]+' সেট '+bn(ns.k)+' →'],['?t='+TP+'&s=test','টপিক টেস্ট দিন',1]]
+            :[['?t='+TP+'&s=test','পরের ধাপ: টপিক টেস্ট →'],[ROAD+'#'+TP,'রোডম্যাপ',1]]);
+  }));
+}).catch(()=>{$('ttl').textContent='পাতাটি পাওয়া যায়নি';$('sub').innerHTML='<a href="/subject/">সব বিষয় দেখুন →</a>'});
+</script>
+<script src="/js/book-link.js" data-kind="science" defer></script>
+<script src="/js/math.js" defer></script>
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "6b92edeb250b475e9d759f64df8eb91e"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+</html>
