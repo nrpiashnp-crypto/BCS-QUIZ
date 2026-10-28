@@ -61,6 +61,14 @@ a{color:var(--accent)}
 .free ul{list-style:none;padding:0;margin:0 0 18px;display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
 .free li{border:1px solid rgba(224,180,92,.55);border-radius:99px;padding:5px 12px;font-size:14px;color:#fff;background:rgba(255,255,255,.05)}
 .free li::before{content:"✓ ";color:var(--gold-hi)}
+.free .nolog{margin:0 0 14px;display:flex;flex-wrap:wrap;justify-content:center;gap:4px 16px;font-size:14.5px;color:#dfe5ef}
+.free .nolog span::before{content:"✓ ";color:var(--gold-hi)}
+.runbox{margin:14px 0 0;padding-top:12px;border-top:1px solid rgba(224,180,92,.35)}
+.runbox .rk{margin:0 0 10px;color:#fff;font-weight:600;font-size:16px;display:flex;align-items:center;justify-content:center;gap:8px}
+.runbox .dot{width:9px;height:9px;border-radius:50%;background:#ff6b5e;flex-shrink:0}
+.runbox .rb{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:460px;margin:0 auto}
+.free .runbox .rb a{display:block;background:#fff;color:#13294b;border-radius:10px;padding:11px 8px;font-size:16px;font-weight:600;text-align:center;text-decoration:none}
+
 .free a{display:inline-block;background:var(--gold-hi);color:#13294b;text-decoration:none;font-weight:600;border-radius:10px;padding:11px 22px}
 .free a:hover{background:#ebc677}
 @media (min-width:900px){.free{padding:34px 28px 30px}.free h2{font-size:54px}.free p{max-width:40em;font-size:18px}.free li{font-size:15px;padding:6px 14px}}
@@ -255,10 +263,12 @@ footer .fb{font-family:var(--display);color:var(--ink);font-size:18px}
 
 <section class="free" aria-label="সব পরীক্ষা ফ্রি">
   <h2>সব পরীক্ষা <b>সম্পূর্ণ ফ্রি</b></h2>
-  <ul><li>রেজিস্ট্রেশন লাগে না</li><li>লগইন লাগে না</li><li>যতবার খুশি</li></ul>
+  <p class="nolog"><span>রেজিস্ট্রেশন লাগে না</span><span>লগইন লাগে না</span><span>যতবার খুশি</span></p>
   <a class="big" href="exams/">পরীক্ষা দিন →</a>
-  <nav class="secs" aria-label="সাইটের অংশ"><a href="bcs/">বিসিএস প্রিলি</a><a href="jobs/">অন্যান্য চাকরি</a><a href="science/">বিজ্ঞান</a></nav>
-  <a class="run" href="running/"><span class="dot"></span>চলমান নিয়োগ: পেট্রোবাংলা · সাব-রেজিস্ট্রার →</a>
+  <div class="runbox">
+    <p class="rk"><span class="dot"></span>চলমান নিয়োগ প্রস্তুতি · ফ্রি ৫০ টাস্ক</p>
+    <div class="rb"><a href="running/petrobangla/">পেট্রোবাংলা →</a><a href="running/sub-registrar/">সাব-রেজিস্ট্রার →</a></div>
+  </div>
 </section>
 
 <a class="offer" href="book/?preorder">
