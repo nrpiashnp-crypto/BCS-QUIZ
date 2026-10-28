@@ -77,6 +77,13 @@ a{color:var(--accent)}
 .free .qbig{margin:0 0 6px;font-family:var(--display);font-size:clamp(26px,7vw,36px);line-height:1.1;color:#fff}
 .qc-n{color:var(--gold-hi);font-weight:400;font-size:1.8em;letter-spacing:.01em}
 .qc-n::after{content:"টি";font-size:.5em;margin-left:2px}
+/* With JS the count becomes a counter: one box per digit, rolling up on load */
+.qbig.ctr{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:12px}
+.qbig.ctr .qc-n{display:flex;gap:5px;font-size:1em;letter-spacing:0}
+.qbig.ctr .qc-n::after{content:none}
+.qbig .dg{display:inline-block;width:1.05em;padding:.12em 0 .02em;border-radius:8px;background:linear-gradient(#0c1d38 0 49%,#06142b 51%);border:1px solid rgba(224,180,92,.55);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 4px 10px rgba(0,0,0,.25);font-size:clamp(34px,10vw,48px);line-height:1.15;color:var(--gold-hi);text-align:center}
+.qbig .sep{align-self:flex-end;font-size:clamp(34px,10vw,48px);line-height:1;color:var(--gold-hi);margin:0 -1px}
+.qbig .lbl{font-size:.62em;color:#dfe5ef;font-family:var(--body)}
 .free h2 b{display:inline-block;background:var(--gold-hi);color:#13294b;border-radius:10px;padding:0 .3em;line-height:1.35}
 
 /* Twinkling gold stars (like Lyanna's dress), kept sparse */
@@ -169,6 +176,7 @@ footer .fb{font-family:var(--display);color:var(--ink);font-size:18px}
   .free h2{font-size:44px;white-space:nowrap;margin-left:-60px;margin-right:-60px}
   .free .nolog{font-size:17px}
   .free .qbig{font-size:40px}
+  .qbig .dg,.qbig .sep{font-size:56px}
   .offer{max-width:640px;margin:0 auto;padding:26px 0}
   .o-cover{width:72px}
   .hero{padding:40px 0 10px}
@@ -213,7 +221,7 @@ footer .fb{font-family:var(--display);color:var(--ink);font-size:18px}
   <div class="free">
     <p class="qbig" title="সাইটে মোট প্রশ্ন, প্রতিদিন বাড়ছে"><b class="qc-n">৩৭,১২০</b> প্রশ্ন</p>
     <h2>ব্যাখ্যাসহ সব পরীক্ষা <b>সম্পূর্ণ ফ্রি</b></h2>
-    <p class="nolog">প্রতিটি প্রশ্নের মানসম্মত ব্যাখ্যা · লগইন লাগে না · যতবার খুশি</p>
+    <p class="nolog">লগইন লাগে না · যতবার খুশি পরীক্ষা দিন</p>
     <a class="big" href="exams/">পরীক্ষা দিন →</a>
     <div class="runbox">
       <span class="live"><span class="dot" aria-hidden="true"></span>এখন চলছে</span>
@@ -310,6 +318,20 @@ footer .fb{font-family:var(--display);color:var(--ink);font-size:18px}
 </footer>
 
 </div>
+<script>
+// Turn the question count into a counter: a box per digit that rolls up from a lower number.
+(function(){var p=document.querySelector('.qbig'),n=p&&p.querySelector('.qc-n');if(!n)return;
+var B='০১২৩৪৫৬৭৮৯',txt=n.textContent.trim(),to=+txt.replace(/[^০-৯0-9]/g,'').replace(/[০-৯]/g,function(d){return B.indexOf(d)});if(!to)return;
+var len=String(to).length,cells=[];n.textContent='';
+for(var k=0;k<len;k++){if(k&&(len-k)%3===0&&len>3){var c=document.createElement('span');c.className='sep';c.textContent=',';n.appendChild(c)}
+var d=document.createElement('span');d.className='dg';n.appendChild(d);cells.push(d)}
+p.lastChild.textContent='';var l=document.createElement('span');l.className='lbl';l.textContent='প্রশ্ন · প্রতিদিন বাড়ছে';p.appendChild(l);p.classList.add('ctr');
+function show(v){var s=String(v).padStart(len,'0');for(var k=0;k<len;k++)cells[k].textContent=B[+s[k]]}
+if(matchMedia('(prefers-reduced-motion: reduce)').matches){show(to);return}
+var from=Math.round(to*.92),t0=null,dur=1600;show(from);
+function step(t){t0=t0||t;var x=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-x,3);show(Math.round(from+(to-from)*e));if(x<1)requestAnimationFrame(step)}
+setTimeout(function(){requestAnimationFrame(step)},250);})();
+</script>
 <script>
 // Scatter a few small gold stars in the header; positions vary per visit.
 (function(){var box=document.querySelector('.stars');if(!box)return;
