@@ -27,6 +27,7 @@ import glob, html, json, os, re, subprocess
 
 R = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SITE = 'https://lyannabooks.com'
+FB = 'https://www.facebook.com/profile.php?id=61595898604238'  # Lyanna Books Facebook page; shown in footers and the hub-page link block
 MIN_Q = 10
 BN = str.maketrans('0123456789', '০১২৩৪৫৬৭৮৯')
 bn = lambda n: str(n).translate(BN)
@@ -128,7 +129,7 @@ def page(path, title, desc, crumbs, body, current=None, img='/img/og.png', ld_ex
 {body}
 <p class="book">বিসিএস আর চাকরির পরীক্ষার বিজ্ঞান এক বইয়ে, বিগত প্রশ্ন বিশ্লেষণ করে লেখা: <a href="/book/">লিয়ানা বিসিএস বিজ্ঞান বই সম্পর্কে জানুন</a></p>
 </main>
-<footer><a href="/">লিয়ানা বুকস</a> · <a href="/questions/">সব প্রশ্ন ও সমাধান</a> · <a href="/exams/">পরীক্ষা দিন</a> · <a href="/book/">বই</a></footer>
+<footer><a href="/">লিয়ানা বুকস</a> · <a href="/questions/">সব প্রশ্ন ও সমাধান</a> · <a href="/exams/">পরীক্ষা দিন</a> · <a href="/book/">বই</a> · <a href="{FB}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true" style="vertical-align:-2px;margin-right:4px"><path fill="currentColor" d="M13.5 22v-8.2h2.8l.4-3.3h-3.2V8.4c0-.9.3-1.6 1.6-1.6h1.7V3.9a23 23 0 0 0-2.5-.1c-2.5 0-4.2 1.5-4.2 4.3v2.4H7.3v3.3h2.8V22h3.4Z"/></svg>ফেসবুক পেজ</a></footer>
 </body>
 </html>
 """
@@ -448,7 +449,9 @@ for f in sorted(glob.glob(os.path.join(R, '**', 'index.html'), recursive=True)):
 
 chap_names = {s: nm for s, _, nm, _ in ch_links}
 LINKS = ('<!--seo-links--><nav style="max-width:760px;margin:24px auto 0;padding:0 16px 24px;text-align:center;font:13px/1.8 \'Noto Sans Bengali\',system-ui,sans-serif">'
-         '{extra}<a href="/questions/" style="color:inherit;opacity:.75">সব প্রশ্ন ও সমাধান</a></nav><!--/seo-links-->')
+         '{extra}<a href="/questions/" style="color:inherit;opacity:.75">সব প্রশ্ন ও সমাধান</a>{fb}</nav><!--/seo-links-->')
+FB_LINK = (' · <a href="' + FB + '" target="_blank" rel="noopener" style="color:inherit;opacity:.75">'
+           '<svg viewBox=\"0 0 24 24\" width=\"13\" height=\"13\" aria-hidden=\"true\" style=\"vertical-align:-2px;margin-right:4px\"><path fill=\"currentColor\" d=\"M13.5 22v-8.2h2.8l.4-3.3h-3.2V8.4c0-.9.3-1.6 1.6-1.6h1.7V3.9a23 23 0 0 0-2.5-.1c-2.5 0-4.2 1.5-4.2 4.3v2.4H7.3v3.3h2.8V22h3.4Z\"/></svg>ফেসবুক পেজ</a>')
 for d in hand:
     p = (d + '/index.html') if d else 'index.html'
     s = rd(p)
@@ -475,8 +478,8 @@ for d in hand:
         extra = '<a href="/questions/#bcs" style="color:inherit;opacity:.75">বিসিএস প্রিলির প্রশ্ন ও সমাধান পড়ুন</a> · '
     elif d == 'jobs':
         extra = '<a href="/questions/#gb" style="color:inherit;opacity:.75">ব্যাংক ও সরকারি চাকরির প্রশ্ন ও সমাধান পড়ুন</a> · '
-    block = LINKS.format(extra=extra)
     s = re.sub(r'<!--seo-links-->.*?<!--/seo-links-->\n?', '', s, flags=re.S)
+    block = LINKS.format(extra=extra, fb='' if FB in s else FB_LINK)
     s = s.replace('</body>', block + '\n</body>', 1)
     if s != o: wr(p, s)
 
