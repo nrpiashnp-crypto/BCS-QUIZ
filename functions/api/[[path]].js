@@ -30,15 +30,15 @@ const SCHEMA = [
 ];
 const LIB_SCHEMA = [
   'CREATE TABLE IF NOT EXISTS lib_sources(id TEXT PRIMARY KEY, title TEXT, subject TEXT, exam TEXT, updated INTEGER)',
-  'CREATE TABLE IF NOT EXISTS lib_topics(id TEXT PRIMARY KEY, source_id TEXT, subject TEXT, exam TEXT, chapter INTEGER, chapter_title TEXT, section_no TEXT, section_title TEXT, parent_section TEXT, kind TEXT, pages TEXT, source TEXT, tags TEXT, text TEXT, updated INTEGER)',
+  'CREATE TABLE IF NOT EXISTS lib_topics(id TEXT PRIMARY KEY, source_id TEXT, subject TEXT, exam TEXT, chapter INTEGER, chapter_title TEXT, section_no TEXT, section_title TEXT, parent_section TEXT, kind TEXT, pages TEXT, source TEXT, tags TEXT, text TEXT, updated INTEGER, topic_ids TEXT)',
   'CREATE TABLE IF NOT EXISTS lib_tags(topic_id TEXT NOT NULL, tag TEXT NOT NULL, PRIMARY KEY(topic_id, tag))',
   'CREATE INDEX IF NOT EXISTS lib_tags_tag ON lib_tags(tag)',
   'CREATE INDEX IF NOT EXISTS lib_topics_sub ON lib_topics(subject, chapter)',
-  'CREATE TABLE IF NOT EXISTS lib_mcq(id TEXT PRIMARY KEY, q TEXT, o TEXT, a INTEGER, e TEXT, s TEXT, t TEXT, src TEXT, h TEXT)',
+  'CREATE TABLE IF NOT EXISTS lib_mcq(id TEXT PRIMARY KEY, q TEXT, o TEXT, a INTEGER, e TEXT, s TEXT, t TEXT, src TEXT, h TEXT, topic_ids TEXT)',
   'CREATE TABLE IF NOT EXISTS lib_meta(k TEXT PRIMARY KEY, v TEXT)'
 ];
 // D1-এর সীমা: ফ্রি প্ল্যানে এক অনুরোধে ৫০টি কোয়েরি, এক কোয়েরিতে ১০০টি প্যারামিটার
-const LIB_PAGE = 30, LIB_IMPORT = 15, LIB_IDS = 90, MCQ_IMPORT = 220, MCQ_PER_STMT = 11, MCQ_IDS_PAGE = 5000;
+const LIB_PAGE = 30, LIB_IMPORT = 15, LIB_IDS = 90, MCQ_IMPORT = 220, MCQ_PER_STMT = 10, MCQ_IDS_PAGE = 5000;
 
 const json = (o, status = 200, headers = {}) => new Response(JSON.stringify(o), {
   status, headers: {'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...headers}
@@ -132,6 +132,12 @@ const isAdmin = (u, env) => !!u && !!u.email &&
   String(env.ADMIN_EMAILS || '').toLowerCase().split(/[\s,]+/).filter(Boolean).includes(u.email.toLowerCase());
 const nfc = v => typeof v === 'string' ? v.normalize('NFC').trim() : '';
 
+// Lyanna_data/taxonomy-র টপিক আইডি (যেমন sci-light-refraction); এখনো খোঁজায় লাগে না, পরে দুই ব্যাংক এটা দিয়েই মিলবে
+const topicIds = v => {
+  const a = [...new Set((Array.isArray(v) ? v : String(v || '').split(/[\s;,]+/)).map(String).filter(x => /^[a-z]+(-[a-z0-9]+)*$/.test(x)))].slice(0, 20);
+  return a.length ? '; ' + a.join('; ') + '; ' : null;
+};
+
 function libClean(t) {
   if (!t || typeof t !== 'object') return null;
   const id = nfc(t.id).slice(0, 80), text = nfc(t.text);
@@ -146,7 +152,7 @@ function libClean(t) {
     chapter: t.chapter !== '' && t.chapter != null && Number.isFinite(+t.chapter) ? Math.round(+t.chapter) : null,
     chapter_title: nfc(t.chapter_title).slice(0, 200), section_no: nfc(t.section_no).slice(0, 30),
     section_title: nfc(t.section_title).slice(0, 300), parent_section: nfc(t.parent_section).slice(0, 300),
-    kind: nfc(t.kind).slice(0, 30) || 'section', pages: nfc(t.pages).slice(0, 30)
+    kind: nfc(t.kind).slice(0, 30) || 'section', pages: nfc(t.pages).slice(0, 30), topic_ids: topicIds(t.topic_ids)
   };
 }
 
@@ -155,17 +161,17 @@ async function libImport(req, db) {
   const rows = (Array.isArray(body.topics) ? body.topics : []).slice(0, LIB_IMPORT).map(libClean).filter(Boolean);
   if (!rows.length) return json({ok: true, saved: 0});
   const now = Date.now(), st = [];
-  const up = db.prepare(`INSERT INTO lib_topics(id, source_id, subject, exam, chapter, chapter_title, section_no, section_title, parent_section, kind, pages, source, tags, text, updated)
-    VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET source_id=excluded.source_id, subject=excluded.subject, exam=excluded.exam,
+  const up = db.prepare(`INSERT INTO lib_topics(id, source_id, subject, exam, chapter, chapter_title, section_no, section_title, parent_section, kind, pages, source, tags, text, updated, topic_ids)
+    VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET source_id=excluded.source_id, subject=excluded.subject, exam=excluded.exam,
     chapter=excluded.chapter, chapter_title=excluded.chapter_title, section_no=excluded.section_no, section_title=excluded.section_title,
-    parent_section=excluded.parent_section, kind=excluded.kind, pages=excluded.pages, source=excluded.source, tags=excluded.tags, text=excluded.text, updated=excluded.updated`);
+    parent_section=excluded.parent_section, kind=excluded.kind, pages=excluded.pages, source=excluded.source, tags=excluded.tags, text=excluded.text, updated=excluded.updated, topic_ids=excluded.topic_ids`);
   const src = db.prepare('INSERT INTO lib_sources(id, title, subject, exam, updated) VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET subject=excluded.subject, exam=excluded.exam, updated=excluded.updated');
   const seen = new Set();
   st.push(db.prepare(`DELETE FROM lib_tags WHERE topic_id IN (${rows.map(() => '?').join(',')})`).bind(...rows.map(r => r.id)));
   for (const r of rows) {
     // tags কলামে দুই পাশে '; ' রাখা হয়, তাই '; সুন্দরবন; ' খুঁজে পুরো ট্যাগ মেলানো যায়
     st.push(up.bind(r.id, r.source_id, r.subject, r.exam, r.chapter, r.chapter_title, r.section_no, r.section_title, r.parent_section,
-      r.kind, r.pages, r.source, '; ' + r.tags.join('; ') + '; ', r.text, now));
+      r.kind, r.pages, r.source, '; ' + r.tags.join('; ') + '; ', r.text, now, r.topic_ids));
     if (r.tags.length) st.push(db.prepare('INSERT OR IGNORE INTO lib_tags(topic_id, tag) VALUES' + r.tags.map(() => '(?,?)').join(','))
       .bind(...r.tags.flatMap(t => [r.id, t])));
     if (!seen.has(r.source_id)) { seen.add(r.source_id); st.push(src.bind(r.source_id, r.source.replace(/,?\s*অধ্যায়.*$/, ''), r.subject, r.exam, now)); }
@@ -233,13 +239,13 @@ async function mcqImport(req, db) {
     return [r.id, nfc(r.q).slice(0, 4000), JSON.stringify(r.o.slice(0, 8).map(x => nfc(String(x)).slice(0, 1000))),
       Number.isInteger(r.a) ? r.a : -1, nfc(r.e).slice(0, 1500), nfc(r.s).slice(0, 80), nfc(r.t).slice(0, 160),
       JSON.stringify((Array.isArray(r.src) ? r.src : []).filter(Array.isArray).slice(0, 40).map(x => [nfc(String(x[0])).slice(0, 200), nfc(String(x[1])).slice(0, 200)])),
-      String(r.h || '').slice(0, 40)];
+      String(r.h || '').slice(0, 40), topicIds(r.topic_ids)];
   }).filter(Boolean);
   const st = [];
   for (let i = 0; i < rows.length; i += MCQ_PER_STMT) {
     const part = rows.slice(i, i + MCQ_PER_STMT);
-    st.push(db.prepare('INSERT INTO lib_mcq(id, q, o, a, e, s, t, src, h) VALUES' + part.map(() => '(?,?,?,?,?,?,?,?,?)').join(',') +
-      ' ON CONFLICT(id) DO UPDATE SET q=excluded.q, o=excluded.o, a=excluded.a, e=excluded.e, s=excluded.s, t=excluded.t, src=excluded.src, h=excluded.h')
+    st.push(db.prepare('INSERT INTO lib_mcq(id, q, o, a, e, s, t, src, h, topic_ids) VALUES' + part.map(() => '(?,?,?,?,?,?,?,?,?,?)').join(',') +
+      ' ON CONFLICT(id) DO UPDATE SET q=excluded.q, o=excluded.o, a=excluded.a, e=excluded.e, s=excluded.s, t=excluded.t, src=excluded.src, h=excluded.h, topic_ids=excluded.topic_ids')
       .bind(...part.flat()));
   }
   if (st.length) await db.batch(st);
