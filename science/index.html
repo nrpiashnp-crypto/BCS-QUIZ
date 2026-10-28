@@ -49,6 +49,10 @@ h1{font-family:var(--display);font-weight:400;font-size:30px;margin:4px 0 2px;te
 @media (min-width:640px){.tiles{grid-template-columns:1fr 1fr}}
 .tiles .tile.all{grid-column:1/-1;border-color:var(--gold-hi)}
 .bar nav.sec{display:flex;gap:2px;flex-shrink:0}.bar nav.sec a{color:#e6c97a;text-decoration:none;font-size:13px;font-weight:500;padding:5px 7px;border-radius:7px;white-space:nowrap;line-height:1.2}.bar nav.sec a[aria-current]{background:rgba(230,201,122,.2);color:#fff}@media(max-width:360px){.bar img{width:88px}.bar nav.sec a{font-size:12px;padding:4px 5px}}
+.tile .tx .prog{font-size:13px;color:var(--navy);font-weight:600;margin-top:2px}
+.tile .tx .prog .w{color:#b4472f}
+.mine{margin:0 0 14px;padding:10px 14px;border-radius:10px;background:var(--soft);font-size:15px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .tile .tx .prog{color:#e6c97a}:root:not([data-theme="light"]) .tile .tx .prog .w{color:#f08a80}}
 </style>
 </head>
 <body>
@@ -81,6 +85,29 @@ h1{font-family:var(--display);font-weight:400;font-size:30px;margin:4px 0 2px;te
       <a class="tile" href="/earth/"><span class="ic">২১</span><span class="tx"><b>পৃথিবী ও মহাকাশ</b><small>অধ্যায় ২১ · ৩১৮ প্রশ্ন</small></span><span class="bt">শুরু →</span></a>
 </div>
 <p class="free">সময় আর নেগেটিভ মার্কিংসহ আসল পরীক্ষার মতো, শেষে প্রতিটি প্রশ্নের ব্যাখ্যা।</p>
+<script>
+/* এই ফোনে অগ্রগতি: প্রতিটি অধ্যায়ের শেষ পরীক্ষার নম্বর ('<slug>-scores') আর বাকি ভুল প্রশ্ন ('lw:/<slug>/', js/wrong.js) */
+(function(){
+  const bn=n=>String(n).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+  const fmt=x=>bn(Number.isInteger(x)?x:x.toFixed(1));
+  const get=k=>{try{return JSON.parse(localStorage.getItem(k)||'[]')}catch(e){return []}};
+  let done=0,wrong=0;
+  document.querySelectorAll('.tiles a.tile').forEach(a=>{
+    const p=a.getAttribute('href'),slug=p.replace(/\//g,'');
+    const h=get((slug==='job-science'?'jobsci':slug)+'-scores'),w=get('lw:'+p);
+    if(!h.length&&!w.length)return;
+    const last=h[h.length-1],parts=[];
+    if(last){done++;parts.push(`শেষ পরীক্ষা ${fmt(last.s)}/${bn(last.n)}`)}
+    if(w.length){wrong+=w.length;parts.push(`<span class="w">ভুল ${bn(w.length)}টি</span>`)}
+    const sp=document.createElement('span');sp.className='prog';sp.innerHTML=parts.join(' · ');
+    a.querySelector('.tx').appendChild(sp);
+  });
+  if(!done&&!wrong)return;
+  const m=document.createElement('p');m.className='mine';
+  m.innerHTML=`এই ফোনে আপনি <b>${bn(done)}টি</b> অধ্যায়ে পরীক্ষা দিয়েছেন`+(wrong?`, <b>${bn(wrong)}টি</b> ভুল প্রশ্ন আবার অনুশীলনের জন্য জমা আছে।`:'।');
+  document.querySelector('.tiles').before(m);
+})();
+</script>
 </div>
 </body>
 </html>

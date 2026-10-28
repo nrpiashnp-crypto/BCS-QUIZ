@@ -225,6 +225,7 @@ function finish(){
       <div class="exp">${p<0?'<span class="skip">উত্তর দেননি।</span> সঠিক উত্তর: '+K[q.a]+') '+q.o[q.a]+'।':p===q.a?'<span class="ok">সঠিক (+১)।</span>':'<span class="no">ভুল (−০.৫)।</span> সঠিক উত্তর: '+K[q.a]+') '+q.o[q.a]+'।'} ${q.e} ${ref(q)}</div>`;
     box.appendChild(s);
   });
+  window.LW&&LW.exam(paper,pick);
   show('result');window.scrollTo(0,0);drawHist();
 }
 
@@ -234,7 +235,7 @@ const F=[['all','সব'],['b','বিসিএস'],['x','অন্য পর�
 $('chips').innerHTML=F.map(([k,t])=>`<button type="button" class="chip" data-k="${k}" aria-pressed="${k==='all'}">${t}</button>`).join('');
 $('chips').onclick=e=>{const k=e.target.dataset&&e.target.dataset.k;if(!k)return;filt=k;[...$('chips').children].forEach(c=>c.setAttribute('aria-pressed',c.dataset.k===k));renderPrac()};
 function renderPrac(){
-  const L=Q.filter(q=>filt==='all'||q.t===filt);pok=0;pdone=0;
+  const L=Q.filter(q=>filt==='w'?!!(window.LW&&LW.has(q)):filt==='all'||q.t===filt);pok=0;pdone=0;
   const upd=()=>{$('pok').textContent=bn(pok);$('pdone').textContent=bn(pdone);$('ptot').textContent=bn(L.length)};
   const box=$('plist');box.innerHTML='';
   L.forEach((q,i)=>{
@@ -244,7 +245,7 @@ function renderPrac(){
     q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';
       b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;
       b.onclick=()=>{[...o.children].forEach(x=>x.disabled=true);o.children[q.a].classList.add('right');
-        const good=j===q.a;if(!good)b.classList.add('wrong');pdone++;if(good)pok++;upd();
+        const good=j===q.a;if(!good)b.classList.add('wrong');pdone++;if(good)pok++;upd();window.LW&&LW.mark(q,good);
         const e=document.createElement('div');e.className='exp';
         e.innerHTML=`<span class="${good?'ok':'no'}">${good?'সঠিক।':'ভুল। সঠিক উত্তর: '+K[q.a]+') '+q.o[q.a]+'।'}</span> ${q.e} ${ref(q)}`;s.appendChild(e)};
       o.appendChild(b)});
@@ -258,6 +259,7 @@ $('home').onclick=$('home2').onclick=()=>{show('start');drawHist();window.scroll
 $('practice').onclick=()=>{renderPrac();show('prac');window.scrollTo(0,0)};
 window.addEventListener('beforeunload',e=>{if(!$('exam').hidden){e.preventDefault();e.returnValue=''}});
 </script>
+<script src="/js/wrong.js" defer></script>
 <script src="/js/book-link.js" data-kind="science" data-chapter="আধুনিক পদার্থবিজ্ঞান" defer></script>
 </body>
 </html>
