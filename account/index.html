@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="theme-color" content="#13294b">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>আমার ড্যাশবোর্ড · লিয়ানা বুকস</title>
+<meta name="description" content="লগইন ছাড়াই সব পরীক্ষা দিন। চাইলে Google দিয়ে লগইন করে সব ফল, অধ্যায়ভিত্তিক অগ্রগতি আর দুর্বল জায়গা এক জায়গায় রাখুন।">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/img/logo/apple-touch-icon.png">
+<link rel="preload" href="/fonts/NotoSansBengali-bengali.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+:root{--paper:#fbfaf7;--ink:#1d1f21;--muted:#5f6366;--rule:#d9d6cf;--card:#fff;--navy:#13294b;--gold:#a8792a;--gold-hi:#e0b45c;--soft:#e9edf4;
+  --good:#2e7d32;--mid:#b8860b;--bad:#c62828;--link:#13294b;
+  --display:'Tiro Bangla',Georgia,serif;--body:'Noto Sans Bengali',system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#15181a;--ink:#e9e7e2;--muted:#a3a7aa;--rule:#33383b;--card:#1d2124;--gold:#e0b45c;--soft:#1c2536;--good:#66bb6a;--mid:#e0b45c;--bad:#ef6c6c;--link:#e6c97a;color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#15181a;--ink:#e9e7e2;--muted:#a3a7aa;--rule:#33383b;--card:#1d2124;--gold:#e0b45c;--soft:#1c2536;--good:#66bb6a;--mid:#e0b45c;--bad:#ef6c6c;--link:#e6c97a;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.65}
+a{color:var(--link)}
+.bar{background:var(--navy);display:flex;align-items:center;justify-content:space-between;padding:8px 16px;padding-top:max(8px,env(safe-area-inset-top,0px))}
+.bar img{width:110px;height:auto;display:block}
+.bar nav.sec{display:flex;gap:2px;flex-shrink:0}.bar nav.sec a{color:#e6c97a;text-decoration:none;font-size:13px;font-weight:500;padding:5px 7px;border-radius:7px;white-space:nowrap;line-height:1.2}.bar nav.sec a[aria-current]{background:rgba(230,201,122,.2);color:#fff}@media(max-width:360px){.bar img{width:88px}.bar nav.sec a{font-size:12px;padding:4px 5px}}
+.wrap{max-width:760px;margin:0 auto;padding:24px 16px 60px}
+h1{font-family:var(--display);font-weight:400;font-size:30px;margin:4px 0 2px;text-align:center}
+h2{font-family:var(--display);font-weight:400;font-size:22px;margin:28px 0 10px}
+.sub{text-align:center;color:var(--muted);margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:16px}
+.pitch{border-color:var(--gold-hi);text-align:center;padding:20px 16px}
+.pitch h2{margin:0 0 10px}
+.pitch ul{list-style:none;margin:0 auto 16px;padding:0;max-width:420px;text-align:left}
+.pitch li{position:relative;padding:3px 0 3px 30px;font-size:16px}
+.pitch li::before{content:"";position:absolute;left:4px;top:10px;width:14px;height:8px;border-left:2.5px solid var(--gold);border-bottom:2.5px solid var(--gold);transform:rotate(-45deg)}
+#gbtn{display:flex;justify-content:center;min-height:44px}
+.fine{font-size:13px;color:var(--muted);margin:12px 0 0;line-height:1.6}
+.wait{color:var(--muted);font-size:15px;margin:0}
+.me{display:flex;align-items:center;gap:12px}
+.me .av{width:46px;height:46px;border-radius:50%;background:var(--soft);display:grid;place-items:center;overflow:hidden;flex-shrink:0;font-family:var(--display);font-size:22px;color:var(--navy)}
+.me .av img{width:100%;height:100%;object-fit:cover}
+.me .who{flex:1;min-width:0;line-height:1.35}.me .who b{display:block;font-weight:600}.me .who small{color:var(--muted);font-size:13px;overflow-wrap:anywhere}
+.lnk{background:none;border:0;padding:6px 4px;font:inherit;font-size:14px;color:var(--link);cursor:pointer;text-decoration:underline}
+.imp{margin-top:12px;border-color:var(--gold-hi)}
+.imp p{margin:0 0 10px}
+.btn{display:inline-block;background:var(--navy);color:#fff;border:0;border-radius:10px;padding:10px 18px;font:inherit;font-weight:600;font-size:15px;cursor:pointer;text-decoration:none}
+.btn.ghost{background:transparent;color:var(--link);border:1px solid var(--rule)}
+:root[data-theme="dark"] .btn:not(.ghost){background:#e0b45c;color:#13294b}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn:not(.ghost){background:#e0b45c;color:#13294b}}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.stat{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:12px 8px;text-align:center}
+.stat b{display:block;font-family:var(--display);font-weight:400;font-size:28px;line-height:1.2}
+.stat span{font-size:13px;color:var(--muted)}
+.trend{display:flex;align-items:flex-end;gap:4px;height:90px;padding:8px 10px 0;border-bottom:1px solid var(--rule)}
+.trend i{flex:1;max-width:26px;border-radius:4px 4px 0 0;min-height:3px}
+.cap{font-size:13px;color:var(--muted);margin:6px 0 0}
+.rows{display:flex;flex-direction:column;gap:8px}
+.row{display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:center;padding:10px 12px;background:var(--card);border:1px solid var(--rule);border-radius:12px;color:var(--ink);text-decoration:none}
+a.row:hover{border-color:var(--gold)}
+.row .nm{font-weight:600;font-size:16px;line-height:1.35}
+.row .vl{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.row .mt{grid-column:1/-1;font-size:13px;color:var(--muted)}
+.mb{grid-column:1/-1;height:6px;border-radius:6px;background:var(--soft);overflow:hidden}
+.mb i{display:block;height:100%;border-radius:6px}
+.g{background:var(--good)}.m{background:var(--mid)}.r{background:var(--bad)}
+.tg{color:var(--good)}.tm{color:var(--mid)}.tr{color:var(--bad)}
+.empty{text-align:center;color:var(--muted)}
+.more{display:block;margin:12px auto 0}
+.danger{margin-top:36px;text-align:center}
+.danger .lnk{color:var(--bad)}
+.local{font-size:14px;color:var(--muted);text-align:center;margin:8px 0 0}
+footer{text-align:center;color:var(--muted);font-size:13px;margin-top:40px}
+</style>
+<link rel="manifest" href="/manifest.webmanifest">
+<script src="/js/app.js" defer></script>
+<script src="/js/account.js" defer></script>
+</head>
+<body>
+<div class="bar"><a href="/"><img src="/img/logo/final-onnavy-transparent.svg" alt="লিয়ানা বুকস" width="110" height="80"></a><nav class="sec" aria-label="সাইটের অংশ"><a href="/bcs/">বিসিএস</a><a href="/jobs/">চাকরি</a><a href="/science/">বিজ্ঞান</a><a href="/running/">চলমান</a></nav></div>
+<div class="wrap">
+  <h1>আমার ড্যাশবোর্ড</h1>
+  <p class="sub" id="sub">পরীক্ষা দিতে লগইন লাগে না। চাইলে লগইন করে নিজের অগ্রগতি রাখুন।</p>
+  <div id="top"></div>
+  <div id="dash"></div>
+  <footer>লিয়ানা বুকস · lyannabooks.com · <a href="/privacy/">গোপনীয়তা</a></footer>
+</div>
+<script>
+// account.js (defer) আগে চলে নিক, তাই পুরো কাজ DOMContentLoaded-এ
+addEventListener('DOMContentLoaded',function(){
+const $=id=>document.getElementById(id);
+const bn=n=>String(n).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+const en=s=>+String(s).replace(/[০-৯]/g,d=>'০১২৩৪৫৬৭৮৯'.indexOf(d));
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=x=>(x<0?'−':'')+bn(Math.abs(Math.round(x*100)/100));
+const pct=r=>Math.round(Math.max(0,r)*100);
+const tone=p=>p>=50?'g':p>=30?'m':'r';
+const MON=['জানু','ফেব্রু','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টে','অক্টো','নভে','ডিসে'];
+const day=ts=>{const d=new Date(ts);return bn(d.getDate())+' '+MON[d.getMonth()]};
+const L=window.LBA,get=L.get,set=L.set;
+
+// বিজ্ঞানের অধ্যায়: /science/-এর ক্রমে
+const CH=[['magnet','চুম্বক'],['sound','শব্দ'],['electricity','বিদ্যুৎ'],['measure','পরিমাপ, বল ও শক্তি'],['heat','তাপ'],['modern','আধুনিক পদার্থবিজ্ঞান'],['light','আলো'],
+  ['matter','পদার্থের গঠন ও বিক্রিয়া'],['metals','ধাতু, অধাতু ও যৌগ'],['acid','অম্ল, ক্ষারক ও লবণ'],['water','পানি'],['polymer','পলিমার'],['resources','আমাদের সম্পদ'],
+  ['biology','মৌলিক জীববিজ্ঞান'],['plants','উদ্ভিদজগৎ'],['human-body','মানবদেহ'],['food','খাদ্য ও পুষ্টি'],['genetics','বংশগতি ও জীবপ্রযুক্তি'],['disease','রোগ ও স্বাস্থ্যসেবা'],['air','বায়ুমণ্ডল'],['earth','পৃথিবী ও মহাকাশ']];
+const CHN=Object.fromEntries(CH);
+const SERIES={petrobangla:['petrobangla','পেট্রোবাংলা'],subreg:['sub-registrar','সাব-রেজিস্ট্রার']};
+const KIND={ch:'বিজ্ঞান অধ্যায়',jsci:'চাকরির বিজ্ঞান',bcs:'বিসিএস প্রিলি',job:'চাকরির পরীক্ষা',run:'চলমান নিয়োগ'};
+
+// এই ফোনে আগে থেকে থাকা ফল (লগইন চালুর আগের পাতাগুলো যেভাবে রাখত) + নতুন 'lb:att'
+async function localRows(){
+  const dev=L.dev,out={},keys=[];
+  for(let i=0;i<localStorage.length;i++)keys.push(localStorage.key(i));
+  const arr=k=>{const v=get(k,null);return Array.isArray(v)?v.filter(x=>x&&typeof x.s==='number'&&x.n):[]};
+  const ts=(x,i)=>{if(x.ts)return x.ts;const m=String(x.d||'').split('/').map(en);return m.length===3&&m[2]?new Date(m[2],m[1]-1,m[0],12,0,i).getTime():Date.now()};
+  const add=(key,i,x,o)=>{const k=dev+':'+key+'#'+i;out[k]={k,ts:ts(x,i),s:x.s,n:x.n,...o}};
+  let bcat=null,jcat=null;const plans={};
+  for(const key of keys){
+    let m;
+    if((m=key.match(/^([a-z-]+)-scores$/))){
+      const slug=m[1]==='jobsci'?'job-science':m[1];
+      arr(key).forEach((x,i)=>add(key,i,x,slug==='job-science'?{c:'jsci',t:'চাকরির পরীক্ষার বিজ্ঞান',p:'/job-science/'}:{c:'ch',t:CHN[slug]||slug,p:'/'+slug+'/'}));
+    }else if((m=key.match(/^bcs-(.+)$/))&&arr(key).length){
+      if(!bcat)bcat=await fetch('/bcs/data/catalog.json').then(r=>r.json()).catch(()=>({}));
+      const id=m[1],s=id.startsWith('s-')&&(bcat.sets||[]).find(s=>'s-'+s.id===id),e=(bcat.exams||[]).find(e=>e.id===id);
+      const t=e?e.title:s?s.s+': সেট '+bn(s.part):'বিসিএস প্রিলি';
+      arr(key).forEach((x,i)=>add(key,i,x,{c:'bcs',t,p:'/bcs/#/'+(s?'p/'+s.id:'x/'+id)}));
+    }else if((m=key.match(/^job-(.+)$/))&&arr(key).length){
+      if(!jcat)jcat=await fetch('/jobs/data/catalog.json').then(r=>r.json()).catch(()=>({}));
+      const e=(jcat.exams||[]).find(e=>e.id===m[1]);
+      const t=e?(e.orgbn.match(/\(([^)]+)\)\s*$/)||[,e.orgbn])[1]+' · '+e.postbn+(e.year==='misc'?'':' '+bn(e.year)):'চাকরির পরীক্ষা';
+      arr(key).forEach((x,i)=>add(key,i,x,{c:'job',t,p:'/jobs/#/x/'+m[1]}));
+    }else if((m=key.match(/^series-(.+)$/))&&SERIES[m[1]]){
+      const st=get(key,{}),[dir,short]=SERIES[m[1]];if(!st||typeof st!=='object')continue;
+      if(!plans[dir])plans[dir]=await fetch('/running/'+dir+'/data/plan.json').then(r=>r.json()).catch(()=>({exams:[]}));
+      Object.keys(st).forEach(id=>{const e=plans[dir].exams.find(e=>e.id===id),t=short+' · '+(e?(e.label||'টাস্ক '+bn(e.day))+': '+e.title:id);
+        (Array.isArray(st[id])?st[id]:[]).forEach((x,i)=>{if(x&&typeof x.s==='number'&&x.n){const k=dev+':'+key+':'+id+'#'+i;out[k]={k,ts:ts(x,i),s:x.s,n:x.n,c:'run',t,p:'/running/'+dir+'/#/x/'+id,sb:x.sb}}})});
+    }
+  }
+  get('lb:att',[]).forEach(a=>{if(a&&a.k)out[a.k]=a});   // নতুন রেকর্ডে বিস্তারিত বেশি, তাই সেটাই থাকে
+  return Object.values(out).sort((a,b)=>b.ts-a.ts);
+}
+
+// ---------- ড্যাশবোর্ড ----------
+let shown=20;
+function draw(rows,mine){
+  const D=$('dash');
+  if(!rows.length){D.innerHTML=mine?'<p class="empty" style="margin-top:24px">এখনো কোনো পরীক্ষা দেননি। <a href="/exams/">পরীক্ষা দিন →</a></p>':'';return}
+  const r=x=>x.s/x.n,avg=rows.reduce((a,x)=>a+r(x),0)/rows.length,week=rows.filter(x=>x.ts>Date.now()-7*864e5).length;
+  let h=mine?'':'<h2>এই ফোনের ফল</h2><p class="local" style="text-align:left;margin:-4px 0 0">লগইন না করলে এগুলো শুধু এই ফোনে থাকে।</p>';
+  h+=`<div class="stats"><div class="stat"><b>${bn(rows.length)}</b><span>মোট পরীক্ষা</span></div><div class="stat"><b>${bn(pct(avg))}%</b><span>গড় নম্বর</span></div><div class="stat"><b>${bn(week)}</b><span>গত ৭ দিনে</span></div></div>`;
+  const last=rows.slice(0,20).reverse();
+  if(last.length>1)h+=`<h2>সাম্প্রতিক অগ্রগতি</h2><div class="trend" role="img" aria-label="শেষ ${bn(last.length)}টি পরীক্ষার নম্বর">${last.map(x=>`<i class="${tone(pct(r(x)))}" style="height:${Math.max(3,pct(r(x)))}%" title="${esc(x.t)}: ${bn(pct(r(x)))}%"></i>`).join('')}</div><p class="cap">শেষ ${bn(last.length)}টি পরীক্ষা, বাঁ থেকে ডানে পুরোনো থেকে নতুন (নম্বর শতাংশে)</p>`;
+
+  // অধ্যায়: শেষ ৩টি পরীক্ষার গড়
+  const byc={};rows.filter(x=>x.c==='ch').forEach(x=>{const s=(x.p||'').split('/')[1];if(CHN[s])(byc[s]=byc[s]||[]).push(x)});
+  const chs=CH.filter(([s])=>byc[s]).map(([s,nm])=>{const L=byc[s],l3=L.slice(0,3);return {s,nm,k:L.length,last:pct(r(L[0])),best:Math.max(...L.map(x=>pct(r(x)))),v:pct(l3.reduce((a,x)=>a+r(x),0)/l3.length)}});
+  // বিষয়: সব পরীক্ষার বিষয়ভিত্তিক হিসাব যোগ করে
+  const ALIAS={English:'ইংরেজি','সাধারণ গণিত':'গণিত'},bys={};rows.forEach(x=>{if(x.sb)Object.entries(x.sb).forEach(([k,v])=>{k=ALIAS[k]||k;const b=bys[k]=bys[k]||[0,0];b[0]+=v[0];b[1]+=v[1]})});
+  const subs=Object.entries(bys).filter(([,v])=>v[1]>=10).map(([k,v])=>({k,ok:v[0],n:v[1],v:pct(v[0]/v[1])})).sort((a,b)=>a.v-b.v);
+  const weak=[...chs.filter(c=>c.v<50).map(c=>({nm:c.nm+' (অধ্যায়)',v:c.v,href:'/'+c.s+'/',mt:'শেষ '+bn(Math.min(3,c.k))+'টি পরীক্ষার গড়'})),
+    ...subs.filter(s=>s.v<50).map(s=>({nm:s.k,v:s.v,mt:bn(s.n)+'টি প্রশ্নের '+bn(s.ok)+'টি সঠিক'}))].sort((a,b)=>a.v-b.v).slice(0,5);
+  if(chs.length||subs.length){
+    h+='<h2>দুর্বল জায়গা</h2>'+(weak.length?`<div class="rows">${weak.map(w=>`<${w.href?`a href="${w.href}"`:'div'} class="row"><span class="nm">${esc(w.nm)}</span><span class="vl t${tone(w.v)}">${bn(w.v)}%</span><span class="mb"><i class="${tone(w.v)}" style="width:${w.v}%"></i></span><span class="mt">${w.mt}${w.href?' · আবার দিন →':''}</span></${w.href?'a':'div'}>`).join('')}</div>`
+      :'<p class="wait">বড় কোনো দুর্বলতা নেই, ৫০%-এর নিচে কোনো অধ্যায় বা বিষয় নেই। চমৎকার!</p>');
+  }
+  if(chs.length){
+    h+=`<h2>বিজ্ঞানের অধ্যায়</h2><div class="rows">${chs.map(c=>`<a class="row" href="/${c.s}/"><span class="nm">${esc(c.nm)}</span><span class="vl t${tone(c.last)}">${bn(c.last)}%</span><span class="mb"><i class="${tone(c.last)}" style="width:${c.last}%"></i></span><span class="mt">${bn(c.k)} বার দিয়েছেন · শেষবার ${bn(c.last)}% · সেরা ${bn(c.best)}%</span></a>`).join('')}</div>`+
+      (chs.length<CH.length?`<p class="cap">বাকি ${bn(CH.length-chs.length)}টি অধ্যায় এখনো দেননি। <a href="/science/">অধ্যায়গুলো দেখুন →</a></p>`:'');
+  }
+  if(subs.length){
+    const S=[...subs].sort((a,b)=>b.n-a.n);
+    h+=`<h2>বিষয়ভিত্তিক</h2><div class="rows">${S.map(s=>`<div class="row"><span class="nm">${esc(s.k)}</span><span class="vl t${tone(s.v)}">${bn(s.v)}%</span><span class="mb"><i class="${tone(s.v)}" style="width:${s.v}%"></i></span><span class="mt">${bn(s.n)}টি প্রশ্নের ${bn(s.ok)}টি সঠিক</span></div>`).join('')}</div>`;
+  }
+  h+=`<h2>পরীক্ষার ইতিহাস</h2><div class="rows">${rows.slice(0,shown).map(x=>`<a class="row" href="${esc(x.p||'/exams/')}"><span class="nm">${esc(x.t||KIND[x.c]||'পরীক্ষা')}</span><span class="vl t${tone(pct(r(x)))}">${fmt(x.s)}/${bn(x.n)}</span><span class="mt">${day(x.ts)} · ${KIND[x.c]||''}${x.ok!=null?' · সঠিক '+bn(x.ok)+', ভুল '+bn(x.no):''}</span></a>`).join('')}</div>`+
+    (rows.length>shown?`<button type="button" class="btn ghost more" id="more">আরও দেখুন (${bn(rows.length-shown)})</button>`:'');
+  if(mine)h+='<div class="danger"><button type="button" class="lnk" id="del">আমার সব তথ্য মুছে ফেলুন</button></div>';
+  D.innerHTML=h;
+  if($('more'))$('more').onclick=()=>{shown+=50;draw(rows,mine)};
+  if($('del'))$('del').onclick=delAll;
+}
+
+// ---------- লগইন ----------
+function pitch(cid,n){
+  $('top').innerHTML=`<div class="card pitch"><h2>লগইন করলে পাবেন</h2><ul>
+    <li>সব পরীক্ষার ফল এক জায়গায়, ফোন বদলালেও হারাবে না</li>
+    <li>অধ্যায় আর বিষয় ধরে নিজের অগ্রগতি</li>
+    <li>কোথায় দুর্বল, তার তালিকা</li>
+    <li>মোবাইল আর কম্পিউটারে একই হিসাব</li></ul>
+    ${cid?'<div id="gbtn"></div>':'<p class="wait">লগইন শিগগিরই চালু হচ্ছে। ততক্ষণ এই ফোনের ফল নিচে দেখতে পাবেন।</p>'}
+    ${n?`<p class="fine">এই ফোনে আগের ${bn(n)}টি পরীক্ষার ফল আছে। লগইন করলে এগুলোও যোগ করতে পারবেন।</p>`:''}
+    <p class="fine">পাসওয়ার্ড বা ফোন নম্বর লাগে না। শুধু নাম, ইমেইল আর পরীক্ষার ফল রাখা হয়, যেকোনো সময় মুছে ফেলা যায়। <a href="/privacy/">বিস্তারিত</a></p></div>`;
+  if(cid)gis(cid);
+}
+function gis(cid){
+  const go=()=>{google.accounts.id.initialize({client_id:cid,callback:onCred,ux_mode:'popup',context:'signin'});
+    google.accounts.id.renderButton($('gbtn'),{theme:'filled_blue',size:'large',shape:'pill',text:'continue_with',locale:'bn',width:280})};
+  if(window.google&&google.accounts)return go();
+  const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.async=true;s.onload=go;
+  s.onerror=()=>{$('gbtn').innerHTML='<p class="wait">Google লোড হয়নি। ইন্টারনেট দেখে পাতাটা আবার খুলুন।</p>'};document.head.appendChild(s);
+}
+async function onCred(res){
+  $('gbtn').innerHTML='<p class="wait">লগইন হচ্ছে…</p>';
+  try{
+    const r=await fetch('/api/login',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({credential:res.credential})});
+    const j=await r.json();if(!r.ok||!j.user)throw 0;
+    set('lb:u',j.user);main();
+  }catch(e){$('gbtn').innerHTML='<p class="wait">লগইন হয়নি। একটু পরে আবার চেষ্টা করুন।</p>';setTimeout(main,2500)}
+}
+async function logout(){
+  await fetch('/api/logout',{method:'POST',credentials:'same-origin'}).catch(()=>{});
+  set('lb:u',null);if(window.google&&google.accounts)google.accounts.id.disableAutoSelect();main();
+}
+let delArmed=0;
+async function delAll(){
+  const b=$('del');
+  if(Date.now()-delArmed>5000){delArmed=Date.now();b.textContent='নিশ্চিত? সার্ভার থেকে সব ফল আর অ্যাকাউন্ট মুছে যাবে। আবার চাপুন';return}
+  b.textContent='মুছে ফেলা হচ্ছে…';
+  const r=await fetch('/api/delete',{method:'POST',credentials:'same-origin'}).catch(()=>null);
+  if(!r||!r.ok){b.textContent='মুছে ফেলা যায়নি, আবার চেষ্টা করুন';delArmed=0;return}
+  set('lb:u',null);set('lb:q',[]);set('lb:noimp',0);main();
+}
+function head(u){
+  $('sub').textContent='আপনার সব পরীক্ষার ফল, সব ফোনে একই।';
+  $('top').innerHTML=`<div class="card me"><span class="av">${u.pic?`<img src="${esc(u.pic)}" alt="" referrerpolicy="no-referrer">`:esc((u.name||'?').slice(0,1))}</span><span class="who"><b>${esc(u.name||'আমার অ্যাকাউন্ট')}</b><small>${esc(u.email)}</small></span><button type="button" class="lnk" id="out">লগআউট</button></div><div id="imp"></div>`;
+  $('out').onclick=logout;
+}
+// এই ফোনের যে ফল অ্যাকাউন্টে নেই, এক ট্যাপে যোগ
+function offer(miss,reload){
+  if(!miss.length||get('lb:noimp',0))return;
+  $('imp').innerHTML=`<div class="card imp"><p>এই ফোনে আগের <b>${bn(miss.length)}টি</b> পরীক্ষার ফল আছে, যা আপনার অ্যাকাউন্টে নেই। যোগ করবেন?</p><button type="button" class="btn" id="impy">হ্যাঁ, যোগ করুন</button> <button type="button" class="btn ghost" id="impn">না, থাক</button></div>`;
+  $('impn').onclick=()=>{set('lb:noimp',1);$('imp').innerHTML=''};
+  $('impy').onclick=async()=>{
+    $('impy').disabled=true;$('impy').textContent='যোগ হচ্ছে…';
+    for(let i=0;i<miss.length;i+=300){
+      const r=await fetch('/api/att',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({a:miss.slice(i,i+300)})}).catch(()=>null);
+      if(!r||!r.ok){$('impy').disabled=false;$('impy').textContent='আবার চেষ্টা করুন';return}
+    }
+    $('imp').innerHTML='';reload();
+  };
+}
+
+async function main(){
+  shown=20;
+  const local=await localRows();
+  let me=null,cid='',online=true;
+  try{const j=await fetch('/api/me',{credentials:'same-origin',cache:'no-store'}).then(r=>r.json());me=j.user;cid=j.cid}catch(e){online=false;me=get('lb:u',null)}
+  if(online)set('lb:u',me);
+  if(!me){pitch(cid,local.length);draw(local,false);return}
+  head(me);
+  if(!online){$('imp').innerHTML='<p class="local">ইন্টারনেট নেই, তাই শুধু এই ফোনের ফল দেখানো হচ্ছে।</p>';draw(local,true);return}
+  await L.flush();
+  const load=async()=>{
+    const j=await fetch('/api/att',{credentials:'same-origin',cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null);
+    if(!j){draw(local,true);return}
+    const have=new Set(j.a.map(x=>x.k));
+    draw(j.a,true);offer(local.filter(x=>!have.has(x.k)),load);
+  };
+  $('dash').innerHTML='<p class="empty">লোড হচ্ছে…</p>';
+  await load();
+}
+main();
+});
+</script>
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "6b92edeb250b475e9d759f64df8eb91e"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+</html>
