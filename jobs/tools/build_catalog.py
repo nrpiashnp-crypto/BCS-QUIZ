@@ -44,6 +44,12 @@ for f in sorted(glob.glob(os.path.join(ROOT, 'cat', '*.json'))):
         e['n'] = len(qs)
         byid[e['id']] = {k: v for k, v in e.items()}
     print(os.path.basename(f), len(frag))
+# recount every exam, so questions appended to an existing paper update its n without a fragment entry
+for e in byid.values():
+    data = os.path.join(ROOT, 'e', e['id'] + '.json')
+    if not os.path.exists(data):
+        errors.append(f'{e["id"]}: no data file'); continue
+    e['n'] = len(json.load(open(data, encoding='utf-8')))
 if errors:
     print('\n'.join(errors)); sys.exit(1)
 catalog['exams'] = list(byid.values())
