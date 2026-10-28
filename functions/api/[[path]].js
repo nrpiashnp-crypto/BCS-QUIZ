@@ -6,7 +6,13 @@
    POST /api/logout
    GET  /api/att       → নিজের সব পরীক্ষার ফল
    POST /api/att       {a:[ফল…]} → জমা (একই k দুবার এলে একবারই থাকে)
-   POST /api/delete    → নিজের সব তথ্য মুছে যায় */
+   POST /api/delete    → নিজের সব তথ্য মুছে যায়
+   টপিক লাইব্রেরি (শুধু অ্যাডমিন: এনভায়রনমেন্ট ভেরিয়েবল ADMIN_EMAILS-এ থাকা ইমেইল, কমা দিয়ে আলাদা; লেখা থাকে শুধু D1-এ, রিপোতে নয়):
+   GET  /api/lib/stats              → বিষয়/উৎস ধরে গণনা, বেশি ব্যবহৃত ট্যাগ
+   GET  /api/lib/search?q=&subject=&kind=&chapter=&tag=&offset=  → মিলে যাওয়া অংশ (পুরো লেখা নয়, এক টুকরো)
+   POST /api/lib/get    {ids:[…]}   → পুরো লেখাসহ অংশগুলো
+   POST /api/lib/import {topics:[…]} → একই id আবার এলে হালনাগাদ, ডুপ্লিকেট নয় (এক বারে ১৫টি)
+   POST /api/lib/remove {ids:[…]} */
 const COOKIE = 'lb_s', AGE = 180 * 86400;
 const MAX_BATCH = 300, MAX_ROWS = 3000;
 
@@ -16,6 +22,15 @@ const SCHEMA = [
   'CREATE TABLE IF NOT EXISTS att(uid INTEGER NOT NULL, k TEXT NOT NULL, ts INTEGER NOT NULL, c TEXT, t TEXT, p TEXT, s REAL, n INTEGER, ok INTEGER, no INTEGER, sec INTEGER, sb TEXT, PRIMARY KEY(uid, k))',
   'CREATE INDEX IF NOT EXISTS att_ts ON att(uid, ts)'
 ];
+const LIB_SCHEMA = [
+  'CREATE TABLE IF NOT EXISTS lib_sources(id TEXT PRIMARY KEY, title TEXT, subject TEXT, exam TEXT, updated INTEGER)',
+  'CREATE TABLE IF NOT EXISTS lib_topics(id TEXT PRIMARY KEY, source_id TEXT, subject TEXT, exam TEXT, chapter INTEGER, chapter_title TEXT, section_no TEXT, section_title TEXT, parent_section TEXT, kind TEXT, pages TEXT, source TEXT, tags TEXT, text TEXT, updated INTEGER)',
+  'CREATE TABLE IF NOT EXISTS lib_tags(topic_id TEXT NOT NULL, tag TEXT NOT NULL, PRIMARY KEY(topic_id, tag))',
+  'CREATE INDEX IF NOT EXISTS lib_tags_tag ON lib_tags(tag)',
+  'CREATE INDEX IF NOT EXISTS lib_topics_sub ON lib_topics(subject, chapter)'
+];
+// D1-এর সীমা: ফ্রি প্ল্যানে এক অনুরোধে ৫০টি কোয়েরি, এক কোয়েরিতে ১০০টি প্যারামিটার
+const LIB_PAGE = 30, LIB_IMPORT = 15, LIB_IDS = 90;
 
 const json = (o, status = 200, headers = {}) => new Response(JSON.stringify(o), {
   status, headers: {'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...headers}
@@ -103,6 +118,126 @@ async function login(req, env, db) {
   return json({user: pub(u)}, 200, {'Set-Cookie': cookie(token, AGE)});
 }
 
+// ---------- টপিক লাইব্রেরি ----------
+const isAdmin = (u, env) => !!u && !!u.email &&
+  String(env.ADMIN_EMAILS || '').toLowerCase().split(/[\s,]+/).filter(Boolean).includes(u.email.toLowerCase());
+const nfc = v => typeof v === 'string' ? v.normalize('NFC').trim() : '';
+const likeEsc = s => s.replace(/[\\%_]/g, c => '\\' + c);
+
+function libClean(t) {
+  if (!t || typeof t !== 'object') return null;
+  const id = nfc(t.id).slice(0, 80), text = nfc(t.text);
+  if (!/^[A-Za-z0-9._-]+$/.test(id) || !text) return null;
+  let tags = Array.isArray(t.tags) ? t.tags : String(t.tags || '').split(/\s*;\s*/);
+  tags = [...new Set(tags.map(x => nfc(String(x)).slice(0, 160)).filter(Boolean))].slice(0, 40);
+  const source = nfc(t.source).slice(0, 200);
+  return {
+    id, text: text.slice(0, 200000), tags, source,
+    source_id: (nfc(t.source_id) || id.split('-')[0]).slice(0, 80),
+    subject: nfc(t.subject).slice(0, 80), exam: nfc(t.exam).slice(0, 80),
+    chapter: Number.isFinite(+t.chapter) ? Math.round(+t.chapter) : null,
+    chapter_title: nfc(t.chapter_title).slice(0, 200), section_no: nfc(t.section_no).slice(0, 30),
+    section_title: nfc(t.section_title).slice(0, 300), parent_section: nfc(t.parent_section).slice(0, 300),
+    kind: nfc(t.kind).slice(0, 30) || 'section', pages: nfc(t.pages).slice(0, 30)
+  };
+}
+
+async function libImport(req, db) {
+  const body = await req.json().catch(() => ({}));
+  const rows = (Array.isArray(body.topics) ? body.topics : []).slice(0, LIB_IMPORT).map(libClean).filter(Boolean);
+  if (!rows.length) return json({ok: true, saved: 0});
+  const now = Date.now(), st = [];
+  const up = db.prepare(`INSERT INTO lib_topics(id, source_id, subject, exam, chapter, chapter_title, section_no, section_title, parent_section, kind, pages, source, tags, text, updated)
+    VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET source_id=excluded.source_id, subject=excluded.subject, exam=excluded.exam,
+    chapter=excluded.chapter, chapter_title=excluded.chapter_title, section_no=excluded.section_no, section_title=excluded.section_title,
+    parent_section=excluded.parent_section, kind=excluded.kind, pages=excluded.pages, source=excluded.source, tags=excluded.tags, text=excluded.text, updated=excluded.updated`);
+  const src = db.prepare('INSERT INTO lib_sources(id, title, subject, exam, updated) VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET subject=excluded.subject, exam=excluded.exam, updated=excluded.updated');
+  const seen = new Set();
+  st.push(db.prepare(`DELETE FROM lib_tags WHERE topic_id IN (${rows.map(() => '?').join(',')})`).bind(...rows.map(r => r.id)));
+  for (const r of rows) {
+    // tags কলামে দুই পাশে '; ' রাখা হয়, তাই LIKE '%; সুন্দরবন; %' দিয়ে পুরো ট্যাগ মেলানো যায়
+    st.push(up.bind(r.id, r.source_id, r.subject, r.exam, r.chapter, r.chapter_title, r.section_no, r.section_title, r.parent_section,
+      r.kind, r.pages, r.source, '; ' + r.tags.join('; ') + '; ', r.text, now));
+    if (r.tags.length) st.push(db.prepare('INSERT OR IGNORE INTO lib_tags(topic_id, tag) VALUES' + r.tags.map(() => '(?,?)').join(','))
+      .bind(...r.tags.flatMap(t => [r.id, t])));
+    if (!seen.has(r.source_id)) { seen.add(r.source_id); st.push(src.bind(r.source_id, r.source.replace(/,?\s*অধ্যায়.*$/, ''), r.subject, r.exam, now)); }
+  }
+  await db.batch(st);
+  return json({ok: true, saved: rows.length});
+}
+
+// প্রতিটি শব্দ শিরোনাম/ট্যাগ/লেখার কোথাও থাকতে হবে; শিরোনাম আর ট্যাগে মিললে আগে আসে
+async function libSearch(url, db) {
+  const p = k => nfc(url.searchParams.get(k) || '');
+  const words = p('q').split(/\s+/).filter(Boolean).slice(0, 6);
+  const off = Math.max(0, Math.min(5000, parseInt(p('offset')) || 0));
+  const where = [], args = [], score = [], sargs = [];
+  for (const w of words) {
+    const l = '%' + likeEsc(w) + '%';
+    where.push("(section_title LIKE ? ESCAPE '\\' OR parent_section LIKE ? ESCAPE '\\' OR tags LIKE ? ESCAPE '\\' OR text LIKE ? ESCAPE '\\')");
+    args.push(l, l, l, l);
+    score.push("(CASE WHEN section_title LIKE ? ESCAPE '\\' THEN 10 ELSE 0 END + CASE WHEN tags LIKE ? ESCAPE '\\' THEN 6 ELSE 0 END + CASE WHEN parent_section LIKE ? ESCAPE '\\' THEN 3 ELSE 0 END + CASE WHEN text LIKE ? ESCAPE '\\' THEN 1 ELSE 0 END)");
+    sargs.push(l, l, l, l);
+  }
+  if (p('q') && words.length > 1) {
+    score.push("(CASE WHEN section_title LIKE ? ESCAPE '\\' THEN 15 ELSE 0 END)");
+    sargs.push('%' + likeEsc(words.join(' ')) + '%');
+  }
+  for (const [k, col] of [['subject', 'subject'], ['kind', 'kind'], ['source', 'source_id']]) if (p(k)) { where.push(col + ' = ?'); args.push(p(k)); }
+  if (p('chapter')) { where.push('chapter = ?'); args.push(parseInt(p('chapter')) || 0); }
+  if (p('tag')) { where.push('id IN (SELECT topic_id FROM lib_tags WHERE tag = ?)'); args.push(p('tag')); }
+  const w = where.length ? 'WHERE ' + where.join(' AND ') : '';
+  const sc = score.length ? score.join(' + ') : '0';
+  const total = (await db.prepare(`SELECT COUNT(*) n FROM lib_topics ${w}`).bind(...args).first()).n;
+  const {results} = await db.prepare(`SELECT id, subject, exam, chapter, chapter_title, section_no, section_title, parent_section, kind, pages, source, tags,
+      length(text) len, substr(text, 1, 6000) head, ${sc} score FROM lib_topics ${w} ORDER BY score DESC, subject, chapter, id LIMIT ? OFFSET ?`)
+    .bind(...sargs, ...args, LIB_PAGE, off).all();
+  const lw = words.map(x => x.toLowerCase());
+  return json({total, offset: off, items: results.map(r => {
+    const {head, tags, ...o} = r;
+    // প্রথম যে শব্দটা লেখায় মেলে তার আশেপাশের টুকরো
+    let at = -1; for (const x of lw) { at = head.toLowerCase().indexOf(x); if (at >= 0) break; }
+    const a = Math.max(0, at - 120);
+    return {...o, tags: tags.split('; ').filter(Boolean), snippet: (a ? '…' : '') + head.slice(a, a + 360).replace(/\s+/g, ' ') + '…'};
+  })});
+}
+
+async function libStats(db) {
+  const q = s => db.prepare(s).all().then(r => r.results);
+  const [subjects, sources, tags, kinds] = await Promise.all([
+    q('SELECT subject, COUNT(*) n, COUNT(DISTINCT chapter) ch FROM lib_topics GROUP BY subject ORDER BY n DESC'),
+    q('SELECT s.id, s.title, s.subject, s.exam, COUNT(t.id) n FROM lib_sources s LEFT JOIN lib_topics t ON t.source_id = s.id GROUP BY s.id ORDER BY s.subject, s.id'),
+    q('SELECT tag, COUNT(*) n FROM lib_tags GROUP BY tag HAVING n > 1 ORDER BY n DESC LIMIT 60'),
+    q('SELECT kind, COUNT(*) n FROM lib_topics GROUP BY kind ORDER BY n DESC')
+  ]);
+  return json({subjects, sources, tags, kinds});
+}
+
+async function lib(path, req, url, env, db, u) {
+  if (!u) return json({error: 'login'}, 401);
+  if (!isAdmin(u, env)) return json({error: 'admin'}, 403);
+  await db.batch(LIB_SCHEMA.map(s => db.prepare(s)));
+  const m = req.method;
+  if (path === 'lib/stats' && m === 'GET') return libStats(db);
+  if (path === 'lib/search' && m === 'GET') return libSearch(url, db);
+  if (path === 'lib/import' && m === 'POST') return libImport(req, db);
+  const ids = m === 'POST' ? await req.json().then(b => (Array.isArray(b.ids) ? b.ids : []).map(String).slice(0, LIB_IDS)).catch(() => []) : [];
+  if (path === 'lib/get' && m === 'POST') {
+    if (!ids.length) return json({items: []});
+    const {results} = await db.prepare(`SELECT * FROM lib_topics WHERE id IN (${ids.map(() => '?').join(',')})`).bind(...ids).all();
+    const by = Object.fromEntries(results.map(r => [r.id, {...r, tags: r.tags.split('; ').filter(Boolean)}]));
+    return json({items: ids.map(i => by[i]).filter(Boolean)});
+  }
+  if (path === 'lib/remove' && m === 'POST') {
+    if (ids.length) {
+      const qs = ids.map(() => '?').join(',');
+      await db.batch([db.prepare(`DELETE FROM lib_tags WHERE topic_id IN (${qs})`).bind(...ids), db.prepare(`DELETE FROM lib_topics WHERE id IN (${qs})`).bind(...ids)]);
+    }
+    return json({ok: true, removed: ids.length});
+  }
+  return json({error: 'not found'}, 404);
+}
+
 export async function onRequest({request: req, env}) {
   const url = new URL(req.url), path = url.pathname.replace(/^\/api\/?/, '').replace(/\/+$/, ''), m = req.method;
   if (m === 'POST') {
@@ -125,6 +260,7 @@ export async function onRequest({request: req, env}) {
       if (c) await db.prepare('DELETE FROM sessions WHERE token = ?').bind(await sha(c[1])).run().catch(() => {});
       return json({ok: true}, 200, {'Set-Cookie': cookie('', 0)});
     }
+    if (path.startsWith('lib/')) return await lib(path, req, url, env, db, u);
     if (!u) return json({error: 'login'}, 401);
 
     if (path === 'att' && m === 'GET') {

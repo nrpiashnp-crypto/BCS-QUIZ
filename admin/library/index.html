@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="theme-color" content="#13294b">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>টপিক লাইব্রেরি · লিয়ানা বুকস</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+:root{--paper:#fbfaf7;--ink:#1d1f21;--muted:#5f6366;--rule:#d9d6cf;--card:#fff;--navy:#13294b;--gold:#a8792a;--gold-hi:#e0b45c;--soft:#e9edf4;--mark:#fbe7a6;--link:#13294b;
+  --display:'Tiro Bangla',Georgia,serif;--body:'Noto Sans Bengali',system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#15181a;--ink:#e9e7e2;--muted:#a3a7aa;--rule:#33383b;--card:#1d2124;--gold:#e0b45c;--soft:#1c2536;--mark:#5a4a1c;--link:#e6c97a;color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#15181a;--ink:#e9e7e2;--muted:#a3a7aa;--rule:#33383b;--card:#1d2124;--gold:#e0b45c;--soft:#1c2536;--mark:#5a4a1c;--link:#e6c97a;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6}
+a{color:var(--link)}
+.bar{background:var(--navy);display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 16px;padding-top:max(8px,env(safe-area-inset-top,0px))}
+.bar img{width:96px;height:auto;display:block}.bar span{color:#e6c97a;font-size:14px}
+.wrap{max-width:860px;margin:0 auto;padding:20px 16px 120px}
+h1{font-family:var(--display);font-weight:400;font-size:28px;margin:0 0 4px}
+h2{font-family:var(--display);font-weight:400;font-size:20px;margin:26px 0 8px}
+.sub{color:var(--muted);margin:0 0 14px;font-size:14.5px}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:14px 16px}
+.btn{display:inline-block;background:var(--navy);color:#fff;border:0;border-radius:10px;padding:9px 16px;font:inherit;font-weight:600;font-size:15px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--link);border:1px solid var(--rule)}
+.btn:disabled{opacity:.5;cursor:default}
+:root[data-theme="dark"] .btn:not(.ghost){background:#e0b45c;color:#13294b}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn:not(.ghost){background:#e0b45c;color:#13294b}}
+form.q{display:flex;flex-wrap:wrap;gap:8px}
+form.q input[type=search]{flex:1 1 260px;min-width:0;font:inherit;font-size:17px;padding:10px 12px;border:1px solid var(--rule);border-radius:10px;background:var(--card);color:var(--ink)}
+select{font:inherit;font-size:14px;padding:8px;border:1px solid var(--rule);border-radius:10px;background:var(--card);color:var(--ink);max-width:100%}
+.stats{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;color:var(--muted);margin:10px 0 0}
+.stats b{color:var(--ink);font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0}
+.chip{border:1px solid var(--rule);background:var(--soft);color:var(--ink);border-radius:999px;padding:2px 10px;font:inherit;font-size:13px;cursor:pointer;line-height:1.6}
+.chip[aria-pressed=true]{background:var(--navy);color:#fff;border-color:var(--navy)}
+.count{margin:16px 0 8px;font-size:14px;color:var(--muted)}
+.res{display:flex;flex-direction:column;gap:10px}
+.it{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:12px 14px;display:grid;grid-template-columns:auto 1fr;gap:4px 12px}
+.it.on{border-color:var(--gold)}
+.it input{width:20px;height:20px;margin-top:4px;accent-color:var(--navy)}
+.it h3{margin:0;font-size:16.5px;line-height:1.45;font-weight:600}
+.it .meta{font-size:13px;color:var(--muted)}
+.it .snip{grid-column:2;font-size:14.5px;margin:2px 0 0;overflow-wrap:anywhere}
+.it .full{grid-column:1/-1;white-space:pre-wrap;font-size:15px;border-top:1px dashed var(--rule);padding-top:10px;margin-top:6px;overflow-wrap:anywhere}
+.it .tg{grid-column:2;display:flex;flex-wrap:wrap;gap:4px}.it .tg .chip{font-size:12px;padding:0 8px}
+.it .more{grid-column:2;justify-self:start;background:none;border:0;padding:2px 0;font:inherit;font-size:14px;color:var(--link);text-decoration:underline;cursor:pointer}
+.kind{display:inline-block;font-size:12px;border-radius:6px;padding:0 6px;background:var(--soft);margin-right:6px;vertical-align:1px}
+mark{background:var(--mark);color:inherit;border-radius:2px}
+.pager{display:flex;justify-content:center;gap:10px;margin:16px 0}
+.tray{position:fixed;left:0;right:0;bottom:0;background:var(--navy);color:#fff;padding:10px 16px;padding-bottom:max(10px,env(safe-area-inset-bottom,0px));display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px}
+.tray b{margin-right:6px}.tray .btn{background:#e0b45c;color:#13294b;padding:7px 12px;font-size:14px}.tray .btn.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.4)}
+.msg{color:var(--muted)}
+details.card summary{cursor:pointer;font-weight:600}
+.prog{height:8px;background:var(--soft);border-radius:4px;overflow:hidden;margin:10px 0 4px}.prog i{display:block;height:100%;width:0;background:var(--gold)}
+#gbtn{min-height:44px;margin-top:10px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="bar"><a href="/"><img src="/img/logo/final-onnavy-transparent.svg" alt="লিয়ানা বুকস" width="96" height="70"></a><span id="who"></span></div>
+<main class="wrap">
+<h1>টপিক লাইব্রেরি</h1>
+<p class="sub">শুধু অ্যাডমিনের জন্য। সব উৎস থেকে একটা টপিকের অংশ খুঁজে বাছাই করুন, তারপর একসাথে Markdown হিসেবে নামান।</p>
+
+<section id="gate" class="card" hidden></section>
+
+<div id="app" hidden>
+  <form class="q" id="qf">
+    <input type="search" id="q" placeholder="টপিক বা ট্যাগ লিখুন, যেমন সুন্দরবন" autocomplete="off">
+    <select id="subject" aria-label="বিষয়"><option value="">সব বিষয়</option></select>
+    <select id="kind" aria-label="ধরন"><option value="">সব ধরন</option><option value="section">সাধারণ লেখা</option><option value="question">প্রশ্নোত্তর</option><option value="past_questions">বিগত প্রশ্ন</option></select>
+    <button class="btn">খুঁজুন</button>
+  </form>
+  <div class="stats" id="stats"></div>
+  <div class="chips" id="tags"></div>
+  <p class="count" id="count"></p>
+  <div class="res" id="res"></div>
+  <div class="pager" id="pager"></div>
+
+  <h2>নতুন অংশ তোলা</h2>
+  <details class="card" id="imp">
+    <summary>CSV বা JSON ফাইল থেকে তুলুন</summary>
+    <p class="sub" style="margin-top:8px">ফাইলে প্রতিটি অংশে id আর text লাগবে; বাকি ঘর (subject, exam, chapter, chapter_title, section_no, section_title, parent_section, kind, tags, pages, source) থাকলে ভালো। একই id আবার তুললে আগেরটা হালনাগাদ হয়, ডুপ্লিকেট হয় না।</p>
+    <input type="file" id="file" accept=".json,.csv,application/json,text/csv">
+    <p id="impMsg" class="msg"></p>
+    <div class="prog" hidden><i id="bar"></i></div>
+    <button class="btn" id="go" hidden>তুলুন</button>
+  </details>
+</div>
+</main>
+
+<div class="tray" id="tray" hidden>
+  <b id="nsel"></b>
+  <button class="btn" id="dl">Markdown নামান</button>
+  <button class="btn" id="cp">কপি করুন</button>
+  <button class="btn ghost" id="clr">বাছাই মুছুন</button>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const BN='০১২৩৪৫৬৭৮৯',bn=n=>String(n).replace(/\d/g,d=>BN[d]);
+const KIND={section:'লেখা',question:'প্রশ্নোত্তর',past_questions:'বিগত প্রশ্ন'};
+const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let sel=store.get('lib:sel',[]),state={q:'',subject:'',kind:'',tag:'',offset:0},last=null;
+
+async function api(path,body){
+  const r=await fetch('/api/'+path,body?{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{credentials:'same-origin',cache:'no-store'});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok){const e=new Error(j.error||'server');e.status=r.status;throw e}
+  return j;
+}
+
+// ---- প্রবেশ ----
+async function start(){
+  try{const s=await api('lib/stats');$('gate').hidden=true;$('app').hidden=false;showStats(s);readHash();search()}
+  catch(e){gate(e.status)}
+}
+async function gate(st){
+  const g=$('gate');g.hidden=false;$('app').hidden=true;
+  if(st===403){
+    const me=await api('me').catch(()=>({}));
+    g.innerHTML='<b>এই পাতা শুধু অ্যাডমিনের জন্য।</b><p class="sub" style="margin:6px 0 0">আপনি লগইন করেছেন '+esc(me.user&&me.user.email||'')+' দিয়ে। এই ইমেইল Cloudflare-এর ADMIN_EMAILS ভেরিয়েবলে না থাকলে লাইব্রেরি খুলবে না।</p>';
+    return;
+  }
+  if(st!==401){g.innerHTML='<b>সার্ভার এখন সাড়া দিচ্ছে না।</b> <button class="btn ghost" onclick="location.reload()">আবার চেষ্টা</button>';return}
+  g.innerHTML='<b>লগইন করুন</b><p class="sub" style="margin:6px 0 0">অ্যাডমিন ইমেইলের Google অ্যাকাউন্ট দিয়ে।</p><div id="gbtn"></div>';
+  const me=await api('me').catch(()=>({}));
+  if(!me.cid){$('gbtn').textContent='লগইন এখনো চালু নেই।';return}
+  const go=()=>{google.accounts.id.initialize({client_id:me.cid,ux_mode:'popup',context:'signin',callback:async res=>{
+      try{const j=await api('login',{credential:res.credential});store.set('lb:u',j.user);start()}catch(e){$('gbtn').textContent='লগইন হয়নি, আবার চেষ্টা করুন।'}}});
+    google.accounts.id.renderButton($('gbtn'),{theme:'filled_blue',size:'large',shape:'pill',text:'continue_with',locale:'bn',width:260})};
+  const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.async=true;s.onload=go;document.head.appendChild(s);
+}
+
+function showStats(s){
+  const total=s.subjects.reduce((a,x)=>a+x.n,0);
+  $('stats').innerHTML='<span>মোট <b>'+bn(total)+'</b>টি অংশ</span>'+s.subjects.map(x=>'<span>'+esc(x.subject||'—')+': <b>'+bn(x.n)+'</b></span>').join('')+
+    '<span>'+s.sources.map(x=>esc(x.title||x.id)).join(' · ')+'</span>';
+  const sub=$('subject');sub.length=1;s.subjects.forEach(x=>sub.add(new Option(x.subject,x.subject)));
+  $('tags').innerHTML=s.tags.slice(0,16).map(t=>'<button type="button" class="chip" data-tag="'+esc(t.tag)+'">'+esc(t.tag)+' '+bn(t.n)+'</button>').join('');
+  if(!total)$('count').textContent='লাইব্রেরি এখনো খালি। নিচে থেকে ফাইল তুলুন।';
+}
+
+// ---- খোঁজা ----
+function readHash(){
+  const p=new URLSearchParams(location.hash.slice(1));
+  for(const k of ['q','subject','kind','tag'])state[k]=p.get(k)||'';
+  state.offset=+p.get('offset')||0;
+  $('q').value=state.q;$('subject').value=state.subject;$('kind').value=state.kind;
+}
+function writeHash(){
+  const p=new URLSearchParams();for(const k of ['q','subject','kind','tag'])if(state[k])p.set(k,state[k]);if(state.offset)p.set('offset',state.offset);
+  history.replaceState(null,'','#'+p.toString());
+}
+const words=()=>state.q.split(/\s+/).filter(Boolean);
+function hi(s){
+  let h=esc(s);
+  for(const w of words()){const e=esc(w).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');h=h.replace(new RegExp(e,'gi'),m=>'<mark>'+m+'</mark>')}
+  return h;
+}
+async function search(){
+  writeHash();
+  [...$('tags').children].forEach(b=>b.setAttribute('aria-pressed',b.dataset.tag===state.tag));
+  const p=new URLSearchParams();for(const k of ['q','subject','kind','tag','offset'])if(state[k])p.set(k,state[k]);
+  $('count').textContent='খোঁজা হচ্ছে…';
+  try{last=await api('lib/search?'+p)}catch(e){$('count').textContent='খোঁজা যায়নি ('+e.message+')।';return}
+  const {total,items,offset}=last;
+  $('count').textContent=total?('মিলেছে '+bn(total)+'টি অংশ'+(state.tag?' · ট্যাগ: '+state.tag:'')+(total>items.length?' · দেখানো হচ্ছে '+bn(offset+1)+'–'+bn(offset+items.length):'')):'কিছু মেলেনি।';
+  $('res').innerHTML=items.map(card).join('');
+  $('pager').innerHTML=(offset?'<button class="btn ghost" data-off="'+Math.max(0,offset-30)+'">← আগের</button>':'')+(offset+items.length<total?'<button class="btn ghost" data-off="'+(offset+30)+'">পরের →</button>':'');
+}
+function card(t){
+  const on=sel.includes(t.id);
+  return '<article class="it'+(on?' on':'')+'" data-id="'+esc(t.id)+'"><input type="checkbox" aria-label="বাছাই"'+(on?' checked':'')+'>'+
+    '<div><h3><span class="kind">'+esc(KIND[t.kind]||t.kind)+'</span>'+hi((t.section_no?t.section_no+' ':'')+t.section_title)+'</h3>'+
+    '<div class="meta">'+esc(t.subject)+' · অধ্যায় '+bn(t.chapter)+': '+esc(t.chapter_title)+(t.parent_section?' › '+esc(t.parent_section):'')+' · পৃ. '+bn(t.pages)+' · '+esc(t.source)+' · '+bn(Math.round(t.len/100)/10)+'k অক্ষর · <code>'+esc(t.id)+'</code></div></div>'+
+    '<p class="snip">'+hi(t.snippet)+'</p>'+
+    '<div class="tg">'+t.tags.slice(0,10).map(x=>'<button type="button" class="chip" data-tag="'+esc(x)+'">'+esc(x)+'</button>').join('')+'</div>'+
+    '<button type="button" class="more">পুরো লেখা</button></article>';
+}
+
+$('qf').onsubmit=e=>{e.preventDefault();state.q=$('q').value.trim();state.subject=$('subject').value;state.kind=$('kind').value;state.offset=0;search()};
+document.addEventListener('click',async e=>{
+  const tag=e.target.closest('[data-tag]');
+  if(tag){state.tag=state.tag===tag.dataset.tag?'':tag.dataset.tag;state.offset=0;search();return}
+  const off=e.target.closest('[data-off]');if(off){state.offset=+off.dataset.off;search();scrollTo(0,0);return}
+  const more=e.target.closest('.more');
+  if(more){
+    const it=more.closest('.it'),f=it.querySelector('.full');
+    if(f){f.remove();more.textContent='পুরো লেখা';return}
+    more.textContent='আনা হচ্ছে…';
+    const j=await api('lib/get',{ids:[it.dataset.id]}).catch(()=>({items:[]}));
+    const d=document.createElement('div');d.className='full';d.innerHTML=hi(j.items[0]?j.items[0].text:'পাওয়া যায়নি');
+    it.append(d);more.textContent='লেখা বন্ধ করুন';
+  }
+});
+document.addEventListener('change',e=>{
+  if(!e.target.matches('.it input'))return;
+  const it=e.target.closest('.it'),id=it.dataset.id;
+  sel=sel.filter(x=>x!==id);if(e.target.checked)sel.push(id);
+  it.classList.toggle('on',e.target.checked);store.set('lib:sel',sel);tray();
+});
+addEventListener('hashchange',()=>{readHash();search()});
+
+// ---- বাছাই করা অংশ নামানো ----
+function tray(){$('tray').hidden=!sel.length;$('nsel').textContent=bn(sel.length)+'টি অংশ বাছাই'}
+async function markdown(){
+  const out=[];
+  for(let i=0;i<sel.length;i+=90)out.push(...(await api('lib/get',{ids:sel.slice(i,i+90)})).items);
+  const title=state.q||state.tag||'বাছাই করা অংশ';
+  let md='# টপিক: '+title+'\n\n'+'> রেফারেন্স হিসেবে '+bn(out.length)+'টি অংশ, '+[...new Set(out.map(t=>t.source.replace(/,?\s*অধ্যায়.*$/,'')))].join(', ')+' থেকে। লেকচার শিট নিজের ভাষায় নতুন করে লেখা হবে, হুবহু কপি নয়।\n\n';
+  for(const t of out){
+    md+='---\n\n## '+(t.section_no?t.section_no+' ':'')+t.section_title+'\n\n'+
+      '- উৎস: '+t.source+', পৃষ্ঠা '+t.pages+'\n- '+t.subject+' · অধ্যায় '+t.chapter+': '+t.chapter_title+(t.parent_section?' › '+t.parent_section:'')+'\n'+
+      '- ট্যাগ: '+t.tags.join('; ')+'\n- id: `'+t.id+'`\n\n'+t.text.trim()+'\n\n';
+  }
+  return {md,title};
+}
+$('dl').onclick=async()=>{
+  $('dl').disabled=true;
+  try{const {md,title}=await markdown();const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([md],{type:'text/markdown;charset=utf-8'}));a.download=title.replace(/[\\/:*?"<>|\s]+/g,'-')+'.md';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000)}
+  finally{$('dl').disabled=false}
+};
+$('cp').onclick=async()=>{
+  try{await navigator.clipboard.writeText((await markdown()).md);$('cp').textContent='কপি হয়েছে ✓'}catch(e){$('cp').textContent='কপি হয়নি'}
+  setTimeout(()=>$('cp').textContent='কপি করুন',2000);
+};
+$('clr').onclick=()=>{sel=[];store.set('lib:sel',sel);tray();document.querySelectorAll('.it').forEach(it=>{it.classList.remove('on');it.querySelector('input').checked=false})};
+
+// ---- ফাইল তোলা ----
+function parseCSV(s){
+  s=s.replace(/^﻿/,'');const rows=[];let row=[],f='',q=false;
+  for(let i=0;i<s.length;i++){const c=s[i];
+    if(q){if(c==='"'){if(s[i+1]==='"'){f+='"';i++}else q=false}else f+=c}
+    else if(c==='"')q=true;else if(c===','){row.push(f);f=''}
+    else if(c==='\n'||c==='\r'){if(c==='\r'&&s[i+1]==='\n')i++;row.push(f);f='';if(row.length>1||row[0])rows.push(row);row=[]}
+    else f+=c}
+  if(f||row.length){row.push(f);rows.push(row)}
+  const h=rows.shift()||[];return rows.map(r=>Object.fromEntries(h.map((k,i)=>[k.trim(),r[i]==null?'':r[i]])));
+}
+let pending=[];
+$('file').onchange=async()=>{
+  const f=$('file').files[0];if(!f)return;
+  const txt=await f.text();
+  try{pending=/\.json$/i.test(f.name)||/^\s*[\[{]/.test(txt)?JSON.parse(txt):parseCSV(txt);if(!Array.isArray(pending))pending=pending.topics||[]}
+  catch(e){$('impMsg').textContent='ফাইলটা পড়া গেল না।';return}
+  pending=pending.filter(t=>t&&t.id&&t.text);
+  $('impMsg').textContent=bn(pending.length)+'টি অংশ পাওয়া গেছে ('+[...new Set(pending.map(t=>t.subject))].join(', ')+')।';
+  $('go').hidden=!pending.length;
+};
+$('go').onclick=async()=>{
+  const b=$('go');b.disabled=true;document.querySelector('.prog').hidden=false;let done=0;
+  for(let i=0;i<pending.length;i+=15){
+    const part=pending.slice(i,i+15);
+    for(let tries=0;;tries++){
+      try{const j=await api('lib/import',{topics:part});done+=j.saved;break}
+      catch(e){if(tries>=2){$('impMsg').textContent='থেমে গেছে '+bn(i)+'টির পরে ('+e.message+')। আবার "তুলুন" চাপলে বাকিগুলোসহ আবার যাবে, ডুপ্লিকেট হবে না।';b.disabled=false;return}
+        await new Promise(r=>setTimeout(r,1500))}
+    }
+    $('bar').style.width=(100*(i+part.length)/pending.length)+'%';$('impMsg').textContent=bn(done)+' / '+bn(pending.length)+' তোলা হলো…';
+  }
+  $('impMsg').textContent='✓ '+bn(done)+'টি অংশ তোলা হয়েছে।';b.hidden=true;b.disabled=false;
+  showStats(await api('lib/stats'));search();
+};
+
+tray();start();
+const u=store.get('lb:u',null);if(u)$('who').textContent=u.email||u.name||'';
+})();
+</script>
+</body>
+</html>
