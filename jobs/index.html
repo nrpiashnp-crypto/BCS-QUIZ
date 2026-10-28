@@ -298,6 +298,7 @@ async function exam(id){
    <div class="btns start"><button class="btn" id="go" type="button">পরীক্ষা শুরু করুন →</button><button class="btn ghost" id="practice" type="button">অনুশীলন (সঙ্গে সঙ্গে উত্তর)</button></div>
    <ul class="rules"><li>প্রশ্ন ${bn(Q.length)}টি, সময় <b>${bn(MIN)}</b> মিনিট। সময় শেষ হলে নিজে থেকেই জমা হবে।</li>
    <li>সঠিক উত্তরে ১ নম্বর, ভুল উত্তরে <b id="negt">−০.৫</b>। উত্তর না দিলে নম্বর কাটা যায় না।</li>
+   <li>একবার দাগানো উত্তর আর বদলানো যায় না, ঠিক OMR শিটের মতো।</li>
    <li>শেষে ফল, বিষয়ভিত্তিক হিসাব আর প্রতিটি প্রশ্নের ব্যাখ্যা দেখাবে।</li></ul>
    <p class="lbl">নেগেটিভ মার্কিং</p><div class="chips" id="negc"><button type="button" class="chip" data-v="0.5" aria-pressed="true">−০.৫</button><button type="button" class="chip" data-v="0.25" aria-pressed="false">−০.২৫</button><button type="button" class="chip" data-v="0" aria-pressed="false">নেই</button></div>
    <div class="hist" id="hist" hidden></div></section>
@@ -327,7 +328,7 @@ function startExam(){
     const s=document.createElement('section');s.className='q';s.innerHTML=qhtml(q,i)+'<div class="opts"></div>';
     const o=s.querySelector('.opts');
     q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;
-      b.onclick=()=>{pick[i]=pick[i]===j?-1:j;[...o.children].forEach((x,k)=>x.classList.toggle('sel',k===pick[i]));$('ans').textContent=bn(pick.filter(x=>x>=0).length)};o.appendChild(b)});
+      b.onclick=()=>{if(pick[i]>=0)return;pick[i]=j;b.classList.add('sel');[...o.children].forEach(x=>x.disabled=true);$('ans').textContent=bn(pick.filter(x=>x>=0).length)};o.appendChild(b)});
     box.appendChild(s)});
   $('ans').textContent='০';startAt=Date.now();endAt=startAt+MIN*60000;tick();clearInterval(timer);timer=setInterval(tick,500);show('exam');
 }
