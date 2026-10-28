@@ -21,7 +21,8 @@
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
 {"@type":"Organization","@id":"https://lyannabooks.com/#org","name":"লিয়ানা বুকস","alternateName":"Lyanna Books","url":"https://lyannabooks.com/","logo":"https://lyannabooks.com/img/logo/final-navy-square.png","contactPoint":{"@type":"ContactPoint","telephone":"+8801754119878","contactType":"customer service","availableLanguage":"bn"}},
-{"@type":"Book","name":"লিয়ানা বিসিএস বিজ্ঞান","inLanguage":"bn","image":"https://lyannabooks.com/img/cover.jpg","author":{"@type":"Person","name":"মোঃ নাইমুর রহমান","alternateName":"পিয়াস"},"publisher":{"@id":"https://lyannabooks.com/#org"},"url":"https://lyannabooks.com/#book"}
+{"@type":"Book","name":"লিয়ানা বিসিএস বিজ্ঞান","inLanguage":"bn","image":"https://lyannabooks.com/img/cover.jpg","author":{"@type":"Person","name":"মোঃ নাইমুর রহমান","alternateName":"পিয়াস"},"publisher":{"@id":"https://lyannabooks.com/#org"},"url":"https://lyannabooks.com/#book"},
+{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"বই কবে হাতে পাব?","acceptedAnswer":{"@type":"Answer","text":"এটি প্রি-অর্ডারের বই। ১০ জানুয়ারি ২০২৭-এর মধ্যে আপনার ঠিকানায় পৌঁছে দিতে আমরা সর্বোচ্চ চেষ্টা করছি, সারা দেশে ডেলিভারি ফ্রি। দেরি হলে আমরা নিজেরাই ফোন করব, আর আপনি চাইলে পুরো টাকা ফেরত দেব।"}},{"@type":"Question","name":"টাকা কীভাবে পাঠাব?","acceptedAnswer":{"@type":"Answer","text":"আপাতত শুধু বিকাশে। ০১৭৫৪-১১৯৮৭৮ নম্বরে সেন্ড মানি করুন, প্রতি কপি ৳৩৫০। তারপর প্রি-অর্ডার ফর্মে বিকাশ নম্বর আর ট্রানজেকশন আইডি দিয়ে WhatsApp-এ পাঠান, আমরা মিলিয়ে নিশ্চিত করব।"}},{"@type":"Question","name":"বইয়ে কি লিখিত পরীক্ষার অংশ আছে?","acceptedAnswer":{"@type":"Answer","text":"হ্যাঁ। প্রিলির পর লিখিতের প্রস্তুতির সময় খুব কম থাকে, তাই প্রিলির বিজ্ঞানের যে অংশ লিখিতের সাথে মেলে, তার পুরোটাই এই বইয়ে আছে। লিখিতে যে অংশ শুধু আলাদা, তার জন্য পরে আলাদা বই বের হবে।"}},{"@type":"Question","name":"কেনার আগে বইটা দেখা যায়?","acceptedAnswer":{"@type":"Answer","text":"হ্যাঁ। বইয়ের শব্দ অধ্যায়টি পুরোটা ফ্রি পড়তে পারেন, আর সাইটের সব অধ্যায়ভিত্তিক পরীক্ষা রেজিস্ট্রেশন ছাড়াই ফ্রি।"}}]}
 ]}
 </script>
 <link rel="icon" href="img/logo/final-icon.svg" type="image/svg+xml">
@@ -180,6 +181,14 @@ footer .fb{font-family:var(--display);color:var(--ink);font-size:18px}
   .contact{text-align:left}
   footer{margin-top:56px}
 }
+/* FAQ: plain question rows, answer opens below */
+.faq{max-width:640px;margin-left:auto;margin-right:auto}
+.faq details{border-bottom:1px solid var(--rule)}
+.faq summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:12px;padding:14px 0;font-weight:600}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";color:var(--gold);font-weight:400;font-size:1.3em;line-height:1}
+.faq details[open] summary::after{content:"−"}
+.faq details p{margin:0 0 16px;color:var(--muted)}
 </style>
 <script>
 /* Open at the top unless the visitor just tapped a link on this site that points to a section. */
@@ -282,6 +291,14 @@ footer .fb{font-family:var(--display);color:var(--ink);font-size:18px}
   </div>
 </section>
 </div>
+
+<section id="faq" class="faq">
+  <h2>সাধারণ জিজ্ঞাসা</h2>
+  <details><summary>বই কবে হাতে পাব?</summary><p>এটি প্রি-অর্ডারের বই। ১০ জানুয়ারি ২০২৭-এর মধ্যে আপনার ঠিকানায় পৌঁছে দিতে আমরা সর্বোচ্চ চেষ্টা করছি, সারা দেশে ডেলিভারি ফ্রি। দেরি হলে আমরা নিজেরাই ফোন করব, আর আপনি চাইলে পুরো টাকা ফেরত দেব।</p></details>
+  <details><summary>টাকা কীভাবে পাঠাব?</summary><p>আপাতত শুধু বিকাশে। ০১৭৫৪-১১৯৮৭৮ নম্বরে সেন্ড মানি করুন, প্রতি কপি ৳৩৫০। তারপর প্রি-অর্ডার ফর্মে বিকাশ নম্বর আর ট্রানজেকশন আইডি দিয়ে WhatsApp-এ পাঠান, আমরা মিলিয়ে নিশ্চিত করব।</p></details>
+  <details><summary>বইয়ে কি লিখিত পরীক্ষার অংশ আছে?</summary><p>হ্যাঁ। প্রিলির পর লিখিতের প্রস্তুতির সময় খুব কম থাকে, তাই প্রিলির বিজ্ঞানের যে অংশ লিখিতের সাথে মেলে, তার পুরোটাই এই বইয়ে আছে। লিখিতে যে অংশ শুধু আলাদা, তার জন্য পরে আলাদা বই বের হবে।</p></details>
+  <details><summary>কেনার আগে বইটা দেখা যায়?</summary><p>হ্যাঁ। বইয়ের <a href="/sample/sound/">শব্দ অধ্যায়টি পুরোটা ফ্রি পড়তে পারেন</a>, আর সাইটের সব অধ্যায়ভিত্তিক পরীক্ষা রেজিস্ট্রেশন ছাড়াই ফ্রি।</p></details>
+</section>
 
 <a class="fab" id="fab" href="exams/" hidden>ফ্রি পরীক্ষা দিন →</a>
 <footer>
