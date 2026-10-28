@@ -292,7 +292,7 @@ function finish(){
   paper.forEach((qi,i)=>{const q=Q[qi],k=q.s||'অন্যান্য';bys[k]=bys[k]||[0,0,0];bys[k][2]++;if(pick[i]<0)return;if(pick[i]===q.a){ok++;bys[k][0]++}else{bad++;bys[k][1]++}});
   const n=paper.length,blank=n-ok-bad,score=ok-bad*NEG,used=Math.min(MIN*60,Math.round((Date.now()-startAt)/1000));
   const d=new Date(),ds=bn(d.getDate())+'/'+bn(d.getMonth()+1)+'/'+bn(d.getFullYear());
-  const h=store(true)||[];h.push({d:ds,s:score,n,g:NEG});store(false,h);
+  const h=store(true)||[];h.push({d:ds,s:score,n,g:NEG});store(false,h);window.LBA&&LBA.save({k:histKey()+'#'+(h.length-1),c:'bcs',t:E.title,s:score,n,ok,no:bad,sec:used,sb:Object.fromEntries(Object.entries(bys).map(([k,v])=>[k,[v[0],v[2]]]))});
   const pc=score/n;
   $('scorebox').innerHTML=`<div class="big">${fmt(score)} / ${bn(n)}</div>
    <div class="stats"><span class="ok">সঠিক ${bn(ok)}</span><span class="no">ভুল ${bn(bad)}</span><span class="skip">উত্তর দেননি ${bn(blank)}</span><span>সময় ${bn(Math.floor(used/60))} মিনিট ${bn(used%60)} সেকেন্ড</span></div>
@@ -348,5 +348,6 @@ fetch('data/catalog.json').then(r=>r.json()).then(c=>{CATALOG=c;route()}).catch(
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "6b92edeb250b475e9d759f64df8eb91e"}'></script><!-- End Cloudflare Web Analytics -->
 <!--seo-links--><nav style="max-width:760px;margin:24px auto 0;padding:0 16px 24px;text-align:center;font:13px/1.8 'Noto Sans Bengali',system-ui,sans-serif"><a href="/questions/#bcs" style="color:inherit;opacity:.75">বিসিএস প্রিলির প্রশ্ন ও সমাধান পড়ুন</a> · <a href="/questions/" style="color:inherit;opacity:.75">সব প্রশ্ন ও সমাধান</a></nav><!--/seo-links-->
 <script src="/js/score-mark.js" defer></script>
+<script src="/js/account.js" defer></script>
 </body>
 </html>

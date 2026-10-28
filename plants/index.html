@@ -215,7 +215,7 @@ function finish(){
   let ok=0,bad=0;paper.forEach((q,i)=>{if(pick[i]<0)return;pick[i]===q.a?ok++:bad++});
   const blank=N-ok-bad, score=ok-bad*0.5, used=Math.min(MIN*60,Math.round((Date.now()-startAt)/1000));
   const d=new Date(), ds=bn(d.getDate())+'/'+bn(d.getMonth()+1)+'/'+bn(d.getFullYear());
-  const h=store(true)||[];h.push({d:ds,s:score,n:N});store(false,h);
+  const h=store(true)||[];h.push({d:ds,s:score,n:N});store(false,h);window.LBA&&LBA.save({k:'plants-scores'+'#'+(h.length-1),c:'ch',s:score,n:N,ok,no:bad,sec:used});
   const msg=score>=20?'চমৎকার! অধ্যায়টি আপনার আয়ত্তে এসেছে।':score>=15?'ভালো হয়েছে। ভুল প্রশ্নগুলোর অংশ আবার পড়ে নিন।':'অধ্যায়টি আরেকবার পড়ে কয়েক দিন পর আবার পরীক্ষা দিন।';
   $('scorebox').innerHTML=`<div class="big">${fmtScore(score)} / ${bn(N)}</div>
    <div class="stats"><span class="ok">সঠিক ${bn(ok)}</span><span class="no">ভুল ${bn(bad)}</span><span class="skip">উত্তর দেননি ${bn(blank)}</span><span>সময় ${bn(Math.floor(used/60))} মিনিট ${bn(used%60)} সেকেন্ড</span></div>
@@ -264,6 +264,7 @@ window.addEventListener('beforeunload',e=>{if(!$('exam').hidden){e.preventDefaul
 </script>
 <script src="/js/share.js" defer></script>
 <script src="/js/wrong.js" defer></script>
+<script src="/js/account.js" defer></script>
 <script src="/js/book-link.js" data-kind="science" data-chapter="উদ্ভিদজগৎ" defer></script>
 <script src="/js/result-card.js" defer></script>
 <script src="/js/score-mark.js" defer></script>
