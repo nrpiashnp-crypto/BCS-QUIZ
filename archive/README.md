@@ -9,6 +9,12 @@
 - `q/<xx>.json` — one line per question: `"<id>": {q, o, a, e}`. The id is
   `q` + 10 hex of sha1(normalised question | sorted normalised options), so the
   same question always gets the same id, whichever paper it came from.
+  Normalising keeps letters, digits, Bengali vowel signs/hasanta and the formula
+  operators `+ × ÷ = < > ^ √` (and a minus that starts a number); it drops case,
+  spaces, HTML tags and all other punctuation. So "হয়-" and "হয় —" are one
+  question, while "কি"/"কী", "মালা"/"মালী" and "a + 1/a"/"a - 1/a" stay apart.
+  Changing `norm()` changes every id: never do it once anything outside the
+  archive refers to ids.
 - `papers/<collection>/<name>.json` — one file per paper/page that the site
   shows. `src` = the file it builds, `kind` = `file` (JSON array) or `inline`
   (`const Q=[...]` inside an HTML page), `items` = ordered rows `{id, ...}`.
@@ -37,3 +43,9 @@ python3 archive/tools/pick.py --subject বাংলা --text সমাস --n 
 2. Fixing a question or explanation? Edit the record in `q/`, run
    `build_site.py` (every page that shows it changes), then `--check`.
 3. Never hand-edit ids. Never delete a record that a paper still uses.
+4. A record is frozen at first import: if a site file is edited afterwards,
+   `import_site.py` stores the edit as that paper's own `q/o/a/e` override, the
+   archive record stays as it was, and a later fix to the record will NOT show
+   on that paper (its override wins at build time). `report.json` counts these
+   as `copies_with_own_explanation`; to make a fix global, edit the record in
+   `q/` and remove the overriding field from the paper rows.

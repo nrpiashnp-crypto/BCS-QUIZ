@@ -9,11 +9,21 @@ CHAPTER_DATA = os.environ.get('CHAPTER_DATA', '/mnt/project-files/website/অধ
 # is per-paper context and lives on the paper's item, not on the archive record.
 CORE = ('q', 'o', 'a', 'e')
 
-_strip = re.compile(r'<[^>]+>|&[a-z]+;|[\s\W_]+', re.U)
+# Real HTML tags (<b>, </sub>, <br/>) and entities only: "ΔH<0" or "a > b" is text.
+_tags = re.compile(r'</?[a-z][a-z0-9]*(?:\s[^<>]*)?/?>|&[a-z]+;')
+# Operators that change the meaning of a formula; everything else that is not a
+# letter, digit or Bengali vowel sign / hasanta (category Mn/Mc) is punctuation.
+_ops = set('+×÷=<>^√')
 
 def norm(text):
+    """Letters, digits, combining marks and formula operators, nothing else.
+    "কি"/"কী" differ; "কাল"/"কল" differ; "a + 1/a"/"a - 1/a" differ; "হয়-"/"হয় —"
+    do not. A minus is kept only when it starts a number (x^{-3}, -1)."""
     text = unicodedata.normalize('NFC', str(text)).lower()
-    return _strip.sub('', text)
+    text = _tags.sub('', text).replace('\u2212', '-')
+    text = re.sub(r'-(?=\d)', '\u2212', text)       # keep the sign of a number
+    return ''.join(c for c in text if c.isalnum() or c == '\u2212' or c in _ops
+                   or unicodedata.category(c) in ('Mn', 'Mc'))
 
 def key(item):
     """Same question = same normalised stem + same set of options."""

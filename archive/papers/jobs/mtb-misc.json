@@ -1,13 +1,13 @@
 {"src":"jobs/data/e/mtb-misc.json","kind":"file","items":[
 {"id":"q549fead7c4","q":"Kamal is shorter than Ruhan, but taller than Anika. Dina is shorter than Kamal. Rubayet is shorter than Ruhan but taller than Kamal. Who is tallest in terms of height?","e":"উচ্চতার তুলনার প্রশ্নে সব তথ্য একটি রেখায় সাজিয়ে নিলে সবচেয়ে লম্বা বা খাটো কে, তা সহজে ধরা যায়। কামাল রুহানের চেয়ে খাটো, কিন্তু অনিকার চেয়ে লম্বা। দিনা কামালের চেয়ে খাটো। রুবায়েত কামালের চেয়ে লম্বা, আবার রুহানের চেয়ে খাটো। সব মিলিয়ে ক্রম দাঁড়ায় অনিকা/দিনা &lt; কামাল &lt; রুবায়েত &lt; রুহান। সবার ওপরে আছে রুহান, তাই সে-ই সবচেয়ে লম্বা।<br>মনে রাখুন: অনিকা ও দিনার মধ্যে কে লম্বা, তা দেওয়া নেই। তবে প্রশ্নের উত্তরের জন্য তা জানার দরকারও পড়ে না।","s":"মানসিক দক্ষতা","x":"Mutual Trust Bank PLC (PO) 2012"},
-{"id":"q8381eff0f9","s":"মানসিক দক্ষতা","x":"Mutual Trust Bank PLC (PO) 2012"},
-{"id":"q9b7706ec5c","s":"মানসিক দক্ষতা","x":"Mutual Trust Bank PLC (PO) 2012"},
+{"id":"qd1bc5afad6","s":"মানসিক দক্ষতা","x":"Mutual Trust Bank PLC (PO) 2012"},
+{"id":"q6a15f62775","s":"মানসিক দক্ষতা","x":"Mutual Trust Bank PLC (PO) 2012"},
 {"id":"qbc8bd9d889","s":"মানসিক দক্ষতা","x":"Mutual Trust Bank PLC (MTO) 2013"},
 {"id":"q93d6a963f9","s":"মানসিক দক্ষতা","x":"Mutual Trust Bank PLC (MTO) 2013"},
 {"id":"q07bb2a6676","s":"মানসিক দক্ষতা","x":"Mutual Trust Bank PLC (MTO) 2013"},
 {"id":"q0cec0480da","s":"মানসিক দক্ষতা","x":"Mutual Trust Bank PLC (MTO) 2013"},
-{"id":"q072465b19e","s":"মানসিক দক্ষতা","x":"Mutual Trust Bank PLC, Probationary Officer, 2016"},
-{"id":"qbba72f4ea9","s":"মানসিক দক্ষতা","x":"Mutual Trust Bank PLC, Probationary Officer, 2016"},
-{"id":"q027b4046e8","s":"মানসিক দক্ষতা","x":"Mutual Trust Bank PLC, Probationary Officer, 2016"},
-{"id":"q55f8fb5b3e","s":"মানসিক দক্ষতা","x":"Mutual Trust Bank PLC, Probationary Officer, 2016"}
+{"id":"q58a635df6e","s":"মানসিক দক্ষতা","x":"Mutual Trust Bank PLC, Probationary Officer, 2016"},
+{"id":"q3fa2218920","s":"মানসিক দক্ষতা","x":"Mutual Trust Bank PLC, Probationary Officer, 2016"},
+{"id":"q37855be50e","s":"মানসিক দক্ষতা","x":"Mutual Trust Bank PLC, Probationary Officer, 2016"},
+{"id":"q00d0fd3f63","s":"মানসিক দক্ষতা","x":"Mutual Trust Bank PLC, Probationary Officer, 2016"}
 ]}

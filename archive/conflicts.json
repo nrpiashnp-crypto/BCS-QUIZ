@@ -2,28 +2,21 @@
  {
   "archive": "একই হয়",
   "here": "কম হয়",
-  "id": "q2b965bed41",
+  "id": "q4c5e26f5e7",
   "paper": "project-files:website/অধ্যায়-কুইজ/data/electricity.json",
   "q": "বৈদ্যুতিক পাখা ধীরে ধীরে ঘুরলে বিদ্যুৎ খরচ—"
  },
  {
-  "archive": "সিমেন্ট",
-  "here": "সব কয়টি",
-  "id": "qe27e88eae7",
-  "paper": "project-files:website/অধ্যায়-কুইজ/data/metals.json",
-  "q": "একটি মর্টারের মধ্যে বাঁধাইয়ের উপাদান কোনটি?"
- },
- {
   "archive": "হলুদ",
   "here": "সবুজ",
-  "id": "q29a6499631",
+  "id": "qaea2019350",
   "paper": "light/index.html",
   "q": "রংধনুর সাতটি রঙের মধ্যে মধ্যম রঙ কোনটি?"
  },
  {
   "archive": "প্রশ্নবোধক",
   "here": "হ্যাঁ-বাচক",
-  "id": "q7fbd30d947",
+  "id": "q7765434bd1",
   "paper": "jobs/data/e/bb-ad-2015.json",
   "q": "তুমি না বলেছিলে আগামীকাল আসবে? এখানে 'না' এর ব্যবহার কি অর্থে?"
  },
@@ -37,128 +30,79 @@
  {
   "archive": "মেঘনা",
   "here": "পদ্মা",
-  "id": "q0696d9bb8c",
+  "id": "qbd906c2a79",
   "paper": "jobs/data/e/bpdb-guard-2023.json",
   "q": "বাংলাদেশের দীর্ঘতম নদী কোনটি?"
  },
  {
-  "archive": "দৃষ্টিভ্রমে",
-  "here": "বায়ুমণ্ডলীয় প্রতিসরণ",
-  "id": "q85ff7146b0",
-  "paper": "jobs/data/e/breb-asst-general-manager-2018.json",
-  "q": "চাঁদ দিগন্তের কাছে অনেক বড় দেখায় কেন?"
- },
- {
   "archive": "৫ ভাগে",
   "here": "৪ ভাগে",
-  "id": "q86bbb34c44",
+  "id": "q4c78dba8c5",
   "paper": "jobs/data/e/breb-meter-reader-2023.json",
   "q": "উৎপত্তি অনুসারে বাংলা ভাষার শব্দ সমূহ কয়ভাগে বিভক্ত?"
  },
  {
-  "archive": "বোধজাত",
-  "here": "আমলযোগ্য",
-  "id": "q810b6c9e70",
-  "paper": "jobs/data/e/bsc3-4081.json",
-  "q": "'Cognizable' শব্দটির বাংলা পরিভাষা-"
- },
- {
-  "archive": "মালিকা",
-  "here": "মালিনী",
-  "id": "q2c1905b534",
-  "paper": "jobs/data/e/bscic-chief-auditor-2021.json",
-  "q": "‘মালী’ শব্দের স্ত্রী লিঙ্গ কোনটি?"
- },
- {
-  "archive": "তুর্কি",
-  "here": "ফারসি",
-  "id": "q480d8ccab1",
-  "paper": "jobs/data/e/bsec-asst-director-2021.json",
-  "q": "'দারোগা' শব্দটি কোন ভাষা থেকে বাংলা ভাষায় এসেছে?"
- },
- {
   "archive": "ইচ্ছুক",
   "here": "ঐচ্ছিক",
-  "id": "q7605867ae1",
+  "id": "q308dc357d0",
   "paper": "jobs/data/e/cag-auditor-2011.json",
   "q": "\"ইচ্ছা\" বিশেষ্যের বিশেষণ নির্দেশ করুন-"
  },
  {
+  "archive": "√০.৩",
+  "here": "০.৩",
+  "id": "q2be2f6ce15",
+  "paper": "jobs/data/e/cga-ja-2022.json",
+  "q": "কোন সংখ্যাটি বৃহত্তম?"
+ },
+ {
   "archive": "মেঘনা",
   "here": "পদ্মা",
-  "id": "qa36f3d1555",
+  "id": "q5aad106cdd",
   "paper": "jobs/data/e/dgfood-project-implementation-o-2004.json",
   "q": "বাংলাদেশের বৃহত্তম নদী কোনটি?"
  },
  {
-  "archive": "পালাগান",
-  "here": "কাব্য",
-  "id": "qd6f146de0c",
-  "paper": "jobs/data/e/dshe-oa-cum-comp-typist-2022.json",
-  "q": "চন্দ্রাবতী কে?"
- },
- {
   "archive": "স্নেহ",
   "here": "আমিষ",
-  "id": "qb5947be3a8",
+  "id": "q786d1b0f78",
   "paper": "jobs/data/e/dss-asst-teacher-2017.json",
   "q": "কোন জাতীয় খাদ্য পাকস্থলীতে অনেকক্ষণ থাকে?"
  },
  {
-  "archive": "পালাগান",
-  "here": "কাব্য",
-  "id": "qd6f146de0c",
-  "paper": "jobs/data/e/dte-chief-asst-accountant-and-various-positions.json",
-  "q": "‘চন্দ্রাবতী’ কী?"
- },
- {
   "archive": "WTO",
   "here": "EU",
-  "id": "qbb6b4cda7e",
+  "id": "qe5880a7307",
   "paper": "jobs/data/e/nsi-field-o-2017.json",
   "q": "বিশ্বের সবচেয়ে বড় অর্থনৈতিক জোট কোনটি?"
  },
  {
-  "archive": "সিমেন্ট",
-  "here": "সব কয়টি",
-  "id": "qe27e88eae7",
-  "paper": "jobs/data/e/psc-brta-mvi-2017.json",
-  "q": "একটি মর্টারের মধ্যে বাঁধাইয়ের উপাদান কোনটি?"
- },
- {
-  "archive": "গাথা",
-  "here": "গীতিকা",
-  "id": "qe54953a020",
-  "paper": "jobs/data/e/psc-bscic-chief-auditor-2021.json",
-  "q": "Ballad কী?"
- },
- {
   "archive": "আরবি",
   "here": "ফারসি",
-  "id": "q68781e933e",
+  "id": "q0c6ee19155",
   "paper": "jobs/data/e/psc-dnm-midwife-2024.json",
   "q": "'মর্সিয়া' শব্দটির উৎপত্তি কোন ভাষা থেকে?"
  },
  {
   "archive": "একই হয়",
   "here": "কম হয়",
-  "id": "q2b965bed41",
+  "id": "q4c5e26f5e7",
   "paper": "jobs/data/e/psc-doa-estimator-2019.json",
   "q": "বৈদ্যুতিক পাখা ধীরে ধীরে ঘুরলে বিদ্যুৎ খরচ—"
  },
  {
-  "archive": "১৯৪৫ সালে",
-  "here": "১৯৪৪ সালে",
-  "id": "q41b4bdc671",
-  "paper": "jobs/data/e/psc-fsa-apo-2025.json",
-  "q": "আন্তর্জাতিক মুদ্রা তহবিল কোন সালে গঠিত হয়?"
+  "archive": "সমীচীন",
+  "here": "সমিচিন",
+  "id": "q8a78d80731",
+  "paper": "jobs/data/e/psc-eedmoe-ae-civil-2019.json",
+  "q": "কোন বানানটি শুদ্ধ?"
  },
  {
-  "archive": "গাথা",
-  "here": "গীতিকা",
-  "id": "qe54953a020",
-  "paper": "jobs/data/e/psc-fsa-po-2025.json",
-  "q": "Ballad কী?"
+  "archive": "১৯৪৫ সালে",
+  "here": "১৯৪৪ সালে",
+  "id": "q0c0cac6ccf",
+  "paper": "jobs/data/e/psc-fsa-apo-2025.json",
+  "q": "আন্তর্জাতিক মুদ্রা তহবিল কোন সালে গঠিত হয়?"
  },
  {
   "archive": "make",
@@ -168,46 +112,53 @@
   "q": "Four and four — eight."
  },
  {
+  "archive": "সমীচীন",
+  "here": "সমিচিন",
+  "id": "q8a78d80731",
+  "paper": "jobs/data/e/psc-moca-sae-civil-2019.json",
+  "q": "কোন বানানটি শুদ্ধ?"
+ },
+ {
   "archive": "একই হয়",
   "here": "কম হয়",
-  "id": "q2b965bed41",
+  "id": "q4c5e26f5e7",
   "paper": "jobs/data/e/psc-moca-sae-civil-2019.json",
   "q": "বৈদ্যুতিক পাখা ধীরে ধীরে ঘুরলে বিদ্যুৎ খরচ—"
  },
  {
   "archive": "সরল বাক্য",
   "here": "জটিল বাক্য",
-  "id": "q768027931b",
+  "id": "q0c68e5a6bd",
   "paper": "jobs/data/e/psc-mod-ad-2018.json",
   "q": "'মা' ছিল না বলে কেউ তার চুল বেঁধে দেয়নি। এটি একটি"
  },
  {
+  "archive": "সমীচীন",
+  "here": "সমিচিন",
+  "id": "q8a78d80731",
+  "paper": "jobs/data/e/psc-moedu-sae-draftsman-2022.json",
+  "q": "কোন বানানটি শুদ্ধ?"
+ },
+ {
   "archive": "পরাবৃত্তাকার",
   "here": "অধিবৃত্তাকার",
-  "id": "q6b5aea7522",
+  "id": "q05954803c9",
   "paper": "jobs/data/e/psc-pwd-sae-civil-2017.json",
   "q": "ভূমির সাথে আলতোভাবে ঢিল ছুঁড়লে তা যে পথে পুনরায় ভূমি স্পর্শকরে তা-"
  },
  {
   "archive": "শব্দ",
   "here": "ধ্বনি",
-  "id": "q8d15f3f0b1",
+  "id": "q919ea88d58",
   "paper": "jobs/data/e/railway-comp-operator-2021.json",
   "q": "বাক্যের ক্ষুদ্রতম একক কোনটি?"
  },
  {
   "archive": "WTO",
   "here": "EU",
-  "id": "qbb6b4cda7e",
+  "id": "qe5880a7307",
   "paper": "jobs/data/e/railway-comp-operator-2021.json",
   "q": "বিশ্বের সবচেয়ে বড় অর্থনৈতিক জোট কোনটি?"
- },
- {
-  "archive": "দরিদ্রতা আমাদের প্রধান সমস্যা।",
-  "here": "তোমার গোপন কথা শোনা আমার পক্ষে সম্ভব না",
-  "id": "q6321fbc3b8",
-  "paper": "jobs/data/e/railway-sub-asst-engineer-civil-2016.json",
-  "q": "কোন বাক্যটি শুদ্ধ?"
  },
  {
   "archive": "Cologny",
@@ -217,72 +168,51 @@
   "q": "The headquarter of World Economic Forum is situated in -"
  },
  {
-  "archive": "1/100",
-  "here": "100",
-  "id": "q291bc11f2d",
-  "paper": "jobs/data/e/tch-ntrca-15-college.json",
-  "q": "$x^{-3}-0.001=0$ হলে, $x^2$ এর মান কত?"
- },
- {
   "archive": "Chaucer",
   "here": "G. B. Shaw",
-  "id": "qb011eb5b1d",
+  "id": "q93f243e2a3",
   "paper": "jobs/data/e/tch-primary-2005-rajshahi.json",
   "q": "আধুনিক ইংরেজি সাহিত্যের জনক কে?"
  },
  {
-  "archive": "7",
-  "here": "11",
-  "id": "q8a8fbb43fc",
-  "paper": "jobs/data/e/tch-primary-2006-pedp-2.json",
-  "q": "$a - \\frac{1}{a} = 3$ হলে $a^2 + \\frac{1}{a^2}$ = কত?"
- },
- {
   "archive": "দুই স্তর",
   "here": "তিন স্তর",
-  "id": "qa80e4fba82",
+  "id": "qf4045bb8e7",
   "paper": "jobs/data/e/tch-primary-2007-rajshahi.json",
   "q": "থার্মোফ্লাস্ক কয় স্তরবিশিষ্ট পাত্র?"
  },
  {
   "archive": "শনি",
   "here": "বৃহস্পতি",
-  "id": "q3aa6215461",
+  "id": "qae07799fa9",
   "paper": "jobs/data/e/tch-primary-2010-titash.json",
   "q": "সৌরজগতের কোন গ্রহের সবচেয়ে বেশি উপগ্রহ আছে?"
  },
  {
   "archive": "প্লীহায়",
   "here": "যকৃতে",
-  "id": "q482e10070f",
+  "id": "q24e2ebb130",
   "paper": "jobs/data/e/tch-primary-2013-huang-ho.json",
   "q": "বিলিরুবিন তৈরি হয় -"
  },
  {
   "archive": "প্লীহায়",
   "here": "যকৃতে",
-  "id": "q482e10070f",
+  "id": "q24e2ebb130",
   "paper": "jobs/data/e/tch-primary-2013-korotaya.json",
   "q": "বিলিরুবিন তৈরি হয় -"
  },
  {
-  "archive": "7",
-  "here": "11",
-  "id": "q8a8fbb43fc",
-  "paper": "jobs/data/e/tch-primary-2013-misi-pisi.json",
-  "q": "$a - \\frac{1}{a} = 3$ হলে, $a^2 + \\frac{1}{a^2}$ = কত?"
- },
- {
   "archive": "মধ্যপদলোপী",
   "here": "উপমিত",
-  "id": "q5d07a63665",
+  "id": "q23b2b54b25",
   "paper": "jobs/data/e/tch-primary-2013-misi-pisi.json",
   "q": "'সোনামুখী' কোন সমাস?"
  },
  {
   "archive": "সাদা কাপড়ে তাপ প্রতিফলন ক্ষমতা বেশি",
   "here": "সাদা কাপড় তাপ শোষণ করে না",
-  "id": "qb79954361e",
+  "id": "q328b2e5226",
   "paper": "jobs/data/e/tch-primary-2013-rain.json",
   "q": "গ্রীষ্মকালে সাদা কাপড় পরা হয়, কারণ-"
  },
@@ -294,16 +224,9 @@
   "q": "The antonym of 'indifference' is-"
  },
  {
-  "archive": "P 53",
-  "here": "P-49",
-  "id": "q1c81baa146",
-  "paper": "jobs/data/e/tch-primary-2014-alpha.json",
-  "q": "Natural protein এর কোড নাম-"
- },
- {
   "archive": "হলুদ",
   "here": "সবুজ",
-  "id": "q29a6499631",
+  "id": "qaea2019350",
   "paper": "jobs/data/e/tch-primary-2014-delta.json",
   "q": "রংধনুর সাতটি রঙের মধ্যে মধ্যম রঙ কোনটি?"
  },
@@ -329,10 +252,10 @@
   "q": "If you are trying to make a strong impression on your audience, you cannot do so by being understated, tentative, or ____."
  },
  {
-  "archive": "গাথা",
-  "here": "গীতিকা",
-  "id": "qe54953a020",
-  "paper": "running/sub-registrar/data/x/sr03.json",
-  "q": "Ballad কী?"
+  "archive": "সমীচীন",
+  "here": "সমিচিন",
+  "id": "q8a78d80731",
+  "paper": "running/sub-registrar/data/x/sr02.json",
+  "q": "কোন বানানটি শুদ্ধ?"
  }
 ]

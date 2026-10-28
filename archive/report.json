@@ -1,10 +1,10 @@
 {
- "answer_conflicts": 48,
- "copies_with_own_explanation": 6451,
+ "answer_conflicts": 37,
+ "copies_with_own_explanation": 5870,
  "items_on_site": 68735,
- "new_questions_this_run": 0,
+ "new_questions_this_run": 53886,
  "papers": 899,
- "questions_in_2plus_places": 12228,
- "unique_questions": 53304,
+ "questions_in_2plus_places": 12090,
+ "unique_questions": 53886,
  "unused_records": 0
 }

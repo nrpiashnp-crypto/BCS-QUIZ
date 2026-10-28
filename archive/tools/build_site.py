@@ -34,10 +34,11 @@ def main(check):
         if not os.path.exists(target):
             print('SKIPPED (not on this machine)', paper['src'])
             continue
+        if read_items(paper['kind'], target) == items:
+            continue                         # already identical: leave the file's formatting alone
         if check:
-            if read_items(paper['kind'], target) != items:
-                bad += 1
-                print('DIFFERS', paper['src'])
+            bad += 1
+            print('DIFFERS', paper['src'])
             continue
         if paper['kind'] == 'file':
             dump(items, target)
