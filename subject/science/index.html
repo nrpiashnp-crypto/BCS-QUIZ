@@ -47,7 +47,7 @@ fetch('/subject/data/science.json').then(r=>r.json()).then(D=>{
     const p=T[t.id]||{},s=p.s||{},nd=t.sets.filter(x=>s[x.id]).length;
     if(p.pass)done++;else if(!openId)openId=t.id;
     const box=document.createElement('div');box.className='topic';box.id=t.id;
-    const info=[`অনুশীলন ${bn(nd)}/${bn(t.sets.length)}`];if(p.best!=null)info.push(`টেস্ট ${fmt(p.best)}/${bn(D.test)}`);
+    const info=[`অনুশীলন ${bn(nd)}/${bn(t.sets.length)}`];if(p.best!=null)info.push(`টেস্ট ${fmt(p.best)}/${bn(p.n||D.test)}`);
     box.innerHTML=`<button type="button" class="tile${p.pass?' done':''}" aria-expanded="false"><span class="ic">${p.pass?'✓':bn(t.no)}</span><span class="tx"><b>${t.name}</b><small>${info.join(' · ')}</small></span><span class="bt">▾</span></button>`;
     const pan=document.createElement('div');pan.className='panel';pan.hidden=true;
     let h='';

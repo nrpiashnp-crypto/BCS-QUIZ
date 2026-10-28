@@ -82,19 +82,22 @@ function test(pool,D,T,next){
   $('sb').onclick=()=>{const blank=pick.filter(x=>x<0).length;if(armed&&Date.now()-armed<4000)return finish();armed=Date.now();
     $('sb').textContent=blank?`${bn(blank)}টি বাকি, আবার চাপুন`:'নিশ্চিত? আবার চাপুন';setTimeout(()=>{if(Date.now()-armed>=4000)$('sb').textContent='জমা দিন'},4100)};
   window.onbeforeunload=e=>{e.preventDefault();e.returnValue=''};
+  let ended=false;
   function finish(){
+    if(ended)return;ended=true;
     clearInterval(timer);window.onbeforeunload=null;bar.hidden=true;run.hidden=true;
     let ok=0,no=0;paper.forEach((q,i)=>{if(pick[i]<0)return;pick[i]===q.a?ok++:no++;markWrong(q,pick[i]===q.a,TP)});
     paper.forEach((q,i)=>{if(pick[i]<0)markWrong(q,false,TP)});
     const score=ok-no*0.5,pass=score>=D.pass*N,sec=Math.round((Date.now()-t0)/1000);
-    const p=prog(p=>{p.best=Math.max(p.best==null?-99:p.best,score);if(pass)p.pass=true;p.ts=Date.now()});
+    const p=prog(p=>{p.best=Math.max(p.best==null?-99:p.best,score);p.n=N;if(pass)p.pass=true;p.ts=Date.now()});
     window.LBA&&LBA.save({k:'subj-'+TP+'#'+Date.now(),c:'subj',t:T.name,s:score,n:N,ok,no,sec});
     const r=$('result');r.hidden=false;
     r.innerHTML=`<div class="score"><div class="big">${fmt(score)} / ${bn(N)}</div><div class="stats"><span class="ok">সঠিক ${bn(ok)}</span><span class="no">ভুল ${bn(no)}</span><span class="skip">উত্তর দেননি ${bn(N-ok-no)}</span></div>
       <p class="msg">${pass?'অভিনন্দন! টপিকটি সম্পন্ন হয়েছে।':`সম্পন্ন হতে লাগবে ${fmt(D.pass*N)}। ভুলগুলো দেখে আরেকটি সেট অনুশীলন করে আবার টেস্ট দিন।`}</p></div><h2>উত্তর ও ব্যাখ্যা</h2>`;
     paper.forEach((q,i)=>{const s=qbox(q,i),o=s.querySelector('.opts');[...o.children].forEach((b,j)=>{b.disabled=true;if(j===q.a)b.classList.add('right');if(j===pick[i]&&j!==q.a)b.classList.add('wrong')});
       const e=document.createElement('div');e.className='exp';e.innerHTML=expHTML(q,pick[i]);s.appendChild(e);r.appendChild(s)});
-    after(pass&&next?[[ROAD+'#'+next.id,'পরের ধাপ: '+next.name+' →'],[ROAD,'রোডম্যাপ',1]]:[[ROAD+'#'+TP,'পরের ধাপ: আবার অনুশীলন →'],[location.href,'নতুন টেস্ট',1]]);
+    after(pass?(next?[[ROAD+'#'+next.id,'পরের ধাপ: '+next.name+' →'],[ROAD,'রোডম্যাপ',1]]:[[ROAD,'সব টপিক শেষ! রোডম্যাপে ফিরুন →']])
+              :[[ROAD+'#'+TP,'পরের ধাপ: আবার অনুশীলন →'],[location.href,'নতুন টেস্ট',1]]);
     window.scrollTo(0,0);
   }
 }
@@ -104,6 +107,7 @@ fetch('/subject/data/'+SUBJ[sub]+'.json').then(r=>r.json()).then(D=>{
     const L=Object.values(get('subj:w',{})).filter(q=>(q.tp||'').startsWith(WR+'-'));
     document.title='ভুলের খাতা · লিয়ানা বুকস';$('ttl').textContent='ভুলের খাতা';
     $('sub').textContent=L.length?'আগে যেগুলো ভুল হয়েছে। সঠিক হলে খাতা থেকে বাদ যায়।':'খাতা খালি। চমৎকার!';
+    if(!L.length)return after([[ROAD,'রোডম্যাপে ফিরুন →']]);
     practice(L,()=>after([[ROAD,'রোডম্যাপে ফিরুন →']]));return;
   }
   const i=D.topics.findIndex(x=>x.id===TP),T=D.topics[i],next=D.topics[i+1];if(!T)throw 0;
