@@ -219,7 +219,7 @@ function finish(){
   const msg=score>=20?'চমৎকার! অধ্যায়টি আপনার আয়ত্তে এসেছে।':score>=15?'ভালো হয়েছে। ভুল প্রশ্নগুলোর অংশ আবার পড়ে নিন।':'অধ্যায়টি আরেকবার পড়ে কয়েক দিন পর আবার পরীক্ষা দিন।';
   $('scorebox').innerHTML=`<div class="big">${fmtScore(score)} / ${bn(N)}</div>
    <div class="stats"><span class="ok">সঠিক ${bn(ok)}</span><span class="no">ভুল ${bn(bad)}</span><span class="skip">উত্তর দেননি ${bn(blank)}</span><span>সময় ${bn(Math.floor(used/60))} মিনিট ${bn(used%60)} সেকেন্ড</span></div>
-   <p class="msg">${msg}</p><p class="msg">বইয়ের শেষ পাতার ছকে লিখে রাখুন: তারিখ ${ds}, নম্বর ${fmtScore(score)}।</p>`;
+   <p class="msg">${msg}</p><p class="msg">বই হাতে থাকলে শেষ পাতার ছকে লিখে রাখুন: তারিখ ${ds}, নম্বর ${fmtScore(score)}।</p>`;
   const box=$('rlist');box.innerHTML='';
   paper.forEach((q,i)=>{
     const s=document.createElement('section');s.className='q';const p=pick[i];
@@ -265,6 +265,7 @@ window.addEventListener('beforeunload',e=>{if(!$('exam').hidden){e.preventDefaul
 <script src="/js/share.js" defer></script>
 <script src="/js/wrong.js" defer></script>
 <script src="/js/book-link.js" data-kind="science" data-chapter="মৌলিক জীববিজ্ঞান" defer></script>
+<script src="/js/result-card.js" defer></script>
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "6b92edeb250b475e9d759f64df8eb91e"}'></script><!-- End Cloudflare Web Analytics -->
 <!--seo-links--><nav style="max-width:760px;margin:24px auto 0;padding:0 16px 24px;text-align:center;font:13px/1.8 'Noto Sans Bengali',system-ui,sans-serif"><a href="/biology/mcq/" style="color:inherit;opacity:.75">মৌলিক জীববিজ্ঞান: সব প্রশ্ন, উত্তর ও ব্যাখ্যা একসঙ্গে পড়ুন</a> · <a href="/questions/" style="color:inherit;opacity:.75">সব প্রশ্ন ও সমাধান</a></nav><!--/seo-links-->
 </body>
