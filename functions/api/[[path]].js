@@ -14,8 +14,11 @@
    POST /api/lib/import {topics:[…]} → একই id আবার এলে হালনাগাদ, ডুপ্লিকেট নয় (এক বারে ১৫টি)
    POST /api/lib/remove {ids:[…]}
    সাইটের এমসিকিউ ব্যাংকও একই জায়গা থেকে খোঁজা যায়: অ্যাডমিন পাতা সাইটের JSON থেকে প্রশ্ন পড়ে lib_mcq-তে তোলে
-   POST /api/lib/mcq-import {ver, rows:[{id,q,o,a,e,s,t,src}]} (এক বারে ২২০টি) · POST /api/lib/mcq-prune {ver} → এই ver-এ না আসা পুরোনো প্রশ্ন মুছে যায়
-   GET  /api/lib/mcq?q=&offset=  · POST /api/lib/mcq-get {ids:[…]} */
+   GET  /api/lib/mcq-ids?after=  → [id, h] (h = বিষয়বস্তুর হ্যাশ), তাই পাতা শুধু নতুন/বদলানো প্রশ্ন পাঠায়
+   POST /api/lib/mcq-import {rows:[{id,q,o,a,e,s,t,src,h}]} (এক বারে ২২০টি) · POST /api/lib/mcq-remove {ids:[…]} · POST /api/lib/mcq-done {n}
+   GET  /api/lib/mcq?q=&offset=  · POST /api/lib/mcq-get {ids:[…]}
+   ফ্রি প্ল্যানে দিনে ৫০ লাখ সারি পড়া আর ১ লাখ সারি লেখা যায়: এমসিকিউ খোঁজায় পুরো টেবিল একবার পড়া হয় (গোনার আলাদা কোয়েরি নেই),
+   আর হালনাগাদে শুধু বদলানো প্রশ্ন লেখা হয় */
 const COOKIE = 'lb_s', AGE = 180 * 86400;
 const MAX_BATCH = 300, MAX_ROWS = 3000;
 
@@ -31,11 +34,11 @@ const LIB_SCHEMA = [
   'CREATE TABLE IF NOT EXISTS lib_tags(topic_id TEXT NOT NULL, tag TEXT NOT NULL, PRIMARY KEY(topic_id, tag))',
   'CREATE INDEX IF NOT EXISTS lib_tags_tag ON lib_tags(tag)',
   'CREATE INDEX IF NOT EXISTS lib_topics_sub ON lib_topics(subject, chapter)',
-  'CREATE TABLE IF NOT EXISTS lib_mcq(id TEXT PRIMARY KEY, q TEXT, o TEXT, a INTEGER, e TEXT, s TEXT, t TEXT, src TEXT, ver INTEGER)',
+  'CREATE TABLE IF NOT EXISTS lib_mcq(id TEXT PRIMARY KEY, q TEXT, o TEXT, a INTEGER, e TEXT, s TEXT, t TEXT, src TEXT, h TEXT)',
   'CREATE TABLE IF NOT EXISTS lib_meta(k TEXT PRIMARY KEY, v TEXT)'
 ];
 // D1-এর সীমা: ফ্রি প্ল্যানে এক অনুরোধে ৫০টি কোয়েরি, এক কোয়েরিতে ১০০টি প্যারামিটার
-const LIB_PAGE = 30, LIB_IMPORT = 15, LIB_IDS = 90, MCQ_IMPORT = 220, MCQ_PER_STMT = 11;
+const LIB_PAGE = 30, LIB_IMPORT = 15, LIB_IDS = 90, MCQ_IMPORT = 220, MCQ_PER_STMT = 11, MCQ_IDS_PAGE = 5000;
 
 const json = (o, status = 200, headers = {}) => new Response(JSON.stringify(o), {
   status, headers: {'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...headers}
@@ -110,7 +113,8 @@ async function login(req, env, db) {
   const g = await verifyGoogle(credential, cid);
   if (!g) return json({error: 'token'}, 401);
   await db.batch(SCHEMA.map(s => db.prepare(s)));
-  const now = Date.now(), name = str(g.name, 80) || '', email = str(g.email, 120) || '', pic = str(g.picture, 300) || '';
+  // যাচাই না করা ইমেইল রাখা হয় না, কারণ অ্যাডমিন চেনা হয় ইমেইল দিয়ে (ADMIN_EMAILS)
+  const now = Date.now(), name = str(g.name, 80) || '', email = g.email_verified === true || g.email_verified === 'true' ? str(g.email, 120) || '' : '', pic = str(g.picture, 300) || '';
   await db.prepare('INSERT INTO users(sub, email, name, pic, created, seen) VALUES(?,?,?,?,?,?) ON CONFLICT(sub) DO UPDATE SET email=excluded.email, name=excluded.name, pic=excluded.pic, seen=excluded.seen')
     .bind(g.sub, email, name, pic, now, now).run();
   const u = await db.prepare('SELECT id, name, email, pic FROM users WHERE sub = ?').bind(g.sub).first();
@@ -127,7 +131,6 @@ async function login(req, env, db) {
 const isAdmin = (u, env) => !!u && !!u.email &&
   String(env.ADMIN_EMAILS || '').toLowerCase().split(/[\s,]+/).filter(Boolean).includes(u.email.toLowerCase());
 const nfc = v => typeof v === 'string' ? v.normalize('NFC').trim() : '';
-const likeEsc = s => s.replace(/[\\%_]/g, c => '\\' + c);
 
 function libClean(t) {
   if (!t || typeof t !== 'object') return null;
@@ -140,7 +143,7 @@ function libClean(t) {
     id, text: text.slice(0, 200000), tags, source,
     source_id: (nfc(t.source_id) || id.split('-')[0]).slice(0, 80),
     subject: nfc(t.subject).slice(0, 80), exam: nfc(t.exam).slice(0, 80),
-    chapter: Number.isFinite(+t.chapter) ? Math.round(+t.chapter) : null,
+    chapter: t.chapter !== '' && t.chapter != null && Number.isFinite(+t.chapter) ? Math.round(+t.chapter) : null,
     chapter_title: nfc(t.chapter_title).slice(0, 200), section_no: nfc(t.section_no).slice(0, 30),
     section_title: nfc(t.section_title).slice(0, 300), parent_section: nfc(t.parent_section).slice(0, 300),
     kind: nfc(t.kind).slice(0, 30) || 'section', pages: nfc(t.pages).slice(0, 30)
@@ -160,7 +163,7 @@ async function libImport(req, db) {
   const seen = new Set();
   st.push(db.prepare(`DELETE FROM lib_tags WHERE topic_id IN (${rows.map(() => '?').join(',')})`).bind(...rows.map(r => r.id)));
   for (const r of rows) {
-    // tags কলামে দুই পাশে '; ' রাখা হয়, তাই LIKE '%; সুন্দরবন; %' দিয়ে পুরো ট্যাগ মেলানো যায়
+    // tags কলামে দুই পাশে '; ' রাখা হয়, তাই '; সুন্দরবন; ' খুঁজে পুরো ট্যাগ মেলানো যায়
     st.push(up.bind(r.id, r.source_id, r.subject, r.exam, r.chapter, r.chapter_title, r.section_no, r.section_title, r.parent_section,
       r.kind, r.pages, r.source, '; ' + r.tags.join('; ') + '; ', r.text, now));
     if (r.tags.length) st.push(db.prepare('INSERT OR IGNORE INTO lib_tags(topic_id, tag) VALUES' + r.tags.map(() => '(?,?)').join(','))
@@ -178,15 +181,15 @@ async function libSearch(url, db) {
   const off = Math.max(0, Math.min(5000, parseInt(p('offset')) || 0));
   const where = [], args = [], score = [], sargs = [];
   for (const w of words) {
-    const l = '%' + likeEsc(w) + '%';
-    where.push("(section_title LIKE ? ESCAPE '\\' OR parent_section LIKE ? ESCAPE '\\' OR tags LIKE ? ESCAPE '\\' OR text LIKE ? ESCAPE '\\')");
+    const l = w.toLowerCase();
+    where.push("(instr(lower(section_title), ?) > 0 OR instr(lower(parent_section), ?) > 0 OR instr(lower(tags), ?) > 0 OR instr(lower(text), ?) > 0)");
     args.push(l, l, l, l);
-    score.push("(CASE WHEN section_title LIKE ? ESCAPE '\\' THEN 10 ELSE 0 END + CASE WHEN tags LIKE ? ESCAPE '\\' THEN 6 ELSE 0 END + CASE WHEN parent_section LIKE ? ESCAPE '\\' THEN 3 ELSE 0 END + CASE WHEN text LIKE ? ESCAPE '\\' THEN 1 ELSE 0 END)");
+    score.push("(CASE WHEN instr(lower(section_title), ?) > 0 THEN 10 ELSE 0 END + CASE WHEN instr(lower(tags), ?) > 0 THEN 6 ELSE 0 END + CASE WHEN instr(lower(parent_section), ?) > 0 THEN 3 ELSE 0 END + CASE WHEN instr(lower(text), ?) > 0 THEN 1 ELSE 0 END)");
     sargs.push(l, l, l, l);
   }
   if (p('q') && words.length > 1) {
-    score.push("(CASE WHEN section_title LIKE ? ESCAPE '\\' THEN 15 ELSE 0 END)");
-    sargs.push('%' + likeEsc(words.join(' ')) + '%');
+    score.push("(CASE WHEN instr(lower(section_title), ?) > 0 THEN 15 ELSE 0 END)");
+    sargs.push(words.join(' ').toLowerCase());
   }
   for (const [k, col] of [['subject', 'subject'], ['kind', 'kind'], ['source', 'source_id']]) if (p(k)) { where.push(col + ' = ?'); args.push(p(k)); }
   if (p('chapter')) { where.push('chapter = ?'); args.push(parseInt(p('chapter')) || 0); }
@@ -215,7 +218,7 @@ async function libStats(db) {
     q('SELECT s.id, s.title, s.subject, s.exam, COUNT(t.id) n FROM lib_sources s LEFT JOIN lib_topics t ON t.source_id = s.id GROUP BY s.id ORDER BY s.subject, s.id'),
     q('SELECT tag, COUNT(*) n FROM lib_tags GROUP BY tag HAVING n > 1 ORDER BY n DESC LIMIT 60'),
     q('SELECT kind, COUNT(*) n FROM lib_topics GROUP BY kind ORDER BY n DESC'),
-    q("SELECT (SELECT COUNT(*) FROM lib_mcq) n, (SELECT v FROM lib_meta WHERE k = 'mcq_synced') synced")
+    q("SELECT (SELECT v FROM lib_meta WHERE k = 'mcq_count') n, (SELECT v FROM lib_meta WHERE k = 'mcq_synced') synced")
   ]);
   return json({subjects, sources, tags, kinds, mcq: mcq[0]});
 }
@@ -225,18 +228,18 @@ const mcqOut = r => ({...r, o: JSON.parse(r.o || '[]'), src: JSON.parse(r.src ||
 
 async function mcqImport(req, db) {
   const body = await req.json().catch(() => ({}));
-  const ver = Math.round(+body.ver) || 0;
   const rows = (Array.isArray(body.rows) ? body.rows : []).slice(0, MCQ_IMPORT).map(r => {
     if (!r || typeof r !== 'object' || !/^[a-f0-9]{8,40}$/.test(r.id) || !nfc(r.q) || !Array.isArray(r.o)) return null;
     return [r.id, nfc(r.q).slice(0, 4000), JSON.stringify(r.o.slice(0, 8).map(x => nfc(String(x)).slice(0, 1000))),
       Number.isInteger(r.a) ? r.a : -1, nfc(r.e).slice(0, 1500), nfc(r.s).slice(0, 80), nfc(r.t).slice(0, 160),
-      JSON.stringify((Array.isArray(r.src) ? r.src : []).slice(0, 40).map(x => [nfc(String(x[0])).slice(0, 200), nfc(String(x[1])).slice(0, 200)])), ver];
+      JSON.stringify((Array.isArray(r.src) ? r.src : []).filter(Array.isArray).slice(0, 40).map(x => [nfc(String(x[0])).slice(0, 200), nfc(String(x[1])).slice(0, 200)])),
+      String(r.h || '').slice(0, 40)];
   }).filter(Boolean);
   const st = [];
   for (let i = 0; i < rows.length; i += MCQ_PER_STMT) {
     const part = rows.slice(i, i + MCQ_PER_STMT);
-    st.push(db.prepare('INSERT INTO lib_mcq(id, q, o, a, e, s, t, src, ver) VALUES' + part.map(() => '(?,?,?,?,?,?,?,?,?)').join(',') +
-      ' ON CONFLICT(id) DO UPDATE SET q=excluded.q, o=excluded.o, a=excluded.a, e=excluded.e, s=excluded.s, t=excluded.t, src=excluded.src, ver=excluded.ver')
+    st.push(db.prepare('INSERT INTO lib_mcq(id, q, o, a, e, s, t, src, h) VALUES' + part.map(() => '(?,?,?,?,?,?,?,?,?)').join(',') +
+      ' ON CONFLICT(id) DO UPDATE SET q=excluded.q, o=excluded.o, a=excluded.a, e=excluded.e, s=excluded.s, t=excluded.t, src=excluded.src, h=excluded.h')
       .bind(...part.flat()));
   }
   if (st.length) await db.batch(st);
@@ -249,15 +252,21 @@ async function mcqSearch(url, db) {
   if (!words.length) return json({total: 0, offset: 0, items: []});
   const where = [], args = [], score = [], sargs = [];
   for (const w of words) {
-    const l = '%' + likeEsc(w) + '%';
-    where.push("(q LIKE ? ESCAPE '\\' OR o LIKE ? ESCAPE '\\' OR t LIKE ? ESCAPE '\\')"); args.push(l, l, l);
-    score.push("(CASE WHEN t LIKE ? ESCAPE '\\' THEN 5 ELSE 0 END + CASE WHEN q LIKE ? ESCAPE '\\' THEN 3 ELSE 0 END + 1)"); sargs.push(l, l);
+    const l = w.toLowerCase();
+    where.push("(instr(lower(q), ?) > 0 OR instr(lower(o), ?) > 0 OR instr(lower(t), ?) > 0)"); args.push(l, l, l);
+    // লম্বা শব্দ সাধারণত আসল বিষয় ("রোহিঙ্গা সংকট"-এ রোহিঙ্গা), তাই শব্দের দৈর্ঘ্য দিয়ে গুণ
+    score.push(`(CASE WHEN instr(lower(t), ?) > 0 THEN 5 ELSE 0 END + CASE WHEN instr(lower(q), ?) > 0 THEN 3 ELSE 0 END + CASE WHEN instr(lower(o), ?) > 0 THEN 1 ELSE 0 END) * ${[...l].length}`);
+    sargs.push(l, l, l);
   }
-  const w = 'WHERE ' + where.join(' AND ');
-  const total = (await db.prepare(`SELECT COUNT(*) n FROM lib_mcq ${w}`).bind(...args).first()).n;
-  const {results} = await db.prepare(`SELECT id, q, o, a, e, s, t, src, ${score.join(' + ')} score FROM lib_mcq ${w}
-      ORDER BY score DESC, length(src) DESC, id LIMIT ? OFFSET ?`).bind(...sargs, ...args, LIB_PAGE, off).all();
-  return json({total, offset: off, items: results.map(mcqOut)});
+  // সব শব্দ একসাথে না মিললে যেকোনো একটা শব্দ (যেমন "রোহিঙ্গা সংকট" → "রোহিঙ্গা"), বেশি শব্দ মেলা প্রশ্ন আগে
+  const run = async join => {
+    const {results} = await db.prepare(`SELECT id, q, o, a, e, s, t, src, ${score.join(' + ')} score FROM lib_mcq WHERE ${where.join(join)}
+        ORDER BY score DESC, length(src) DESC, id LIMIT ? OFFSET ?`).bind(...sargs, ...args, LIB_PAGE + 1, off).all();
+    return results;
+  };
+  let rows = await run(' AND '), any = false;
+  if (!rows.length && !off && words.length > 1) { rows = await run(' OR '); any = true; }
+  return json({more: rows.length > LIB_PAGE, any, offset: off, items: rows.slice(0, LIB_PAGE).map(mcqOut)});
 }
 
 async function lib(path, req, url, env, db, u) {
@@ -279,12 +288,15 @@ async function libRoute(path, m, req, url, db) {
   if (path === 'lib/import' && m === 'POST') return libImport(req.clone(), db);
   if (path === 'lib/mcq' && m === 'GET') return mcqSearch(url, db);
   if (path === 'lib/mcq-import' && m === 'POST') return mcqImport(req.clone(), db);
-  if (path === 'lib/mcq-prune' && m === 'POST') {
-    const {ver} = await req.clone().json().catch(() => ({}));
-    if (!(+ver > 0)) return json({error: 'ver'}, 400);
-    const r = await db.prepare('DELETE FROM lib_mcq WHERE ver IS NOT ?').bind(Math.round(+ver)).run();
-    await db.prepare("INSERT INTO lib_meta(k, v) VALUES('mcq_synced', ?) ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(String(Date.now())).run();
-    return json({ok: true, removed: r.meta && r.meta.changes || 0});
+  if (path === 'lib/mcq-ids' && m === 'GET') {
+    const {results} = await db.prepare('SELECT id, h FROM lib_mcq WHERE id > ? ORDER BY id LIMIT ?').bind(url.searchParams.get('after') || '', MCQ_IDS_PAGE).all();
+    return json({items: results.map(r => [r.id, r.h]), next: results.length === MCQ_IDS_PAGE ? results[results.length - 1].id : null});
+  }
+  if (path === 'lib/mcq-done' && m === 'POST') {
+    const {n} = await req.clone().json().catch(() => ({}));
+    const up = "INSERT INTO lib_meta(k, v) VALUES(?, ?) ON CONFLICT(k) DO UPDATE SET v=excluded.v";
+    await db.batch([db.prepare(up).bind('mcq_synced', String(Date.now())), db.prepare(up).bind('mcq_count', String(Math.max(0, Math.round(+n) || 0)))]);
+    return json({ok: true});
   }
   const ids = m === 'POST' ? await req.clone().json().then(b => (Array.isArray(b.ids) ? b.ids : []).map(String).slice(0, LIB_IDS)).catch(() => []) : [];
   if (path === 'lib/get' && m === 'POST') {
@@ -299,10 +311,15 @@ async function libRoute(path, m, req, url, db) {
     const by = Object.fromEntries(results.map(r => [r.id, mcqOut(r)]));
     return json({items: ids.map(i => by[i]).filter(Boolean)});
   }
+  if (path === 'lib/mcq-remove' && m === 'POST') {
+    if (ids.length) await db.prepare(`DELETE FROM lib_mcq WHERE id IN (${ids.map(() => '?').join(',')})`).bind(...ids).run();
+    return json({ok: true, removed: ids.length});
+  }
   if (path === 'lib/remove' && m === 'POST') {
     if (ids.length) {
       const qs = ids.map(() => '?').join(',');
-      await db.batch([db.prepare(`DELETE FROM lib_tags WHERE topic_id IN (${qs})`).bind(...ids), db.prepare(`DELETE FROM lib_topics WHERE id IN (${qs})`).bind(...ids)]);
+      await db.batch([db.prepare(`DELETE FROM lib_tags WHERE topic_id IN (${qs})`).bind(...ids), db.prepare(`DELETE FROM lib_topics WHERE id IN (${qs})`).bind(...ids),
+        db.prepare('DELETE FROM lib_sources WHERE id NOT IN (SELECT DISTINCT source_id FROM lib_topics)')]);
     }
     return json({ok: true, removed: ids.length});
   }

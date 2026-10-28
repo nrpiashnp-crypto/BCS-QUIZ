@@ -172,10 +172,10 @@ function writeHash(){
   history.replaceState(null,'','#'+p.toString());
 }
 const words=()=>state.q.split(/\s+/).filter(Boolean);
+// সব শব্দ এক বারে, যাতে আগের <mark>-এর ভেতরে আবার না মেলে
 function hi(s){
-  let h=esc(s);
-  for(const w of words()){const e=esc(w).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');h=h.replace(new RegExp(e,'gi'),m=>'<mark>'+m+'</mark>')}
-  return h;
+  const ws=words().map(w=>esc(w).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).sort((a,b)=>b.length-a.length);
+  return ws.length?esc(s).replace(new RegExp(ws.join('|'),'gi'),m=>'<mark>'+m+'</mark>'):esc(s);
 }
 async function search(){
   writeHash();
@@ -195,23 +195,23 @@ async function mcq(){
   const q=state.q||state.tag;$('mcqs').hidden=!q;if(!q)return;
   $('mcount').textContent='খোঁজা হচ্ছে…';
   try{mlast=await api('lib/mcq?'+new URLSearchParams({q,offset:moff}))}catch(e){$('mcount').textContent='';$('mres').innerHTML='';return}
-  const {total,items,offset}=mlast;
-  $('mcount').textContent=total?bn(total)+'টি'+(total>items.length?' · '+bn(offset+1)+'–'+bn(offset+items.length):''):'মেলেনি';
+  const {more,any,items,offset}=mlast;
+  $('mcount').textContent=items.length?(offset||more?bn(offset+1)+'–'+bn(offset+items.length)+(more?', আরও আছে':''):bn(items.length)+'টি')+(any?' · সব শব্দ একসাথে মেলেনি, যেকোনো শব্দ':''):'মেলেনি';
   $('mres').innerHTML=items.map(mcard).join('');
-  $('mpager').innerHTML=(offset?'<button class="btn ghost" data-moff="'+Math.max(0,offset-30)+'">← আগের</button>':'')+(offset+items.length<total?'<button class="btn ghost" data-moff="'+(offset+30)+'">পরের →</button>':'');
+  $('mpager').innerHTML=(offset?'<button class="btn ghost" data-moff="'+Math.max(0,offset-30)+'">← আগের</button>':'')+(more?'<button class="btn ghost" data-moff="'+(offset+30)+'">পরের →</button>':'');
 }
 const L='কখগঘঙচ';
 function mcard(m){
   const on=msel.includes(m.id);
   return '<article class="it mq'+(on?' on':'')+'" data-mid="'+esc(m.id)+'"><input type="checkbox" aria-label="বাছাই"'+(on?' checked':'')+'>'+
     '<div><h3>'+hi(m.q)+'</h3><div class="meta">'+m.o.map((o,i)=>(i===m.a?'<b>':'')+L[i]+') '+hi(o)+(i===m.a?' ✓</b>':'')).join(' · ')+'</div>'+
-    '<div class="meta">'+esc([m.s,m.t].filter(Boolean).join(' › '))+(m.src.length?' · '+m.src.slice(0,3).map(x=>'<a href="'+esc(x[1])+'" target="_blank">'+esc(x[0])+'</a>').join(', ')+(m.src.length>3?' +'+bn(m.src.length-3):''):'')+'</div></div></article>';
+    '<div class="meta">'+esc([m.s,m.t].filter(Boolean).join(' › '))+(m.src.length?' · '+m.src.slice(0,3).map(x=>/^(\/|https?:\/\/)/.test(x[1])?'<a href="'+esc(x[1])+'" target="_blank">'+esc(x[0])+'</a>':esc(x[0])).join(', ')+(m.src.length>3?' +'+bn(m.src.length-3):''):'')+'</div></div></article>';
 }
 function card(t){
   const on=sel.includes(t.id);
   return '<article class="it'+(on?' on':'')+'" data-id="'+esc(t.id)+'"><input type="checkbox" aria-label="বাছাই"'+(on?' checked':'')+'>'+
     '<div><h3><span class="kind">'+esc(KIND[t.kind]||t.kind)+'</span>'+hi((t.section_no?t.section_no+' ':'')+t.section_title)+'</h3>'+
-    '<div class="meta">'+esc(t.subject)+' · অধ্যায় '+bn(t.chapter)+': '+esc(t.chapter_title)+(t.parent_section?' › '+esc(t.parent_section):'')+' · পৃ. '+bn(t.pages)+' · '+esc(t.source)+' · '+bn(Math.round(t.len/100)/10)+'k অক্ষর · <code>'+esc(t.id)+'</code></div></div>'+
+    '<div class="meta">'+esc(t.subject)+(t.chapter!=null?' · অধ্যায় '+bn(t.chapter):'')+': '+esc(t.chapter_title)+(t.parent_section?' › '+esc(t.parent_section):'')+' · পৃ. '+bn(t.pages)+' · '+esc(t.source)+' · '+bn(Math.round(t.len/100)/10)+'k অক্ষর · <code>'+esc(t.id)+'</code></div></div>'+
     '<p class="snip">'+hi(t.snippet)+'</p>'+
     '<div class="tg">'+t.tags.slice(0,10).map(x=>'<button type="button" class="chip" data-tag="'+esc(x)+'">'+esc(x)+'</button>').join('')+'</div>'+
     '<button type="button" class="more">পুরো লেখা</button></article>';
@@ -245,6 +245,12 @@ addEventListener('hashchange',()=>{readHash();search()});
 
 // ---- বাছাই করা অংশ নামানো ----
 function tray(){$('tray').hidden=!sel.length&&!msel.length;$('nsel').textContent=[sel.length?bn(sel.length)+'টি অংশ':'',msel.length?bn(msel.length)+'টি এমসিকিউ':''].filter(Boolean).join(' + ')+' বাছাই'}
+// প্রশ্নের HTML থেকে Markdown: <br> → লাইন, <b> → **, ছবি → পুরো লিংক; প্রশ্ন/অপশনে (bold-এর ভেতরে) <b> বাদ
+function plain(s,inBold){
+  return String(s||'').replace(/<img[^>]*src="([^"]+)"[^>]*>/gi,(m,u)=>' [ছবি: '+(u[0]==='/'?location.origin+u:u)+'] ')
+    .replace(/<br\s*\/?>/gi,inBold?' ':'  \n').replace(/<\/p>\s*<p[^>]*>/gi,inBold?' ':'\n\n').replace(/<\/?b>/gi,inBold?'':'**').replace(/<[^>]+>/g,'')
+    .replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').trim();
+}
 async function markdown(){
   const out=[];
   for(let i=0;i<sel.length;i+=90)out.push(...(await api('lib/get',{ids:sel.slice(i,i+90)})).items);
@@ -253,14 +259,14 @@ async function markdown(){
   let md='# টপিক: '+title+'\n\n'+'> রেফারেন্স হিসেবে '+bn(out.length)+'টি লিখিত অংশ'+(mq.length?' ও '+bn(mq.length)+'টি এমসিকিউ':'')+', '+[...new Set(out.map(t=>t.source.replace(/,?\s*অধ্যায়.*$/,'')))].join(', ')+' থেকে। লেকচার শিট নিজের ভাষায় নতুন করে লেখা হবে, হুবহু কপি নয়।\n\n';
   for(const t of out){
     md+='---\n\n## '+(t.section_no?t.section_no+' ':'')+t.section_title+'\n\n'+
-      '- উৎস: '+t.source+', পৃষ্ঠা '+t.pages+'\n- '+t.subject+' · অধ্যায় '+t.chapter+': '+t.chapter_title+(t.parent_section?' › '+t.parent_section:'')+'\n'+
+      '- উৎস: '+t.source+', পৃষ্ঠা '+t.pages+'\n- '+t.subject+(t.chapter!=null?' · অধ্যায় '+bn(t.chapter):'')+': '+t.chapter_title+(t.parent_section?' › '+t.parent_section:'')+'\n'+
       '- ট্যাগ: '+t.tags.join('; ')+'\n- id: `'+t.id+'`\n\n'+t.text.trim()+'\n\n';
   }
   if(mq.length){
     md+='---\n\n# সংশ্লিষ্ট এমসিকিউ (প্রিলিমিনারি)\n\n';
     mq.forEach((m,i)=>{
-      md+='**'+bn(i+1)+'. '+m.q+'**\n\n'+m.o.map((o,j)=>L[j]+') '+o).join('  \n')+'\n\n'+(m.a>=0?'উত্তর: '+L[m.a]+') '+m.o[m.a]+'\n\n':'')+
-        (m.e?'ব্যাখ্যা: '+m.e.replace(/<br\s*\/?>/gi,'  \n').replace(/<\/?b>/gi,'**').replace(/<[^>]+>/g,'').trim()+'\n\n':'')+'_'+[[m.s,m.t].filter(Boolean).join(' › '),m.src.map(x=>x[0]).join('; ')].filter(Boolean).join(' · ')+'_\n\n';
+      md+='**'+bn(i+1)+'. '+plain(m.q,1)+'**\n\n'+m.o.map((o,j)=>L[j]+') '+plain(o,1)).join('  \n')+'\n\n'+(m.a>=0?'উত্তর: '+L[m.a]+') '+plain(m.o[m.a],1)+'\n\n':'')+
+        (m.e?'ব্যাখ্যা: '+plain(m.e)+'\n\n':'')+'_'+[[m.s,m.t].filter(Boolean).join(' › '),m.src.map(x=>x[0]).join('; ')].filter(Boolean).join(' · ')+'_\n\n';
     });
   }
   return {md,title};
@@ -334,10 +340,14 @@ async function collect(msg){
   const rows=new Map();
   const key=async(q,ans)=>{const b=await crypto.subtle.digest('SHA-1',new TextEncoder().encode((q.replace(/[\s\p{P}]+/gu,'').toLowerCase()+'|'+ans).normalize('NFC')));return [...new Uint8Array(b)].slice(0,10).map(x=>x.toString(16).padStart(2,'0')).join('')};
   let done=0;
-  const one=async f=>{
+  const load=async f=>{
     let qs=null;
     if(f[5]){const h=await fetch(f[0],{cache:'no-store'}).then(r=>r.ok?r.text():'').catch(()=>'');const m=h.match(/const Q=(\[[\s\S]*?\]);\s*\n/);if(m)try{qs=JSON.parse(m[1])}catch(e){}}
     else qs=await getJ(f[0]);
+    return qs;
+  };
+  // আটটা করে একসাথে নামানো, কিন্তু মেলানো হয় ফাইলের ক্রমে, তাই প্রতিবার একই ফল (আর একই হ্যাশ)
+  const one=async(f,qs)=>{
     if(Array.isArray(qs))for(const q of qs){
       if(!q||!q.q||!Array.isArray(q.o))continue;
       const a=Number.isInteger(q.a)?q.a:-1,id=await key(q.q,q.o[a]||'');
@@ -346,21 +356,35 @@ async function collect(msg){
       if(r){if(!r.src.some(x=>x[0]===f[1]))r.src.push([f[1],f[2]]);if(!r.t&&top)r.t=top;if(!r.s&&subj)r.s=subj}
       else rows.set(id,{id,q:q.q,o:q.o.map(String),a,e:(q.e||'').slice(0,1500),s:subj,t:top,src:[[f[1],f[2]]]});
     }
+    else failed.push(f[0]);
     msg('ফাইল পড়া হচ্ছে: '+bn(++done)+' / '+bn(files.length));
   };
-  for(let i=0;i<files.length;i+=8)await Promise.all(files.slice(i,i+8).map(one));
-  return [...rows.values()];
+  const failed=[];
+  for(let i=0;i<files.length;i+=8){const part=files.slice(i,i+8),got=await Promise.all(part.map(load));for(let j=0;j<part.length;j++)await one(part[j],got[j])}
+  // h = বিষয়বস্তুর হ্যাশ; সার্ভারের h-এর সাথে না মিললেই শুধু সেই প্রশ্ন আবার পাঠানো হয়
+  const all=[...rows.values()];
+  for(const r of all){const b=await crypto.subtle.digest('SHA-1',new TextEncoder().encode(JSON.stringify([r.q,r.o,r.a,r.e,r.s,r.t,r.src])));r.h=[...new Uint8Array(b)].slice(0,8).map(x=>x.toString(16).padStart(2,'0')).join('')}
+  return {rows:all,failed};
 }
 $('sync').onclick=async()=>{
   const b=$('sync'),m=t=>$('syncMsg').textContent=t;b.disabled=true;$('sprog').hidden=false;
+  m('শুরু হচ্ছে…');$('sbar').style.width='0';
   try{
-    const rows=await collect(m),ver=Date.now();
-    for(let i=0;i<rows.length;i+=220){
-      for(let tries=0;;tries++){try{await api('lib/mcq-import',{ver,rows:rows.slice(i,i+220)});break}catch(e){if(tries>=2)throw e;await new Promise(r=>setTimeout(r,1500))}}
-      $('sbar').style.width=(100*Math.min(rows.length,i+220)/rows.length)+'%';m('তোলা হচ্ছে: '+bn(Math.min(rows.length,i+220))+' / '+bn(rows.length));
-    }
-    const pr=await api('lib/mcq-prune',{ver});
-    m('✓ '+bn(rows.length)+'টি প্রশ্ন হালনাগাদ হয়েছে'+(pr.removed?', পুরোনো '+bn(pr.removed)+'টি সরানো হয়েছে':'')+'।');
+    const {rows,failed}=await collect(m),have=new Map();
+    m('লাইব্রেরিতে যা আছে মেলানো হচ্ছে…');
+    for(let after='';;){const j=await api('lib/mcq-ids?'+new URLSearchParams({after}));j.items.forEach(([id,h])=>have.set(id,h));if(!j.next)break;after=j.next}
+    const send=rows.filter(r=>have.get(r.id)!==r.h),now=new Set(rows.map(r=>r.id));
+    // কোনো ফাইল পড়া না গেলে পুরোনো প্রশ্ন মোছা হয় না, নইলে ওই ফাইলের প্রশ্ন লাইব্রেরি থেকে হারিয়ে যেত
+    const gone=failed.length?[]:[...have.keys()].filter(id=>!now.has(id));
+    const retry=async(path,body)=>{for(let t=0;;t++){try{return await api(path,body)}catch(e){if(t>=2)throw e;await new Promise(r=>setTimeout(r,1500))}}};
+    const steps=Math.ceil(send.length/220)+Math.ceil(gone.length/90)||1;let k=0;
+    for(let i=0;i<send.length;i+=220){await retry('lib/mcq-import',{rows:send.slice(i,i+220)});$('sbar').style.width=(100*++k/steps)+'%';m('তোলা হচ্ছে: '+bn(Math.min(send.length,i+220))+' / '+bn(send.length))}
+    for(let i=0;i<gone.length;i+=90){await retry('lib/mcq-remove',{ids:gone.slice(i,i+90)});$('sbar').style.width=(100*++k/steps)+'%'}
+    $('sbar').style.width='100%';
+    const total=failed.length?have.size+send.filter(r=>!have.has(r.id)).length:rows.length;
+    await api('lib/mcq-done',{n:total});
+    m('✓ মোট '+bn(rows.length)+'টি প্রশ্ন দেখা হলো: নতুন বা বদলানো '+bn(send.length)+'টি, সরানো '+bn(gone.length)+'টি।'+
+      (failed.length?' '+bn(failed.length)+'টি ফাইল পড়া যায়নি, তাই পুরোনো প্রশ্ন মোছা হয়নি; পরে আবার চাপুন।':''));
     showStats(await api('lib/stats'));if(state.q||state.tag)mcq();
   }catch(e){m('থেমে গেছে ('+e.message+')। আবার চাপলে নতুন করে শুরু হবে।')}
   b.disabled=false;
