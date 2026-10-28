@@ -229,20 +229,20 @@ for path, label, e in bcs_links:
 
 # ---------- job exams ----------
 jcat = json.loads(rd('jobs/data/catalog.json'))['exams']
-CATN = {'gb': 'সরকারি ব্যাংক', 'pb': 'বেসরকারি ব্যাংক', 'gov': 'সরকারি চাকরি', 'psc': 'পিএসসি নন-ক্যাডার', 'teacher': 'শিক্ষক নিয়োগ ও নিবন্ধন'}
-HASH = {'gb': 'bank/gb', 'pb': 'bank/pb', 'gov': 'gov', 'psc': 'psc', 'teacher': 'teacher'}
-CAT_ORDER = ['gb', 'pb', 'gov', 'psc', 'teacher']
+CATN = {'gb': 'সরকারি ব্যাংক', 'pb': 'বেসরকারি ব্যাংক', 'gov': 'সরকারি চাকরি', 'psc': 'পিএসসি নন-ক্যাডার', 'teacher': 'শিক্ষক নিয়োগ ও নিবন্ধন', 'bar': 'বার কাউন্সিল'}
+HASH = {'gb': 'bank/gb', 'pb': 'bank/pb', 'gov': 'gov', 'psc': 'psc', 'teacher': 'teacher', 'bar': 'bar'}
+CAT_ORDER = ['gb', 'pb', 'gov', 'psc', 'teacher', 'bar']
 
 
 def sname(e):
-    return f'{e["orgbn"]} {e["postbn"]} {"পরীক্ষা" if "নিবন্ধন" in e["postbn"] else "নিয়োগ পরীক্ষা"}'
+    return f'{e["orgbn"]} {e["postbn"]} {"পরীক্ষা" if "নিবন্ধন" in e["postbn"] or e["cat"] == "bar" else "নিয়োগ পরীক্ষা"}'
 
 
 def jname(e):
     if e['year'] == 'misc':
         return f'{e["orgbn"]}: বিভিন্ন নিয়োগ পরীক্ষার প্রশ্ন'
     post = e.get('title') or e['postbn']
-    return f'{e["orgbn"]} {post} {"পরীক্ষা" if "নিবন্ধন" in post else "নিয়োগ পরীক্ষা"} {bn(e["year"])}'
+    return f'{e["orgbn"]} {post} {"পরীক্ষা" if "নিবন্ধন" in post or e["cat"] == "bar" else "নিয়োগ পরীক্ষা"} {bn(e["year"])}'
 
 
 jobs_ok = [e for e in jcat if e['n'] >= MIN_Q and e['cat'] in CATN and os.path.exists(os.path.join(R, f'jobs/data/e/{e["id"]}.json'))]

@@ -184,6 +184,7 @@ h2.post{font-size:20px;margin:22px 0 2px}
 </style>
 <link rel="manifest" href="/manifest.webmanifest">
 <script src="/js/app.js" defer></script>
+<script src="/js/math.js" defer></script>
 </head>
 <body>
 <div class="sitebar"><a href="/"><img src="/img/logo/final-onnavy-transparent.svg" alt="লিয়ানা বুকস"></a><nav class="sec" aria-label="সাইটের অংশ"><a href="/bcs/">বিসিএস</a><a href="/jobs/" aria-current="page">চাকরি</a><a href="/science/">বিজ্ঞান</a><a href="/running/">চলমান</a></nav></div>
@@ -202,13 +203,14 @@ const fmt=x=>bn(Number.isInteger(x)?x:(Math.round(x*100)/100).toString());
 const CAT={bank:{t:'ব্যাংকের পরীক্ষা',m:'বাংলাদেশ ব্যাংক, রাষ্ট্রায়ত্ত ও বেসরকারি ব্যাংকের বিগত নিয়োগ পরীক্ষা',subs:{gb:'সরকারি ব্যাংক ও আর্থিক প্রতিষ্ঠান',pb:'বেসরকারি ব্যাংক'}},
            gov:{t:'সরকারি অন্যান্য চাকরি',m:'মন্ত্রণালয়, অধিদপ্তর, কর্পোরেশন ও সংস্থার ৯ম থেকে ২০তম গ্রেডের সাধারণ পদ',subs:{'9':'৯ম গ্রেড','10':'১০ম গ্রেড','low':'১১-২০তম গ্রেড'}},
            psc:{t:'পিএসসি নন-ক্যাডার',m:'সরকারি কর্ম কমিশনের (পিএসসি) নন-ক্যাডার নিয়োগ পরীক্ষার বিগত প্রশ্ন',subs:{all:'সব পরীক্ষা'},flat:1},
-           teacher:{t:'শিক্ষক নিয়োগ ও নিবন্ধন',m:'প্রাথমিক বিদ্যালয় সহকারী শিক্ষক ও শিক্ষক নিবন্ধন (এনটিআরসিএ) পরীক্ষার বিগত প্রশ্ন',subs:{all:'সব পরীক্ষা'},flat:1}};
+           teacher:{t:'শিক্ষক নিয়োগ ও নিবন্ধন',m:'প্রাথমিক বিদ্যালয় সহকারী শিক্ষক ও শিক্ষক নিবন্ধন (এনটিআরসিএ) পরীক্ষার বিগত প্রশ্ন',subs:{all:'সব পরীক্ষা'},flat:1},
+           bar:{t:'বার কাউন্সিল',m:'বাংলাদেশ বার কাউন্সিলের আইনজীবী তালিকাভুক্তি (এনরোলমেন্ট) এমসিকিউ পরীক্ষার বিগত প্রশ্ন',subs:{all:'সব পরীক্ষা'},flat:1}};
 let CATALOG=null;
 const exams=()=>CATALOG.exams;
-const catOf=e=>e.cat==='gov'||e.cat==='psc'||e.cat==='teacher'?e.cat:'bank';
-const subOf=e=>e.cat==='gov'?String(e.grade):e.cat==='psc'||e.cat==='teacher'?'all':e.cat;
+const catOf=e=>e.cat==='gov'||e.cat==='psc'||e.cat==='teacher'||e.cat==='bar'?e.cat:'bank';
+const subOf=e=>e.cat==='gov'?String(e.grade):e.cat==='psc'||e.cat==='teacher'||e.cat==='bar'?'all':e.cat;
 const inSub=(e,c,s)=>catOf(e)===c&&subOf(e)===s;
-// flat categories (psc, teacher) skip the sub-category level in links and breadcrumbs
+// flat categories (psc, teacher, bar) skip the sub-category level in links and breadcrumbs
 const subCrumb=(c,s)=>CAT[c].flat?[]:[[`#/${c}/${s}`,CAT[c].subs[s]]];
 const crumb=parts=>'<nav class="crumb"><a href="#/">প্রশ্নব্যাংক</a>'+parts.map(([h,t])=>h?`<span><a href="${h}">${t}</a></span>`:`<span>${t}</span>`).join('')+'</nav>';
 const sum=L=>L.reduce((a,e)=>a+e.n,0);
@@ -234,7 +236,8 @@ function cat(c){
 const ICON={bank:'<path d="M3 10h18L12 4 3 10z"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18"/>',
   gov:'<rect x="5" y="4" width="14" height="16" rx="1"/><path d="M9 8h2M13 8h2M9 12h2M13 12h2M10.5 20v-4h3v4"/>',
   psc:'<rect x="5" y="3.5" width="14" height="17" rx="1.5"/><path d="M8.5 8h7M8.5 11.5h7M8.5 15h4.5"/>',
-  teacher:'<rect x="3.5" y="4.5" width="17" height="11" rx="1"/><path d="M7 9h6M7 12h4M9 15.5 7.5 20M15 15.5l1.5 4.5"/>'};
+  teacher:'<rect x="3.5" y="4.5" width="17" height="11" rx="1"/><path d="M7 9h6M7 12h4M9 15.5 7.5 20M15 15.5l1.5 4.5"/>',
+  bar:'<path d="M12 4v16M8 20h8M5 7h14"/><path d="M5 7l-2.5 6h5L5 7zM19 7l-2.5 6h5L19 7z"/>'};
 function badge(org,name,big,c){
   return `<span class="badge${big?' lg':''}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${ICON[c]||ICON.bank}</svg></span>`;
 }
