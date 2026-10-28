@@ -11,18 +11,6 @@
   /* কোডের ছাড় book/index.html-এর OFF আর CODES-এর সাথে মিলিয়ে রাখুন */
   var st=document.createElement('style');
   st.textContent=
-    /* স্কোর বক্স: নেভি ব্যান্ড, ফল অনুযায়ী রঙিন নম্বর, অগ্রগতির দাগ, রঙিন চিপ */
-    '#scorebox.rc-on{background:linear-gradient(160deg,#13294b 0%,#1d3a66 100%);color:#fff;border:0;border-radius:16px;padding:20px 16px 18px;box-shadow:0 10px 26px rgba(19,41,75,.22)}'+
-    '#scorebox.rc-on .rc-lab{font-size:13px;letter-spacing:.04em;color:#b8c3d4;margin-bottom:2px}'+
-    '#scorebox.rc-on .rc-meter{height:8px;border-radius:99px;background:rgba(255,255,255,.14);margin:12px auto 4px;max-width:280px;overflow:hidden}'+
-    '#scorebox.rc-on .rc-meter i{display:block;height:100%;border-radius:99px;background:var(--rc-tier);transition:width .8s ease}'+
-    '#scorebox.rc-on .rc-pct{font-size:13px;color:#b8c3d4}'+
-    '#scorebox.rc-on .stats{gap:8px;margin-top:14px}'+
-    '#scorebox.rc-on .stats span{background:rgba(255,255,255,.1);border-radius:99px;padding:4px 12px;font-size:14px;font-weight:600;color:#e6ebf2}'+
-    '#scorebox.rc-on .stats .ok{background:rgba(111,207,151,.18);color:#8fe0b0}'+
-    '#scorebox.rc-on .stats .no{background:rgba(240,138,128,.18);color:#ffb0a6}'+
-    '#scorebox.rc-on .msg{color:#dfe5ee;font-size:15px}'+
-    '#scorebox.rc-on .msg.rc-small{font-size:12.5px;color:#9fadc2;margin-top:12px;border-top:1px solid rgba(255,255,255,.12);padding-top:10px}'+
     '.rc{margin:14px 0}'+
     '.rc-wish{position:relative;border-radius:12px;padding:16px 16px 14px;background:var(--rc-soft);text-align:center}'+
     '.rc-tag{display:inline-block;font-size:12px;font-weight:600;letter-spacing:.02em;color:var(--rc-gold-ink);background:var(--rc-gold);border-radius:99px;padding:2px 10px}'+
@@ -65,15 +53,6 @@
     var g=function(c){var e=box.querySelector('.'+c);return e?en(e.textContent):0};
     var ok=g('ok'),bad=g('no'),blank=g('skip'),n=ok+bad+blank;if(!n)return;
     var r=(ok-bad*.5)/n;
-    if(box.querySelector('.rc-meter'))return; // নিজের বসানো অংশে আবার না চলে
-    var tier=r>=.8?'#e0b45c':r>=.6?'#8fe0b0':r>=.4?'#ffcf7a':'#ff9a8f';
-    box.classList.add('rc-on');box.querySelectorAll('.msg').forEach(function(p){if(/ছকে/.test(p.textContent))p.classList.add('rc-small')});box.style.setProperty('--rc-tier',tier);
-    var big=box.querySelector('.big');
-    if(big){var lab=document.createElement('div');lab.className='rc-lab';lab.textContent='আপনার নম্বর';box.insertBefore(lab,big);
-      var pc=Math.max(0,Math.round(r*100)),m=document.createElement('div');
-      m.innerHTML='<div class="rc-meter"><i style="width:0"></i></div><div class="rc-pct">'+bn(pc)+'% নম্বর পেয়েছেন</div>';
-      big.after.apply(big,[].slice.call(m.children));
-      requestAnimationFrame(function(){requestAnimationFrame(function(){var i=box.querySelector('.rc-meter i');if(i)i.style.width=pc+'%'})})}
     var w=wish(r),low=r<.6,chName=ch?(no?'অধ্যায় '+no+': '+ch:ch+' অধ্যায়'):'';
     var head=low?(ch?'এই অধ্যায়টা একবার গুছিয়ে পড়ে নিন':'অধ্যায়গুলো একবার গুছিয়ে পড়ে নিন'):(no?'বাকি ২০টা অধ্যায়ও এভাবে তৈরি করুন':'পুরো বিজ্ঞান এভাবে তৈরি করুন');
     var body=low&&ch?'“লিয়ানা বিসিএস বিজ্ঞান” বইয়ের '+chName+'-এ এই পরীক্ষার প্রতিটা বিষয় সহজ ভাষায় সাজানো, কোন বিসিএসে কী এসেছে তা চিহ্নিত।'
