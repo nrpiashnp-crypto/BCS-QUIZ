@@ -61,6 +61,15 @@ a{color:var(--accent)}
 .free .run{margin:14px 0 0;font-size:15px;color:#c9d2e2;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px 6px}
 .free .run a{color:#fff;font-weight:600;text-underline-offset:3px;text-decoration-color:rgba(224,180,92,.7)}
 .free .run .dot{width:8px;height:8px;border-radius:50%;background:#ff6b5e;flex-shrink:0}
+.runbox{margin:18px auto 0;max-width:520px;padding:14px 14px 16px;border:1.5px solid var(--gold-hi);border-radius:14px;background:rgba(224,180,92,.12);text-align:center}
+.runbox .live{display:inline-flex;align-items:center;gap:6px;background:#ff6b5e;color:#fff;font-size:12.5px;font-weight:600;border-radius:99px;padding:2px 10px}
+.runbox .dot{width:7px;height:7px;border-radius:50%;background:#fff;animation:rbp 1.6s infinite}
+@keyframes rbp{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.runbox .dot{animation:none}}
+.free .runbox .rk{margin:8px 0 2px;color:var(--gold-hi);font-family:var(--display);font-size:22px;line-height:1.3}
+.free .runbox .rs{margin:0 auto 12px;color:#dfe5ef;font-size:14px;line-height:1.5;max-width:28em}
+.runbox .rb{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.free .runbox .rb a{display:block;background:#fff;color:#13294b;border-radius:10px;padding:11px 6px;font-size:16px;font-weight:600;text-decoration:none}
 
 /* Question counter in the header corner; tools/stats.py writes the number */
 .brand>a.qc{position:absolute;top:max(12px,env(safe-area-inset-top,0px));right:10px;display:flex;flex-direction:column;align-items:center;line-height:1.2;color:#c9d2e2;text-decoration:none;font-size:12px}
@@ -185,7 +194,12 @@ footer .fb{font-family:var(--display);color:var(--ink);font-size:18px}
     <h2>সব পরীক্ষা <b>সম্পূর্ণ ফ্রি</b></h2>
     <p class="nolog">রেজিস্ট্রেশন বা লগইন লাগে না · যতবার খুশি</p>
     <a class="big" href="exams/">পরীক্ষা দিন →</a>
-    <p class="run"><span class="dot" aria-hidden="true"></span>চলমান নিয়োগ: <a href="running/petrobangla/">পেট্রোবাংলা</a> · <a href="running/sub-registrar/">সাব-রেজিস্ট্রার</a></p>
+    <div class="runbox">
+      <span class="live"><span class="dot" aria-hidden="true"></span>এখন চলছে</span>
+      <p class="rk">চলমান নিয়োগ প্রস্তুতি</p>
+      <p class="rs">নিয়োগ পরীক্ষার প্রস্তুতি নিন এখানেই, সম্পূর্ণ ফ্রি</p>
+      <div class="rb"><a href="running/petrobangla/">পেট্রোবাংলা →</a><a href="running/sub-registrar/">সাব-রেজিস্ট্রার →</a></div>
+    </div>
   </div>
 </header>
 <div class="wrap">
