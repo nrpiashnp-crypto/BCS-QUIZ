@@ -14,8 +14,6 @@
     /* স্কোর বক্স: নেভি ব্যান্ড, ফল অনুযায়ী রঙিন নম্বর, অগ্রগতির দাগ, রঙিন চিপ */
     '#scorebox.rc-on{background:linear-gradient(160deg,#13294b 0%,#1d3a66 100%);color:#fff;border:0;border-radius:16px;padding:20px 16px 18px;box-shadow:0 10px 26px rgba(19,41,75,.22)}'+
     '#scorebox.rc-on .rc-lab{font-size:13px;letter-spacing:.04em;color:#b8c3d4;margin-bottom:2px}'+
-    '#scorebox.rc-on .big{font-family:"Noto Sans Bengali",system-ui,sans-serif;font-weight:700;font-size:54px;line-height:1.1;color:var(--rc-tier)}'+
-    '#scorebox.rc-on .big .of{font-size:26px;font-weight:600;color:#b8c3d4}'+
     '#scorebox.rc-on .rc-meter{height:8px;border-radius:99px;background:rgba(255,255,255,.14);margin:12px auto 4px;max-width:280px;overflow:hidden}'+
     '#scorebox.rc-on .rc-meter i{display:block;height:100%;border-radius:99px;background:var(--rc-tier);transition:width .8s ease}'+
     '#scorebox.rc-on .rc-pct{font-size:13px;color:#b8c3d4}'+
@@ -72,7 +70,6 @@
     box.classList.add('rc-on');box.querySelectorAll('.msg').forEach(function(p){if(/ছকে/.test(p.textContent))p.classList.add('rc-small')});box.style.setProperty('--rc-tier',tier);
     var big=box.querySelector('.big');
     if(big){var lab=document.createElement('div');lab.className='rc-lab';lab.textContent='আপনার নম্বর';box.insertBefore(lab,big);
-      big.innerHTML=big.innerHTML.replace(/ \/ ([০-৯]+)\s*$/,' <span class="of">/ $1</span>');
       var pc=Math.max(0,Math.round(r*100)),m=document.createElement('div');
       m.innerHTML='<div class="rc-meter"><i style="width:0"></i></div><div class="rc-pct">'+bn(pc)+'% নম্বর পেয়েছেন</div>';
       big.after.apply(big,[].slice.call(m.children));

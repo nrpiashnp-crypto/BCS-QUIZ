@@ -161,4 +161,6 @@ window.addEventListener('beforeunload',e=>{if($('exam')&&!$('exam').hidden){e.pr
 fetch(PLAN_URL).then(r=>r.json()).then(x=>{P=x;route()}).catch(()=>{V().innerHTML='<p class="load">তালিকা লোড হয়নি। আবার চেষ্টা করুন।</p>'});
 // book link under every explanation
 const bl=document.createElement('script');bl.src='/js/book-link.js';bl.dataset.kind='jobs';document.head.appendChild(bl);
+// খাতার মতো লাল কালির নম্বর
+const sm=document.createElement('script');sm.src='/js/score-mark.js';document.head.appendChild(sm);
 })();
