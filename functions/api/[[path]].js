@@ -13,7 +13,9 @@
    POST /api/lib/get    {ids:[…]}   → পুরো লেখাসহ অংশগুলো
    POST /api/lib/import {topics:[…]} → একই id আবার এলে হালনাগাদ, ডুপ্লিকেট নয় (এক বারে ১৫টি)
    POST /api/lib/remove {ids:[…]}
-   সাইটের এমসিকিউ ব্যাংকও একই জায়গা থেকে খোঁজা যায়: অ্যাডমিন পাতা সাইটের JSON থেকে প্রশ্ন পড়ে lib_mcq-তে তোলে
+   এমসিকিউ আর টপিক তালিকা আসে Lyanna_data থেকে (tools/library/from_lyanna.py → library-mcq.json.gz), একই প্রশ্ন-আইডি ও টপিক আইডি
+   POST /api/lib/tax-import {rows:[{id,bn,parent,subject}]} → পুরো টপিক তালিকা বদলে যায়
+   search আর mcq দুটোতেই &topic=<id>: ওই টপিক আর তার নিচের সব টপিক (sci-light → sci-light-refraction …)
    GET  /api/lib/mcq-ids?after=  → [id, h] (h = বিষয়বস্তুর হ্যাশ), তাই পাতা শুধু নতুন/বদলানো প্রশ্ন পাঠায়
    POST /api/lib/mcq-import {rows:[{id,q,o,a,e,s,t,src,h}]} (এক বারে ২২০টি) · POST /api/lib/mcq-remove {ids:[…]} · POST /api/lib/mcq-done {n}
    GET  /api/lib/mcq?q=&offset=  · POST /api/lib/mcq-get {ids:[…]}
@@ -34,11 +36,12 @@ const LIB_SCHEMA = [
   'CREATE TABLE IF NOT EXISTS lib_tags(topic_id TEXT NOT NULL, tag TEXT NOT NULL, PRIMARY KEY(topic_id, tag))',
   'CREATE INDEX IF NOT EXISTS lib_tags_tag ON lib_tags(tag)',
   'CREATE INDEX IF NOT EXISTS lib_topics_sub ON lib_topics(subject, chapter)',
-  'CREATE TABLE IF NOT EXISTS lib_mcq(id TEXT PRIMARY KEY, q TEXT, o TEXT, a INTEGER, e TEXT, s TEXT, t TEXT, src TEXT, h TEXT, topic_ids TEXT)',
-  'CREATE TABLE IF NOT EXISTS lib_meta(k TEXT PRIMARY KEY, v TEXT)'
+  'CREATE TABLE IF NOT EXISTS lib_mcq(id TEXT PRIMARY KEY, q TEXT, o TEXT, a INTEGER, e TEXT, s TEXT, t TEXT, src TEXT, h TEXT, topic_ids TEXT, exams TEXT)',
+  'CREATE TABLE IF NOT EXISTS lib_meta(k TEXT PRIMARY KEY, v TEXT)',
+  'CREATE TABLE IF NOT EXISTS lib_taxonomy(id TEXT PRIMARY KEY, bn TEXT, parent TEXT, subject TEXT, pos INTEGER)'
 ];
 // D1-এর সীমা: ফ্রি প্ল্যানে এক অনুরোধে ৫০টি কোয়েরি, এক কোয়েরিতে ১০০টি প্যারামিটার
-const LIB_PAGE = 30, LIB_IMPORT = 15, LIB_IDS = 90, MCQ_IMPORT = 220, MCQ_PER_STMT = 10, MCQ_IDS_PAGE = 5000;
+const LIB_PAGE = 30, LIB_IMPORT = 15, LIB_IDS = 90, MCQ_IMPORT = 220, MCQ_PER_STMT = 9, MCQ_IDS_PAGE = 5000;
 
 const json = (o, status = 200, headers = {}) => new Response(JSON.stringify(o), {
   status, headers: {'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...headers}
@@ -138,6 +141,9 @@ const topicIds = v => {
   return a.length ? '; ' + a.join('; ') + '; ' : null;
 };
 
+// '; sci-light; ' মেলে sci-light আর sci-light-…-এ, কিন্তু sci-lightning-এ নয়
+const topicWhere = "(instr(topic_ids, '; ' || ? || '; ') > 0 OR instr(topic_ids, '; ' || ? || '-') > 0)";
+
 function libClean(t) {
   if (!t || typeof t !== 'object') return null;
   const id = nfc(t.id).slice(0, 80), text = nfc(t.text);
@@ -200,6 +206,7 @@ async function libSearch(url, db) {
   for (const [k, col] of [['subject', 'subject'], ['kind', 'kind'], ['source', 'source_id']]) if (p(k)) { where.push(col + ' = ?'); args.push(p(k)); }
   if (p('chapter')) { where.push('chapter = ?'); args.push(parseInt(p('chapter')) || 0); }
   if (p('tag')) { where.push('id IN (SELECT topic_id FROM lib_tags WHERE tag = ?)'); args.push(p('tag')); }
+  if (p('topic')) { where.push(topicWhere); args.push(p('topic'), p('topic')); }
   const w = where.length ? 'WHERE ' + where.join(' AND ') : '';
   const sc = score.length ? score.join(' + ') : '0';
   const total = (await db.prepare(`SELECT COUNT(*) n FROM lib_topics ${w}`).bind(...args).first()).n;
@@ -219,33 +226,35 @@ async function libSearch(url, db) {
 async function libStats(db) {
   await db.batch(LIB_SCHEMA.map(s => db.prepare(s)));
   const q = s => db.prepare(s).all().then(r => r.results);
-  const [subjects, sources, tags, kinds, mcq] = await Promise.all([
+  const [subjects, sources, tags, kinds, mcq, taxonomy] = await Promise.all([
     q('SELECT subject, COUNT(*) n, COUNT(DISTINCT chapter) ch FROM lib_topics GROUP BY subject ORDER BY n DESC'),
     q('SELECT s.id, s.title, s.subject, s.exam, COUNT(t.id) n FROM lib_sources s LEFT JOIN lib_topics t ON t.source_id = s.id GROUP BY s.id ORDER BY s.subject, s.id'),
     q('SELECT tag, COUNT(*) n FROM lib_tags GROUP BY tag HAVING n > 1 ORDER BY n DESC LIMIT 60'),
     q('SELECT kind, COUNT(*) n FROM lib_topics GROUP BY kind ORDER BY n DESC'),
-    q("SELECT (SELECT v FROM lib_meta WHERE k = 'mcq_count') n, (SELECT v FROM lib_meta WHERE k = 'mcq_synced') synced")
+    q("SELECT (SELECT v FROM lib_meta WHERE k = 'mcq_count') n, (SELECT v FROM lib_meta WHERE k = 'mcq_synced') synced"),
+    q('SELECT id, bn, parent, subject FROM lib_taxonomy ORDER BY pos')
   ]);
-  return json({subjects, sources, tags, kinds, mcq: mcq[0]});
+  return json({subjects, sources, tags, kinds, mcq: mcq[0], taxonomy});
 }
 
 // ---------- এমসিকিউ ----------
-const mcqOut = r => ({...r, o: JSON.parse(r.o || '[]'), src: JSON.parse(r.src || '[]')});
+const ids = v => String(v || '').split('; ').filter(Boolean);
+const mcqOut = r => ({...r, o: JSON.parse(r.o || '[]'), src: JSON.parse(r.src || '[]'), topic_ids: ids(r.topic_ids), exams: ids(r.exams)});
 
 async function mcqImport(req, db) {
   const body = await req.json().catch(() => ({}));
   const rows = (Array.isArray(body.rows) ? body.rows : []).slice(0, MCQ_IMPORT).map(r => {
-    if (!r || typeof r !== 'object' || !/^[a-f0-9]{8,40}$/.test(r.id) || !nfc(r.q) || !Array.isArray(r.o)) return null;
+    if (!r || typeof r !== 'object' || !/^[a-z0-9]{6,40}$/.test(r.id) || !nfc(r.q) || !Array.isArray(r.o)) return null;
     return [r.id, nfc(r.q).slice(0, 4000), JSON.stringify(r.o.slice(0, 8).map(x => nfc(String(x)).slice(0, 1000))),
       Number.isInteger(r.a) ? r.a : -1, nfc(r.e).slice(0, 1500), nfc(r.s).slice(0, 80), nfc(r.t).slice(0, 160),
       JSON.stringify((Array.isArray(r.src) ? r.src : []).filter(Array.isArray).slice(0, 40).map(x => [nfc(String(x[0])).slice(0, 200), nfc(String(x[1])).slice(0, 200)])),
-      String(r.h || '').slice(0, 40), topicIds(r.topic_ids)];
+      String(r.h || '').slice(0, 40), topicIds(r.topic_ids), topicIds(r.exams)];
   }).filter(Boolean);
   const st = [];
   for (let i = 0; i < rows.length; i += MCQ_PER_STMT) {
     const part = rows.slice(i, i + MCQ_PER_STMT);
-    st.push(db.prepare('INSERT INTO lib_mcq(id, q, o, a, e, s, t, src, h, topic_ids) VALUES' + part.map(() => '(?,?,?,?,?,?,?,?,?,?)').join(',') +
-      ' ON CONFLICT(id) DO UPDATE SET q=excluded.q, o=excluded.o, a=excluded.a, e=excluded.e, s=excluded.s, t=excluded.t, src=excluded.src, h=excluded.h, topic_ids=excluded.topic_ids')
+    st.push(db.prepare('INSERT INTO lib_mcq(id, q, o, a, e, s, t, src, h, topic_ids, exams) VALUES' + part.map(() => '(?,?,?,?,?,?,?,?,?,?,?)').join(',') +
+      ' ON CONFLICT(id) DO UPDATE SET q=excluded.q, o=excluded.o, a=excluded.a, e=excluded.e, s=excluded.s, t=excluded.t, src=excluded.src, h=excluded.h, topic_ids=excluded.topic_ids, exams=excluded.exams')
       .bind(...part.flat()));
   }
   if (st.length) await db.batch(st);
@@ -255,8 +264,9 @@ async function mcqImport(req, db) {
 async function mcqSearch(url, db) {
   const words = nfc(url.searchParams.get('q') || '').split(/\s+/).filter(Boolean).slice(0, 6);
   const off = Math.max(0, Math.min(5000, parseInt(url.searchParams.get('offset')) || 0));
-  if (!words.length) return json({total: 0, offset: 0, items: []});
-  const where = [], args = [], score = [], sargs = [];
+  const topic = nfc(url.searchParams.get('topic') || '');
+  if (!words.length && !topic) return json({more: false, offset: 0, items: []});
+  const where = [], args = [], score = ['0'], sargs = [];
   for (const w of words) {
     const l = w.toLowerCase();
     where.push("(instr(lower(q), ?) > 0 OR instr(lower(o), ?) > 0 OR instr(lower(t), ?) > 0)"); args.push(l, l, l);
@@ -266,8 +276,9 @@ async function mcqSearch(url, db) {
   }
   // সব শব্দ একসাথে না মিললে যেকোনো একটা শব্দ (যেমন "রোহিঙ্গা সংকট" → "রোহিঙ্গা"), বেশি শব্দ মেলা প্রশ্ন আগে
   const run = async join => {
-    const {results} = await db.prepare(`SELECT id, q, o, a, e, s, t, src, ${score.join(' + ')} score FROM lib_mcq WHERE ${where.join(join)}
-        ORDER BY score DESC, length(src) DESC, id LIMIT ? OFFSET ?`).bind(...sargs, ...args, LIB_PAGE + 1, off).all();
+    const w = [where.length ? '(' + where.join(join) + ')' : '1', ...(topic ? [topicWhere] : [])].join(' AND ');
+    const {results} = await db.prepare(`SELECT id, q, o, a, e, s, t, src, topic_ids, exams, ${score.join(' + ')} score FROM lib_mcq WHERE ${w}
+        ORDER BY score DESC, length(src) DESC, id LIMIT ? OFFSET ?`).bind(...sargs, ...args, ...(topic ? [topic, topic] : []), LIB_PAGE + 1, off).all();
     return results;
   };
   let rows = await run(' AND '), any = false;
@@ -297,6 +308,22 @@ async function libRoute(path, m, req, url, db) {
   if (path === 'lib/mcq-ids' && m === 'GET') {
     const {results} = await db.prepare('SELECT id, h FROM lib_mcq WHERE id > ? ORDER BY id LIMIT ?').bind(url.searchParams.get('after') || '', MCQ_IDS_PAGE).all();
     return json({items: results.map(r => [r.id, r.h]), next: results.length === MCQ_IDS_PAGE ? results[results.length - 1].id : null});
+  }
+  if (path === 'lib/tax-import' && m === 'POST') {
+    const body = await req.clone().json().catch(() => ({}));
+    const rows = (Array.isArray(body.rows) ? body.rows : []).slice(0, 2000)
+      .filter(r => r && /^[a-z]+(-[a-z0-9]+)*$/.test(r.id))
+      .map((r, i) => [r.id, nfc(r.bn).slice(0, 200), /^[a-z]+(-[a-z0-9]+)*$/.test(r.parent || '') ? r.parent : null, nfc(r.subject).slice(0, 20), i]);
+    if (!rows.length) return json({error: 'rows'}, 400);
+    // ২০টি করে এক কোয়েরিতে (১০০ প্যারামিটারের সীমা); পুরো বদল এক ব্যাচে, তাই অর্ধেক তালিকা কখনো থাকে না
+    const st = [db.prepare('DELETE FROM lib_taxonomy')];
+    for (let i = 0; i < rows.length; i += 20) {
+      const part = rows.slice(i, i + 20);
+      st.push(db.prepare('INSERT INTO lib_taxonomy(id, bn, parent, subject, pos) VALUES' + part.map(() => '(?,?,?,?,?)').join(',')).bind(...part.flat()));
+    }
+    if (st.length > 45) return json({error: 'too many'}, 400);
+    await db.batch(st);
+    return json({ok: true, saved: rows.length});
   }
   if (path === 'lib/mcq-done' && m === 'POST') {
     const {n} = await req.clone().json().catch(() => ({}));
