@@ -78,7 +78,7 @@ button{font:inherit;cursor:pointer}
 .qh{display:flex;gap:10px;align-items:baseline}
 .num{font-family:var(--display);color:var(--accent);min-width:1.6em}
 .qt{font-weight:500;margin:0;min-width:0;overflow-x:auto}
-.qt table{border-collapse:collapse;margin:6px 0}.qt td,.qt th{border:1px solid var(--rule);padding:3px 8px}
+.qt img{display:block;max-width:100%;height:auto;margin:6px 0}.qt table{border-collapse:collapse;margin:6px 0}.qt td,.qt th{border:1px solid var(--rule);padding:3px 8px}
 .opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 0 2.2em}
 @media (max-width:520px){.opts{grid-template-columns:1fr;margin-left:0}}
 .opt{display:flex;gap:8px;align-items:flex-start;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--rule);border-radius:8px;padding:9px 12px;min-height:44px;width:100%;flex-wrap:wrap}
@@ -134,7 +134,7 @@ button{font:inherit;cursor:pointer}
   <span class="stamp">চ্যালেঞ্জ</span>
   <h1 id="ih"></h1>
   <p class="sub" id="is"></p>
-  <div class="vs"><div class="side"><span class="who" id="iname"></span><span class="pts" id="ipts"></span><span class="seal">✓ যাচাই করা নম্বর</span></div>
+  <div class="vs"><div class="side"><span class="who" id="iname"></span><span class="pts" id="ipts"></span><span class="tm" id="itm"></span></div>
     <span class="vsx">বনাম</span><div class="side me"><span class="who">আপনি</span><span class="pts">?</span><span class="tm">দেখা যাক!</span></div></div>
   <form class="start" id="iform"><label><span>আপনার নাম</span><input id="iname2" maxlength="24" autocomplete="given-name" placeholder="যেমন: করিম" required></label><button class="btn" type="submit">পরীক্ষা শুরু করুন</button></form>
   <ul class="rules"><li>সময় শেষ হলে নিজে থেকে জমা হবে</li><li>ভুলে নম্বর কাটা নেই</li><li>প্রথমবারের ফলই বোর্ডে ওঠে</li></ul>
@@ -174,7 +174,7 @@ button{font:inherit;cursor:pointer}
 </section>
 </div>
 <script src="/js/account.js" defer></script>
-<script src="/js/challenge.js?v=1"></script>
+<script src="/js/challenge.js?v=2"></script>
 <script>
 (function(){
 var $=function(i){return document.getElementById(i)},K=['ক','খ','গ','ঘ','ঙ','চ'],bn=LBC.bn,ls=LBC.store,safe=LBC.safe;
@@ -190,7 +190,7 @@ function board(c,me){if(!c.top||!c.top.length)return '';
 function shareText(name,c,ok){return name+' আপনাকে চ্যালেঞ্জ করেছে! '+(c.title||'পরীক্ষা')+'-এর '+bn(c.n)+'টি প্রশ্নে সে পেয়েছে '+bn(ok)+'টি সঠিক। আপনি পারবেন?'}
 
 function intro(c){$('ih').textContent=c.name+' আপনাকে চ্যালেঞ্জ করেছে';$('is').innerHTML=head(c);
-  $('iname').textContent=c.name;$('ipts').innerHTML=bn(c.ok)+'<small>/'+bn(c.n)+'</small>';$('iname2').value=LBC.name();$('iboard').innerHTML=board(c);
+  $('iname').textContent=c.name;$('itm').textContent='সময় '+t(c.sec);$('ipts').innerHTML=bn(c.ok)+'<small>/'+bn(c.n)+'</small>';$('iname2').value=LBC.name();$('iboard').innerHTML=board(c);
   document.title=c.name+'-এর চ্যালেঞ্জ · লিয়ানা বুকস';show('intro')}
 function own(c){$('oh').textContent=c.title||'পরীক্ষা';$('os').innerHTML=bn(c.n)+'টি প্রশ্নে আপনি পেয়েছেন '+bn(c.ok)+'টি সঠিক, সময় '+t(c.sec)+'।';
   LBC.share($('oshare'),c.id,shareText(c.name,c,c.ok));$('oboard').innerHTML=board(c);show('own')}
@@ -202,7 +202,7 @@ function exam(){var box=$('elist');box.innerHTML='';pick=C.qs.map(function(){ret
    s.querySelectorAll('.opt').forEach(function(b){b.onclick=function(){var j=+b.dataset.j;pick[i]=pick[i]===j?-1:j;
      s.querySelectorAll('.opt').forEach(function(x){x.classList.toggle('sel',+x.dataset.j===pick[i])});
      $('ans').textContent=bn(pick.filter(function(p){return p>=0}).length)}});box.appendChild(s)});
-  var end=C.mins*60;startAt=Date.now();clearInterval(timer);
+  fetch('/api/ch/'+id+'/start',{method:'POST'}).catch(function(){});var end=C.mins*60;startAt=Date.now();clearInterval(timer);
   var tick=function(){var left=Math.max(0,end-Math.floor((Date.now()-startAt)/1000));$('clock').textContent=t(left);$('clock').classList.toggle('low',left<=60);if(!left)send()};
   tick();timer=setInterval(tick,1000);show('exam')}
 function ask(){var blank=pick.filter(function(p){return p<0}).length;
@@ -222,11 +222,11 @@ function result(R){var me=R.me,hw=R.ok,mw=me.ok,host=R.name;
   var v=tie?'একদম সমান সমান!':win?(mw===hw?'নম্বর সমান, তবে সময়ে আপনি জিতেছেন!':'আপনি জিতেছেন!'):(mw===hw?'নম্বর সমান, সময়ে '+esc(host)+' এগিয়ে।':'এবার '+esc(host)+' জিতেছে।');
   $('scorebox').innerHTML='<p class="verdict">'+v+'</p><div class="vs"><div class="side me'+(win?' win':'')+'"><span class="who">'+esc(me.name)+' (আপনি)</span><span class="pts">'+bn(mw)+'<small>/'+bn(R.n)+'</small></span><span class="tm">সময় '+t(me.sec)+'</span></div>'+
    '<span class="vsx">বনাম</span><div class="side'+(!win&&!tie?' win':'')+'"><span class="who">'+esc(host)+'</span><span class="pts">'+bn(hw)+'<small>/'+bn(R.n)+'</small></span><span class="tm">সময় '+t(R.sec)+'</span></div></div>'+
-   '<p class="rank">'+bn(R.count)+' জনের মধ্যে আপনি '+bn(R.rank)+' নম্বরে'+(me.again?' (প্রথমবারের ফল)':'')+'।</p>';
+   '<p class="rank">'+bn(R.count)+' জনের মধ্যে আপনি '+bn(R.rank)+' নম্বরে'+(me.again?' (প্রথমবারের ফল)':me.off?' (এই নেট থেকে আগেই কয়েকজন দিয়েছেন, তাই এটা বোর্ডে ওঠেনি)':'')+'।</p>';
   $('rboard').innerHTML=board(R,R.rank);
   $('revp').textContent=win?'একই প্রশ্নে আপনার নম্বর দিয়ে অন্য বন্ধুদের চ্যালেঞ্জ করুন।':'একই প্রশ্নে আপনার নম্বর দিয়ে বন্ধুদের চ্যালেঞ্জ করুন, '+host+'-কেও।';
   $('revgo').onclick=function(){var b=this;b.disabled=true;b.textContent='বানানো হচ্ছে…';
-   LBC.post({from:id,name:me.name,picks:me.picks,sec:me.sec}).then(function(j){ls('ch:own:'+j.id,'1');b.hidden=true;$('reve').hidden=true;
+   LBC.post({from:id,name:me.name}).then(function(j){ls('ch:own:'+j.id,'1');b.hidden=true;$('reve').hidden=true;
      LBC.share($('revshare'),j.id,me.name+' আপনাকে পাল্টা চ্যালেঞ্জ করেছে! '+(R.title||'পরীক্ষা')+'-এর '+bn(j.n)+'টি প্রশ্নে সে পেয়েছে '+bn(j.ok)+'টি সঠিক। আপনি পারবেন?')},
     function(e){b.disabled=false;b.textContent='পাল্টা চ্যালেঞ্জের লিংক বানান';$('reve').textContent=LBC.fail(e);$('reve').hidden=false})};
   var bub=function(q,p){return '<span class="bb">'+q.o.map(function(_,j){return '<i class="'+(j===q.a?'c':'')+(j===p?' f':'')+'">'+K[j]+'</i>'}).join('')+'</span>'};
@@ -247,7 +247,7 @@ $('submit').onclick=$('submit2').onclick=ask;
 if(!/^[A-Za-z0-9]{6,12}$/.test(id||''))return show('err');
 fetch('/api/ch/'+id).then(function(r){if(r.status===404)throw 404;if(!r.ok)throw r.status;return r.json()}).then(function(c){C=c;
   var done=null;try{done=JSON.parse(ls('ch:done:'+id)||'null')}catch(e){}
-  if(done&&done.me){done.top=c.top;done.count=c.count;return result(done)}
+  if(done&&done.me){done.top=c.top;done.count=c.count;if(c.mine)done.rank=c.mine.rank;return result(done)}
   if(ls('ch:own:'+id))return own(c);
   intro(c)}).catch(function(e){if(e!==404)$('errp').textContent='এখন খোলা গেল না। ইন্টারনেট সংযোগ দেখে পাতাটা আবার খুলুন।';show('err')});
 })();

@@ -10,7 +10,9 @@ var ALLOW={B:1,I:1,U:1,SUB:1,SUP:1,BR:1,TABLE:1,THEAD:1,TBODY:1,TR:1,TD:1,TH:1,S
 /* শুধু সাধারণ লেখার ট্যাগ, কোনো অ্যাট্রিবিউট নয় (সার্ভারও একই কাজ করে, এটা দ্বিতীয় পাহারা) */
 function clean(node){var out=document.createElement('div');(function walk(src,dst){[].forEach.call(src.childNodes,function(n){
   if(n.nodeType===3)dst.appendChild(document.createTextNode(n.nodeValue));
-  else if(n.nodeType===1){if(/^(SCRIPT|STYLE|TEMPLATE)$/.test(n.tagName))return;if(ALLOW[n.tagName]){var e=document.createElement(n.tagName.toLowerCase());dst.appendChild(e);walk(n,e)}else walk(n,dst)}})})(node,out);return out.innerHTML.trim()}
+  else if(n.nodeType===1){if(/^(SCRIPT|STYLE|TEMPLATE)$/.test(n.tagName))return;
+   if(n.tagName==='IMG'){var u=n.getAttribute('src')||'';if(/^\/(?!\/)[\w\-.\/%]+$/.test(u)){var im=document.createElement('img');im.src=u;im.alt='';dst.appendChild(im)}return}
+   if(ALLOW[n.tagName]){var e=document.createElement(n.tagName.toLowerCase());dst.appendChild(e);walk(n,e)}else walk(n,dst)}})})(node,out);return out.innerHTML.trim()}
 function safe(html){var d=new DOMParser().parseFromString('<body>'+(html||''),'text/html');return clean(d.body)}
 
 /* পাতার শিরোনাম থেকে পরীক্ষার নাম: "শব্দ: বিসিএস অনলাইন পরীক্ষা" → "শব্দ", "টাস্ক ১: শুরুর যাচাই ১ · পেট্রোবাংলা" পুরোটাই */
@@ -38,11 +40,13 @@ function share(box,id,text){var u=link(id),msg=text+'\n'+u;
    '<a class="chx-b fb" target="_blank" rel="noopener" href="https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(u)+'">ফেসবুক</a>'+
    '<button type="button" class="chx-b cp">লিংক কপি</button>'+(navigator.share?'<button type="button" class="chx-b mo">আরও…</button>':'')+'</div>';
   var cp=box.querySelector('.cp');cp.onclick=function(){var done=function(){cp.textContent='কপি হয়েছে ✓';setTimeout(function(){cp.textContent='লিংক কপি'},2000)};
-   if(navigator.clipboard)navigator.clipboard.writeText(msg).then(done,function(){prompt('লিংকটা কপি করুন',u)});else prompt('লিংকটা কপি করুন',u)};
+   var old=function(){var t=document.createElement('textarea');t.value=msg;t.setAttribute('readonly','');t.style.cssText='position:fixed;top:0;left:0;opacity:0';document.body.appendChild(t);t.select();
+    var ok=false;try{ok=document.execCommand('copy')}catch(e){}t.remove();if(ok)done();else{var r=document.createRange();r.selectNodeContents(box.querySelector('.chx-link span'));var sel=getSelection();sel.removeAllRanges();sel.addRange(r);cp.textContent='লিংক বাছাই হয়েছে, কপি করুন'}};
+   if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(msg).then(done,old);else old()};
   var mo=box.querySelector('.mo');if(mo)mo.onclick=function(){navigator.share({title:'লিয়ানা বুকস চ্যালেঞ্জ',text:text,url:u}).catch(function(){})};
   box.hidden=false}
 function post(body){return fetch('/api/ch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json().then(function(j){if(!r.ok||!j.id)throw j;return j})})}
-function fail(e){return e&&e.error==='slow'?'এক ঘণ্টায় অনেকগুলো চ্যালেঞ্জ হয়ে গেছে, একটু পরে আবার চেষ্টা করুন।':e&&e.error==='bad'?'এই পরীক্ষা থেকে চ্যালেঞ্জ বানানো গেল না।':'ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।'}
+function fail(e){return e&&e.error==='slow'?'এক ঘণ্টায় অনেকগুলো চ্যালেঞ্জ হয়ে গেছে, একটু পরে আবার চেষ্টা করুন।':e&&e.error==='bad'?'এই পরীক্ষা থেকে চ্যালেঞ্জ বানানো গেল না।':e&&e.error==='first'?'আগে চ্যালেঞ্জটা নিজে দিয়ে নিন, তারপর পাল্টা চ্যালেঞ্জ বানানো যাবে।':'ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।'}
 
 function card(list){var el=document.createElement('div');el.className='chx';
   el.innerHTML='<div class="chx-h"><span class="chx-i" aria-hidden="true">⚔</span><div><b>বন্ধুকে চ্যালেঞ্জ করুন</b><small>এই প্রশ্নগুলোতেই বন্ধু আপনাকে হারাতে পারবে? লিংক পাঠান, লগইন ছাড়াই দিতে পারবে।</small></div></div>'+
@@ -59,13 +63,14 @@ function card(list){var el=document.createElement('div');el.className='chx';
    },function(e){go.disabled=false;go.textContent='লিংক বানান';err.textContent=fail(e);err.hidden=false})};
   return el}
 
-function key(list){var q=list.querySelector('section.q .qt');return list.children.length+'|'+(q?q.textContent.slice(0,40):'')}
+/* নম্বর আর সময়ও চাবিতে থাকে, তাই একই প্রশ্নে আবার পরীক্ষা দিলেও কার্ড নতুন হয় */
+function key(list,sb){var q=list.querySelector('section.q .qt');return list.children.length+'|'+(q?q.textContent.slice(0,40):'')+'|'+sb.textContent.replace(/\s+/g,' ').slice(0,160)}
 /* প্রতিটি দেখা যাওয়া "উত্তর ও ব্যাখ্যা" অংশে একটা কার্ড; নতুন পরীক্ষা হলে কার্ড নতুন করে বসে */
 function scan(){if(document.body.hasAttribute('data-noch'))return;
   [].forEach.call(document.querySelectorAll('h2'),function(h){if(!/উত্তর ও ব্যাখ্যা/.test(h.textContent)||!h.offsetParent)return;
    var box=h.parentNode,list=box.querySelector('#rlist')||h.nextElementSibling,sb=box.querySelector('#scorebox')||box.querySelector('.score');
    if(!list||!sb||sb.parentNode!==box||!list.querySelector('section.q .opt.right'))return;
-   var k=key(list),c=box.querySelector(':scope > .chx');if(c&&c.dataset.k===k)return;if(c)c.remove();
+   var k=key(list,sb),c=box.querySelector(':scope > .chx');if(c&&c.dataset.k===k)return;if(c)c.remove();
    c=card(list);c.dataset.k=k;var sec=(sb.textContent.match(/([০-৯\d]+)\s*মিনিট\s*(?:([০-৯\d]+)\s*সেকেন্ড)?/)||[]);
    if(sec[1]){var en=function(x){return +String(x||0).replace(/[০-৯]/g,function(d){return B.indexOf(d)})};c.dataset.sec=en(sec[1])*60+en(sec[2])}
    var j=sb.nextElementSibling&&sb.nextElementSibling.classList.contains('exp-jump')?sb.nextElementSibling:sb;j.insertAdjacentElement('afterend',c)})}
