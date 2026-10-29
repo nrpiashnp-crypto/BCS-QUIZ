@@ -75,13 +75,13 @@ a{color:#13294b}
 /* book and sample pages: undo their dark-mode text colours */
 .tag,.tot,.price b{color:#13294b!important}
 
-/* loading: a pencil weighs ক খ গ ঘ and fills গ (js/omr.js swaps it in for "লোড হচ্ছে…") */
+/* loading: a pencil goes straight to গ and fills it (js/omr.js swaps it in for "লোড হচ্ছে…") */
 .omr-ld{display:flex;flex-direction:column;align-items:center;gap:8px;padding:26px 0;color:#13294b;font:500 14px/1.4 'Noto Sans Bengali',sans-serif}
 .omr-ld .lb{position:relative;display:inline-flex;gap:8px}
 .omr-ld .b{position:relative;width:28px;height:28px;border:1.5px solid #c8326a;border-radius:50%;display:grid;place-items:center;font:13px/1 'Noto Sans Bengali',sans-serif;color:#c8326a}
 .omr-ld .b::after{content:"";position:absolute;inset:2px;border-radius:50%;background:repeating-linear-gradient(118deg,#26262b 0 2px,#3b3b42 2px 3.2px,#2d2d33 3.2px 5px);clip-path:inset(0 100% 0 0)}
-.omr-ld .b.g::after{animation:omrFill 3s infinite}
-.omr-ld .pen{position:absolute;width:34px;height:34px;left:-7px;top:-27px;pointer-events:none;animation:omrPen 3s infinite}
-@keyframes omrPen{0%{transform:translate(14px,-6px)}14%{transform:translate(50px,-6px)}24%{transform:translate(86px,-4px)}28%{transform:translate(80px,9px)}33%{transform:translate(82px,19px)}37%{transform:translate(84px,9px)}42%{transform:translate(86px,19px)}47%{transform:translate(88px,9px)}51%{transform:translate(90px,19px)}56%{transform:translate(92px,9px)}66%,84%{transform:translate(100px,-10px)}100%{transform:translate(14px,-6px)}}
-@keyframes omrFill{0%,28%{clip-path:inset(0 100% 0 0);opacity:1}56%,84%{clip-path:inset(0 0 0 0);opacity:1}100%{clip-path:inset(0 0 0 0);opacity:0}}
+.omr-ld .b.g::after{animation:omrFill 2.4s infinite}
+.omr-ld .pen{position:absolute;width:34px;height:34px;left:-7px;top:-27px;pointer-events:none;animation:omrPen 2.4s infinite}
+@keyframes omrPen{0%{transform:translate(64px,-6px)}8%{transform:translate(86px,-4px)}10%{transform:translate(80px,9px)}15%{transform:translate(82px,19px)}20%{transform:translate(83px,9px)}25%{transform:translate(85px,19px)}30%{transform:translate(87px,9px)}35%{transform:translate(89px,19px)}40%{transform:translate(90px,9px)}45%{transform:translate(92px,19px)}55%,80%{transform:translate(100px,-10px)}100%{transform:translate(64px,-6px)}}
+@keyframes omrFill{0%,9%{clip-path:inset(0 100% 0 0);opacity:1}45%,80%{clip-path:inset(0 0 0 0);opacity:1}100%{clip-path:inset(0 0 0 0);opacity:0}}
 @media (prefers-reduced-motion:reduce){.omr-ld .pen,.omr-ld .b.g::after{animation:none}.omr-ld .b.g::after{clip-path:none}.omr-ld .pen{transform:translate(100px,-10px)}}
