@@ -2,11 +2,10 @@
    পাতা (HTML) আর প্রশ্নের JSON: আগে নেটওয়ার্ক, না পেলে ক্যাশ, তাই অনলাইনে সবসময় নতুন প্রশ্ন আসে।
    ফন্ট, ছবি, js: ক্যাশ থেকে সাথে সাথে, পেছনে নতুন কপি এনে রাখে (পরের বার নতুনটা)। অন্য ডোমেইনের কিছু (যেমন analytics) ছোঁয়া হয় না।
    কিছু বদলালে VERSION বাড়ান, পুরোনো ক্যাশ মুছে যাবে। */
-const VERSION='v6';
+const VERSION='v7';
 const CORE = 'core-' + VERSION, PAGES = 'pages-' + VERSION, DATA = 'data-' + VERSION;
 const PRECACHE = ['/', '/exams/', '/science/', '/fonts/fonts.css',
-  '/fonts/NotoSansBengali-bengali.woff2', '/fonts/NotoSansBengali-latin.woff2',
-  '/fonts/TiroBangla-400-bengali.woff2', '/fonts/TiroBangla-400-latin.woff2',
+  '/fonts/AnekBangla-bengali.woff2', '/fonts/AnekBangla-latin.woff2',
   '/img/logo/li-mark.svg', '/img/logo/final-icon.svg', '/css/omr.css', '/js/omr.js', '/js/wrong.js'];
 const LIMIT = {[PAGES]: 40, [DATA]: 80};
 

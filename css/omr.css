@@ -27,7 +27,7 @@ body{background:#f8f5ee!important;color:#1d1f21;position:relative;overflow-x:hid
 @media (max-width:350px){.lgn-n{display:none}.sitebar nav a,body>.bar nav.sec a{font-size:12.5px}}
 
 /* type and links */
-h1,h2,h3{color:#13294b}
+h1,h2,h3{color:#13294b;font-weight:600}
 a{color:#13294b}
 
 /* buttons: square-cornered like printed boxes */
