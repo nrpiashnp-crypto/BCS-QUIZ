@@ -2,7 +2,7 @@
 (function(){if(document.querySelector('.omr'))return;var box=document.createElement('div');box.className='omr';box.setAttribute('aria-hidden','true');document.body.insertBefore(box,document.body.firstChild);
 var B='০১২৩৪৫৬৭৮৯',last='';
 function bn(n){return String(n).replace(/\d/g,function(d){return B[d]})}
-function draw(){var W=document.documentElement.clientWidth,H=document.body.offsetHeight,mob=W<=700,
+function draw(){var W=document.documentElement.clientWidth,H=Math.max(document.body.offsetHeight,innerHeight),mob=W<=700,
 mx=mob?0:14,mw=mob?9:22,x0=mob?62:72,nc=Math.max(1,Math.floor((W-x0-130)/190)+1),rows=Math.ceil((H-20)/34),key=nc+'|'+rows+'|'+mob;
 if(key===last)return;last=key;var h=rows*34+40,t='',i,c;
 for(c=0;c<nc;c++){var x=x0+190*c;t+='<rect x="'+(x+2)+'" y="20" width="130" height="'+(rows*34)+'" fill="url(#ob)"/>';
@@ -14,3 +14,11 @@ box.innerHTML='<svg width="'+W+'" height="'+h+'"><defs><pattern id="tm" width="'
 var q=0;function later(){if(!q)q=requestAnimationFrame(function(){q=0;draw()})}
 draw();addEventListener('resize',later);addEventListener('load',later);
 if('ResizeObserver' in window)new ResizeObserver(later).observe(document.body);})();
+
+/* Loading: wherever a page shows "লোড হচ্ছে…", show a pencil filling an OMR bubble instead (the words stay under it). */
+(function(){var PEN='<svg class="pen" viewBox="0 0 34 34" aria-hidden="true"><g transform="rotate(45 17 17)"><rect x="13" y="-2" width="8" height="24" fill="#e7b73a" stroke="#7a5a14" stroke-width=".8"/><rect x="13" y="-2" width="2.6" height="24" fill="#f3cc5e"/><rect x="13" y="-6" width="8" height="4.5" fill="#c8326a"/><rect x="12.6" y="-2.2" width="8.8" height="2.2" fill="#b9b9bf"/><path d="M13 22 L17 31 L21 22 Z" fill="#f1d9b0" stroke="#7a5a14" stroke-width=".8"/><path d="M15.6 28 L17 31 L18.4 28 Z" fill="#2a2a30"/></g></svg>';
+function swap(el){if(el.dataset.omrLd||!/লোড (করা )?হচ্ছে/.test(el.textContent)||el.children.length)return;var t=el.textContent.trim();el.dataset.omrLd=1;
+el.innerHTML='<span class="omr-ld" role="status"><span class="lb" aria-hidden="true"><span class="b">ক</span><span class="b">খ</span><span class="b g">গ</span><span class="b">ঘ</span>'+PEN+'</span><span>'+t+'</span></span>'}
+function scan(root){if(root.nodeType!==1)return;if(root.matches('p'))swap(root);root.querySelectorAll&&root.querySelectorAll('p').forEach(swap)}
+scan(document.body);
+if('MutationObserver' in window)new MutationObserver(function(ms){ms.forEach(function(m){m.addedNodes.forEach(scan)})}).observe(document.body,{childList:true,subtree:true});})();
