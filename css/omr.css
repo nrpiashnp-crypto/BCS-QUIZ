@@ -1,0 +1,76 @@
+/* Site theme: an OMR answer sheet, like the home page. Linked after each page's own <style>, so it wins.
+   One light look everywhere: the !important tokens override every page's light and dark palettes. */
+:root{--paper:#f8f5ee!important;--ink:#1d1f21!important;--muted:#5d5a55!important;--rule:#e6d3d9!important;--card:#fffdf7!important;
+  --navy:#13294b!important;--accent:#13294b!important;--accent-ink:#fff!important;--sel:#f7e6ec!important;--gold:#c8326a!important;--gold-hi:#f3cbd8!important;
+  --soft:#f4ede3!important;--good:#1e7a46!important;--good-bg:#e5f3ea!important;--bad:#b3261e!important;--bad-bg:#fbe9e7!important;--warn:#8a5a00!important;
+  --pink:#c8326a;color-scheme:light!important}
+body{background:#f8f5ee!important;color:#1d1f21;position:relative;overflow-x:hidden}
+.omr{position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+.omr svg{position:absolute;left:0;top:0}
+
+/* header: stacked লি logo, ক খ গ ঘ bubble nav */
+.sitebar,body>.bar{background:transparent!important;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+  padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));border-bottom:1.4px solid rgba(200,50,106,.45);box-shadow:none}
+.sitebar>a:first-child,body>.bar>a:first-child{display:flex;flex-direction:column;align-items:center;text-decoration:none}
+.sitebar>a:first-child img,body>.bar>a:first-child img{width:auto!important;height:44px!important;display:block}
+.lgn-n{font:500 11.5px/1.2 'Noto Sans Bengali',sans-serif;color:#2f6b3a;white-space:nowrap;margin-top:1px}
+.sitebar nav,body>.bar nav.sec{display:flex;gap:4px 14px;flex-wrap:wrap}
+.sitebar nav a,body>.bar nav.sec a{display:flex;align-items:center;gap:6px;color:#1d1f21!important;background:none!important;text-decoration:none;font:500 15px/1.3 'Noto Sans Bengali',sans-serif;padding:4px 0;border-radius:0}
+.sitebar nav a::before,body>.bar nav.sec a::before{width:22px;height:22px;border:1.4px solid #c8326a;border-radius:50%;display:grid;place-items:center;font:12px/1 'Noto Sans Bengali',sans-serif;color:#c8326a;flex:none;transition:background .2s}
+.sitebar nav a:nth-child(1)::before,body>.bar nav.sec a:nth-child(1)::before{content:"ক"}
+.sitebar nav a:nth-child(2)::before,body>.bar nav.sec a:nth-child(2)::before{content:"খ"}
+.sitebar nav a:nth-child(3)::before,body>.bar nav.sec a:nth-child(3)::before{content:"গ"}
+.sitebar nav a:nth-child(4)::before,body>.bar nav.sec a:nth-child(4)::before{content:"ঘ"}
+.sitebar nav a[aria-current]::before,.sitebar nav a:hover::before,body>.bar nav.sec a[aria-current]::before,body>.bar nav.sec a:hover::before{background:#1d1d1f;border-color:#1d1d1f;color:#f8f5ee}
+@media (max-width:420px){.sitebar>a:first-child img,body>.bar>a:first-child img{height:38px!important}.sitebar nav,body>.bar nav.sec{gap:4px 9px}
+  .sitebar nav a,body>.bar nav.sec a{font-size:13.5px;gap:4px}.sitebar nav a::before,body>.bar nav.sec a::before{width:19px;height:19px;font-size:10.5px}}
+@media (max-width:350px){.lgn-n{display:none}.sitebar nav a,body>.bar nav.sec a{font-size:12.5px}}
+
+/* type and links */
+h1,h2,h3{color:#13294b}
+a{color:#13294b}
+
+/* buttons: square-cornered like printed boxes */
+.btn,.cta{border-radius:3px!important}
+.btn:not(.ghost),.cta{background:#13294b;border-color:#13294b;color:#fff}
+.btn.ghost{background:#fffdf7!important;border:1.4px solid #c8326a!important;color:#13294b!important}
+.cta:hover,.btn:not(.ghost):hover{background:#1d3a66}
+
+/* boxes: pink printed frames */
+.fact,.tile,.card,.score{border-radius:3px!important;border-color:rgba(200,50,106,.45)!important;background:#fffdf7}
+.fact b{color:#13294b}
+.q{border-color:var(--rule)}
+.chip{border-color:rgba(200,50,106,.45)}
+
+/* navy bands become printed boxes on the sheet */
+.hero,.card.big,.ch2,.pre,.end{background:#fffdf7!important;color:#13294b!important;border:1.6px solid #c8326a!important;border-radius:3px!important;box-shadow:0 2px 0 rgba(200,50,106,.12)}
+.hero h1,.hero p,.card.big .m,.ch2 small,.pre h2,.pre p,.end h2,.end p{color:#13294b!important}
+.hero p,.card.big .m,.ch2 small,.pre p,.end p{color:#5d5a55!important}
+.card.big .go{color:#c8326a!important}
+.ch2 .ic{background:#fffdf7!important;border:1.6px solid #c8326a;color:#c8326a!important}
+.ch2:hover .ic{background:#1d1d1f!important;border-color:#1d1d1f;color:#fffdf7!important}
+.ch2[aria-expanded="true"]{box-shadow:0 0 0 3px rgba(200,50,106,.3)!important}
+.hero .fact,.card.big .fact{background:#f8f5ee}
+
+/* answer options as OMR bubbles */
+.opt{border-radius:3px!important;background:#fffdf7;align-items:center}
+.opt .k{width:26px;height:26px;min-width:26px!important;border:1.4px solid #c8326a;border-radius:50%;display:inline-grid;place-items:center;color:#c8326a!important;font:13px/1 'Noto Sans Bengali',sans-serif!important;flex:none;transition:background .2s}
+.opt:hover:not(:disabled){border-color:#c8326a!important}
+.opt:hover:not(:disabled) .k{background:rgba(29,29,31,.1)}
+.opt.sel{background:#fffdf7!important;border-color:#1d1d1f!important}
+.opt.sel .k{background:#1d1d1f;border-color:#1d1d1f;color:#fffdf7!important}
+.opt.right .k{background:#1e7a46;border-color:#1e7a46;color:#fff!important}
+.opt.wrong .k{background:#b3261e;border-color:#b3261e;color:#fff!important}
+.opt.right{background:var(--good-bg)!important}.opt.wrong{background:var(--bad-bg)!important}
+
+/* sticky exam bar sits on paper */
+#exam .bar,.bar{background:#f8f5ee}
+@media (prefers-reduced-motion:reduce){.opt .k,.sitebar nav a::before{transition:none}}
+.stats3 span{background:#f8f5ee!important;border:1px solid rgba(200,50,106,.3);border-radius:3px!important;color:#5d5a55!important}
+.stats3 b{color:#13294b!important}
+/* subject and exam tiles: the initials sit in answer bubbles */
+.tile .ic{border-radius:50%!important;background:#fffdf7!important;border:1.4px solid #c8326a;color:#c8326a!important}
+.tile.live .ic,.tile:hover .ic{background:#1d1d1f!important;border-color:#1d1d1f;color:#fffdf7!important}
+.tile.off .ic{opacity:.6}
+/* book and sample pages: undo their dark-mode text colours */
+.tag,.tot,.price b{color:#13294b!important}

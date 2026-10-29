@@ -2,12 +2,12 @@
    পাতা (HTML) আর প্রশ্নের JSON: আগে নেটওয়ার্ক, না পেলে ক্যাশ, তাই অনলাইনে সবসময় নতুন প্রশ্ন আসে।
    ফন্ট, ছবি, js: ক্যাশ থেকে সাথে সাথে, পেছনে নতুন কপি এনে রাখে (পরের বার নতুনটা)। অন্য ডোমেইনের কিছু (যেমন analytics) ছোঁয়া হয় না।
    কিছু বদলালে VERSION বাড়ান, পুরোনো ক্যাশ মুছে যাবে। */
-const VERSION = 'v2';
+const VERSION = 'v3';
 const CORE = 'core-' + VERSION, PAGES = 'pages-' + VERSION, DATA = 'data-' + VERSION;
 const PRECACHE = ['/', '/exams/', '/science/', '/fonts/fonts.css',
   '/fonts/NotoSansBengali-bengali.woff2', '/fonts/NotoSansBengali-latin.woff2',
   '/fonts/TiroBangla-400-bengali.woff2', '/fonts/TiroBangla-400-latin.woff2',
-  '/img/logo/final-onnavy-transparent.svg', '/img/logo/final-icon.svg', '/js/wrong.js'];
+  '/img/logo/li-mark.svg', '/img/logo/final-icon.svg', '/css/omr.css', '/js/omr.js', '/js/wrong.js'];
 const LIMIT = {[PAGES]: 40, [DATA]: 80};
 
 const OFFLINE = `<!doctype html><html lang="bn"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -58,5 +58,5 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET' || url.origin !== location.origin) return;
   if (req.mode === 'navigate' || req.destination === 'document') return e.respondWith(networkFirst(req, PAGES));
   if (url.pathname.endsWith('.json')) return e.respondWith(networkFirst(req, DATA));
-  if (/^\/(fonts|img|js)\//.test(url.pathname) || req.destination === 'image') return e.respondWith(staleWhileRevalidate(req, e));
+  if (/^\/(fonts|img|js|css)\//.test(url.pathname) || req.destination === 'image') return e.respondWith(staleWhileRevalidate(req, e));
 });
