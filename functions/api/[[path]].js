@@ -296,7 +296,11 @@ async function lib(path, req, url, env, db, u) {
   try { return await libRoute(path, m, req, url, db); }
   catch (e) {
     // টেবিল এখনো তৈরি হয়নি: একবার তৈরি করে আবার চেষ্টা (stats পাতা খুললেই তৈরি হয়, তাই সাধারণত লাগে না)
-    if (!/no such table/i.test(String(e && e.message))) throw e;
+    const msg = String(e && e.message);
+    // পরে যোগ হওয়া কলাম (আগের টেবিলে নেই): একবার যোগ করে আবার চেষ্টা
+    const col = msg.match(/no such column: (mcq_ids)|has no column named (mcq_ids)/i);
+    if (col) { await db.prepare('ALTER TABLE lib_topics ADD COLUMN mcq_ids TEXT').run().catch(() => {}); return await libRoute(path, m, req, url, db); }
+    if (!/no such table/i.test(msg)) throw e;
     await db.batch(LIB_SCHEMA.map(s => db.prepare(s)));
     return await libRoute(path, m, req, url, db);
   }
