@@ -32,7 +32,7 @@ const SCHEMA = [
 ];
 const LIB_SCHEMA = [
   'CREATE TABLE IF NOT EXISTS lib_sources(id TEXT PRIMARY KEY, title TEXT, subject TEXT, exam TEXT, updated INTEGER)',
-  'CREATE TABLE IF NOT EXISTS lib_topics(id TEXT PRIMARY KEY, source_id TEXT, subject TEXT, exam TEXT, chapter INTEGER, chapter_title TEXT, section_no TEXT, section_title TEXT, parent_section TEXT, kind TEXT, pages TEXT, source TEXT, tags TEXT, text TEXT, updated INTEGER, topic_ids TEXT)',
+  'CREATE TABLE IF NOT EXISTS lib_topics(id TEXT PRIMARY KEY, source_id TEXT, subject TEXT, exam TEXT, chapter INTEGER, chapter_title TEXT, section_no TEXT, section_title TEXT, parent_section TEXT, kind TEXT, pages TEXT, source TEXT, tags TEXT, text TEXT, updated INTEGER, topic_ids TEXT, mcq_ids TEXT)',
   'CREATE TABLE IF NOT EXISTS lib_tags(topic_id TEXT NOT NULL, tag TEXT NOT NULL, PRIMARY KEY(topic_id, tag))',
   'CREATE INDEX IF NOT EXISTS lib_tags_tag ON lib_tags(tag)',
   'CREATE INDEX IF NOT EXISTS lib_topics_sub ON lib_topics(subject, chapter)',
@@ -158,7 +158,9 @@ function libClean(t) {
     chapter: t.chapter !== '' && t.chapter != null && Number.isFinite(+t.chapter) ? Math.round(+t.chapter) : null,
     chapter_title: nfc(t.chapter_title).slice(0, 200), section_no: nfc(t.section_no).slice(0, 30),
     section_title: nfc(t.section_title).slice(0, 300), parent_section: nfc(t.parent_section).slice(0, 300),
-    kind: nfc(t.kind).slice(0, 30) || 'section', pages: nfc(t.pages).slice(0, 30), topic_ids: topicIds(t.topic_ids)
+    kind: nfc(t.kind).slice(0, 30) || 'section', pages: nfc(t.pages).slice(0, 30), topic_ids: topicIds(t.topic_ids),
+    // Lyanna_data ইউনিটের সাথে জোড়া এমসিকিউ (archive q-id), এক্সপোর্টে লেখার পরেই আসে
+    mcq_ids: (Array.isArray(t.mcq_ids) ? t.mcq_ids : String(t.mcq_ids || '').split(/[\s;,]+/)).map(String).filter(x => /^[a-z0-9]{6,40}$/.test(x)).slice(0, 60).join(';') || null
   };
 }
 
@@ -167,17 +169,17 @@ async function libImport(req, db) {
   const rows = (Array.isArray(body.topics) ? body.topics : []).slice(0, LIB_IMPORT).map(libClean).filter(Boolean);
   if (!rows.length) return json({ok: true, saved: 0});
   const now = Date.now(), st = [];
-  const up = db.prepare(`INSERT INTO lib_topics(id, source_id, subject, exam, chapter, chapter_title, section_no, section_title, parent_section, kind, pages, source, tags, text, updated, topic_ids)
-    VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET source_id=excluded.source_id, subject=excluded.subject, exam=excluded.exam,
+  const up = db.prepare(`INSERT INTO lib_topics(id, source_id, subject, exam, chapter, chapter_title, section_no, section_title, parent_section, kind, pages, source, tags, text, updated, topic_ids, mcq_ids)
+    VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET source_id=excluded.source_id, subject=excluded.subject, exam=excluded.exam,
     chapter=excluded.chapter, chapter_title=excluded.chapter_title, section_no=excluded.section_no, section_title=excluded.section_title,
-    parent_section=excluded.parent_section, kind=excluded.kind, pages=excluded.pages, source=excluded.source, tags=excluded.tags, text=excluded.text, updated=excluded.updated, topic_ids=excluded.topic_ids`);
+    parent_section=excluded.parent_section, kind=excluded.kind, pages=excluded.pages, source=excluded.source, tags=excluded.tags, text=excluded.text, updated=excluded.updated, topic_ids=excluded.topic_ids, mcq_ids=excluded.mcq_ids`);
   const src = db.prepare('INSERT INTO lib_sources(id, title, subject, exam, updated) VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET subject=excluded.subject, exam=excluded.exam, updated=excluded.updated');
   const seen = new Set();
   st.push(db.prepare(`DELETE FROM lib_tags WHERE topic_id IN (${rows.map(() => '?').join(',')})`).bind(...rows.map(r => r.id)));
   for (const r of rows) {
     // tags কলামে দুই পাশে '; ' রাখা হয়, তাই '; সুন্দরবন; ' খুঁজে পুরো ট্যাগ মেলানো যায়
     st.push(up.bind(r.id, r.source_id, r.subject, r.exam, r.chapter, r.chapter_title, r.section_no, r.section_title, r.parent_section,
-      r.kind, r.pages, r.source, '; ' + r.tags.join('; ') + '; ', r.text, now, r.topic_ids));
+      r.kind, r.pages, r.source, '; ' + r.tags.join('; ') + '; ', r.text, now, r.topic_ids, r.mcq_ids));
     if (r.tags.length) st.push(db.prepare('INSERT OR IGNORE INTO lib_tags(topic_id, tag) VALUES' + r.tags.map(() => '(?,?)').join(','))
       .bind(...r.tags.flatMap(t => [r.id, t])));
     if (!seen.has(r.source_id)) { seen.add(r.source_id); st.push(src.bind(r.source_id, r.source.replace(/,?\s*অধ্যায়.*$/, ''), r.subject, r.exam, now)); }
@@ -210,7 +212,7 @@ async function libSearch(url, db) {
   const w = where.length ? 'WHERE ' + where.join(' AND ') : '';
   const sc = score.length ? score.join(' + ') : '0';
   const total = (await db.prepare(`SELECT COUNT(*) n FROM lib_topics ${w}`).bind(...args).first()).n;
-  const {results} = await db.prepare(`SELECT id, subject, exam, chapter, chapter_title, section_no, section_title, parent_section, kind, pages, source, tags,
+  const {results} = await db.prepare(`SELECT id, subject, exam, chapter, chapter_title, section_no, section_title, parent_section, kind, pages, source, tags, mcq_ids,
       length(text) len, substr(text, 1, 6000) head, ${sc} score FROM lib_topics ${w} ORDER BY score DESC, subject, chapter, id LIMIT ? OFFSET ?`)
     .bind(...sargs, ...args, LIB_PAGE, off).all();
   const lw = words.map(x => x.toLowerCase());
@@ -219,7 +221,7 @@ async function libSearch(url, db) {
     // প্রথম যে শব্দটা লেখায় মেলে তার আশেপাশের টুকরো
     let at = -1; for (const x of lw) { at = head.toLowerCase().indexOf(x); if (at >= 0) break; }
     const a = Math.max(0, at - 120);
-    return {...o, tags: tags.split('; ').filter(Boolean), snippet: (a ? '…' : '') + head.slice(a, a + 360).replace(/\s+/g, ' ') + '…'};
+    return {...o, mcq_ids: (o.mcq_ids || '').split(';').filter(Boolean), tags: tags.split('; ').filter(Boolean), snippet: (a ? '…' : '') + head.slice(a, a + 360).replace(/\s+/g, ' ') + '…'};
   })});
 }
 
@@ -238,8 +240,8 @@ async function libStats(db) {
 }
 
 // ---------- এমসিকিউ ----------
-const ids = v => String(v || '').split('; ').filter(Boolean);
-const mcqOut = r => ({...r, o: JSON.parse(r.o || '[]'), src: JSON.parse(r.src || '[]'), topic_ids: ids(r.topic_ids), exams: ids(r.exams)});
+const splitIds = v => String(v || '').split('; ').filter(Boolean);
+const mcqOut = r => ({...r, o: JSON.parse(r.o || '[]'), src: JSON.parse(r.src || '[]'), topic_ids: splitIds(r.topic_ids), exams: splitIds(r.exams)});
 
 async function mcqImport(req, db) {
   const body = await req.json().catch(() => ({}));
@@ -294,7 +296,11 @@ async function lib(path, req, url, env, db, u) {
   try { return await libRoute(path, m, req, url, db); }
   catch (e) {
     // টেবিল এখনো তৈরি হয়নি: একবার তৈরি করে আবার চেষ্টা (stats পাতা খুললেই তৈরি হয়, তাই সাধারণত লাগে না)
-    if (!/no such table/i.test(String(e && e.message))) throw e;
+    const msg = String(e && e.message);
+    // পরে যোগ হওয়া কলাম (আগের টেবিলে নেই): একবার যোগ করে আবার চেষ্টা
+    const col = msg.match(/no such column: (mcq_ids)|has no column named (mcq_ids)/i);
+    if (col) { await db.prepare('ALTER TABLE lib_topics ADD COLUMN mcq_ids TEXT').run().catch(() => {}); return await libRoute(path, m, req, url, db); }
+    if (!/no such table/i.test(msg)) throw e;
     await db.batch(LIB_SCHEMA.map(s => db.prepare(s)));
     return await libRoute(path, m, req, url, db);
   }
@@ -335,7 +341,7 @@ async function libRoute(path, m, req, url, db) {
   if (path === 'lib/get' && m === 'POST') {
     if (!ids.length) return json({items: []});
     const {results} = await db.prepare(`SELECT * FROM lib_topics WHERE id IN (${ids.map(() => '?').join(',')})`).bind(...ids).all();
-    const by = Object.fromEntries(results.map(r => [r.id, {...r, tags: r.tags.split('; ').filter(Boolean)}]));
+    const by = Object.fromEntries(results.map(r => [r.id, {...r, tags: r.tags.split('; ').filter(Boolean), topic_ids: splitIds(r.topic_ids), mcq_ids: (r.mcq_ids || '').split(';').filter(Boolean)}]));
     return json({items: ids.map(i => by[i]).filter(Boolean)});
   }
   if (path === 'lib/mcq-get' && m === 'POST') {
