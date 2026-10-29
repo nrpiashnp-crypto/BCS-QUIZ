@@ -22,8 +22,9 @@
    ফ্রি প্ল্যানে দিনে ৫০ লাখ সারি পড়া আর ১ লাখ সারি লেখা যায়: এমসিকিউ খোঁজায় পুরো টেবিল একবার পড়া হয় (গোনার আলাদা কোয়েরি নেই),
    আর হালনাগাদে শুধু বদলানো প্রশ্ন লেখা হয়
    বন্ধুকে চ্যালেঞ্জ (লগইন ছাড়া; পাতা /c/<id> → challenge/index.html):
-   POST /api/ch {name,title,src,qs:[{q,o,a,e}],picks,sec} বা {from:<id>,name,picks,sec} → {id}
-   GET  /api/ch/<id>      → প্রশ্ন (উত্তর ছাড়া), চ্যালেঞ্জদাতার নম্বর, সেরা তিনজন
+   POST /api/ch {name,title,src,qs:[{q,o,a,e}],picks,sec} বা {from:<id>,name} (আগে ওই চ্যালেঞ্জ দেওয়া লাগে) → {id}
+   GET  /api/ch/<id>      → প্রশ্ন (উত্তর ছাড়া), চ্যালেঞ্জদাতার নম্বর, সেরা তিনজন, আগে দিয়ে থাকলে নিজের র‍্যাংক (mine)
+   POST /api/ch/<id>/start → পরীক্ষা শুরুর সময় (সময় সার্ভারে গোনা হয়)
    POST /api/ch/<id>/try {name,picks,sec} → নম্বর, উত্তর-ব্যাখ্যা, র‍্যাংক */
 const COOKIE = 'lb_s', AGE = 180 * 86400;
 const MAX_BATCH = 300, MAX_ROWS = 3000;
@@ -370,40 +371,55 @@ async function libRoute(path, m, req, url, db) {
 }
 
 // ---------- বন্ধুকে চ্যালেঞ্জ (লগইন লাগে না) ----------
-// নম্বর সার্ভারেই গোনা হয়, তাই লিংকে কারো নম্বর বানিয়ে বসানো যায় না। নেগেটিভ নেই: নম্বর = সঠিক উত্তরের সংখ্যা।
+// নম্বর সার্ভারেই গোনা হয়; নেগেটিভ নেই: নম্বর = সঠিক উত্তরের সংখ্যা। সময়ও সার্ভার গোনে (প্রশ্ন খোলা থেকে জমা পর্যন্ত)।
 // প্রশ্নগুলো পাতার "উত্তর ও ব্যাখ্যা" থেকে আসে (js/challenge.js), তাই যেকোনো পরীক্ষা থেকেই চ্যালেঞ্জ বানানো যায়।
 const CH_SCHEMA = [
   'CREATE TABLE IF NOT EXISTS ch(id TEXT PRIMARY KEY, ts INTEGER, name TEXT, title TEXT, src TEXT, n INTEGER, mins INTEGER, ok INTEGER, sec INTEGER, picks TEXT, qs TEXT, iph TEXT, parent TEXT)',
   'CREATE INDEX IF NOT EXISTS ch_iph ON ch(iph, ts)',
   'CREATE TABLE IF NOT EXISTS ch_try(cid TEXT NOT NULL, ts INTEGER, name TEXT, ok INTEGER, sec INTEGER, picks TEXT, iph TEXT, PRIMARY KEY(cid, iph))',
-  'CREATE INDEX IF NOT EXISTS ch_try_rank ON ch_try(cid, ok, sec)'
+  'CREATE INDEX IF NOT EXISTS ch_try_rank ON ch_try(cid, ok, sec)',
+  'CREATE TABLE IF NOT EXISTS ch_start(cid TEXT NOT NULL, iph TEXT NOT NULL, ts INTEGER, PRIMARY KEY(cid, iph))'
 ];
-const CH_MAX_Q = 200, CH_MAX_BYTES = 400000, CH_PER_HOUR = 30;
-// প্রশ্নে শুধু এই ট্যাগগুলো থাকে, কোনো অ্যাট্রিবিউট ছাড়া (পাতাও আবার ছেঁকে নেয়)
+// ch_try.ip (শুধু আইপির হ্যাশ) পরে যোগ হয়েছে; পুরোনো টেবিলে একবার কলাম বসে
+let CH_READY = false;
+async function chSetup(db) {
+  if (CH_READY) return;
+  await db.batch(CH_SCHEMA.map(s => db.prepare(s)));
+  try { await db.prepare('ALTER TABLE ch_try ADD COLUMN ip TEXT').run(); } catch (e) { /* আগেই আছে */ }
+  CH_READY = true;
+}
+// এক আইপি থেকে ঘণ্টায় ৩০টা চ্যালেঞ্জ; একটা চ্যালেঞ্জে এক আইপির ৩টা আর মোট ১০০০টা চেষ্টা বোর্ডে ওঠে
+const CH_MAX_Q = 200, CH_MAX_BYTES = 300000, CH_PER_HOUR = 30, CH_IP_TRIES = 3, CH_MAX_TRIES = 1000;
+// প্রশ্নে শুধু এই ট্যাগগুলো থাকে, কোনো অ্যাট্রিবিউট ছাড়া; ছবি শুধু এই সাইটের (/…) src দিয়ে। পাতাও আবার ছেঁকে নেয়
 const CH_TAGS = new Set(['b', 'i', 'u', 'sub', 'sup', 'br', 'table', 'thead', 'tbody', 'tr', 'td', 'th', 'span', 'p', 'div', 'small', 'strong', 'em']);
+const chImg = t => { const m = t.match(/\ssrc\s*=\s*["']?(\/(?!\/)[\w\-./%]+)/i); return m ? '<img src="' + m[1] + '" alt="">' : ''; };
 const chHtml = (v, n) => typeof v !== 'string' ? '' : v.normalize('NFC')
   .replace(/<(script|style)[\s\S]*?<\/\1\s*>/gi, '')
   .replace(/<!--[\s\S]*?-->/g, '')
-  .replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^<>]*>/g, (t, g) => CH_TAGS.has(g.toLowerCase()) ? (t[1] === '/' ? '</' : '<') + g.toLowerCase() + '>' : '')
+  .replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^<>]*>/g, (t, g) => { g = g.toLowerCase(); return g === 'img' ? chImg(t) : CH_TAGS.has(g) ? (t[1] === '/' ? '</' : '<') + g + '>' : ''; })
   .trim().slice(0, n);
 const CH_BAD = /(খানকি|মাগি|চুদ|শুয়োর|fuck|shit|bitch|asshole|porn)/gi;
 const chName = v => (typeof v === 'string' ? v.normalize('NFC') : '').replace(/[<>&"'`\\]/g, '').replace(CH_BAD, '').replace(/\s+/g, ' ').trim().slice(0, 24) || 'বন্ধু';
 const chMins = n => Math.max(3, Math.ceil(n * 36 / 60));
 const chId = () => { const a = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789', r = new Uint8Array(8); crypto.getRandomValues(r); return [...r].map(x => a[x % a.length]).join(''); };
+// iph = আইপি + ব্রাউজার (একই বাসার দুই ফোন আলাদা গোনা হয়), ip = শুধু আইপি (সীমা টানার জন্য; ব্রাউজারের নাম বদলালেও এটা বদলায় না)
+const chIp = async req => (await sha((req.headers.get('CF-Connecting-IP') || '') + '|lb-ch-ip')).slice(0, 20);
 const chIph = async req => (await sha((req.headers.get('CF-Connecting-IP') || '') + '|' + (req.headers.get('User-Agent') || '').slice(0, 80) + '|lb-ch')).slice(0, 20);
 const chPicks = (p, qs) => qs.map((q, i) => { const v = Array.isArray(p) ? p[i] : -1; return Number.isInteger(v) && v >= 0 && v < q.o.length ? v : -1; });
 const chScore = (p, qs) => qs.reduce((s, q, i) => s + (p[i] === q.a ? 1 : 0), 0);
+const chSrc = s => /^\/(?!\/)[\w\-./#?=&%]*$/.test(s) ? s : '';
 
-function chClean(list) {
+// বাদ পড়া প্রশ্নের দাগও বাদ যায়, তাই দাগ আর প্রশ্ন এক ক্রমে থাকে
+function chClean(list, picks) {
   if (!Array.isArray(list)) return null;
-  const qs = [];
-  for (const q of list.slice(0, CH_MAX_Q)) {
-    if (!q || typeof q !== 'object' || !Array.isArray(q.o)) continue;
+  const qs = [], keep = [];
+  list.slice(0, CH_MAX_Q).forEach((q, i) => {
+    if (!q || typeof q !== 'object' || !Array.isArray(q.o)) return;
     const t = chHtml(q.q, 4000), o = q.o.slice(0, 6).map(x => chHtml(x, 600));
-    if (!t || o.length < 2 || o.some(x => !x) || !Number.isInteger(q.a) || q.a < 0 || q.a >= o.length) continue;
-    qs.push({q: t, o, a: q.a, e: chHtml(q.e, 4000)});
-  }
-  return qs.length >= 3 ? qs : null;
+    if (!t || o.length < 2 || o.some(x => !x) || !Number.isInteger(q.a) || q.a < 0 || q.a >= o.length) return;
+    qs.push({q: t, o, a: q.a, e: chHtml(q.e, 4000)}); keep.push(Array.isArray(picks) ? picks[i] : -1);
+  });
+  return qs.length >= 3 ? {qs, picks: keep} : null;
 }
 
 // সেরা তিনজন (চ্যালেঞ্জদাতাসহ): বেশি সঠিক আগে, সমান হলে কম সময়
@@ -413,34 +429,41 @@ async function chBoard(db, c) {
   const all = [{name: c.name, ok: c.ok, sec: c.sec, host: 1}, ...results].sort((x, y) => y.ok - x.ok || x.sec - y.sec || (y.host || 0) - (x.host || 0)).slice(0, 3);
   return {top: all, count: (cnt && cnt.n || 0) + 1};
 }
+async function chRank(db, c, me) {
+  const ahead = await db.prepare('SELECT COUNT(*) AS n FROM ch_try WHERE cid = ? AND (ok > ? OR (ok = ? AND sec < ?))').bind(c.id, me.ok, me.ok, me.sec).first();
+  return (ahead && ahead.n || 0) + 1 + (c.ok > me.ok || (c.ok === me.ok && c.sec < me.sec) ? 1 : 0);
+}
 
 async function challenge(path, req, db) {
   const m = req.method, parts = path.split('/');
   if (parts.length === 1 && m === 'POST') {
     const raw = await req.text();
-    if (raw.length > CH_MAX_BYTES) return json({error: 'big'}, 413);
+    if (enc.encode(raw).length > CH_MAX_BYTES) return json({error: 'big'}, 413);
     let body; try { body = JSON.parse(raw); } catch (e) { return json({error: 'bad'}, 400); }
-    await db.batch(CH_SCHEMA.map(s => db.prepare(s)));
-    const iph = await chIph(req), now = Date.now();
-    const recent = await db.prepare('SELECT COUNT(*) AS n FROM ch WHERE iph = ? AND ts > ?').bind(iph, now - 3600e3).first();
+    if (!body || typeof body !== 'object') return json({error: 'bad'}, 400);
+    await chSetup(db);
+    const ip = await chIp(req), now = Date.now();
+    const recent = await db.prepare('SELECT COUNT(*) AS n FROM ch WHERE iph = ? AND ts > ?').bind(ip, now - 3600e3).first();
     if (recent && recent.n >= CH_PER_HOUR) return json({error: 'slow'}, 429);
-    let qs, title = str(body.title, 120) || '', src = str(body.src, 200) || '', parent = null;
+    let qs, picks, ok, sec, title = str(body.title, 120) || '', src = str(body.src, 200) || '', parent = null;
     if (typeof body.from === 'string') {
-      // পাল্টা চ্যালেঞ্জ: একই প্রশ্ন, নতুন জনের নম্বর
+      // পাল্টা চ্যালেঞ্জ: একই প্রশ্ন, আর নম্বর সেটাই যা এই ফোন ওই চ্যালেঞ্জে আসলে পেয়েছে
       const p = await db.prepare('SELECT id, title, src, qs FROM ch WHERE id = ?').bind(body.from.slice(0, 12)).first();
       if (!p) return json({error: 'not found'}, 404);
-      qs = JSON.parse(p.qs); title = p.title; src = p.src; parent = p.id;
-    } else qs = chClean(body.qs);
-    if (!qs) return json({error: 'bad'}, 400);
-    const picks = chPicks(body.picks, qs), ok = chScore(picks, qs), mins = chMins(qs.length);
-    const sec = Math.max(0, Math.min(mins * 60, Math.round(num(body.sec) || 0)));
-    title = title.replace(/[<>]/g, '').trim();
-    src = /^\/[\w\-./#?=&%]*$/.test(src) ? src : '';
-    let id;
+      const t = await db.prepare('SELECT ok, sec, picks FROM ch_try WHERE cid = ? AND iph = ?').bind(p.id, await chIph(req)).first();
+      if (!t) return json({error: 'first'}, 403);
+      qs = JSON.parse(p.qs); picks = JSON.parse(t.picks); ok = t.ok; sec = t.sec; title = p.title; src = p.src; parent = p.id;
+    } else {
+      const cl = chClean(body.qs, body.picks);
+      if (!cl) return json({error: 'bad'}, 400);
+      qs = cl.qs; picks = chPicks(cl.picks, qs); ok = chScore(picks, qs);
+      sec = Math.max(0, Math.min(chMins(qs.length) * 60, Math.round(num(body.sec) || 0)));
+    }
+    title = title.replace(/[<>]/g, '').trim(); src = chSrc(src);
     for (let i = 0; i < 3; i++) {
-      id = chId();
+      const id = chId();
       const r = await db.prepare('INSERT OR IGNORE INTO ch(id, ts, name, title, src, n, mins, ok, sec, picks, qs, iph, parent) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)')
-        .bind(id, now, chName(body.name), title, src, qs.length, mins, ok, sec, JSON.stringify(picks), JSON.stringify(qs), iph, parent).run();
+        .bind(id, now, chName(body.name), title, src, qs.length, chMins(qs.length), ok, sec, JSON.stringify(picks), JSON.stringify(qs), ip, parent).run();
       if (r.meta && r.meta.changes) return json({id, ok, n: qs.length});
     }
     return json({error: 'server'}, 500);
@@ -450,24 +473,37 @@ async function challenge(path, req, db) {
   let c;
   try { c = await db.prepare('SELECT * FROM ch WHERE id = ?').bind(id).first(); } catch (e) { c = null; }
   if (!c) return json({error: 'not found'}, 404);
-  const qs = JSON.parse(c.qs), head = {id, name: c.name, title: c.title, src: c.src, n: c.n, mins: c.mins, ok: c.ok, sec: c.sec, ts: c.ts};
-  if (parts.length === 2 && m === 'GET') return json({...head, qs: qs.map(q => ({q: q.q, o: q.o})), ...await chBoard(db, c)});
+  await chSetup(db);
+  const qs = JSON.parse(c.qs), head = {id, name: c.name, title: c.title, src: chSrc(c.src || ''), n: c.n, mins: c.mins, ok: c.ok, sec: c.sec, ts: c.ts};
+  const iph = await chIph(req), now = Date.now();
+  if (parts.length === 2 && m === 'GET') {
+    const t = await db.prepare('SELECT ok, sec FROM ch_try WHERE cid = ? AND iph = ?').bind(id, iph).first();
+    return json({...head, qs: qs.map(q => ({q: q.q, o: q.o})), ...await chBoard(db, c), ...(t ? {mine: {ok: t.ok, sec: t.sec, rank: await chRank(db, c, t)}} : {})});
+  }
+  if (parts[2] === 'start' && m === 'POST') {
+    // পরীক্ষা শুরুর মুহূর্ত (প্রথমবারেরটাই থাকে), জমার সময় সেখান থেকেই সময় গোনা হয়
+    await db.prepare('INSERT OR IGNORE INTO ch_start(cid, iph, ts) VALUES(?,?,?)').bind(id, iph, now).run();
+    return json({ok: true});
+  }
   if (parts[2] === 'try' && m === 'POST') {
-    const body = await req.json().catch(() => ({}));
-    const iph = await chIph(req);
-    // একই ফোন/নেট থেকে প্রথমবারেরটাই গোনা হয়; আবার জমা দিলে আগের ফলই ফেরত আসে
+    const body = await req.json().catch(() => null) || {};
+    // একই ফোন থেকে প্রথমবারেরটাই গোনা হয়; আবার জমা দিলে আগের ফলই ফেরত আসে
     const old = await db.prepare('SELECT name, ok, sec, picks FROM ch_try WHERE cid = ? AND iph = ?').bind(id, iph).first();
     let me;
     if (old) me = {name: old.name, ok: old.ok, sec: old.sec, picks: JSON.parse(old.picks), again: 1};
     else {
-      const picks = chPicks(body.picks, qs);
-      me = {name: chName(body.name), ok: chScore(picks, qs), sec: Math.max(0, Math.min(c.mins * 60, Math.round(num(body.sec) || 0))), picks};
-      await db.prepare('INSERT OR IGNORE INTO ch_try(cid, ts, name, ok, sec, picks, iph) VALUES(?,?,?,?,?,?,?)')
-        .bind(id, Date.now(), me.name, me.ok, me.sec, JSON.stringify(me.picks), iph).run();
+      const picks = chPicks(body.picks, qs), lim = c.mins * 60;
+      const st = await db.prepare('SELECT ts FROM ch_start WHERE cid = ? AND iph = ?').bind(id, iph).first();
+      const sec = st ? Math.round((now - st.ts) / 1000) : Math.round(num(body.sec) || lim);
+      me = {name: chName(body.name), ok: chScore(picks, qs), sec: Math.max(0, Math.min(lim, sec)), picks};
+      const ip = await chIp(req);
+      const n = await db.prepare('SELECT COUNT(*) AS n, SUM(ip = ?) AS mine FROM ch_try WHERE cid = ?').bind(ip, id).first();
+      if ((n && n.n || 0) < CH_MAX_TRIES && (n && n.mine || 0) < CH_IP_TRIES)
+        await db.prepare('INSERT OR IGNORE INTO ch_try(cid, ts, name, ok, sec, picks, iph, ip) VALUES(?,?,?,?,?,?,?,?)')
+          .bind(id, now, me.name, me.ok, me.sec, JSON.stringify(me.picks), iph, ip).run();
+      else me.off = 1;
     }
-    const ahead = await db.prepare('SELECT COUNT(*) AS n FROM ch_try WHERE cid = ? AND (ok > ? OR (ok = ? AND sec < ?))').bind(id, me.ok, me.ok, me.sec).first();
-    const rank = (ahead && ahead.n || 0) + 1 + (c.ok > me.ok || (c.ok === me.ok && c.sec < me.sec) ? 1 : 0);
-    return json({...head, qs, host: JSON.parse(c.picks), me, rank, ...await chBoard(db, c)});
+    return json({...head, qs, host: JSON.parse(c.picks), me, rank: await chRank(db, c, me), ...await chBoard(db, c)});
   }
   return json({error: 'not found'}, 404);
 }
