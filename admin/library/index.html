@@ -218,7 +218,7 @@ function card(t){
   const on=sel.includes(t.id);
   return '<article class="it'+(on?' on':'')+'" data-id="'+esc(t.id)+'"><input type="checkbox" aria-label="বাছাই"'+(on?' checked':'')+'>'+
     '<div><h3><span class="kind">'+esc(KIND[t.kind]||t.kind)+'</span>'+hi((t.section_no?t.section_no+' ':'')+t.section_title)+'</h3>'+
-    '<div class="meta">'+esc(t.subject)+(t.chapter!=null?' · অধ্যায় '+bn(t.chapter):'')+': '+esc(t.chapter_title)+(t.parent_section?' › '+esc(t.parent_section):'')+' · পৃ. '+bn(t.pages)+' · '+esc(t.source)+' · '+bn(Math.round(t.len/100)/10)+'k অক্ষর · <code>'+esc(t.id)+'</code></div></div>'+
+    '<div class="meta">'+esc(t.subject)+(t.chapter!=null?' · অধ্যায় '+bn(t.chapter):'')+': '+esc(t.chapter_title)+(t.parent_section?' › '+esc(t.parent_section):'')+' · পৃ. '+bn(t.pages)+' · '+esc(t.source)+' · '+bn(Math.round(t.len/100)/10)+'k অক্ষর'+(t.mcq_ids&&t.mcq_ids.length?' · জোড়া এমসিকিউ '+bn(t.mcq_ids.length)+'টি (এক্সপোর্টে আসবে)':'')+' · <code>'+esc(t.id)+'</code></div></div>'+
     '<p class="snip">'+hi(t.snippet)+'</p>'+
     '<div class="tg">'+t.tags.slice(0,10).map(x=>'<button type="button" class="chip" data-tag="'+esc(x)+'">'+esc(x)+'</button>').join('')+'</div>'+
     '<button type="button" class="more">পুরো লেখা</button></article>';
@@ -261,7 +261,9 @@ function plain(s,inBold){
 async function markdown(){
   const out=[];
   for(let i=0;i<sel.length;i+=90)out.push(...(await api('lib/get',{ids:sel.slice(i,i+90)})).items);
-  const mq=[];for(let i=0;i<msel.length;i+=90)mq.push(...(await api('lib/mcq-get',{ids:msel.slice(i,i+90)})).items);
+  // বাছাই করা এমসিকিউ, সাথে লিখিত অংশের নিজের জোড়া এমসিকিউ (Lyanna_data ইউনিটের mcq), একবার করে
+  const mids=[...new Set([...out.flatMap(t=>t.mcq_ids||[]),...msel])];
+  const mq=[];for(let i=0;i<mids.length;i+=90)mq.push(...(await api('lib/mcq-get',{ids:mids.slice(i,i+90)})).items);
   const title=state.q||state.tag||'বাছাই করা অংশ';
   let md='# টপিক: '+title+'\n\n'+'> রেফারেন্স হিসেবে '+bn(out.length)+'টি লিখিত অংশ'+(mq.length?' ও '+bn(mq.length)+'টি এমসিকিউ':'')+', '+[...new Set(out.map(t=>t.source.replace(/,?\s*অধ্যায়.*$/,'')))].join(', ')+' থেকে। লেকচার শিট নিজের ভাষায় নতুন করে লেখা হবে, হুবহু কপি নয়।\n\n';
   for(const t of out){

@@ -4,9 +4,13 @@ the same question ids (q + 10 hex) and topic ids (sci-light-refraction …) as e
 
     python3 tools/library/from_lyanna.py --data ../lyanna_data --out /tmp/lib
     python3 tools/library/from_lyanna.py --data ../lyanna_data --out /tmp/lib --written bd_affairs_topics_clean.json
+    python3 tools/library/from_lyanna.py --data ../lyanna_data --out /tmp/lib --units ../lyanna_data/dist/units.jsonl
 
   library-mcq.json.gz  {taxonomy:[…], mcq:[…]} → /admin/library/ "এমসিকিউ ব্যাংক তোলা"
   <written>.tagged.json  the written parts with topic_ids added → "নতুন অংশ তোলা"
+  library-units.json   Lyanna_data written units as library parts → "নতুন অংশ তোলা". Read from dist/units.jsonl
+                       of `tools/build_export.py` (default/all view: admin only, so source title/author stay;
+                       anything public must come from `--publish own-words` instead).
 
 Each MCQ: id, q, o, a, e, s (subject name), t (first topic name), topic_ids, exams, src [[label, url]].
 Written parts get topic_ids by subject name and by exact alias match of their section/chapter titles
@@ -52,6 +56,7 @@ def main():
     ap.add_argument('--data', default=os.path.join(SITE, '..', 'lyanna_data'))
     ap.add_argument('--out', required=True)
     ap.add_argument('--written', nargs='*', default=[])
+    ap.add_argument('--units', help='dist/units.jsonl from Lyanna_data tools/build_export.py')
     a = ap.parse_args()
     sys.path.insert(0, os.path.join(os.path.abspath(a.data), 'tools'))
     import lib  # Lyanna_data/tools/lib.py
@@ -104,6 +109,33 @@ def main():
         q = os.path.join(a.out, os.path.basename(w).replace('.json', '.tagged.json'))
         json.dump(parts, open(q, 'w', encoding='utf-8'), ensure_ascii=False)
         print(f'{q}: {len(parts)} parts, {hit} with a topic below the subject')
+
+
+    if a.units:
+        reg = lib.registry().get('sources', {})
+        name = lambda i: (tax.topics.get(i) or tax.subjects.get(i) or {}).get('bn', i)
+        exam_bn = lambda i: (tax.exam_types.get(i) or tax.sittings.get(i) or {}).get('bn', i)
+        parts = []
+        for line in open(a.units, encoding='utf-8'):
+            if not line.strip(): continue
+            u = json.loads(line)
+            if u.get('status', 'active') != 'active': continue
+            tops = u.get('topics') or []
+            chap = tax.chapter_of(tops[0]) if tops else u.get('subject')
+            srcs = u.get('sources') or []
+            s0 = srcs[0] if srcs else {}
+            r0 = reg.get(s0.get('src'), {})
+            label = ', '.join(x for x in [r0.get('title') or s0.get('src', ''), r0.get('author') or r0.get('publisher')] if x)
+            parts.append({'id': u['id'], 'subject': name(u.get('subject')), 'exam': ', '.join(exam_bn(e) for e in u.get('exams') or []),
+                          'chapter': None, 'chapter_title': name(chap) if chap else '', 'section_no': str(s0.get('sec') or ''),
+                          'section_title': u.get('title', ''), 'parent_section': name(tops[0]) if tops and tops[0] != chap else '',
+                          'kind': u.get('kind') or 'section', 'pages': str(s0.get('page') or ''), 'source': label,
+                          'source_id': s0.get('src') or 'lyanna', 'topic_ids': tops or [u.get('subject')],
+                          'tags': list(dict.fromkeys([name(t) for t in tops] + list(u.get('tags') or []) + [exam_bn(e) for e in u.get('exams') or []])),
+                          'mcq_ids': u.get('mcq') or [], 'text': u.get('body', '')})
+        q = os.path.join(a.out, 'library-units.json')
+        json.dump(parts, open(q, 'w', encoding='utf-8'), ensure_ascii=False)
+        print(f'{q}: {len(parts)} units')
 
 
 main()
