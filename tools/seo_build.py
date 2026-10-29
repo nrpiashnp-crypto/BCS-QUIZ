@@ -120,7 +120,7 @@ def page(path, title, desc, crumbs, body, current=None, img='/img/og.png', ld_ex
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/img/logo/apple-touch-icon.png">
-<link rel="preload" href="/fonts/NotoSansBengali-bengali.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/AnekBangla-bengali.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/fonts/fonts.css">
 <script type="application/ld+json">{json.dumps(ld, ensure_ascii=False)}</script>
 {''.join(f'<script type="application/ld+json">{json.dumps(x, ensure_ascii=False)}</script>' + chr(10) for x in ld_extra)}<style>{CSS}</style>
