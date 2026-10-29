@@ -23,7 +23,9 @@ It also
 
 Generated folders carry a .seo marker file; never edit their index.html by hand.
 """
-import glob, html, json, os, re, subprocess
+import glob, html, json, os, re, subprocess, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from theme import apply as theme_apply  # site theme: logo, /css/omr.css, /js/omr.js
 
 R = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SITE = 'https://lyannabooks.com'
@@ -46,6 +48,8 @@ def rd(p):
 
 
 def wr(p, s):
+    if p.endswith('index.html') and p != 'index.html':
+        s = theme_apply(s)
     full = os.path.join(R, p)
     os.makedirs(os.path.dirname(full), exist_ok=True)
     old = open(full, encoding='utf-8').read() if os.path.exists(full) else None
