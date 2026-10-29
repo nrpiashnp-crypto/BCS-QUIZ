@@ -504,6 +504,13 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid #13
 
 /* Anek Bangla: headings and display lines at 600 */
 h1,h2,h3,h4,.bA .t,.price,.bt,.adm b,.smp b,.hw,.hdr .nm{font-weight:600!important}
+/* header login: an answer bubble with a person in it, filled on hover like a marked bubble */
+.lgn{display:inline-flex;align-items:center;gap:8px;padding:4px 14px 4px 4px;border:1.4px solid #13294b;border-radius:99px;background:#fffdf7;color:#13294b!important;text-decoration:none;font:600 14.5px/1 'Noto Sans Bengali',sans-serif;box-shadow:0 2px 0 rgba(19,41,75,.18);transition:box-shadow .15s,transform .15s}
+.lgn .li{width:28px;height:28px;border:1.4px solid #c8326a;border-radius:50%;display:grid;place-items:center;color:#c8326a;overflow:hidden;transition:background .2s,color .2s,border-color .2s}
+.lgn .li svg{width:18px;height:18px}.lgn .li img{width:100%;height:100%;object-fit:cover}
+.lgn:hover .li{background:#1d1d1f;border-color:#1d1d1f;color:#f8f5ee}
+.lgn:hover{transform:translateY(-1px);box-shadow:0 3px 0 rgba(19,41,75,.25)}
+.lgn:focus-visible{outline:2px solid #13294b;outline-offset:3px}
 /* site notes 2026-10-29: calmer FAQ, clearer free chapter, nicer login card */
 #faq .faq{background:#fffdf7;border:1.4px solid rgba(200,50,106,.4);border-radius:3px;padding:4px 18px;box-shadow:0 2px 0 rgba(200,50,106,.1)}
 #faq .faq details:last-child{border-bottom:0}
@@ -536,7 +543,7 @@ h1,h2,h3,h4,.bA .t,.price,.bt,.adm b,.smp b,.hw,.hdr .nm{font-weight:600!importa
 <body>
 <div class="omr" aria-hidden="true"></div>
 <div class="pg">
-<header class="hdr"><a class="lgo" href="/" aria-label="লিয়ানা বুকস"><img src="img/logo/li-mark.svg" width="56" height="73" alt=""><span>লিয়ানা বুকস</span></a><nav class="nA" aria-label="সাইটের অংশ"><a href="bcs/"><i>ক</i>বিসিএস</a><a href="jobs/"><i>খ</i>চাকরি</a><a href="science/"><i>গ</i>বিজ্ঞান</a><a href="running/"><i>ঘ</i>চলমান</a></nav><a class="lgn" href="account/">লগইন</a></header>
+<header class="hdr"><a class="lgo" href="/" aria-label="লিয়ানা বুকস"><img src="img/logo/li-mark.svg" width="56" height="73" alt=""><span>লিয়ানা বুকস</span></a><nav class="nA" aria-label="সাইটের অংশ"><a href="bcs/"><i>ক</i>বিসিএস</a><a href="jobs/"><i>খ</i>চাকরি</a><a href="science/"><i>গ</i>বিজ্ঞান</a><a href="running/"><i>ঘ</i>চলমান</a></nav><a class="lgn" href="account/"><span class="li" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="9" r="3.6"/><path d="M5.5 19.5c1.3-3.3 3.8-5 6.5-5s5.2 1.7 6.5 5"/></svg></span><span class="lt">লগইন</span></a><script>try{var u=JSON.parse(localStorage.getItem('lb:u')||'null'),L=document.querySelector('.lgn');if(u&&L){L.querySelector('.lt').textContent='আমার পাতা';if(u.pic){var i=new Image();i.alt='';i.referrerPolicy='no-referrer';i.src=String(u.pic);L.querySelector('.li').replaceChildren(i)}}}catch(e){}</script></header>
 
 <div class="top"><div class="ctr" title="সাইটে মোট প্রশ্ন, প্রতিদিন বাড়ছে"><div class="ctx"><p class="cap">মোট প্রশ্ন</p><p class="big"><b class="qc-n">৫৭,৭১৫</b></p><p class="d1">প্রতিদিন বাড়ছে</p><p class="d1">সব পরীক্ষা ফ্রি · লগইন লাগে না</p></div><div class="cA mini" aria-hidden="true"><div class="cols"></div></div></div></div>
 
