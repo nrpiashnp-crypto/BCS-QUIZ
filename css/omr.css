@@ -13,7 +13,7 @@ body{background:#f8f5ee!important;color:#1d1f21;position:relative;overflow-x:hid
   padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));border-bottom:1.4px solid rgba(200,50,106,.45);box-shadow:none}
 .sitebar>a:first-child,body>.bar>a:first-child{display:flex;flex-direction:column;align-items:center;text-decoration:none}
 .sitebar>a:first-child img,body>.bar>a:first-child img{width:auto!important;height:44px!important;display:block}
-.lgn-n{font:500 11.5px/1.2 'Noto Sans Bengali',sans-serif;color:#2f6b3a;white-space:nowrap;margin-top:1px}
+.lgn-n{font:500 11.5px/1.2 'Lyanna Wordmark','Noto Sans Bengali',sans-serif;color:#2f6b3a;white-space:nowrap;margin-top:1px}
 .sitebar nav,body>.bar nav.sec{display:flex;gap:4px 14px;flex-wrap:wrap}
 .sitebar nav a,body>.bar nav.sec a{display:flex;align-items:center;gap:6px;color:#1d1f21!important;background:none!important;text-decoration:none;font:500 15px/1.3 'Noto Sans Bengali',sans-serif;padding:4px 0;border-radius:0}
 .sitebar nav a::before,body>.bar nav.sec a::before{width:22px;height:22px;border:1.4px solid #c8326a;border-radius:50%;display:grid;place-items:center;font:12px/1 'Noto Sans Bengali',sans-serif;color:#c8326a;flex:none;transition:background .2s}
