@@ -32,8 +32,12 @@ function wire(h){if(h.dataset.omrJump)return;h.dataset.omrJump=1;if(!h.id)h.id='
  a.onclick=function(e){e.preventDefault();go(h)};h._j=[sb,a];sb.insertAdjacentElement('afterend',a)}
 function tick(){var hs=heads();hs.forEach(wire);hs.forEach(function(h){var j=h._j;if(j&&j[0].nextElementSibling!==j[1])j[0].insertAdjacentElement('afterend',j[1])});var h=hs.filter(function(x){return x.offsetParent})[0];
  var show=h&&h.getBoundingClientRect().top>innerHeight-40;
+ var cx=document.querySelector('.chx:not([hidden])'),cr=cx&&cx.getBoundingClientRect();if(cr&&cr.top<innerHeight&&cr.bottom>0)show=false;
  if(show&&!pill){pill=document.createElement('button');pill.type='button';pill.className='exp-pill';pill.innerHTML='<span aria-hidden="true">↓</span> ব্যাখ্যা দেখুন';document.body.appendChild(pill)}
- if(pill){if(pill.hidden!==!show)pill.hidden=!show;pill.onclick=function(){var t=heads().filter(function(x){return x.offsetParent})[0];if(t)go(t)}}}
+ if(pill){if(pill.hidden!==!show)pill.hidden=!show;pill.onclick=function(){var t=heads().filter(function(x){return x.offsetParent})[0];if(t)go(t)}}
+ if(h&&!document.body.hasAttribute('data-noch'))ch()}
+/* বন্ধুকে চ্যালেঞ্জ: ফল দেখা গেলে তবেই js/challenge.js আসে */
+var chs=0;function ch(){if(window.LBC)return LBC.scan();if(chs)return;chs=document.createElement('script');chs.src='/js/challenge.js?v=1';chs.defer=true;document.head.appendChild(chs)}
 var q=0;function later(){if(!q){q=1;requestAnimationFrame(function(){q=0;tick()})}}
 addEventListener('scroll',later,{passive:true});addEventListener('resize',later);
 if('MutationObserver' in window)new MutationObserver(later).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});
