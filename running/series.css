@@ -156,3 +156,23 @@ h2.post{font-size:20px;margin:22px 0 2px}
 .wk details{margin:4px 0 2px;font-size:15px}.wk summary{cursor:pointer;color:var(--accent);padding:4px 0}
 .tipbox ul{margin:0 0 6px;padding-left:20px;font-size:15px}.tipbox li{margin:6px 0}
 .myres .st{color:var(--muted);font-size:13px}
+
+/* plan roadmap + short advice (2026-10-29) */
+.road{list-style:none;margin:14px 0 8px;padding:0;display:flex;gap:0;counter-reset:r}
+.road li{flex:1 1 0;min-width:0;position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 4px;gap:3px}
+.road li::before{content:"";position:absolute;top:15px;left:-50%;width:100%;height:2px;background:rgba(200,50,106,.35);z-index:0}
+.road li:first-child::before{display:none}
+.road .rb{position:relative;z-index:1;width:30px;height:30px;border-radius:50%;border:1.6px solid #c8326a;background:#fffdf7;color:#c8326a;display:grid;place-items:center;font-size:13px}
+.road li.done .rb{background:#1d1d1f;border-color:#1d1d1f;color:#fffdf7}
+.road li.on .rb{background:#c8326a;color:#fff;box-shadow:0 0 0 4px rgba(200,50,106,.18)}
+.road b{font-size:14px;font-weight:600;color:#13294b;line-height:1.3}
+.road small{font-size:12px;color:var(--muted)}
+@media (max-width:560px){.road{flex-direction:column;gap:10px}.road li{flex-direction:row;text-align:left;align-items:center;gap:10px;flex-wrap:wrap}
+ .road li::before{top:-10px;left:14px;width:2px;height:10px}.road small{margin-left:auto}}
+details.more{margin:6px 0}details.more>summary{cursor:pointer;color:#13294b;font-weight:500}
+details.more>summary::marker{color:#c8326a}
+.note.more p{margin:6px 0 0}
+.tipbox .tq{margin:4px 0 4px;padding-left:22px;font-size:15.5px;font-weight:500}.tipbox .tq li{margin:5px 0}
+.tipbox details.more>summary{display:inline-block;list-style:none;border:1.4px solid #c8326a;border-radius:3px;padding:3px 12px;font-size:14px;margin-top:4px}
+.tipbox details.more>summary::-webkit-details-marker{display:none}
+.tipbox details.more[open]>summary{background:#f7e6ec}

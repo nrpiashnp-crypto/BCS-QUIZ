@@ -22,3 +22,19 @@ el.innerHTML='<span class="omr-ld" role="status"><span class="lb" aria-hidden="t
 function scan(root){if(root.nodeType!==1)return;if(root.matches('p'))swap(root);root.querySelectorAll&&root.querySelectorAll('p').forEach(swap)}
 scan(document.body);
 if('MutationObserver' in window)new MutationObserver(function(ms){ms.forEach(function(m){m.addedNodes.forEach(scan)})}).observe(document.body,{childList:true,subtree:true});})();
+/* results: point to the explanations below the marks (a button under the score, a floating pill until they come into view) */
+(function(){var H=/উত্তর ও ব্যাখ্যা/,pill=null;
+function heads(){return [].filter.call(document.querySelectorAll('h2'),function(h){return H.test(h.textContent)})}
+function go(h){h.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'})}
+function wire(h){if(h.dataset.omrJump)return;h.dataset.omrJump=1;if(!h.id)h.id='exp-'+Math.random().toString(36).slice(2,7);
+ var box=h.parentNode,sb=box.querySelector('#scorebox')||box.querySelector('.score');if(!sb||sb.parentNode!==box)return;
+ var a=document.createElement('a');a.className='exp-jump';a.href='#'+h.id;a.innerHTML='<span aria-hidden="true">↓</span> প্রতিটি প্রশ্নের ব্যাখ্যাসহ উত্তর নিচে দেখুন';
+ a.onclick=function(e){e.preventDefault();go(h)};h._j=[sb,a];sb.insertAdjacentElement('afterend',a)}
+function tick(){var hs=heads();hs.forEach(wire);hs.forEach(function(h){var j=h._j;if(j&&j[0].nextElementSibling!==j[1])j[0].insertAdjacentElement('afterend',j[1])});var h=hs.filter(function(x){return x.offsetParent})[0];
+ var show=h&&h.getBoundingClientRect().top>innerHeight-40;
+ if(show&&!pill){pill=document.createElement('button');pill.type='button';pill.className='exp-pill';pill.innerHTML='<span aria-hidden="true">↓</span> ব্যাখ্যা দেখুন';document.body.appendChild(pill)}
+ if(pill){if(pill.hidden!==!show)pill.hidden=!show;pill.onclick=function(){var t=heads().filter(function(x){return x.offsetParent})[0];if(t)go(t)}}}
+var q=0;function later(){if(!q){q=1;requestAnimationFrame(function(){q=0;tick()})}}
+addEventListener('scroll',later,{passive:true});addEventListener('resize',later);
+if('MutationObserver' in window)new MutationObserver(later).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});
+tick();})();

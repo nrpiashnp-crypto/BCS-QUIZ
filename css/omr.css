@@ -85,3 +85,10 @@ a{color:#13294b}
 @keyframes omrPen{0%{transform:translate(64px,-6px)}8%{transform:translate(86px,-4px)}10%{transform:translate(80px,9px)}15%{transform:translate(82px,19px)}20%{transform:translate(83px,9px)}25%{transform:translate(85px,19px)}30%{transform:translate(87px,9px)}35%{transform:translate(89px,19px)}40%{transform:translate(90px,9px)}45%{transform:translate(92px,19px)}55%,80%{transform:translate(100px,-10px)}100%{transform:translate(64px,-6px)}}
 @keyframes omrFill{0%,9%{clip-path:inset(0 100% 0 0);opacity:1}45%,80%{clip-path:inset(0 0 0 0);opacity:1}100%{clip-path:inset(0 0 0 0);opacity:0}}
 @media (prefers-reduced-motion:reduce){.omr-ld .pen,.omr-ld .b.g::after{animation:none}.omr-ld .b.g::after{clip-path:none}.omr-ld .pen{transform:translate(100px,-10px)}}
+/* results: jump to the explanations */
+.exp-jump{display:flex;align-items:center;justify-content:center;gap:8px;margin:12px 0;padding:11px 14px;border:1.6px dashed #c8326a;border-radius:3px;background:#fbe7ef;color:#13294b!important;font:500 15px/1.4 'Noto Sans Bengali',sans-serif;text-decoration:none;text-align:center}
+.exp-jump span{font-size:18px;color:#c8326a}
+.exp-pill{position:fixed;z-index:40;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));border:0;border-radius:99px;background:#13294b;color:#fff;font:500 15px/1 'Noto Sans Bengali',sans-serif;padding:12px 20px;box-shadow:0 6px 16px rgba(19,41,75,.35);cursor:pointer}
+.exp-pill span{margin-right:4px}
+@media (prefers-reduced-motion:no-preference){.exp-pill:not([hidden]){animation:expUp .25s ease-out}}
+@keyframes expUp{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
