@@ -51,7 +51,7 @@ function markWrong(q,good,tp){const W=get('subj:w',{});if(good)delete W[q.id];el
 function prog(fn){const P=get('subj:v1',{});P.t=P.t||{};const p=P.t[TP]=P.t[TP]||{s:{}};p.s=p.s||{};fn(p);put('subj:v1',P);return p}
 function qbox(q,i){const s=document.createElement('section');s.className='q';
   s.innerHTML=`<div class="qh"><span class="num">${bn(i+1)}.</span><p class="qt">${q.q}${src(q)}</p></div><div class="opts"></div>`;
-  const o=s.querySelector('.opts');q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;o.appendChild(b)});return s}
+  const o=s.querySelector('.opts');q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';b.setAttribute('aria-pressed','false');b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;o.appendChild(b)});return s}
 function expHTML(q,p){return (p<0?'<span class="skip">উত্তর দেননি।</span> সঠিক উত্তর: '+K[q.a]+') '+q.o[q.a]+'।':p===q.a?'<span class="ok">সঠিক।</span>':'<span class="no">ভুল।</span> সঠিক উত্তর: '+K[q.a]+') '+q.o[q.a]+'।')+' '+q.e}
 function after(links){$('after').innerHTML=links.map(([h,t,c])=>`<a class="btn${c?' ghost':''}" href="${h}">${t}</a>`).join('');$('after').hidden=false}
 

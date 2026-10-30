@@ -91,9 +91,35 @@ footer{text-align:center;font-size:13px;color:var(--muted);padding:20px 16px 30p
 SEC = [('/bcs/', 'বিসিএস'), ('/jobs/', 'চাকরি'), ('/science/', 'বিজ্ঞান'), ('/running/', 'চলমান')]
 
 
+SUF = ' · লিয়ানা বুকস'
+_imgdims = {}
+def imgdims(src):
+    """width/height of a question image under /bcs|jobs/data/img (CLS); None if unknown."""
+    if src not in _imgdims:
+        try:
+            from PIL import Image
+            with Image.open(os.path.join(R, src.lstrip('/'))) as im: _imgdims[src] = im.size
+        except Exception:
+            _imgdims[src] = None
+    return _imgdims[src]
+
+
+def fix_imgs(html):
+    def f(m):
+        tag = m.group(0)
+        if 'width=' in tag: return tag
+        d = imgdims(m.group(1))
+        extra = (f' width="{d[0]}" height="{d[1]}"' if d else '') + ' loading="lazy" decoding="async"'
+        return tag[:-1] + extra + '>'
+    return re.sub(r'<img src="(/(?:bcs|jobs)/data/img/[^"]+)"[^>]*>', f, html)
+
+
 def page(path, title, desc, crumbs, body, current=None, img='/img/og.png', ld_extra=()):
     """path like '/bcs/50/'; crumbs = [(url|None, text)] after হোম."""
     url = SITE + path
+    # long titles get cut in search results; the brand is already in og:site_name, so drop the suffix when the title is long
+    if len(title) > 62 and title.endswith(SUF): title = title[:-len(SUF)]
+    body = fix_imgs(body)
     nav = ''.join(f'<a href="{h}"{" aria-current=\"page\"" if h == current else ""}>{t}</a>' for h, t in SEC)
     trail = [('/', 'হোম')] + crumbs
     crumb_html = '<nav class="crumb" aria-label="অবস্থান">' + ''.join(
@@ -120,6 +146,7 @@ def page(path, title, desc, crumbs, body, current=None, img='/img/og.png', ld_ex
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/img/logo/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
 <link rel="preload" href="/fonts/AnekBangla-bengali.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/fonts/fonts.css">
 <script type="application/ld+json">{json.dumps(ld, ensure_ascii=False)}</script>
@@ -134,6 +161,7 @@ def page(path, title, desc, crumbs, body, current=None, img='/img/og.png', ld_ex
 <p class="book">বিসিএস আর চাকরির পরীক্ষার বিজ্ঞান এক বইয়ে, বিগত প্রশ্ন বিশ্লেষণ করে লেখা: <a href="/book/">লিয়ানা বিসিএস বিজ্ঞান বই সম্পর্কে জানুন</a></p>
 </main>
 <footer><a href="/">লিয়ানা বুকস</a> · <a href="/questions/">সব প্রশ্ন ও সমাধান</a> · <a href="/exams/">পরীক্ষা দিন</a> · <a href="/book/">বই</a> · <a href="{FB}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true" style="vertical-align:-2px;margin-right:4px"><path fill="currentColor" d="M13.5 22v-8.2h2.8l.4-3.3h-3.2V8.4c0-.9.3-1.6 1.6-1.6h1.7V3.9a23 23 0 0 0-2.5-.1c-2.5 0-4.2 1.5-4.2 4.3v2.4H7.3v3.3h2.8V22h3.4Z"/></svg>ফেসবুক পেজ</a></footer>
+<script>if('serviceWorker' in navigator)addEventListener('load',function(){{navigator.serviceWorker.register('/sw.js').catch(function(){{}})}})</script>
 </body>
 </html>
 """
@@ -243,7 +271,15 @@ def sname(e):
     return f'{e["orgbn"]} {e["postbn"]} {"পরীক্ষা" if "নিবন্ধন" in e["postbn"] or e["cat"] == "bar" else "নিয়োগ পরীক্ষা"}'
 
 
-def jname(e):
+def short_org(nm):
+    """'স্থানীয় সরকার প্রকৌশল অধিদপ্তর (এলজিইডি)' -> 'এলজিইডি' for <title>; the full name stays in the h1."""
+    m = re.search(r'\(([^()]{2,24})\)\s*$', nm)
+    return m.group(1) if m else nm
+
+
+def jname(e, short=False):
+    if short and len(jname(e)) > 60:
+        return jname(dict(e, orgbn=short_org(e['orgbn'])))
     if e['year'] == 'misc':
         return f'{e["orgbn"]}: বিভিন্ন নিয়োগ পরীক্ষার প্রশ্ন'
     post = e.get('title') or e['postbn']
@@ -274,7 +310,7 @@ for e in jobs_ok:
     kind = 'ব্যাংক জব' if e['cat'] in ('gb', 'pb') else CATN[e['cat']]
     when = bdate(e['date']) if e.get('date') else (bn(e['year']) if e['year'] != 'misc' else '')
     part = '' if e.get('full') else ' (প্রাপ্ত প্রশ্ন)'
-    title = f'{name}: প্রশ্ন ও সমাধান · লিয়ানা বুকস'
+    title = f'{jname(e, short=True)}: প্রশ্ন ও সমাধান · লিয়ানা বুকস'
     desc = (f'{name}{part}: {bn(len(Q))}টি এমসিকিউ প্রশ্নের সঠিক উত্তর আর বিস্তারিত ব্যাখ্যা। '
             f'{kind} প্রস্তুতির জন্য ফ্রি অনলাইন মডেল টেস্ট, সময় আর নেগেটিভ মার্কিংসহ।')
     note = f' {esc(e["note"])}।' if e.get('note') else ''
@@ -294,10 +330,9 @@ for e in jobs_ok:
 {toc}
 {body}
 {rel}"""
-    crumbs = [('/jobs/', 'চাকরির প্রশ্নব্যাংক'), (f'/jobs/#/{HASH[e["cat"]]}', CATN[e['cat']]), (None, name)]
-    # hash URLs are not separate pages for search engines; keep the visible crumb, point the schema at /jobs/
+    # hash URLs are not separate pages for search engines, so the middle crumb is the post's all-years page when there is one
+    crumbs = [('/jobs/', 'চাকরির প্রশ্নব্যাংক')] + ([(f'/jobs/{e["series"]}/', sname(e))] if e.get('series') else []) + [(None, name)]
     out = page(path, title, desc, crumbs, html_body, '/jobs/', ld_extra=[quiz_ld(f'{name}: প্রশ্ন ও সমাধান', Q, path, f'{kind} প্রস্তুতি')])
-    out = out.replace(f'"item": "{SITE}/jobs/#/{HASH[e["cat"]]}"', f'"item": "{SITE}/jobs/"')
     wr(path.strip('/') + '/index.html', out)
     generated.append((path, f'jobs/data/e/{e["id"]}.json'))
 
@@ -310,7 +345,7 @@ for slug, L in series.items():
     span = f'{bn(ys[0])}-{bn(ys[-1])}'
     nq = sum(len(jq(x)) for x in L)
     full = [x for x in L if x.get('full')] or L
-    title = f'{nm}: প্রশ্ন ও সমাধান, সব বছর ({span}) · লিয়ানা বুকস'
+    title = f'{nm if len(nm) <= 45 else sname(dict(e0, orgbn=short_org(e0["orgbn"])))}: প্রশ্ন ও সমাধান, সব বছর ({span}) · লিয়ানা বুকস'
     desc = (f'{nm}: {bn(len(L))} বছরের ({span}) {bn(nq)}টি প্রশ্ন, সঠিক উত্তর আর ব্যাখ্যা। '
             f'কোন বিষয় থেকে কতটি প্রশ্ন আসে তার হিসাব আর ফ্রি অনলাইন মডেল টেস্ট।')
     dup = len({x['year'] for x in L}) < len(L)
@@ -332,11 +367,10 @@ for slug, L in series.items():
 {tbl}
 <a class="cta" href="/jobs/{e0['id']}/">সাম্প্রতিক পরীক্ষার প্রশ্ন দেখুন →</a>
 {rel}"""
-    crumbs = [('/jobs/', 'চাকরির প্রশ্নব্যাংক'), (f'/jobs/#/{HASH[e0["cat"]]}', CATN[e0['cat']]), (None, nm)]
+    crumbs = [('/jobs/', 'চাকরির প্রশ্নব্যাংক'), (None, nm)]
     out = page(path, title, desc, crumbs, body, '/jobs/', ld_extra=[{
         '@context': 'https://schema.org', '@type': 'ItemList', 'name': f'{nm}: প্রশ্ন ও সমাধান',
         'itemListElement': [{'@type': 'ListItem', 'position': i + 1, 'url': f'{SITE}/jobs/{x["id"]}/', 'name': jname(x)} for i, x in enumerate(L)]}])
-    out = out.replace(f'"item": "{SITE}/jobs/#/{HASH[e0["cat"]]}"', f'"item": "{SITE}/jobs/"')
     wr(path.strip('/') + '/index.html', out)
     generated.append((path, f'jobs/data/e/{e0["id"]}.json'))
 
