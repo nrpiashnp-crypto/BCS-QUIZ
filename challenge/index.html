@@ -137,7 +137,7 @@ button{font:inherit;cursor:pointer}
   <div class="vs"><div class="side"><span class="who" id="iname"></span><span class="pts" id="ipts"></span><span class="tm" id="itm"></span></div>
     <span class="vsx">বনাম</span><div class="side me"><span class="who">আপনি</span><span class="pts">?</span><span class="tm">দেখা যাক!</span></div></div>
   <form class="start" id="iform"><label><span>আপনার নাম</span><input id="iname2" maxlength="24" autocomplete="given-name" placeholder="যেমন: করিম" required></label><button class="btn" type="submit">পরীক্ষা শুরু করুন</button></form>
-  <ul class="rules"><li>সময় শেষ হলে নিজে থেকে জমা হবে</li><li>ভুলে নম্বর কাটা নেই, শুধু সঠিক সংখ্যা তুলনা হয়</li><li>প্রথমবারের ফলই বোর্ডে ওঠে</li></ul>
+  <ul class="rules"><li>একবার দাগালে আর বদলানো যায় না</li><li>সময় শেষ হলে নিজে থেকে জমা হবে</li><li>ভুলে নম্বর কাটা নেই, শুধু সঠিক সংখ্যা তুলনা হয়</li><li>প্রথমবারের ফলই বোর্ডে ওঠে</li></ul>
   <div id="iboard"></div>
 </section>
 
@@ -199,8 +199,9 @@ function exam(){var box=$('elist');box.innerHTML='';pick=C.qs.map(function(){ret
   C.qs.forEach(function(q,i){var s=document.createElement('section');s.className='q';
    s.innerHTML='<div class="qh"><span class="num">'+bn(i+1)+'.</span><div class="qt">'+safe(q.q)+'</div></div><div class="opts">'+
     q.o.map(function(o,j){return '<button type="button" class="opt" data-j="'+j+'"><span class="k">'+K[j]+'</span><span>'+safe(o)+'</span></button>'}).join('')+'</div>';
-   s.querySelectorAll('.opt').forEach(function(b){b.onclick=function(){var j=+b.dataset.j;pick[i]=pick[i]===j?-1:j;
-     s.querySelectorAll('.opt').forEach(function(x){x.classList.toggle('sel',+x.dataset.j===pick[i])});
+   /* একবার দাগালে আর বদলানো যায় না (সাইটের নিয়ম, আসল OMR-এর মতো) */
+   s.querySelectorAll('.opt').forEach(function(b){b.onclick=function(){if(pick[i]>=0)return;pick[i]=+b.dataset.j;b.classList.add('sel');b.setAttribute('aria-pressed','true');
+     s.querySelectorAll('.opt').forEach(function(x){x.disabled=true});
      $('ans').textContent=bn(pick.filter(function(p){return p>=0}).length)}});box.appendChild(s)});
   fetch('/api/ch/'+id+'/start',{method:'POST'}).catch(function(){});var end=C.mins*60;startAt=Date.now();clearInterval(timer);
   var tick=function(){var left=Math.max(0,end-Math.floor((Date.now()-startAt)/1000));$('clock').textContent=t(left);$('clock').classList.toggle('low',left<=60);if(!left)send()};
