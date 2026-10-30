@@ -65,11 +65,9 @@
     d.innerHTML='<div class="rc-wish"><span class="rc-tag">শুভকামনা</span><h3>'+w[0]+'</h3><p>'+w[1]+'</p>'+
       '<p class="rc-tip"><b>পরামর্শ:</b> '+tip(ok,bad,blank,n,r,neg)+'</p></div>'+
       '<div class="rc-book"><img src="/img/cover.webp" alt="লিয়ানা বিসিএস বিজ্ঞান বইয়ের প্রচ্ছদ" width="78" loading="lazy">'+
-      '<div><div class="t">লিয়ানা বুকস-এর বই · প্রি-অর্ডার চলছে</div><h4>'+head+'</h4><p>'+body+'</p>'+
-      '<div class="rc-code"><span>আপনার জন্য কোড</span><code>'+CODE+'</code><span>প্রতি কপিতে আরও ৳২০ ছাড়</span></div>'+
-      '<p class="rc-price"><b>৳৩৩০</b><s>৳৫০০</s>কোডসহ · ডেলিভারি ফ্রি</p>'+
-      '<div class="rc-cta"><a class="go" href="/book/?preorder&from='+slug+'-result&code='+CODE+'">প্রি-অর্ডার করুন →</a><a class="s" href="/sample/sound/?from='+slug+'-result">নমুনা অধ্যায় পড়ুন</a></div>'+
-      '<p class="rc-note">সব পরীক্ষা সবসময় ফ্রি থাকবে। বই বিক্রির টাকায় সাইটটা চলে।</p></div></div>';
+      '<div><div class="t">লিয়ানা বুকস-এর বই · শিগগির আসছে</div><h4>'+head+'</h4><p>'+body+'</p>'+
+      '<div class="rc-cta"><a class="go" href="/book/?from='+slug+'-result">বইটি সম্পর্কে জানুন →</a><a class="s" href="/sample/sound/?from='+slug+'-result">নমুনা অধ্যায় পড়ুন</a></div>'+
+      '<p class="rc-note">সব পরীক্ষা সবসময় ফ্রি থাকবে।</p></div></div>';
     var after=box.nextElementSibling&&box.nextElementSibling.id==='weak'?box.nextElementSibling:box;
     after.parentNode.insertBefore(d,after.nextSibling);
     try{localStorage.setItem('lb:code',CODE)}catch(e){}
