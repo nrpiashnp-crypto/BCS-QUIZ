@@ -668,7 +668,6 @@ var io=new IntersectionObserver(function(es){es.forEach(function(e){e.isIntersec
 addEventListener('scroll',function(){past=scrollY>400;f.hidden=!past||seen.size>0},{passive:true});})();
 </script>
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "6b92edeb250b475e9d759f64df8eb91e"}'></script><!-- End Cloudflare Web Analytics -->
-<!--seo-links--><nav style="max-width:760px;margin:24px auto 0;padding:0 16px 24px;text-align:center;font:13px/1.8 'Noto Sans Bengali',system-ui,sans-serif"><a href="/questions/" style="color:inherit;opacity:.75">সব প্রশ্ন ও সমাধান</a></nav><!--/seo-links-->
 <script>
 (function(){var el=document.getElementById('tq');if(!el||!window.fetch)return;var d=new Date(),n=Math.floor((d-new Date(d.getFullYear(),0,0))/864e5)+d.getFullYear()*366,B='কখগঘ';
 fetch('/science/today/'+(n%63)+'.json').then(function(r){return r.ok?r.json():null}).then(function(q){if(!q)return;
@@ -679,5 +678,6 @@ b.onclick=function(){var bs=o.querySelectorAll('button');bs.forEach(function(x){
 var g=i===q.a;e.innerHTML='<p class="vr '+(g?'g':'r')+'">'+(g?'ঠিক উত্তর!':'সঠিক উত্তর: '+B[q.a]+') '+'')+'</p><div class="ex1"></div><p class="lk"><a href="/'+q.c+'/">'+q.t+' অধ্যায়ের সব প্রশ্নে পরীক্ষা →</a></p><p class="bkl">বিস্তারিত: <a href="/book/">লিয়ানা বিসিএস বিজ্ঞান</a> বইয়ের "'+q.t+'" অধ্যায়ে</p>';
 if(!g)e.querySelector('.vr').appendChild(document.createTextNode(q.o[q.a]));e.querySelector('.ex1').innerHTML=q.e;e.hidden=false};o.appendChild(b)});el.hidden=false}).catch(function(){})})();
 </script>
+<!--seo-links--><nav style="max-width:760px;margin:24px auto 0;padding:0 16px 24px;text-align:center;font:13px/1.8 'Noto Sans Bengali',system-ui,sans-serif"><a href="/questions/" style="color:inherit;opacity:.75">সব প্রশ্ন ও সমাধান</a></nav><!--/seo-links-->
 </body>
 </html>
