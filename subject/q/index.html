@@ -44,7 +44,7 @@ const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch(e){ret
 const put=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const U=new URLSearchParams(location.search),TP=U.get('t'),SET=U.get('s'),WR=U.get('w');
-const SUBJ={sci:'science',bn:'bangla',eng:'english',bda:'bangladesh',intl:'international',geo:'geography',ict:'ict',math:'math',mental:'mental',ethics:'ethics'};
+const SUBJ={ca:'samprotik',sci:'science',bn:'bangla',eng:'english',bda:'bangladesh',intl:'international',geo:'geography',ict:'ict',math:'math',mental:'mental',ethics:'ethics'};
 const sub=SUBJ[(TP||WR||'sci').split('-')[0]]?(TP||WR||'sci').split('-')[0]:'sci',ROAD='/subject/'+SUBJ[sub]+'/';
 $('back').href=ROAD;
 if(sub==='sci'){const b=document.createElement('script');b.src='/js/book-link.js';b.dataset.kind='science';document.body.appendChild(b)} /* বইয়ের লিংক শুধু বিজ্ঞানে */
@@ -120,12 +120,12 @@ fetch('/subject/data/'+SUBJ[sub]+'.json').then(r=>r.json()).then(D=>{
     return fetch('/subject/data/t/'+TP+'/test.json').then(r=>r.json()).then(pool=>test(pool,D,T,next))}
   const k=T.sets.findIndex(x=>x.id===SET),S=T.sets[k];if(!S)throw 0;
   const GL={b:'বিসিএসের প্রশ্ন',x:'অন্য পরীক্ষার প্রশ্ন',l:'সম্ভাব্য প্রশ্ন'};
-  document.title=T.name+': '+GL[S.kind]+' সেট '+bn(S.k)+' · লিয়ানা বুকস';
-  $('sub').innerHTML=`<span class="mode">অনুশীলন</span> ${GL[S.kind]} · সেট ${bn(S.k)} · সময় নেই, উত্তর দিলেই ব্যাখ্যা`;
+  document.title=T.name+': '+(GL[S.kind]||S.label)+' সেট '+bn(S.k)+' · লিয়ানা বুকস';
+  $('sub').innerHTML=`<span class="mode">অনুশীলন</span> ${GL[S.kind]||S.label} · সেট ${bn(S.k)} · সময় নেই, উত্তর দিলেই ব্যাখ্যা`;
   return fetch('/subject/data/t/'+TP+'/'+SET+'.json').then(r=>r.json()).then(L=>practice(L,ok=>{
     prog(p=>{p.s[SET]=[ok,L.length,Date.now()]});
     const ns=T.sets[k+1];
-    after(ns?[['?t='+TP+'&s='+ns.id,'পরের ধাপ: '+GL[ns.kind]+' সেট '+bn(ns.k)+' →'],['?t='+TP+'&s=test','টপিক টেস্ট দিন',1]]
+    after(ns?[['?t='+TP+'&s='+ns.id,'পরের ধাপ: '+(GL[ns.kind]||ns.label)+' সেট '+bn(ns.k)+' →'],['?t='+TP+'&s=test','টপিক টেস্ট দিন',1]]
             :[['?t='+TP+'&s=test','পরের ধাপ: টপিক টেস্ট →'],[ROAD+'#'+TP,'রোডম্যাপ',1]]);
   }));
 }).catch(()=>{$('ttl').textContent='পাতাটি পাওয়া যায়নি';$('sub').innerHTML='<a href="/subject/">সব বিষয় দেখুন →</a>'});

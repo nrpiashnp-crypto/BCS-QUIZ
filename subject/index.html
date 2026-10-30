@@ -29,6 +29,7 @@
 <p class="sub">একটি বিষয় থেকে শুরু করুন, ফ্রি</p>
 <a class="mine" id="mine" hidden></a>
 <div class="tiles two">
+<a class="tile live" href="/subject/samprotik/"><span class="ic">সা</span><span class="tx"><b>সাম্প্রতিক বিষয়াবলি</b><small>২০টি টপিক · গত ৩ বছরের খবর</small></span><span class="bt">শুরু →</span></a>
 <a class="tile live" href="/subject/science/"><span class="ic">বি</span><span class="tx"><b>সাধারণ বিজ্ঞান</b><small>২১টি টপিক</small></span><span class="bt">শুরু →</span></a>
 <a class="tile live" href="/subject/bangla/"><span class="ic">অ</span><span class="tx"><b>বাংলা ভাষা ও সাহিত্য</b><small>২টি টপিক</small></span><span class="bt">শুরু →</span></a>
 <a class="tile live" href="/subject/english/"><span class="ic">E</span><span class="tx"><b>English Language ও Literature</b><small>৪টি টপিক</small></span><span class="bt">শুরু →</span></a>
@@ -44,7 +45,7 @@
 <script>
 /* এই ফোনে অগ্রগতি থাকলে "চালিয়ে যান" লাইন: যে বিষয়ে সবচেয়ে বেশি টপিকে কাজ হয়েছে (বিষয় পাতার একই চাবি 'subj:v1') */
 (function(){try{const P=JSON.parse(localStorage.getItem('subj:v1')||'{}'),t=P.t||{},ks=Object.keys(t);
-const S=[["science", "sci", "সাধারণ বিজ্ঞান", 21], ["bangla", "bn", "বাংলা ভাষা ও সাহিত্য", 2], ["english", "eng", "English Language ও Literature", 4], ["bangladesh", "bda", "বাংলাদেশ বিষয়াবলি", 16], ["international", "intl", "আন্তর্জাতিক বিষয়াবলি", 9], ["geography", "geo", "ভূগোল, পরিবেশ ও দুর্যোগ", 5], ["ict", "ict", "কম্পিউটার ও তথ্যপ্রযুক্তি", 9], ["math", "math", "গাণিতিক যুক্তি", 5], ["mental", "mental", "মানসিক দক্ষতা", 4], ["ethics", "ethics", "নৈতিকতা ও সুশাসন", 2]];
+const S=[["samprotik", "ca", "সাম্প্রতিক বিষয়াবলি", 20], ["science", "sci", "সাধারণ বিজ্ঞান", 21], ["bangla", "bn", "বাংলা ভাষা ও সাহিত্য", 2], ["english", "eng", "English Language ও Literature", 4], ["bangladesh", "bda", "বাংলাদেশ বিষয়াবলি", 16], ["international", "intl", "আন্তর্জাতিক বিষয়াবলি", 9], ["geography", "geo", "ভূগোল, পরিবেশ ও দুর্যোগ", 5], ["ict", "ict", "কম্পিউটার ও তথ্যপ্রযুক্তি", 9], ["math", "math", "গাণিতিক যুক্তি", 5], ["mental", "mental", "মানসিক দক্ষতা", 4], ["ethics", "ethics", "নৈতিকতা ও সুশাসন", 2]];
 let best=null;S.forEach(([slug,pre,name,n])=>{const mine=ks.filter(k=>k.startsWith(pre+'-'));if(!mine.length)return;
   const done=mine.filter(k=>t[k].pass).length;if(!best||mine.length>best.any)best={slug,name,n,done,any:mine.length}});
 if(!best)return;const bn=n=>String(n).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);const m=document.getElementById('mine');

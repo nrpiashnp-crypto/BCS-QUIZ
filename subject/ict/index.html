@@ -52,8 +52,8 @@ fetch('/subject/data/ict.json').then(r=>r.json()).then(D=>{
     box.innerHTML=`<button type="button" class="tile${p.pass?' done':''}" aria-expanded="false"><span class="ic">${p.pass?'✓':bn(t.no)}</span><span class="tx"><b>${t.name}</b><small>${info.join(' · ')}</small></span><span class="bt">▾</span></button>`;
     const pan=document.createElement('div');pan.className='panel';pan.hidden=true;
     let h='';
-    ['b','x','l'].forEach(k=>{const ss=t.sets.filter(x=>x.kind===k);if(!ss.length)return;
-      h+=`<div class="step"><h3>${GL[k]}</h3><div class="pills">`+ss.map(x=>`<a class="pill${s[x.id]?' ok':''}" href="/subject/q/?t=${t.id}&s=${x.id}">সেট ${bn(x.k)}</a>`).join('')+'</div></div>'});
+    (D.kinds||['b','x','l']).forEach(k=>{const ss=t.sets.filter(x=>x.kind===k);if(!ss.length)return;
+      h+=`<div class="step"><h3>${GL[k]||ss[0].label}</h3><div class="pills">`+ss.map(x=>`<a class="pill${s[x.id]?' ok':''}" href="/subject/q/?t=${t.id}&s=${x.id}">সেট ${bn(x.k)}</a>`).join('')+'</div></div>'});
     h+=`<div class="step"><h3>টপিক টেস্ট</h3><a class="go${nd?'':' lock'}" href="/subject/q/?t=${t.id}&s=test">${nd?`টেস্ট দিন: ${bn(D.test)} প্রশ্ন, সময়সহ`:'আগে অন্তত একটি সেট অনুশীলন করুন'}</a><p class="note">${bn(Math.round(D.pass*100))}% বা বেশি পেলে টপিক সম্পন্ন।</p></div>`;
     pan.innerHTML=h;box.appendChild(pan);
     box.firstChild.onclick=()=>{const o=pan.hidden;document.querySelectorAll('.topic').forEach(b=>{b.classList.remove('open');b.lastChild.hidden=true;b.firstChild.setAttribute('aria-expanded','false')});
