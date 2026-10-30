@@ -45,14 +45,7 @@ function share(box,id,text){var u=link(id),msg=text+'\n'+u;
    if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(msg).then(done,old);else old()};
   var mo=box.querySelector('.mo');if(mo)mo.onclick=function(){navigator.share({title:'লিয়ানা বুকস চ্যালেঞ্জ',text:text,url:u}).catch(function(){})};
   box.hidden=false}
-/* সার্ভার ৩০০ KB-র বেশি নেয় না; বড় পরীক্ষায় (২০০ প্রশ্ন, লম্বা ব্যাখ্যা) আগে ব্যাখ্যা ছোট করা হয়, তারপর বাদ, তবু বড় হলে প্রশ্ন কমানো */
-var MAXB=280000;
-function bytes(o){return new TextEncoder().encode(JSON.stringify(o)).length}
-function fit(body){if(!body.qs||bytes(body)<=MAXB)return body;
-  var cut=function(n){body.qs.forEach(function(q){if(q.e&&q.e.length>n)q.e=q.e.slice(0,n).replace(/<[^>]*$/,'')+(n?'…':'')})};
-  var steps=[1500,700,300,0];for(var i=0;i<steps.length&&bytes(body)>MAXB;i++)cut(steps[i]);
-  while(bytes(body)>MAXB&&body.qs.length>3){body.qs.pop();body.picks.pop()}return body}
-function post(body){return fetch('/api/ch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(fit(body))}).then(function(r){return r.json().catch(function(){return {error:'http'+r.status}}).then(function(j){if(!r.ok||!j.id)throw j;return j})})}
+function post(body){return fetch('/api/ch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json().catch(function(){return {error:'http'+r.status}}).then(function(j){if(!r.ok||!j.id)throw j;return j})})}
 function fail(e){return e&&e.error==='slow'?'এক ঘণ্টায় অনেকগুলো চ্যালেঞ্জ হয়ে গেছে, একটু পরে আবার চেষ্টা করুন।':e&&e.error==='bad'?'এই পরীক্ষা থেকে চ্যালেঞ্জ বানানো গেল না।':e&&e.error==='first'?'আগে চ্যালেঞ্জটা নিজে দিয়ে নিন, তারপর পাল্টা চ্যালেঞ্জ বানানো যাবে।':e&&e.error==='big'?'পরীক্ষাটা খুব বড়, লিংক বানানো গেল না।':e&&e.error?'সার্ভারে সমস্যা হচ্ছে ('+String(e.error).slice(0,20)+'), একটু পরে আবার চেষ্টা করুন।':'ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।'}
 
 function card(list){var el=document.createElement('div');el.className='chx';
@@ -60,10 +53,13 @@ function card(list){var el=document.createElement('div');el.className='chx';
    '<form class="chx-f"><label><span>আপনার নাম</span><input name="n" maxlength="24" autocomplete="given-name" placeholder="যেমন: রাহিম"></label><button class="chx-go" type="submit">লিংক বানান</button></form><p class="chx-e" hidden></p><div class="chx-s" hidden></div>';
   var f=el.querySelector('form'),inp=f.n,err=el.querySelector('.chx-e'),go=el.querySelector('.chx-go');inp.value=myName();
   f.onsubmit=function(ev){ev.preventDefault();var name=inp.value.trim();if(!name){inp.focus();return}ls('ch:name',name);
-   var d=read(list);if(d.qs.length<3){err.textContent='এই পরীক্ষা থেকে চ্যালেঞ্জ বানানো গেল না।';err.hidden=false;return}
-   var ok=d.qs.reduce(function(s,q,i){return s+(d.picks[i]===q.a?1:0)},0),sec=+(el.dataset.sec||0);
+   /* বিসিএস/চাকরির পরীক্ষার প্রশ্ন সাইটেই ফাইল হিসেবে আছে (পাতা LBX-এ জানায়): তখন শুধু ফাইলের নাম, প্রশ্নের ক্রম আর দাগ যায়, পুরো প্রশ্ন-ব্যাখ্যা নয় */
+   var x=window.LBX,sec=+(el.dataset.sec||0),body;
+   if(x&&x.file&&x.idx&&x.idx.length>=3)body={name:name,title:title(),src:location.pathname+location.hash,ref:x.file,idx:x.idx,picks:x.picks,sec:sec};
+   else{var d=read(list);if(d.qs.length<3){err.textContent='এই পরীক্ষা থেকে চ্যালেঞ্জ বানানো গেল না।';err.hidden=false;return}
+     body={name:name,title:title(),src:location.pathname+location.hash,qs:d.qs,picks:d.picks,sec:sec}}
    go.disabled=true;go.textContent='বানানো হচ্ছে…';err.hidden=true;
-   post({name:name,title:title(),src:location.pathname+location.hash,qs:d.qs,picks:d.picks,sec:sec}).then(function(j){
+   post(body).then(function(j){
      ls('ch:own:'+j.id,'1');f.hidden=true;
      el.querySelector('.chx-h small').textContent='লিংক তৈরি। পাঠিয়ে দিন, কে বেশি পায় দেখা যাবে।';
      share(el.querySelector('.chx-s'),j.id,name+' আপনাকে চ্যালেঞ্জ করেছে! '+title()+'-এর '+bn(j.n)+'টি প্রশ্নে সে পেয়েছে '+bn(j.ok)+'টি সঠিক। আপনি পারবেন?')
