@@ -386,10 +386,11 @@ async function chSetup(db) {
   if (CH_READY) return;
   await db.batch(CH_SCHEMA.map(s => db.prepare(s)));
   try { await db.prepare('ALTER TABLE ch_try ADD COLUMN ip TEXT').run(); } catch (e) { /* আগেই আছে */ }
+  for (const col of ['ref', 'idx']) try { await db.prepare('ALTER TABLE ch ADD COLUMN ' + col + ' TEXT').run(); } catch (e) { /* আগেই আছে */ }
   CH_READY = true;
 }
 // এক আইপি থেকে ঘণ্টায় ৩০টা চ্যালেঞ্জ; একটা চ্যালেঞ্জে এক আইপির ৩টা আর মোট ১০০০টা চেষ্টা বোর্ডে ওঠে
-const CH_MAX_Q = 200, CH_MAX_BYTES = 300000, CH_PER_HOUR = 30, CH_IP_TRIES = 3, CH_MAX_TRIES = 1000;
+const CH_MAX_Q = 200, CH_MAX_BYTES = 600000, CH_PER_HOUR = 30, CH_IP_TRIES = 3, CH_MAX_TRIES = 1000;
 // সব আইপি মিলিয়ে দিনে এতগুলোর বেশি চ্যালেঞ্জ জমা হয় না, যাতে আইপি বদলে বদলে কেউ D1-এর দৈনিক লেখার কোটা শেষ করতে না পারে
 const CH_PER_DAY_ALL = 3000;
 // প্রশ্নে শুধু এই ট্যাগগুলো থাকে, কোনো অ্যাট্রিবিউট ছাড়া; ছবি শুধু এই সাইটের (/…) src দিয়ে। পাতাও আবার ছেঁকে নেয়
@@ -410,6 +411,26 @@ const chIph = async req => (await sha((req.headers.get('CF-Connecting-IP') || ''
 const chPicks = (p, qs) => qs.map((q, i) => { const v = Array.isArray(p) ? p[i] : -1; return Number.isInteger(v) && v >= 0 && v < q.o.length ? v : -1; });
 const chScore = (p, qs) => qs.reduce((s, q, i) => s + (p[i] === q.a ? 1 : 0), 0);
 const chSrc = s => /^\/(?!\/)[\w\-./#?=&%]*$/.test(s) ? s : '';
+// সাইটের নিজের প্রশ্নফাইল (বিসিএস/চাকরি): চ্যালেঞ্জে পুরো প্রশ্ন না রেখে ফাইলের নাম আর প্রশ্নের ক্রম রাখা হয়, প্রশ্ন-ব্যাখ্যা ফাইল থেকেই আসে
+const chRef = s => typeof s === 'string' && /^\/(bcs|jobs)\/data\/[a-z]\/[\w-]+\.json$/.test(s) ? s : '';
+async function chFile(env, req, ref) {
+  if (!env.ASSETS) return null;
+  const r = await env.ASSETS.fetch(new Request(new URL(ref, req.url).href));
+  if (!r.ok) return null;
+  const list = await r.json().catch(() => null);
+  return Array.isArray(list) ? list : null;
+}
+// চ্যালেঞ্জের প্রশ্ন: ফাইল-রেফারেন্স থাকলে ফাইল থেকে, নইলে জমা রাখা qs থেকে
+async function chQs(c, env, req) {
+  if (c.ref && c.idx) {
+    const list = await chFile(env, req, c.ref);
+    if (!list) throw new Error('ref');
+    const cl = chClean(JSON.parse(c.idx).map(i => list[i]), null);
+    if (!cl) throw new Error('ref');
+    return cl.qs;
+  }
+  return JSON.parse(c.qs);
+}
 
 // বাদ পড়া প্রশ্নের দাগও বাদ যায়, তাই দাগ আর প্রশ্ন এক ক্রমে থাকে
 function chClean(list, picks) {
@@ -436,7 +457,7 @@ async function chRank(db, c, me) {
   return (ahead && ahead.n || 0) + 1 + (c.ok > me.ok || (c.ok === me.ok && c.sec < me.sec) ? 1 : 0);
 }
 
-async function challenge(path, req, db) {
+async function challenge(path, req, db, env) {
   const m = req.method, parts = path.split('/');
   if (parts.length === 1 && m === 'POST') {
     const raw = await req.text();
@@ -449,14 +470,23 @@ async function challenge(path, req, db) {
     if (recent && recent.n >= CH_PER_HOUR) return json({error: 'slow'}, 429);
     const today = await db.prepare('SELECT COUNT(*) AS n FROM ch WHERE ts > ?').bind(now - 86400e3).first();
     if (today && today.n >= CH_PER_DAY_ALL) return json({error: 'slow'}, 429);
-    let qs, picks, ok, sec, title = str(body.title, 120) || '', src = str(body.src, 200) || '', parent = null;
+    let qs, picks, ok, sec, title = str(body.title, 120) || '', src = str(body.src, 200) || '', parent = null, ref = '', idx = null;
     if (typeof body.from === 'string') {
       // পাল্টা চ্যালেঞ্জ: একই প্রশ্ন, আর নম্বর সেটাই যা এই ফোন ওই চ্যালেঞ্জে আসলে পেয়েছে
-      const p = await db.prepare('SELECT id, title, src, qs FROM ch WHERE id = ?').bind(body.from.slice(0, 12)).first();
+      const p = await db.prepare('SELECT id, title, src, qs, ref, idx FROM ch WHERE id = ?').bind(body.from.slice(0, 12)).first();
       if (!p) return json({error: 'not found'}, 404);
       const t = await db.prepare('SELECT ok, sec, picks FROM ch_try WHERE cid = ? AND iph = ?').bind(p.id, await chIph(req)).first();
       if (!t) return json({error: 'first'}, 403);
-      qs = JSON.parse(p.qs); picks = JSON.parse(t.picks); ok = t.ok; sec = t.sec; title = p.title; src = p.src; parent = p.id;
+      qs = await chQs(p, env, req); picks = JSON.parse(t.picks); ok = t.ok; sec = t.sec; title = p.title; src = p.src; parent = p.id; ref = p.ref || ''; idx = p.idx || null;
+    } else if (body.ref) {
+      ref = chRef(body.ref);
+      const list = ref && await chFile(env, req, ref);
+      if (!list) return json({error: 'bad'}, 400);
+      const seen = new Set(), ids = (Array.isArray(body.idx) ? body.idx : []).filter(i => Number.isInteger(i) && i >= 0 && i < list.length && !seen.has(i) && seen.add(i)).slice(0, CH_MAX_Q);
+      const cl = chClean(ids.map(i => list[i]), body.picks);
+      if (!cl || cl.qs.length !== ids.length) return json({error: 'bad'}, 400);
+      qs = cl.qs; picks = chPicks(cl.picks, qs); ok = chScore(picks, qs); idx = JSON.stringify(ids);
+      sec = Math.max(0, Math.min(chMins(qs.length) * 60, Math.round(num(body.sec) || 0)));
     } else {
       const cl = chClean(body.qs, body.picks);
       if (!cl) return json({error: 'bad'}, 400);
@@ -466,8 +496,8 @@ async function challenge(path, req, db) {
     title = title.replace(/[<>]/g, '').trim(); src = chSrc(src);
     for (let i = 0; i < 3; i++) {
       const id = chId();
-      const r = await db.prepare('INSERT OR IGNORE INTO ch(id, ts, name, title, src, n, mins, ok, sec, picks, qs, iph, parent) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)')
-        .bind(id, now, chName(body.name), title, src, qs.length, chMins(qs.length), ok, sec, JSON.stringify(picks), JSON.stringify(qs), ip, parent).run();
+      const r = await db.prepare('INSERT OR IGNORE INTO ch(id, ts, name, title, src, n, mins, ok, sec, picks, qs, iph, parent, ref, idx) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
+        .bind(id, now, chName(body.name), title, src, qs.length, chMins(qs.length), ok, sec, JSON.stringify(picks), ref ? '' : JSON.stringify(qs), ip, parent, ref || null, ref ? idx : null).run();
       if (r.meta && r.meta.changes) return json({id, ok, n: qs.length});
     }
     return json({error: 'server'}, 500);
@@ -478,7 +508,7 @@ async function challenge(path, req, db) {
   try { c = await db.prepare('SELECT * FROM ch WHERE id = ?').bind(id).first(); } catch (e) { c = null; }
   if (!c) return json({error: 'not found'}, 404);
   await chSetup(db);
-  const qs = JSON.parse(c.qs), head = {id, name: c.name, title: c.title, src: chSrc(c.src || ''), n: c.n, mins: c.mins, ok: c.ok, sec: c.sec, ts: c.ts};
+  const qs = await chQs(c, env, req), head = {id, name: c.name, title: c.title, src: chSrc(c.src || ''), n: c.n, mins: c.mins, ok: c.ok, sec: c.sec, ts: c.ts};
   const iph = await chIph(req), now = Date.now();
   if (parts.length === 2 && m === 'GET') {
     const t = await db.prepare('SELECT ok, sec FROM ch_try WHERE cid = ? AND iph = ?').bind(id, iph).first();
@@ -515,9 +545,9 @@ async function challenge(path, req, db) {
 export async function onRequest({request: req, env}) {
   const url = new URL(req.url), path = url.pathname.replace(/^\/api\/?/, '').replace(/\/+$/, ''), m = req.method;
   if (m === 'POST') {
-    // ব্রাউজার সব POST-এ Origin পাঠায়; না থাকলে বা অন্য সাইটের হলে নেওয়া হয় না (CSRF)
+    // অন্য সাইট থেকে আসা POST নেওয়া হয় না (CSRF); Origin না থাকলে আটকানো হয় না, কিছু ব্রাউজার একই সাইটের অনুরোধে পাঠায় না
     const o = req.headers.get('Origin');
-    if (!o || o !== url.origin) return json({error: 'origin'}, 403);
+    if (o && o !== url.origin) return json({error: 'origin'}, 403);
   }
   const db = env.DB;
   try {
@@ -528,7 +558,7 @@ export async function onRequest({request: req, env}) {
     }
     if (!db) return json({error: 'setup'}, 503);
     if (path === 'login' && m === 'POST') return await login(req, env, db);
-    if (path === 'ch' || path.startsWith('ch/')) return await challenge(path, req, db);
+    if (path === 'ch' || path.startsWith('ch/')) return await challenge(path, req, db, env);
 
     const u = await sessionUser(req, db).catch(() => null);
     if (path === 'logout' && m === 'POST') {

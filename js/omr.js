@@ -37,7 +37,7 @@ function tick(){var hs=heads();hs.forEach(wire);hs.forEach(function(h){var j=h._
  if(pill){if(pill.hidden!==!show)pill.hidden=!show;pill.onclick=function(){var t=heads().filter(function(x){return x.offsetParent})[0];if(t)go(t)}}
  if(h&&!document.body.hasAttribute('data-noch'))ch()}
 /* বন্ধুকে চ্যালেঞ্জ: ফল দেখা গেলে তবেই js/challenge.js আসে */
-var chs=0;function ch(){if(window.LBC)return LBC.scan();if(chs)return;chs=document.createElement('script');chs.src='/js/challenge.js?v=2';chs.defer=true;document.head.appendChild(chs)}
+var chs=0;function ch(){if(window.LBC)return LBC.scan();if(chs)return;chs=document.createElement('script');chs.src='/js/challenge.js?v=3';chs.defer=true;document.head.appendChild(chs)}
 var q=0;function later(){if(!q){q=1;requestAnimationFrame(function(){q=0;tick()})}}
 addEventListener('scroll',later,{passive:true});addEventListener('resize',later);
 if('MutationObserver' in window)new MutationObserver(later).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});
