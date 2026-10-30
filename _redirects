@@ -1,2 +1,3 @@
 /preorder /book/?preorder 302
-/c/*  /challenge/index.html  200
+# /c/<id> চ্যালেঞ্জ লিংক। লক্ষ্য /challenge/ (ডিরেক্টরি) হতে হবে; /challenge/index.html দিলে Pages নিয়মটা "infinite loop" বলে বাদ দেয় আর লিংক 404 হয়
+/c/*  /challenge/  200
