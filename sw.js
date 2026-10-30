@@ -2,7 +2,7 @@
    পাতা (HTML) আর প্রশ্নের JSON: আগে নেটওয়ার্ক, না পেলে ক্যাশ, তাই অনলাইনে সবসময় নতুন প্রশ্ন আসে।
    ফন্ট, ছবি: ক্যাশ থেকে সাথে সাথে, পেছনে নতুন কপি এনে রাখে। js/css: আগে নেটওয়ার্ক, না পেলে ক্যাশ (নতুন পাতার সাথে পুরোনো স্ক্রিপ্ট যেন না মেলে)। অন্য ডোমেইনের কিছু (যেমন analytics) ছোঁয়া হয় না।
    কিছু বদলালে VERSION বাড়ান, পুরোনো ক্যাশ মুছে যাবে। */
-const VERSION='v10';
+const VERSION='v11';
 const CORE = 'core-' + VERSION, PAGES = 'pages-' + VERSION, DATA = 'data-' + VERSION;
 const PRECACHE = ['/', '/exams/', '/science/', '/fonts/fonts.css',
   '/fonts/AnekBangla-bengali.woff2', '/fonts/AnekBangla-latin.woff2', '/fonts/LyannaWordmark.woff2',
