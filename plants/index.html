@@ -33,6 +33,7 @@ button{font:inherit;cursor:pointer}
 .btn{display:inline-block;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:10px 18px;font-weight:600}
 .btn.ghost{background:none;color:var(--ink);border-color:var(--rule);font-weight:500}
 .btns{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
+.rule{font-size:14px;margin-top:8px}
 .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin:4px 0 0}
 .fact{border:1px solid var(--rule);border-radius:10px;padding:12px 8px 10px;text-align:center;background:var(--card)}
 .fact b{display:block;font-family:var(--display);font-weight:400;font-size:26px;line-height:1.15;color:var(--accent);font-variant-numeric:tabular-nums}
@@ -122,9 +123,10 @@ footer{margin-top:24px;font-size:14px;color:var(--muted)}
   <div class="facts">
     <div class="fact"><b id="nq">২৫</b><span>প্রশ্ন</span></div>
     <div class="fact"><b id="nm">১৫</b><span>মিনিট</span></div>
-    <div class="fact"><b aria-hidden="true">−</b><span>নেগেটিভ মার্কিং</span></div>
+    <div class="fact"><b>−০.৫</b><span>প্রতি ভুলে</span></div>
     <div class="fact"><b id="pool"></b><span>প্রশ্নের ভান্ডার</span></div>
   </div>
+  <p class="sub rule">প্রতি ভুলে ০.৫ নম্বর কাটা যায়, ছেড়ে দিলে কাটা নেই। জমা দেওয়ার আগে পর্যন্ত উত্তর বদলানো যায়।</p>
   <div class="btns">
     <button class="btn" id="go" type="button">পরীক্ষা শুরু করুন</button>
     <button class="btn ghost" id="practice" type="button">সব প্রশ্ন অনুশীলন</button>
@@ -160,7 +162,7 @@ const K=['ক','খ','গ','ঘ','ঙ'];
 const $=id=>document.getElementById(id);
 const show=id=>['start','exam','result','prac'].forEach(s=>$(s).hidden=s!==id);
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
-const fmtScore=x=>bn(Number.isInteger(x)?x:x.toFixed(1));
+const fmtScore=x=>bn(Number.isInteger(x)?x:x.toFixed(1)).replace(/^-/,'−');
 const srcLine=q=>`<span class="src">${q.t==='b'?q.s:q.t==='x'?q.s:'সম্ভাব্য প্রশ্ন'}</span>`;
 const ref=q=>`<span class="ref">${/^\d|^[০-৯]/.test(q.p)?'বইয়ের অনুচ্ছেদ '+q.p:'বইয়ের অংশ: '+q.p}</span>`;
 function store(get,val){try{if(get)return JSON.parse(localStorage.getItem('plants-scores')||'[]');localStorage.setItem('plants-scores',JSON.stringify(val))}catch(e){return []}}
@@ -187,7 +189,7 @@ function startExam(){
     const o=s.querySelector('.opts');
     q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';
       b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;
-      b.onclick=()=>{if(pick[i]>=0)return;pick[i]=j;b.classList.add('sel');[...o.children].forEach(x=>x.disabled=true);$('ans').textContent=bn(pick.filter(x=>x>=0).length)};
+      b.onclick=()=>{pick[i]=pick[i]===j?-1:j;[...o.children].forEach(x=>x.classList.toggle('sel',x===b&&pick[i]===j));$('ans').textContent=bn(pick.filter(x=>x>=0).length)};
       o.appendChild(b)});
     box.appendChild(s);
   });
@@ -199,16 +201,16 @@ function tick(){
   const left=Math.max(0,endAt-Date.now()),s=Math.ceil(left/1000);
   $('clock').textContent=bn(String(Math.floor(s/60)).padStart(2,'0'))+':'+bn(String(s%60).padStart(2,'0'));
   $('clock').classList.toggle('low',s<=60);
-  if(left<=0)finish();
+  if(left<=0)finish(true);
 }
 function askSubmit(btn){
   const blank=pick.filter(x=>x<0).length;
   if(armed&&Date.now()-armed<4000){finish();return}
   armed=Date.now();
-  [$('submit'),$('submit2')].forEach(b=>b.textContent=blank?`${bn(blank)}টি বাকি, তবু জমা দিতে আবার চাপুন`:'নিশ্চিত হলে আবার চাপুন');
+  [$('submit'),$('submit2')].forEach(b=>b.textContent=blank?`${bn(blank)}টি বাকি · তবু জমা? আবার চাপুন`:'নিশ্চিত হলে আবার চাপুন');
   setTimeout(()=>{if(Date.now()-armed>=4000)[$('submit'),$('submit2')].forEach(b=>b.textContent='জমা দিন')},4100);
 }
-function finish(){
+function finish(timeUp){
   clearInterval(timer);armed=0;[$('submit'),$('submit2')].forEach(b=>b.textContent='জমা দিন');
   let ok=0,bad=0;paper.forEach((q,i)=>{if(pick[i]<0)return;pick[i]===q.a?ok++:bad++});
   const blank=N-ok-bad, score=ok-bad*0.5, used=Math.min(MIN*60,Math.round((Date.now()-startAt)/1000));
@@ -217,7 +219,7 @@ function finish(){
   const msg=score>=20?'চমৎকার! অধ্যায়টি আপনার আয়ত্তে এসেছে।':score>=15?'ভালো হয়েছে। ভুল প্রশ্নগুলোর অংশ আবার পড়ে নিন।':'অধ্যায়টি আরেকবার পড়ে কয়েক দিন পর আবার পরীক্ষা দিন।';
   $('scorebox').innerHTML=`<div class="big">${fmtScore(score)} / ${bn(N)}</div>
    <div class="stats"><span class="ok">সঠিক ${bn(ok)}</span><span class="no">ভুল ${bn(bad)}</span><span class="skip">উত্তর দেননি ${bn(blank)}</span><span>সময় ${bn(Math.floor(used/60))} মিনিট ${bn(used%60)} সেকেন্ড</span></div>
-   <p class="msg">${msg}</p><p class="msg">বই হাতে থাকলে শেষ পাতার ছকে লিখে রাখুন: তারিখ ${ds}, নম্বর ${fmtScore(score)}।</p>`;
+   ${timeUp===true?'<p class="msg time-up">সময় শেষ হয়ে গিয়েছিল, তাই নিজে থেকে জমা হয়েছে।</p>':''}<p class="msg">${msg}</p><p class="msg">বই হাতে থাকলে শেষ পাতার ছকে লিখে রাখুন: তারিখ ${ds}, নম্বর ${fmtScore(score)}।</p>`;
   const box=$('rlist');box.innerHTML='';
   paper.forEach((q,i)=>{
     const s=document.createElement('section');s.className='q';const p=pick[i];

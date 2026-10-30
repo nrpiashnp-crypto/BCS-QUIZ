@@ -228,8 +228,8 @@ var code=function(){var c=$('pc').value.trim().toUpperCase().replace(/\s+/g,'');
 function price(){var c=code(),raw=$('pc').value.trim();P=c?P0-OFF:P0;$('pstep').textContent='৳'+bn(P);
   $('pcm').hidden=!raw;$('pcm').textContent=c?'কোড '+c+' চালু: প্রতি কপি ৳'+bn(P)+' (৳'+bn(OFF)+' ছাড়)':'এই কোডটি মিলছে না, দাম ৳'+bn(P0)+' ধরা হবে';
   var n=qty();$('ptot').textContent=n?'মোট পাঠাবেন: ৳'+bn(n*P)+' (ডেলিভারি ফ্রি)':'কত কপি, সংখ্যায় লিখুন'}
-(function(){var q=new URLSearchParams(location.search).get('code')||'';try{if(q)localStorage.setItem('lb:code',q);else q=localStorage.getItem('lb:code')||''}catch(e){}
-  if(q)$('pc').value=q.toUpperCase().replace(/[^A-Z-]/g,'').slice(0,20);price()})();
+(function(){var q=new URLSearchParams(location.search).get('code')||'';try{if(!q)q=localStorage.getItem('lb:code')||''}catch(e){}
+  if(q)$('pc').value=q.toUpperCase().replace(/[^A-Z-]/g,'').slice(0,20);price();try{if(code())localStorage.setItem('lb:code',code());else localStorage.removeItem('lb:code')}catch(e){}})();
 $('pq').addEventListener('input',price);$('pc').addEventListener('input',price);
 function oid(){var d=new Date(),p=function(n){return ('0'+n).slice(-2)};
   return 'LB-'+String(d.getFullYear()).slice(2)+p(d.getMonth()+1)+p(d.getDate())+'-'+Math.random().toString(36).slice(2,6).toUpperCase()}
@@ -241,7 +241,7 @@ $('pof').addEventListener('submit',function(e){e.preventDefault();
   if(miss.length){$('perr').hidden=false;$('perr').textContent='দয়া করে ঠিক করুন: '+miss.join(', ');return}
   $('perr').hidden=true;
   var o={id:oid(),name:n,phone:p,phone2:p2,division:txt($('pdv')),district:txt($('pds')),upazila:$('pup').value,address:a,zone:zoneOf(),qty:q,total:q*P,bkash:b,txid:t,hp:$('hp').value,page:location.href,src:SRC,code:code()};
-  var m='প্রি-অর্ডার: লিয়ানা বিসিএস বিজ্ঞান\nঅর্ডার নম্বর: '+o.id+'\nনাম: '+n+'\nমোবাইল: '+p+(p2?' / '+p2:'')+'\nঠিকানা: '+a+', '+o.upazila+', '+o.district+' ('+o.division+')\nকপি: '+bn(q)+' (মোট ৳'+bn(q*P)+', ডেলিভারি ফ্রি)\nবিকাশ নম্বর: '+b+'\nট্রানজেকশন আইডি: '+t+(code()?'\nছাড়ের কোড: '+code()+' (প্রতি কপি ৳'+bn(OFF)+' ছাড়)':'')+(SRC?'\nউৎস: '+SRC:'');
+  var m='প্রি-অর্ডার: লিয়ানা বিসিএস বিজ্ঞান\nঅর্ডার নম্বর: '+o.id+'\nনাম: '+n+'\nমোবাইল: '+p+(p2?' / '+p2:'')+'\nঠিকানা: '+a+', '+o.upazila+', '+o.district+' ('+o.division+')\nকপি: '+bn(q)+' (মোট ৳'+bn(q*P)+', ডেলিভারি ফ্রি)\nবিকাশ নম্বর: '+b+'\nট্রানজেকশন আইডি: '+t+(code()?'\nছাড়ের কোড: '+code()+' (প্রতি কপি ৳'+bn(OFF)+' ছাড়)':'')+'';
   var show=function(){$('pof').hidden=true;$('poid').textContent=o.id;$('pwa').href='https://wa.me/'+PH+'?text='+encodeURIComponent(m);$('pdone').hidden=false;$('pdone').scrollIntoView({behavior:'smooth',block:'center'})};
   $('psub').disabled=true;$('psub').textContent='জমা হচ্ছে…';
   if(!SHEET_URL){show();return}
