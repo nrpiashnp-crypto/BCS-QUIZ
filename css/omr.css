@@ -11,6 +11,8 @@ body{background:#f8f5ee!important;color:#1d1f21;position:relative;overflow-x:hid
 /* header: stacked লি logo, ক খ গ ঘ bubble nav */
 .sitebar,body>.bar{background:transparent!important;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
   padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));border-bottom:1.4px solid rgba(200,50,106,.45);box-shadow:none}
+body>.bar{padding:16px max(20px,env(safe-area-inset-right,0px)) 12px max(56px,calc(env(safe-area-inset-left,0px) + 40px))}body>.bar>a:first-child img{height:54px!important}body>.bar .lgn-n{font-size:13.5px;margin-top:3px}
+@media (max-width:420px){body>.bar{padding-left:max(46px,calc(env(safe-area-inset-left,0px) + 34px))}body>.bar>a:first-child img{height:46px!important}body>.bar .lgn-n{font-size:12px}}
 .sitebar>a:first-child,body>.bar>a:first-child{display:flex;flex-direction:column;align-items:center;text-decoration:none}
 .sitebar>a:first-child img,body>.bar>a:first-child img{width:auto!important;height:44px!important;display:block}
 .lgn-n{font:500 11.5px/1.2 'Lyanna Wordmark','Noto Sans Bengali',sans-serif;color:#2f6b3a;white-space:nowrap;margin-top:1px}
