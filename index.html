@@ -406,6 +406,21 @@ border-image:linear-gradient(135deg,#8b5a2b,#6a3d18 40%,#9a6a3a 60%,#5e3414) 1}
  .center .bA.big{padding:16px 18px 16px 14px;gap:14px}.center .bA.big .t{font-size:40px}.center .bA.big .bb{width:58px;height:58px}
  .hdr nav{gap:10px}.hdr nav a{font-size:15px;gap:5px}.hdr nav i{width:22px;height:22px}
 }
+/* প্রথম পর্দা (পিয়াসের বাছাই ক): প্রশ্নপত্রের মাথার মতো পরিচয়, তারপর পরীক্ষা দিন; বড় OMR সংখ্যা-ঘর নিচে */
+.qph{max-width:740px;margin:22px auto 0;background:#fffdf7;border:1.6px solid #13294b;padding:14px 22px 12px;text-align:center;position:relative}
+.qph::after{content:"";position:absolute;inset:4px;border:1px solid rgba(19,41,75,.25);pointer-events:none}
+.qph .k{margin:0;font:500 13px/1.4 'Noto Sans Bengali',sans-serif;letter-spacing:.06em;color:var(--ink2,#5d5a55)}
+.qph .h{margin:4px 0 8px;font:600 40px/1.25 var(--display);color:#13294b;text-wrap:balance}
+.qph .h em{font-style:normal;color:#c8326a}
+.qph .rw{display:flex;justify-content:center;flex-wrap:wrap;gap:4px 26px;margin:0;border-top:1.3px dashed #13294b;padding-top:8px;font:500 15px/1.5 'Noto Sans Bengali',sans-serif;color:#13294b}
+.qph .rw b{color:#c8326a;font-weight:600}
+.qph .ex{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:10px 0 0;position:relative;z-index:1}
+.qph .ex a{font:500 14px/1.6 'Noto Sans Bengali',sans-serif;color:#13294b;text-decoration:none;border:1.3px solid rgba(200,50,106,.5);border-radius:99px;padding:1px 12px;background:#fff}
+.qph .ex a:hover{border-color:#c8326a;color:#c8326a}
+.qph .ft{margin:8px 0 0;font:400 13px/1.4 'Noto Sans Bengali',sans-serif;color:var(--ink2,#5d5a55)}
+.qph+.center{margin-top:30px}
+.center+.top{justify-content:center;margin-top:30px}
+@media (max-width:700px){.qph{margin-top:16px;padding:12px 12px 10px}.qph .h{font-size:27px}.qph .rw{gap:2px 14px;font-size:13.5px}.qph .ex a{font-size:13px;padding:0 10px}.qph+.center{margin-top:18px}.center+.top{justify-content:flex-start}}
 .hdr .wmk{height:52px;width:auto}@media (max-width:700px){.hdr .wmk{height:44px}}
 
 /*----*/
@@ -547,9 +562,11 @@ h1,h2,h3,h4,.bA .t,.price,.bt,.adm b,.smp b,.hw,.hdr .nm{font-weight:600!importa
 <main>
 <h1 class="sr1">লিয়ানা বুকস: বিসিএস ও চাকরির পরীক্ষার ফ্রি প্রশ্নব্যাংক, মডেল টেস্ট আর বিজ্ঞানের বই</h1>
 
-<div class="top"><div class="ctr" title="সাইটে মোট প্রশ্ন, প্রতিদিন বাড়ছে"><div class="ctx"><p class="cap">মোট প্রশ্ন</p><p class="big"><b class="qc-n">৫৭,৭১৫</b></p><p class="d1">প্রতিদিন বাড়ছে</p><p class="d1">সব পরীক্ষা ফ্রি · লগইন লাগে না</p></div><div class="cA mini" aria-hidden="true"><div class="cols"></div></div></div></div>
+<section class="qph" aria-label="সাইটের পরিচয়"><p class="k">চাকরির পরীক্ষার প্রস্তুতি</p><p class="h">বিসিএস ও সরকারি চাকরির প্রস্তুতি, <em>পুরোপুরি ফ্রি</em></p><p class="rw"><span>পূর্ণমান: <b>ফ্রি</b></span><span>লগইন: <b>লাগবে না</b></span><span>প্রশ্ন: <b class="qc-c">৫৭,৭১৫</b></span></p><nav class="ex" aria-label="পরীক্ষা"><a href="bcs/">বিসিএস</a><a href="jobs/">ব্যাংক</a><a href="jobs/bar-council/">বার কাউন্সিল</a><a href="running/petrobangla/">পেট্রোবাংলা</a><a href="running/sub-registrar/">সাব-রেজিস্ট্রার</a><a href="science/">বিজ্ঞান</a></nav><p class="ft">প্রতিটি প্রশ্নের ব্যাখ্যাসহ উত্তর · সময় ধরে পরীক্ষা</p></section>
 
 <div class="center"><a class="bA big" href="exams/"><span class="no">ফ্রি</span><span class="bb gr2"></span><span class="t">পরীক্ষা দিন<small>এখানে দাগ দিন, শুরু হবে</small></span></a><a class="subj" href="subject/"><span class="lb">বিষয় ধরে পড়ুন →<small>টপিক ধরে অনুশীলন, তারপর টেস্ট</small></span><span class="ib" aria-hidden="true"><i class="on">বি</i><i>অ</i><i>সা</i><i>E</i><i>L</i><i>বা</i><i>আ</i><i>ভূ</i><i class="more">…</i></span></a></div>
+
+<div class="top"><div class="ctr" title="সাইটে মোট প্রশ্ন, প্রতিদিন বাড়ছে"><div class="ctx"><p class="cap">মোট প্রশ্ন</p><p class="big"><b class="qc-n">৫৭,৭১৫</b></p><p class="d1">প্রতিদিন বাড়ছে</p><p class="d1">সব পরীক্ষা ফ্রি · লগইন লাগে না</p></div><div class="cA mini" aria-hidden="true"><div class="cols"></div></div></div></div>
 
 <div class="row2">
 <section class="bookside one" id="book" aria-label="নতুন বই"><div class="bsC"><div class="bk"><span class="clip"></span><a href="book/?preorder"><picture><source srcset="img/cover.webp" type="image/webp"><img class="cover" src="img/cover.jpg" width="520" height="735" alt="লিয়ানা বিসিএস বিজ্ঞান বইয়ের প্রচ্ছদ" fetchpriority="high"></picture></a><div class="tag"><span class="eye"></span><h4>বইয়ে কী আছে</h4><ul><li>বিগত প্রশ্ন ঘেঁটে দেখানো হয়েছে কোন টপিক বেশি, কোনটা কম গুরুত্বপূর্ণ</li><li>পরীক্ষার আগে অল্প সময়ে পুরো অধ্যায় রিভিশন</li><li>প্রতি অধ্যায় শেষে QR স্ক্যান করে টাইমারসহ পরীক্ষা</li></ul></div></div><div class="info"><div><p class="handred r">নতুন বই, প্রি-অর্ডার চলছে</p><h3 style="margin-top:4px"><a class="bt" href="book/">লিয়ানা বিসিএস বিজ্ঞান</a></h3><p class="lbl">মোঃ নাইমুর রহমান · ৪১তম বিসিএস</p><p class="price">৳৩৫০<s>৳৫০০</s></p><p><a class="hl" href="book/?preorder">প্রি-অর্ডার করুন</a></p></div><a class="smp" href="sample/sound/"><span class="fst">ফ্রি</span><span class="cap">নমুনা প্রশ্নপত্রের মতো</span><b>শব্দ অধ্যায়, পুরোটা ফ্রি পড়ুন</b><span>→</span></a></div></div></section>
@@ -575,6 +592,7 @@ h1,h2,h3,h4,.bA .t,.price,.bt,.adm b,.smp b,.hw,.hdr .nm{font-weight:600!importa
 <a class="fab" id="fab" href="exams/" hidden>ফ্রি পরীক্ষা দিন →</a>
 <script>
 // The question count as OMR roll-number columns: one column per digit, its bubble filled; rolls up from a lower number.
+(function(){var n=document.querySelector('.qc-n'),c=document.querySelector('.qc-c');if(n&&c)c.textContent=n.textContent.trim();})();
 (function(){var n=document.querySelector('.qc-n'),box=document.querySelector('.cA.mini .cols');if(!n||!box)return;
 var B='০১২৩৪৫৬৭৮৯',to=+n.textContent.replace(/[^০-৯0-9]/g,'').replace(/[০-৯]/g,function(d){return B.indexOf(d)});if(!to)return;
 var len=String(to).length,cols=[];
