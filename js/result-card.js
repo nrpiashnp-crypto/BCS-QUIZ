@@ -32,8 +32,6 @@
     '.rc-cta .go:hover{background:#ecc677}.rc-cta .s{color:#fff;border-bottom:1px solid rgba(255,255,255,.5)}'+
     '.rc-note{margin-top:8px!important;font-size:12.5px!important;color:#b8c3d4!important}'+
     ':root{--rc-soft:#f6efe0;--rc-gold:#e0b45c;--rc-gold-ink:#13294b;--rc-navy-ink:#13294b;--rc-rule:#d9cdb3}'+
-    '@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--rc-soft:#262318;--rc-navy-ink:#e9d6a8;--rc-rule:#4a4330}}'+
-    ':root[data-theme="dark"]{--rc-soft:#262318;--rc-navy-ink:#e9d6a8;--rc-rule:#4a4330}'+
     '@media (max-width:380px){.rc-book img{width:62px}}';
   document.head.appendChild(st);
 
