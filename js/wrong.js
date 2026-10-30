@@ -1,16 +1,19 @@
 /* ভুল প্রশ্ন: অধ্যায়-পরীক্ষায় ভুল বা বাদ দেওয়া প্রশ্ন এই ফোনে মনে রাখে, পরে আলাদা করে অনুশীলন করা যায়।
    অধ্যায় পাতা তিন জায়গায় ডাকে: finish() → LW.exam, অনুশীলনে উত্তর → LW.mark, renderPrac-এর ফিল্টার → LW.has (filt==='w')।
-   পাতার Q, filt, renderPrac, show ব্যবহার করে। স্টোরেজ: localStorage 'lw:/<অধ্যায়>/' = প্রশ্নের লেখার তালিকা। */
+   পাতার Q, filt, renderPrac, show ব্যবহার করে। স্টোরেজ: localStorage 'lw:/<অধ্যায়>/' = প্রশ্নের স্থায়ী id-র তালিকা
+   (আর্কাইভের q…; প্রশ্নের লেখা বদলালেও থাকে)। আগের সংস্করণ প্রশ্নের লেখা রাখত, সেগুলোও চেনা হয় আর ধরা পড়লে id-তে বদলায়। */
 (function(){
   const KEY='lw:'+location.pathname.replace(/index\.html$/,'');
   const bn=n=>String(n).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
   const $=id=>document.getElementById(id);
-  const id=q=>q.q;
+  const id=q=>q.id||q.q;
+  const inSet=q=>{const s=load();if(s.has(id(q)))return true;if(q.id&&s.has(q.q)){s.delete(q.q);s.add(q.id);save();return true}return false};
+  const drop=q=>{set.delete(id(q));set.delete(q.q)};
   let set=null;
   function load(){if(set)return set;try{set=new Set(JSON.parse(localStorage.getItem(KEY)||'[]'))}catch(e){set=new Set()}return set}
   function save(){try{localStorage.setItem(KEY,JSON.stringify([...set].slice(-600)))}catch(e){}}
   // শুধু যে প্রশ্নগুলো এখনো ভান্ডারে আছে সেগুলো গোনা হয়; job-science-এ শুধু বাছাই করা অধ্যায়ের (pool())
-  function count(){const s=load(),L=typeof pool==='function'?pool():typeof Q==='undefined'?null:Q;return L?L.filter(q=>s.has(id(q))).length:s.size}
+  function count(){const s=load(),L=typeof pool==='function'?pool():typeof Q==='undefined'?null:Q;return L?L.filter(inSet).length:s.size}
 
   function openWrong(){
     filt='w';
@@ -30,10 +33,10 @@
   }
 
   window.LW={
-    has:q=>load().has(id(q)),
+    has:inSet,
     count,
-    exam(paper,pick){load();paper.forEach((q,i)=>{pick[i]===q.a?set.delete(id(q)):set.add(id(q))});save();ui()},
-    mark(q,good){load();good?set.delete(id(q)):set.add(id(q));save();ui()}
+    exam(paper,pick){load();paper.forEach((q,i)=>{if(pick[i]===q.a)drop(q);else{drop(q);set.add(id(q))}});save();ui()},
+    mark(q,good){load();drop(q);if(!good)set.add(id(q));save();ui()}
   };
   // শুরুর পাতা যখনই দেখা যায় (ফিরে আসা, job-science-এ অধ্যায় বাছাই) সংখ্যা নতুন করে দেখানো হয়
   function init(){ui();const st=$('start');if(st)new MutationObserver(()=>{if(!st.hidden)ui()}).observe(st,{attributes:true,attributeFilter:['hidden']})}
