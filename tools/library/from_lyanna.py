@@ -6,7 +6,7 @@ the same question ids (q + 10 hex) and topic ids (sci-light-refraction …) as e
     python3 tools/library/from_lyanna.py --data ../lyanna_data --out /tmp/lib --written bd_affairs_topics_clean.json
     python3 tools/library/from_lyanna.py --data ../lyanna_data --out /tmp/lib --units ../lyanna_data/dist/units.jsonl
 
-  library-mcq.json.gz  {taxonomy:[…], mcq:[…]} → /admin/library/ "এমসিকিউ ব্যাংক তোলা"
+  library-mcq.json.gz  {taxonomy:[…], mcq:[…]} → /admin/library/ "এমসিকিউ ব্যাংক ও টপিক তালিকা খোলা" (ব্রাউজারেই থাকে, D1-এ নয়)
   <written>.tagged.json  the written parts with topic_ids added → "নতুন অংশ তোলা"
   library-units.json   Lyanna_data written units as library parts → "নতুন অংশ তোলা". Read from dist/units.jsonl
                        of `tools/build_export.py` (default/all view: admin only, so source title/author stay;

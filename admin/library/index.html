@@ -98,8 +98,8 @@ details.card summary{cursor:pointer;font-weight:600}
     <button class="btn" id="go" hidden>তুলুন</button>
   </details>
   <details class="card" id="msync" style="margin-top:10px">
-    <summary>এমসিকিউ ব্যাংক ও টপিক তালিকা তোলা</summary>
-    <p class="sub" style="margin-top:8px">Lyanna_data থেকে বানানো <code>library-mcq.json.gz</code> ফাইলটা দিন (কম্পিউটার থেকে তোলা ভালো, ফাইলটা বড়)। প্রশ্ন আর টপিকের আইডি Lyanna_data-র মতোই থাকে; আগে থেকে থাকা প্রশ্নের শুধু বদলানোগুলো যায়। <span id="mstat"></span></p>
+    <summary>এমসিকিউ ব্যাংক ও টপিক তালিকা খোলা</summary>
+    <p class="sub" style="margin-top:8px">Lyanna_data থেকে বানানো <code>library-mcq.json.gz</code> ফাইলটা দিন (কম্পিউটার থেকে দেওয়া ভালো, ফাইলটা বড়)। ফাইলটা সার্ভারে যায় না: এই ব্রাউজারেই রাখা থাকে আর এখানেই খোঁজা হয়, তাই D1-এ কিছু লেখা হয় না। নতুন এক্সপোর্ট বানালে আবার দিন। <span id="mstat"></span></p>
     <input type="file" id="mfile" accept=".gz,.json,application/gzip,application/json">
     <p id="syncMsg" class="msg"></p>
     <div class="prog" hidden id="sprog"><i id="sbar"></i></div>
@@ -121,6 +121,10 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 const BN='০১২৩৪৫৬৭৮৯',bn=n=>String(n).replace(/\d/g,d=>BN[d]);
 const KIND={section:'লেখা',question:'প্রশ্নোত্তর',past_questions:'বিগত প্রশ্ন'};
 const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+// এমসিকিউ ব্যাংক ব্রাউজারে: ফাইলটা IndexedDB-তে থাকে, পাতা খুললে সেখান থেকে খোলে
+let BANK=null;
+const idb=(mode,fn)=>new Promise((res,rej)=>{const r=indexedDB.open('lyanna-lib',1);r.onupgradeneeded=()=>r.result.createObjectStore('f');r.onerror=()=>rej(r.error);
+  r.onsuccess=()=>{const t=r.result.transaction('f',mode),q=fn(t.objectStore('f'));t.oncomplete=()=>{r.result.close();res(q&&q.result)};t.onerror=()=>rej(t.error)}});
 let sel=store.get('lib:sel',[]),msel=store.get('lib:msel',[]),moff=0,state={q:'',subject:'',kind:'',tag:'',topic:'',offset:0},TAX={},last=null;
 
 async function api(path,body){
@@ -133,7 +137,10 @@ async function api(path,body){
 // ---- প্রবেশ ----
 async function start(){
   try{const s=await api('lib/stats');$('gate').hidden=true;$('app').hidden=false;showStats(s);readHash();search()}
-  catch(e){gate(e.status)}
+  catch(e){gate(e.status);return}
+  try{const f=await idb('readonly',st=>st.get('mcq'));if(f){$('mstat').textContent='এমসিকিউ ব্যাংক খোলা হচ্ছে…';await loadBank(f.file,f.at);if(state.q||state.tag||state.topic){moff=0;mcq()}}}
+  catch(e){BANK=null}
+  showBank();
 }
 async function gate(st){
   const g=$('gate');g.hidden=false;$('app').hidden=true;
@@ -157,15 +164,47 @@ function showStats(s){
   $('stats').innerHTML='<span>মোট <b>'+bn(total)+'</b>টি অংশ</span>'+s.subjects.map(x=>'<span>'+esc(x.subject||'—')+': <b>'+bn(x.n)+'</b></span>').join('')+
     '<span>'+s.sources.map(x=>esc(x.title||x.id)).join(' · ')+'</span>';
   const sub=$('subject');sub.length=1;s.subjects.forEach(x=>sub.add(new Option(x.subject,x.subject)));
-  // টপিক তালিকা গাছের মতো: বিষয়, তার নিচে অধ্যায়, তার নিচে উপ-টপিক
-  TAX={};(s.taxonomy||[]).forEach(t=>TAX[t.id]=t);
-  const kids={};(s.taxonomy||[]).forEach(t=>{(kids[t.parent||'']=kids[t.parent||'']||[]).push(t)});
-  const tp=$('topic'),cur=state.topic;tp.length=1;
-  const walk=(id,d)=>(kids[id]||[]).forEach(t=>{tp.add(new Option('\u00a0\u00a0'.repeat(d)+t.bn,t.id));walk(t.id,d+1)});walk('',0);
-  tp.value=cur;tp.hidden=!(s.taxonomy||[]).length;
+  showBank();
   $('tags').innerHTML=s.tags.slice(0,16).map(t=>'<button type="button" class="chip" data-tag="'+esc(t.tag)+'">'+esc(t.tag)+' '+bn(t.n)+'</button>').join('');
   if(!total)$('count').textContent='লাইব্রেরি এখনো খালি। নিচে থেকে ফাইল তুলুন।';
-  const m=s.mcq||{};$('mstat').textContent='এখন আছে '+bn(m.n||0)+'টি প্রশ্ন'+(m.synced?', শেষ হালনাগাদ '+new Date(+m.synced).toLocaleDateString('bn-BD'):'')+'।';
+}
+// টপিক তালিকা (এমসিকিউ ফাইল থেকে) গাছের মতো: বিষয়, তার নিচে অধ্যায়, তার নিচে উপ-টপিক
+function showBank(){
+  const tax=BANK?BANK.taxonomy:[];
+  TAX={};tax.forEach(t=>TAX[t.id]=t);
+  const kids={};tax.forEach(t=>{(kids[t.parent||'']=kids[t.parent||'']||[]).push(t)});
+  const tp=$('topic'),cur=state.topic;tp.length=1;
+  const walk=(id,d)=>(kids[id]||[]).forEach(t=>{tp.add(new Option('\u00a0\u00a0'.repeat(d)+t.bn,t.id));walk(t.id,d+1)});walk('',0);
+  tp.value=cur;tp.hidden=!tax.length;
+  $('mstat').textContent=BANK?'এই ব্রাউজারে আছে '+bn(BANK.mcq.length)+'টি প্রশ্ন, ফাইল দেওয়া হয়েছে '+new Date(BANK.at).toLocaleDateString('bn-BD')+'।':'এই ব্রাউজারে এখনো ফাইল দেওয়া হয়নি, তাই এমসিকিউ খোঁজা যাবে না।';
+}
+async function loadBank(f,at){
+  const d=JSON.parse(await readFile(f));
+  if(!d||!Array.isArray(d.mcq)||!Array.isArray(d.taxonomy))throw new Error('এটা library-mcq ফাইল নয়');
+  const mcq=d.mcq.filter(r=>r&&r.id&&r.q&&Array.isArray(r.o));
+  if(mcq.length<d.mcq.length*0.9)throw new Error('ফাইলে অনেক প্রশ্ন ভাঙা');
+  const by=new Map();
+  mcq.forEach(r=>{r.src=Array.isArray(r.src)?r.src:[];r.topic_ids=r.topic_ids||[];r.exams=r.exams||[];by.set(r.id,r);
+    r._q=String(r.q).toLowerCase();r._o=r.o.join(' ').toLowerCase();r._t=String(r.t||'').toLowerCase();r._n=JSON.stringify(r.src).length});
+  BANK={mcq,taxonomy:d.taxonomy,by,at};
+}
+// সার্ভারের পুরোনো খোঁজার মতোই: প্রতিটা শব্দ প্রশ্ন/অপশন/টপিকে; টপিকে মিললে ৫, প্রশ্নে ৩, অপশনে ১, শব্দের দৈর্ঘ্য দিয়ে গুণ।
+// সব শব্দ একসাথে না মিললে যেকোনো একটা শব্দ (যেমন "রোহিঙ্গা সংকট" → "রোহিঙ্গা")
+function mcqFind(q,topic,off){
+  const ws=q.normalize('NFC').split(/\s+/).filter(Boolean).slice(0,6).map(w=>w.toLowerCase());
+  if(!BANK||(!ws.length&&!topic))return {more:false,offset:0,items:[]};
+  const inTopic=r=>!topic||r.topic_ids.some(x=>x===topic||x.startsWith(topic+'-'));
+  const run=all=>{const out=[];
+    for(const r of BANK.mcq){
+      if(!inTopic(r))continue;let hit=0,sc=0;
+      for(const l of ws){const t=r._t.includes(l),qq=r._q.includes(l),o=r._o.includes(l);if(t||qq||o){hit++;sc+=((t?5:0)+(qq?3:0)+(o?1:0))*[...l].length}}
+      if(ws.length&&(all?hit<ws.length:!hit))continue;out.push([sc,r]);
+    }
+    return out.sort((a,b)=>b[0]-a[0]||b[1]._n-a[1]._n||(a[1].id<b[1].id?-1:1)).map(x=>x[1]);
+  };
+  let rows=run(true),any=false;
+  if(!rows.length&&!off&&ws.length>1){rows=run(false);any=true}
+  return {more:rows.length>off+30,any,offset:off,items:rows.slice(off,off+30)};
 }
 
 // ---- খোঁজা ----
@@ -202,7 +241,8 @@ let mlast=null;
 async function mcq(){
   const q=state.q||state.tag;$('mcqs').hidden=!q&&!state.topic;if(!q&&!state.topic)return;
   $('mcount').textContent='খোঁজা হচ্ছে…';
-  try{mlast=await api('lib/mcq?'+new URLSearchParams({q,topic:state.topic,offset:moff}))}catch(e){$('mcount').textContent='';$('mres').innerHTML='';return}
+  if(!BANK){$('mcount').textContent='এমসিকিউ ফাইল দেওয়া হয়নি (নিচে "এমসিকিউ ব্যাংক ও টপিক তালিকা খোলা")';$('mres').innerHTML='';$('mpager').innerHTML='';return}
+  mlast=mcqFind(q,state.topic,moff);
   const {more,any,items,offset}=mlast;
   $('mcount').textContent=items.length?(offset||more?bn(offset+1)+'–'+bn(offset+items.length)+(more?', আরও আছে':''):bn(items.length)+'টি')+(any?' · সব শব্দ একসাথে মেলেনি, যেকোনো শব্দ':''):'মেলেনি';
   $('mres').innerHTML=items.map(mcard).join('');
@@ -264,7 +304,7 @@ async function markdown(){
   for(let i=0;i<sel.length;i+=90)out.push(...(await api('lib/get',{ids:sel.slice(i,i+90)})).items);
   // বাছাই করা এমসিকিউ, সাথে লিখিত অংশের নিজের জোড়া এমসিকিউ (Lyanna_data ইউনিটের mcq), একবার করে
   const mids=[...new Set([...out.flatMap(t=>t.mcq_ids||[]),...msel])];
-  const mq=[];for(let i=0;i<mids.length;i+=90)mq.push(...(await api('lib/mcq-get',{ids:mids.slice(i,i+90)})).items);
+  const mq=BANK?mids.map(id=>BANK.by.get(id)).filter(Boolean):[];
   const title=state.q||state.tag||'বাছাই করা অংশ';
   let md='# টপিক: '+title+'\n\n'+'> রেফারেন্স হিসেবে '+bn(out.length)+'টি লিখিত অংশ'+(mq.length?' ও '+bn(mq.length)+'টি এমসিকিউ':'')+', '+[...new Set(out.map(t=>t.source.replace(/,?\s*অধ্যায়.*$/,'')))].join(', ')+' থেকে। লেকচার শিট নিজের ভাষায় নতুন করে লেখা হবে, হুবহু কপি নয়।\n\n';
   for(const t of out){
@@ -341,26 +381,13 @@ $('mfile').onchange=async()=>{
   const f=$('mfile').files[0],m=t=>$('syncMsg').textContent=t;if(!f)return;
   $('mfile').disabled=true;$('sprog').hidden=false;$('sbar').style.width='0';m('ফাইল খোলা হচ্ছে…');
   try{
-    const d=JSON.parse(await readFile(f));
-    if(!d||!Array.isArray(d.mcq)||!Array.isArray(d.taxonomy))throw new Error('এটা library-mcq ফাইল নয়');
-    const rows=d.mcq.filter(r=>r&&r.id&&r.q&&Array.isArray(r.o));
-    if(rows.length<d.mcq.length*0.9)throw new Error('ফাইলে অনেক প্রশ্ন ভাঙা');
-    await api('lib/tax-import',{rows:d.taxonomy});
-    // h = বিষয়বস্তুর হ্যাশ; সার্ভারের h-এর সাথে না মিললেই শুধু সেই প্রশ্ন পাঠানো হয়
-    m('মেলানো হচ্ছে…');
-    for(const r of rows){const b=await crypto.subtle.digest('SHA-1',new TextEncoder().encode(JSON.stringify([r.q,r.o,r.a,r.e,r.s,r.t,r.src,r.topic_ids,r.exams])));r.h=[...new Uint8Array(b)].slice(0,8).map(x=>x.toString(16).padStart(2,'0')).join('')}
-    const have=new Map();
-    for(let after='';;){const j=await api('lib/mcq-ids?'+new URLSearchParams({after}));j.items.forEach(([id,h])=>have.set(id,h));if(!j.next)break;after=j.next}
-    const send=rows.filter(r=>have.get(r.id)!==r.h),now=new Set(rows.map(r=>r.id)),gone=[...have.keys()].filter(id=>!now.has(id));
-    const retry=async(path,body)=>{for(let t=0;;t++){try{return await api(path,body)}catch(e){if(t>=2)throw e;await new Promise(r=>setTimeout(r,1500))}}};
-    const steps=Math.ceil(send.length/220)+Math.ceil(gone.length/90)||1;let k=0;
-    for(let i=0;i<send.length;i+=220){await retry('lib/mcq-import',{rows:send.slice(i,i+220)});$('sbar').style.width=(100*++k/steps)+'%';m('তোলা হচ্ছে: '+bn(Math.min(send.length,i+220))+' / '+bn(send.length))}
-    for(let i=0;i<gone.length;i+=90){await retry('lib/mcq-remove',{ids:gone.slice(i,i+90)});$('sbar').style.width=(100*++k/steps)+'%'}
+    const at=Date.now();await loadBank(f,at);
+    m('ব্রাউজারে রাখা হচ্ছে…');
+    const kept=await idb('readwrite',st=>st.put({file:f,at},'mcq')).then(()=>true,()=>false);
     $('sbar').style.width='100%';
-    await api('lib/mcq-done',{n:rows.length});
-    m('✓ '+bn(d.taxonomy.length)+'টি টপিক আর '+bn(rows.length)+'টি প্রশ্ন: নতুন বা বদলানো '+bn(send.length)+'টি, সরানো '+bn(gone.length)+'টি।');
-    showStats(await api('lib/stats'));if(state.q||state.tag||state.topic)mcq();
-  }catch(e){m('থেমে গেছে ('+e.message+')। আবার ফাইলটা দিলে বাকিটা যাবে, ডুপ্লিকেট হবে না।')}
+    m('✓ '+bn(BANK.taxonomy.length)+'টি টপিক আর '+bn(BANK.mcq.length)+'টি প্রশ্ন খোলা হয়েছে।'+(kept?'':' এই ব্রাউজারে রাখা গেল না, পাতা আবার খুললে ফাইলটা আবার দিতে হবে।'));
+    showBank();if(state.q||state.tag||state.topic){moff=0;mcq()}
+  }catch(e){m('খোলা গেল না ('+e.message+')।')}
   $('mfile').disabled=false;$('mfile').value='';
 };
 
