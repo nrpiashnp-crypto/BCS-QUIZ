@@ -55,9 +55,19 @@ h1{font-family:var(--display);font-weight:400;font-size:30px;margin:4px 0 2px;te
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .tile .ic{color:#e6c97a}}
 .soon{font-size:13px;color:var(--muted);text-align:center;margin:10px 0 0}
 .free{text-align:center;margin:22px 0 0;color:var(--muted);font-size:14px}
-.run{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0 0;padding:12px 14px;border:1px solid var(--gold-hi);border-radius:12px;background:var(--card);color:var(--ink);text-decoration:none}
-.run b{display:block;font-size:17px}.run small{color:var(--muted);font-size:13px}
-.run .go{flex-shrink:0;color:var(--gold);font-weight:600}
+@keyframes lv{0%{box-shadow:0 0 0 0 #c8326acc}70%{box-shadow:0 0 0 10px #c8326a00}100%{box-shadow:0 0 0 0 #c8326a00}}
+.rn{margin-top:26px}
+.sh{display:flex;align-items:center;gap:10px;margin:0 0 10px;font-family:var(--body);font-weight:600;font-size:17px;color:#13294b}.sh::after{content:"";flex:1;border-top:1.3px dashed #13294b55}
+.sh i{width:10px;height:10px;border-radius:50%;background:#c8326a;animation:lv 1.6s infinite}
+.rD{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.rD a{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;min-height:150px;padding:18px;background:#fbe4ec;color:#13294b;text-decoration:none;border:1.6px solid #c8326a;border-radius:3px;position:relative}
+.rD a .ic{width:56px;height:56px;border-radius:50%;border:1.6px solid #c8326a;color:#c8326a;display:grid;place-items:center;font-size:22px}
+.rD a:hover .ic{background:#c8326a;color:#fff}
+.rD a .tx{display:flex;flex-direction:column;align-items:inherit}
+.rD a b{font-size:28px;font-weight:600;line-height:1.2}.rD a small{color:#5d5a55;font-size:14px}
+.rD a .lv{position:absolute;top:10px;right:10px;color:#fff;background:#c8326a;font-size:12px;padding:2px 9px;border-radius:99px}
+@media (max-width:699px){.rD{grid-template-columns:1fr}.rD a{min-height:0;flex-direction:row;justify-content:flex-start;text-align:left;gap:14px;padding-right:70px}.rD a .tx{align-items:flex-start}.rD a b{font-size:23px}}
+@media (prefers-reduced-motion:reduce){.sh i{animation:none}}
 .free a{color:var(--gold);font-weight:600}
 </style>
 <link rel="manifest" href="/manifest.webmanifest">
@@ -76,7 +86,7 @@ h1{font-family:var(--display);font-weight:400;font-size:30px;margin:4px 0 2px;te
   <a class="ch2" href="/science/"><span class="ic"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"/><path d="M10 3v6L4.5 19a1.5 1.5 0 0 0 1.3 2h12.4a1.5 1.5 0 0 0 1.3-2L14 9V3"/><path d="M7 15h10"/></svg></span><b>বিজ্ঞান</b><small>২১টি অধ্যায় · বিসিএস আর চাকরির পরীক্ষার বিজ্ঞান</small></a>
 </div>
 
-<a class="run" href="/running/"><span><b>চলমান নিয়োগ</b><small>পেট্রোবাংলা ও সাব-রেজিস্ট্রার: ফ্রি ৫০ টাস্কের প্রস্তুতি</small></span><span class="go">দেখুন →</span></a>
+<section class="rn" aria-label="চলমান নিয়োগের প্রস্তুতি"><h2 class="sh"><i></i>চলমান নিয়োগের প্রস্তুতি</h2><div class="rD"><a href="/running/petrobangla/"><span class="lv">চলছে</span><span class="ic">প</span><span class="tx"><b>পেট্রোবাংলা</b><small>সহকারী ব্যবস্থাপক · ৫০টি ফ্রি টাস্ক</small></span></a><a href="/running/sub-registrar/"><span class="lv">চলছে</span><span class="ic">সা</span><span class="tx"><b>সাব-রেজিস্ট্রার</b><small>পিএসসি · ৯ম গ্রেড · ৫০টি ফ্রি টাস্ক</small></span></a></div></section>
 <p class="free">লগইন ছাড়াই সব পরীক্ষা দিন। চাইলে <a href="/account/">লগইন করে</a> সব ফল আর অগ্রগতি এক জায়গায় রাখুন।</p>
 </div>
 <script>if(location.hash==='#science')location.replace('/science/')</script>
