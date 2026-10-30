@@ -7,6 +7,9 @@
    GET  /api/att       → নিজের সব পরীক্ষার ফল
    POST /api/att       {a:[ফল…]} → জমা (একই k দুবার এলে একবারই থাকে)
    POST /api/delete    → নিজের সব তথ্য মুছে যায়
+   প্রশ্ন ধরে উত্তরের হিসাব: POST /api/att-এর সঙ্গে {q:[[প্রশ্ন-id, ঠিক 1 / ভুল 0], …]} (শুধু লগইন করা ব্যবহারকারী) → qstat টেবিল
+   (qid, দেখানো n, ঠিক ok, শেষ দেখা last), কার উত্তর সেটা রাখা হয় না। GET /api/qstat → {ts, rows:[[qid,n,ok,last]]}, সবার জন্য,
+   ৬ ঘণ্টা ক্যাশে থাকে; Lyanna_data-র tools/pull_signals.py সপ্তাহে একবার এটা archive/signals/difficulty.json-এ আনে
    টপিক লাইব্রেরি (শুধু অ্যাডমিন: এনভায়রনমেন্ট ভেরিয়েবল ADMIN_EMAILS-এ থাকা ইমেইল, কমা দিয়ে আলাদা; লেখা থাকে শুধু D1-এ, রিপোতে নয়):
    GET  /api/lib/stats              → বিষয়/উৎস ধরে গণনা, বেশি ব্যবহৃত ট্যাগ
    GET  /api/lib/search?q=&subject=&kind=&chapter=&tag=&offset=  → মিলে যাওয়া অংশ (পুরো লেখা নয়, এক টুকরো)
@@ -28,6 +31,37 @@
    POST /api/ch/<id>/try {name,picks,sec} → নম্বর, উত্তর-ব্যাখ্যা, র‍্যাংক */
 const COOKIE = 'lb_s', AGE = 180 * 86400;
 const MAX_BATCH = 300, MAX_ROWS = 3000;
+
+const QSTAT = 'CREATE TABLE IF NOT EXISTS qstat(qid TEXT PRIMARY KEY, n INTEGER NOT NULL, ok INTEGER NOT NULL, last INTEGER)';
+const MAX_QA = 600, QID = /^q[0-9a-f]{10}$/;
+let qstatReady = false;
+
+// একই প্রশ্ন এক অনুরোধে কয়েকবার এলে একসঙ্গে যোগ হয়, তাই প্রতিটা প্রশ্নে একটাই সারি লেখা
+async function saveQa(db, list) {
+  const by = new Map();
+  for (const x of (Array.isArray(list) ? list : []).slice(0, MAX_QA)) {
+    if (!Array.isArray(x) || typeof x[0] !== 'string' || !QID.test(x[0])) continue;
+    const c = by.get(x[0]) || [0, 0];
+    c[0]++; if (x[1] === 1 || x[1] === true) c[1]++;
+    by.set(x[0], c);
+  }
+  if (!by.size) return 0;
+  if (!qstatReady) { await db.prepare(QSTAT).run(); qstatReady = true; }
+  const now = Date.now(), st = db.prepare('INSERT INTO qstat(qid, n, ok, last) VALUES(?,?,?,?) ON CONFLICT(qid) DO UPDATE SET n = n + excluded.n, ok = ok + excluded.ok, last = excluded.last');
+  await db.batch([...by].map(([q, c]) => st.bind(q, c[0], c[1], now)));
+  return by.size;
+}
+
+async function qstat(req, db) {
+  const key = new Request(new URL('/api/qstat', req.url).toString()), cache = caches.default;
+  const hit = await cache.match(key);
+  if (hit) return hit;
+  await db.prepare(QSTAT).run();
+  const {results} = await db.prepare('SELECT qid, n, ok, last FROM qstat ORDER BY qid').all();
+  const res = json({ts: Date.now(), rows: results.map(r => [r.qid, r.n, r.ok, r.last])}, 200, {'Cache-Control': 'public, max-age=21600'});
+  await cache.put(key, res.clone());
+  return res;
+}
 
 const SCHEMA = [
   'CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY, sub TEXT UNIQUE NOT NULL, email TEXT, name TEXT, pic TEXT, created INTEGER, seen INTEGER)',
@@ -537,6 +571,7 @@ export async function onRequest({request: req, env}) {
       return json({ok: true}, 200, {'Set-Cookie': cookie('', 0)});
     }
     if (path.startsWith('lib/')) return await lib(path, req, url, env, db, u);
+    if (path === 'qstat' && m === 'GET') return await qstat(req, db);
     if (!u) return json({error: 'login'}, 401);
 
     if (path === 'att' && m === 'GET') {
@@ -551,7 +586,8 @@ export async function onRequest({request: req, env}) {
         const st = db.prepare('INSERT OR IGNORE INTO att(uid, k, ts, c, t, p, s, n, ok, no, sec, sb) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)');
         await db.batch(rows.map(r => st.bind(u.id, ...r)));
       }
-      return json({ok: true, saved: rows.length});
+      const qs = await saveQa(db, body.q);
+      return json({ok: true, saved: rows.length, qs});
     }
     if (path === 'delete' && m === 'POST') {
       await db.batch([

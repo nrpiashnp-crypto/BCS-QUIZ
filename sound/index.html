@@ -213,7 +213,7 @@ function finish(){
   let ok=0,bad=0;paper.forEach((q,i)=>{if(pick[i]<0)return;pick[i]===q.a?ok++:bad++});
   const blank=N-ok-bad, score=ok-bad*0.5, used=Math.min(MIN*60,Math.round((Date.now()-startAt)/1000));
   const d=new Date(), ds=bn(d.getDate())+'/'+bn(d.getMonth()+1)+'/'+bn(d.getFullYear());
-  const h=store(true)||[];h.push({d:ds,s:score,n:N});store(false,h);window.LBA&&LBA.save({k:'sound-scores'+'#'+(h.length-1),c:'ch',s:score,n:N,ok,no:bad,sec:used});
+  const h=store(true)||[];h.push({d:ds,s:score,n:N});store(false,h);window.LBA&&LBA.save({k:'sound-scores'+'#'+(h.length-1),c:'ch',s:score,n:N,ok,no:bad,sec:used,qa:LBA.qa(paper,pick)});
   const msg=score>=20?'চমৎকার! অধ্যায়টি আপনার আয়ত্তে এসেছে।':score>=15?'ভালো হয়েছে। ভুল প্রশ্নগুলোর অনুচ্ছেদ আবার পড়ে নিন।':'অধ্যায়টি আরেকবার পড়ে কয়েক দিন পর আবার পরীক্ষা দিন।';
   $('scorebox').innerHTML=`<div class="big">${fmtScore(score)} / ${bn(N)}</div>
    <div class="stats"><span class="ok">সঠিক ${bn(ok)}</span><span class="no">ভুল ${bn(bad)}</span><span class="skip">উত্তর দেননি ${bn(blank)}</span><span>সময় ${bn(Math.floor(used/60))} মিনিট ${bn(used%60)} সেকেন্ড</span></div>

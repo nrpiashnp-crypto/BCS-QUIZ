@@ -94,7 +94,7 @@ function test(pool,D,T,next){
     paper.forEach((q,i)=>{if(pick[i]<0)markWrong(q,false,TP)});
     const score=ok-no*0.5,pass=score>=D.pass*N,sec=Math.round((Date.now()-t0)/1000);
     const p=prog(p=>{p.best=Math.max(p.best==null?-99:p.best,score);p.n=N;if(pass)p.pass=true;p.ts=Date.now()});
-    window.LBA&&LBA.save({k:'subj-'+TP+'#'+Date.now(),c:'subj',t:T.name,s:score,n:N,ok,no,sec});
+    window.LBA&&LBA.save({k:'subj-'+TP+'#'+Date.now(),c:'subj',t:T.name,s:score,n:N,ok,no,sec,qa:LBA.qa(paper,pick)});
     const r=$('result');r.hidden=false;
     r.innerHTML=`<div class="score"><div class="big">${fmt(score)} / ${bn(N)}</div><div class="stats"><span class="ok">সঠিক ${bn(ok)}</span><span class="no">ভুল ${bn(no)}</span><span class="skip">উত্তর দেননি ${bn(N-ok-no)}</span></div>
       <p class="msg">${pass?'অভিনন্দন! টপিকটি সম্পন্ন হয়েছে।':`সম্পন্ন হতে লাগবে ${fmt(D.pass*N)}। ভুলগুলো দেখে আরেকটি সেট অনুশীলন করে আবার টেস্ট দিন।`}</p></div><h2>উত্তর ও ব্যাখ্যা</h2>`;

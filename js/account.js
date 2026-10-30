@@ -3,6 +3,8 @@
    পাতার finish() একবার ডাকে: window.LBA&&LBA.save({k,c,t,s,n,ok,no,sec,sb})
      k  = পুরোনো ইতিহাসের চাবি + '#' + তার ক্রম (যেমন 'sound-scores#3'), তাই পুরোনো ফল আমদানিতে একই পরীক্ষা দুবার আসে না
      c  = ধরন: ch অধ্যায় · jsci চাকরির বিজ্ঞান · bcs · job · run চলমান সিরিজ;  sb = {বিষয়: [সঠিক, মোট]}
+     qa = LBA.qa(প্রশ্নের তালিকা, pick): উত্তর দেওয়া প্রতিটা প্রশ্নের [id, ঠিক 1/ভুল 0]; লগইন থাকলে 'lb:qa'-তে জমে /api/att-এর সঙ্গে যায়,
+          সার্ভারে নাম ছাড়া প্রশ্ন ধরে গোনা হয় (কঠিনতা আর বেশি ভুল হওয়া প্রশ্ন বের করতে)
    পাতায় একবার: <script src="/js/account.js" defer></script>। নাম না দিলে অধ্যায়ের নাম book-link.js-এর data-chapter থেকে নেয়।
    লগইনের খবর 'lb:u'-তে রাখা হয়, তাই সাধারণ পাতায় সার্ভারে কোনো অনুরোধ যায় না (শুধু ফল জমা দিতে)। */
 (function(){
@@ -14,15 +16,16 @@
 
   var busy=false;
   function flush(){
-    var q=get('lb:q',[]);
-    if(busy||!q.length||!user()||!navigator.onLine)return Promise.resolve();
-    busy=true;var part=q.slice(0,300);
-    return fetch('/api/att',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({a:part})})
+    var q=get('lb:q',[]),qa=get('lb:qa',[]);
+    if(busy||!(q.length||qa.length)||!user()||!navigator.onLine)return Promise.resolve();
+    busy=true;var part=q.slice(0,300),qpart=qa.slice(0,600);
+    return fetch('/api/att',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({a:part,q:qpart})})
       .then(function(r){
         if(r.status===401){set('lb:u',null);return}
         if(!r.ok)return;
         var sent={};part.forEach(function(a){sent[a.k]=1});
         set('lb:q',get('lb:q',[]).filter(function(a){return !sent[a.k]}));
+        set('lb:qa',get('lb:qa',[]).slice(qpart.length));
       })
       .catch(function(){}).then(function(){busy=false});
   }
@@ -110,9 +113,11 @@
       s:r.s,n:r.n,ok:r.ok,no:r.no,sec:r.sec};
     if(r.sb){var sb={};Object.keys(r.sb).forEach(function(k){if(k&&r.sb[k][1])sb[k]=r.sb[k]});if(Object.keys(sb).length)a.sb=sb}
     var all=get('lb:att',[]);all.push(a);set('lb:att',all.slice(-400));
-    if(user()){var q=get('lb:q',[]);q.push(a);set('lb:q',q.slice(-1000));flush()}
+    if(user()){var q=get('lb:q',[]);q.push(a);set('lb:q',q.slice(-1000));
+      if(r.qa&&r.qa.length)set('lb:qa',get('lb:qa',[]).concat(r.qa).slice(-3000));flush()}
     note();
   }
+  function qa(qs,pick){var o=[];(qs||[]).forEach(function(q,i){if(q&&q.id&&pick[i]>=0)o.push([q.id,pick[i]===q.a?1:0])});return o}
   function chapter(){var b=document.querySelector('script[src*="book-link.js"]');return b&&b.dataset.chapter}
 
   // উপরের নীল বারে ছোট একটা গোল: লগইন থাকলে নিজের ছবি
@@ -127,7 +132,7 @@
     nav.appendChild(a);
   }
 
-  window.LBA={save:save,user:user,dev:dev,flush:flush,get:get,set:set};
+  window.LBA={save:save,qa:qa,user:user,dev:dev,flush:flush,get:get,set:set};
   function init(){badge();flush()}
   document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init):init();
   addEventListener('online',flush);
