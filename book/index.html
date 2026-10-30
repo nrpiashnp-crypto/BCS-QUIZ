@@ -222,8 +222,8 @@ $('pds').addEventListener('change',function(){var d=this.value,u=d&&G.u[d]?G.u[d
   opts($('pup'),d?m.concat(r).concat(['অন্য (ঠিকানায় লিখুন)']).map(function(x){return [x,x]}):[],d?'বাছুন':'আগে জেলা বাছুন');zone();});
 function zoneOf(){return $('pds').value?(+$('pds').value===G.dhaka?'ঢাকার ভেতরে':'ঢাকার বাইরে'):''}
 function zone(){var z=zoneOf();$('pzone').hidden=!z;$('pzone').textContent=z?z+' · ডেলিভারি ফ্রি':''}
-// পরীক্ষার রেজাল্ট কার্ডের কোড (LB-<অধ্যায়>): প্রতি কপিতে ৳২০ ছাড়। নতুন অধ্যায় এলে CODES-এ নাম যোগ করুন।
-var CODES='SOUND LIGHT MAGNET ELECTRICITY MEASURE HEAT MODERN MATTER METALS ACID WATER POLYMER RESOURCES BIOLOGY PLANTS HUMANBODY FOOD GENETICS DISEASE AIR EARTH JOBSCIENCE'.split(' ');
+// পরীক্ষার রেজাল্ট কার্ডের কোড (LB-<অধ্যায়>, আর /bcs/ ও /jobs/-এর LB-BCS, LB-JOBS): প্রতি কপিতে ৳২০ ছাড়। নতুন অধ্যায় এলে CODES-এ নাম যোগ করুন।
+var CODES='SOUND LIGHT MAGNET ELECTRICITY MEASURE HEAT MODERN MATTER METALS ACID WATER POLYMER RESOURCES BIOLOGY PLANTS HUMANBODY FOOD GENETICS DISEASE AIR EARTH JOBSCIENCE BCS JOBS'.split(' ');
 var code=function(){var c=$('pc').value.trim().toUpperCase().replace(/\s+/g,'');return /^LB-/.test(c)&&CODES.indexOf(c.slice(3))>=0?c:''};
 function price(){var c=code(),raw=$('pc').value.trim();P=c?P0-OFF:P0;$('pstep').textContent='৳'+bn(P);
   $('pcm').hidden=!raw;$('pcm').textContent=c?'কোড '+c+' চালু: প্রতি কপি ৳'+bn(P)+' (৳'+bn(OFF)+' ছাড়)':'এই কোডটি মিলছে না, দাম ৳'+bn(P0)+' ধরা হবে';
