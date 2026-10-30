@@ -124,3 +124,10 @@ button:disabled{cursor:default}
 .tile:hover,.oc:hover,.tl:hover,.ch2:hover{border-color:#c8326a!important;box-shadow:0 3px 12px rgba(19,41,75,.1);transform:translateY(-1px)}
 .more:hover{border-color:#c8326a!important;background:#fff1f5!important}
 .exp .bl:hover,.sub a:hover,.crumb a:hover,.lh a:hover,p a:hover{text-decoration:underline}
+
+/* সব লিংক-বোতামে একটাই সাধারণ হোভার (শ্রেণি যা-ই হোক): গোলাপি আভা + এক পিক্সেল উঁচু; লেখার ভেতরের সাধারণ লিংকে শুধু রং আর আন্ডারলাইন */
+a,button,summary,[role=button]{transition:box-shadow .15s,transform .15s,color .15s,background-color .15s,border-color .15s}
+a:hover,button:hover:not(:disabled),summary:hover,[role=button]:hover{box-shadow:0 0 0 3px rgba(200,50,106,.22)!important;transform:translateY(-1px)}
+a:not([class]):hover,p a:hover,li a:hover,.exp a:hover,.sub a:hover,.crumb a:hover,.sitebar a:hover,.sitebar nav a:hover,footer a:hover{box-shadow:none!important;transform:none;color:#c8326a!important;text-decoration:underline;text-underline-offset:3px}
+.sitebar nav a:hover,.sitebar a:hover{text-decoration:none;color:#fff!important}
+.opt:hover:not(:disabled){transform:none}
