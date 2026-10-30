@@ -126,7 +126,7 @@ footer{margin-top:24px;font-size:14px;color:var(--muted)}
     <div class="fact"><b>−০.৫</b><span>প্রতি ভুলে</span></div>
     <div class="fact"><b id="pool"></b><span>প্রশ্নের ভান্ডার</span></div>
   </div>
-  <p class="sub rule">প্রতি ভুলে ০.৫ নম্বর কাটা যায়, ছেড়ে দিলে কাটা নেই। জমা দেওয়ার আগে পর্যন্ত উত্তর বদলানো যায়।</p>
+  <p class="sub rule">প্রতি ভুলে ০.৫ নম্বর কাটা যায়, ছেড়ে দিলে কাটা নেই। একবার দাগালে আর বদলানো যায় না, তাই ভেবে দাগান।</p>
   <div class="btns">
     <button class="btn" id="go" type="button">পরীক্ষা শুরু করুন</button>
     <button class="btn ghost" id="practice" type="button">সব প্রশ্ন অনুশীলন</button>
@@ -189,7 +189,7 @@ function startExam(){
     const o=s.querySelector('.opts');
     q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';b.setAttribute('aria-pressed','false');
       b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;
-      b.onclick=()=>{pick[i]=pick[i]===j?-1:j;[...o.children].forEach(x=>{const s=x===b&&pick[i]===j;x.classList.toggle('sel',s);x.setAttribute('aria-pressed',s)});$('ans').textContent=bn(pick.filter(x=>x>=0).length)};
+      b.onclick=()=>{if(pick[i]>=0)return;pick[i]=j;b.classList.add('sel');b.setAttribute('aria-pressed','true');[...o.children].forEach(x=>x.disabled=true);$('ans').textContent=bn(pick.filter(x=>x>=0).length)};
       o.appendChild(b)});
     box.appendChild(s);
   });

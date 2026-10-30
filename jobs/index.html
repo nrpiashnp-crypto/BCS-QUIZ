@@ -340,7 +340,7 @@ function startExam(){
     const s=document.createElement('section');s.className='q';s.innerHTML=qhtml(q,i)+'<div class="opts"></div>';
     const o=s.querySelector('.opts');
     q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';b.setAttribute('aria-pressed','false');b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;
-      b.onclick=()=>{pick[i]=pick[i]===j?-1:j;[...o.children].forEach(x=>{const s=x===b&&pick[i]===j;x.classList.toggle('sel',s);x.setAttribute('aria-pressed',s)});$('ans').textContent=bn(pick.filter(x=>x>=0).length)};o.appendChild(b)});
+      b.onclick=()=>{if(pick[i]>=0)return;pick[i]=j;b.classList.add('sel');b.setAttribute('aria-pressed','true');[...o.children].forEach(x=>x.disabled=true);$('ans').textContent=bn(pick.filter(x=>x>=0).length)};o.appendChild(b)});
     box.appendChild(s)});
   $('ans').textContent='০';startAt=Date.now();endAt=startAt+MIN*60000;tick();clearInterval(timer);timer=setInterval(tick,500);show('exam');
 }
