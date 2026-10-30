@@ -287,7 +287,7 @@ async function mcqImport(req, db) {
   const rows = (Array.isArray(body.rows) ? body.rows : []).slice(0, MCQ_IMPORT).map(r => {
     if (!r || typeof r !== 'object' || !/^[a-z0-9]{6,40}$/.test(r.id) || !nfc(r.q) || !Array.isArray(r.o)) return null;
     return [r.id, nfc(r.q).slice(0, 4000), JSON.stringify(r.o.slice(0, 8).map(x => nfc(String(x)).slice(0, 1000))),
-      Number.isInteger(r.a) ? r.a : -1, nfc(r.e).slice(0, 1500), nfc(r.s).slice(0, 80), nfc(r.t).slice(0, 160),
+      Number.isInteger(r.a) ? r.a : -1, nfc(r.e).slice(0, 4000), nfc(r.s).slice(0, 80), nfc(r.t).slice(0, 160),
       JSON.stringify((Array.isArray(r.src) ? r.src : []).filter(Array.isArray).slice(0, 40).map(x => [nfc(String(x[0])).slice(0, 200), nfc(String(x[1])).slice(0, 200)])),
       String(r.h || '').slice(0, 40), topicIds(r.topic_ids), topicIds(r.exams)];
   }).filter(Boolean);

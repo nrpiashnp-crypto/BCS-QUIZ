@@ -19,7 +19,6 @@ and tags against the taxonomy (same alias_key as tools/tag_mcq_auto.py). Run fro
 import argparse, gzip, json, os, sys
 
 SITE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-E_MAX = 800  # explanation chars kept; the whole file must stay small enough to open in a browser
 bn = lambda s: str(s).translate(str.maketrans('0123456789', '০১২৩৪৫৬৭৮৯'))
 
 
@@ -83,7 +82,7 @@ def main():
         tops = [t for t in tg.get('topics') or [] if t in tax.topics]
         subj = tg.get('subject')
         ids = tops or ([subj] if subj else [])
-        mcq.append({'id': qid, 'q': r.get('q', ''), 'o': r.get('o', []), 'a': r.get('a', -1), 'e': (r.get('e') or '')[:E_MAX],
+        mcq.append({'id': qid, 'q': r.get('q', ''), 'o': r.get('o', []), 'a': r.get('a', -1), 'e': r.get('e') or '',
                     's': tax.subjects[subj]['bn'] if subj in tax.subjects else seen_s.get(qid, ''),
                     't': tax.topics[tops[0]]['bn'] if tops else seen_t.get(qid, ''),
                     'topic_ids': ids, 'exams': tg.get('exams') or [], 'src': src.get(qid, [])[:12]})
