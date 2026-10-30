@@ -158,6 +158,7 @@ h2.post{font-size:20px;margin:22px 0 2px}
 .tl .gobtn{flex:none;background:#13294b;color:#fff;border-radius:8px;padding:7px 12px;font-size:14px;font-weight:600;white-space:nowrap}
 .tlist{display:grid;grid-template-columns:1fr;gap:10px;margin:14px 0}
 @media (min-width:760px){.tlist{grid-template-columns:1fr 1fr}}
+#view{min-height:70vh}.more{display:block;width:100%;margin:14px 0 4px;padding:12px;font:inherit;font-size:15px;font-weight:600;border:1px solid var(--rule);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer}
 .hero{background:linear-gradient(135deg,#1b3766,#13294b);color:#fff;border-radius:14px;padding:20px 18px 22px;margin:8px 0 18px;border:1px solid rgba(224,180,92,.5)}
 .hero h1{color:#fff;margin:0 0 8px}
 .hero p{margin:0 0 14px;color:#dfe5ef;font-size:15.5px}
@@ -206,7 +207,7 @@ const CAT={bank:{t:'ব্যাংকের পরীক্ষা',m:'বাং
            psc:{t:'পিএসসি নন-ক্যাডার',m:'সরকারি কর্ম কমিশনের (পিএসসি) নন-ক্যাডার নিয়োগ পরীক্ষার বিগত প্রশ্ন',subs:{all:'সব পরীক্ষা'},flat:1},
            teacher:{t:'শিক্ষক নিয়োগ ও নিবন্ধন',m:'প্রাথমিক বিদ্যালয় সহকারী শিক্ষক ও শিক্ষক নিবন্ধন (এনটিআরসিএ) পরীক্ষার বিগত প্রশ্ন',subs:{all:'সব পরীক্ষা'},flat:1},
            bar:{t:'বার কাউন্সিল',m:'বাংলাদেশ বার কাউন্সিলের আইনজীবী তালিকাভুক্তি (এনরোলমেন্ট) এমসিকিউ পরীক্ষার বিগত প্রশ্ন',subs:{all:'সব পরীক্ষা'},flat:1}};
-let CATALOG=null;
+let CATALOG=null,LIST=[],CARD=null;
 const exams=()=>CATALOG.exams;
 const catOf=e=>e.cat==='gov'||e.cat==='psc'||e.cat==='teacher'||e.cat==='bar'?e.cat:'bank';
 const subOf=e=>e.cat==='gov'?String(e.grade):e.cat==='psc'||e.cat==='teacher'||e.cat==='bar'?'all':e.cat;
@@ -260,17 +261,25 @@ function sub(c,s){
 function listHTML(c,home){
   const C=c==='all'?{t:'সব চাকরির পরীক্ষা',m:'ব্যাংক, সরকারি চাকরি, পিএসসি নন-ক্যাডার ও শিক্ষক নিবন্ধন মিলিয়ে সব পরীক্ষা'}:CAT[c],L=exams().filter(e=>c==='all'||catOf(e)===c).sort((a,b)=>(b.year==='misc'?'0':b.date||b.year).localeCompare(a.year==='misc'?'0':a.date||a.year)||b.n-a.n);
   const years=[...new Set(L.map(e=>e.year).filter(y=>y!=='misc'))].sort().reverse();
-  const card=e=>`<a class="oc ex" href="#/x/${e.id}" data-y="${e.year}" data-k="${esc((e.orgbn+' '+e.postbn+' '+(e.note||'')).toLowerCase())}"><span class="yr">${e.year==='misc'?'বিবিধ':bn(e.year)}</span><span class="mid"><span class="n">${e.orgbn}</span><span class="src">${e.postbn}${e.note?' · '+e.note:''}</span><span class="cnt">${bn(e.n)}টি প্রশ্ন · সময় ${bn(e.time||minutesFor(e.n))} মিনিট</span></span><span class="go">শুরু →</span></a>`;
+  const card=e=>`<a class="oc ex" href="#/x/${e.id}"><span class="yr">${e.year==='misc'?'বিবিধ':bn(e.year)}</span><span class="mid"><span class="n">${e.orgbn}</span><span class="src">${e.postbn}${e.note?' · '+e.note:''}</span><span class="cnt">${bn(e.n)}টি প্রশ্ন · সময় ${bn(e.time||minutesFor(e.n))} মিনিট</span></span><span class="go">শুরু →</span></a>`;LIST=L;CARD=card;
   return (home?`<h2 class="lh">সব পরীক্ষা, নতুন আগে</h2>`:crumb([[null,C.t]])+`<h1>${C.t}</h1><p class="sub">${C.m}: ${bnc(L.length)}টি পরীক্ষা, ${bnc(sum(L))}টি প্রশ্ন।</p>`)+`
   <input id="fq" type="search" placeholder="পদ বা মন্ত্রণালয়ের নাম লিখে খুঁজুন" style="width:100%;font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--rule);border-radius:10px;background:var(--card);color:var(--ink)">
   <div class="chips yrow" id="fy"><button type="button" class="chip" data-y="" aria-pressed="true">সব বছর</button>${years.map(y=>`<button type="button" class="chip" data-y="${y}" aria-pressed="false">${bn(y)}</button>`).join('')}</div>
-  <div class="ogrid" id="fl">${L.map(card).join('')}</div><p class="load" id="fnone" hidden>কিছু পাওয়া যায়নি।</p>`;
+  <div class="ogrid" id="fl"></div><p class="load" id="fnone" hidden>কিছু পাওয়া যায়নি।</p><button type="button" class="more" id="fmore" hidden>আরও দেখুন</button>`;
 }
+// তালিকা একসাথে নয়: প্রথমে ৬০টি, "আরও দেখুন"-এ আরও; খোঁজা/বছর বাছাই ডেটায় হয়, তাই ৬৮০টি কার্ড একসাথে আঁকতে হয় না (সস্তা ফোনে ভারী ছিল)
+const PAGE=60;
 function bindList(){
-  let yr='';
-  const apply=()=>{const q=$('fq').value.trim().toLowerCase();let n=0;[...$('fl').children].forEach(a=>{const ok=(!yr||a.dataset.y===yr)&&(!q||a.dataset.k.includes(q));a.hidden=!ok;n+=ok});$('fnone').hidden=n>0};
-  $('fq').oninput=apply;
-  $('fy').onclick=ev=>{const b=ev.target.closest('.chip');if(!b)return;yr=b.dataset.y;[...$('fy').children].forEach(x=>x.setAttribute('aria-pressed',x===b));apply()};
+  let yr='',shown=PAGE;
+  const L=LIST,card=CARD;
+  const apply=()=>{const q=$('fq').value.trim().toLowerCase();
+    const M=L.filter(e=>(!yr||e.year===yr)&&(!q||(e.orgbn+' '+e.postbn+' '+(e.note||'')).toLowerCase().includes(q)));
+    $('fl').innerHTML=M.slice(0,shown).map(card).join('');$('fnone').hidden=M.length>0;$('fmore').hidden=M.length<=shown;
+    if(M.length>shown)$('fmore').textContent=`আরও দেখুন (${bnc(M.length-shown)}টি বাকি)`};
+  $('fq').oninput=()=>{shown=PAGE;apply()};
+  $('fy').onclick=ev=>{const b=ev.target.closest('.chip');if(!b)return;yr=b.dataset.y;shown=PAGE;[...$('fy').children].forEach(x=>x.setAttribute('aria-pressed',x===b));apply()};
+  $('fmore').onclick=()=>{shown+=120;apply()};
+  apply();
 }
 function flatList(c){V().innerHTML=listHTML(c);bindList()}
 function org(c,s,o){

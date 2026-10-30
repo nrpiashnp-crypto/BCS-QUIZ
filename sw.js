@@ -1,8 +1,8 @@
 /* লিয়ানা বুকস অফলাইন: একবার খোলা পাতা আর প্রশ্ন ইন্টারনেট ছাড়াও খোলে।
    পাতা (HTML) আর প্রশ্নের JSON: আগে নেটওয়ার্ক, না পেলে ক্যাশ, তাই অনলাইনে সবসময় নতুন প্রশ্ন আসে।
-   ফন্ট, ছবি, js: ক্যাশ থেকে সাথে সাথে, পেছনে নতুন কপি এনে রাখে (পরের বার নতুনটা)। অন্য ডোমেইনের কিছু (যেমন analytics) ছোঁয়া হয় না।
+   ফন্ট, ছবি: ক্যাশ থেকে সাথে সাথে, পেছনে নতুন কপি এনে রাখে। js/css: আগে নেটওয়ার্ক, না পেলে ক্যাশ (নতুন পাতার সাথে পুরোনো স্ক্রিপ্ট যেন না মেলে)। অন্য ডোমেইনের কিছু (যেমন analytics) ছোঁয়া হয় না।
    কিছু বদলালে VERSION বাড়ান, পুরোনো ক্যাশ মুছে যাবে। */
-const VERSION='v9';
+const VERSION='v10';
 const CORE = 'core-' + VERSION, PAGES = 'pages-' + VERSION, DATA = 'data-' + VERSION;
 const PRECACHE = ['/', '/exams/', '/science/', '/fonts/fonts.css',
   '/fonts/AnekBangla-bengali.woff2', '/fonts/AnekBangla-latin.woff2', '/fonts/LyannaWordmark.woff2',
@@ -18,7 +18,7 @@ const OFFLINE = `<!doctype html><html lang="bn"><meta charset="utf-8"><meta name
 </body></html>`;
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CORE).then(c => c.addAll(PRECACHE)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CORE).then(c => Promise.all(PRECACHE.map(u => c.add(u).catch(() => {})))).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
   const keep = [CORE, PAGES, DATA];
@@ -57,5 +57,6 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET' || url.origin !== location.origin) return;
   if (req.mode === 'navigate' || req.destination === 'document') return e.respondWith(networkFirst(req, PAGES));
   if (url.pathname.endsWith('.json')) return e.respondWith(networkFirst(req, DATA));
-  if (/^\/(fonts|img|js|css)\//.test(url.pathname) || req.destination === 'image') return e.respondWith(staleWhileRevalidate(req, e));
+  if (/^\/(js|css)\//.test(url.pathname)) return e.respondWith(networkFirst(req, CORE));
+  if (/^\/(fonts|img)\//.test(url.pathname) || req.destination === 'image') return e.respondWith(staleWhileRevalidate(req, e));
 });
