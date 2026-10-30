@@ -36,6 +36,7 @@ a.tile:hover,button.tile:hover{border-color:var(--gold)}
 .pills{display:flex;flex-wrap:wrap;gap:8px}
 .pill{border:1px solid var(--rule);border-radius:999px;padding:5px 12px;font-size:14px;color:var(--ink);text-decoration:none;background:none}
 .pill.ok{border-color:var(--good);color:var(--good)}.pill.ok::after{content:" ✓"}
+.pill.more{font:inherit;font-size:14px;color:var(--accent);border-style:dashed;cursor:pointer}
 .go{display:block;text-align:center;border-radius:10px;padding:11px 14px;font-weight:600;text-decoration:none;background:var(--accent);color:var(--accent-ink)}
 .go.lock{background:none;color:var(--muted);border:1px dashed var(--rule);font-weight:500;pointer-events:none}
 .note{font-size:13px;color:var(--muted);margin:6px 0 0}

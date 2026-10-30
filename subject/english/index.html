@@ -5,10 +5,10 @@
 <meta name="theme-color" content="#13294b">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>ইংরেজি ভাষা ও সাহিত্য: বিষয়ভিত্তিক প্রস্তুতি · লিয়ানা বুকস</title>
-<meta name="description" content="ইংরেজি ভাষা ও সাহিত্য: ৪টি টপিক ধরে প্রস্তুতি: বিসিএস ও চাকরির প্রশ্নে অনুশীলন, ব্যাখ্যা আর টপিক টেস্ট।">
+<meta name="description" content="ইংরেজি ভাষা ও সাহিত্য: ৪২টি টপিক ধরে প্রস্তুতি: বিসিএস ও চাকরির প্রশ্নে অনুশীলন, ব্যাখ্যা আর টপিক টেস্ট।">
 <link rel="canonical" href="https://lyannabooks.com/subject/english/">
 <meta property="og:type" content="website"><meta property="og:site_name" content="লিয়ানা বুকস">
-<meta property="og:title" content="ইংরেজি ভাষা ও সাহিত্য: বিষয়ভিত্তিক প্রস্তুতি · লিয়ানা বুকস"><meta property="og:description" content="ইংরেজি ভাষা ও সাহিত্য: ৪টি টপিক ধরে প্রস্তুতি: বিসিএস ও চাকরির প্রশ্নে অনুশীলন, ব্যাখ্যা আর টপিক টেস্ট।">
+<meta property="og:title" content="ইংরেজি ভাষা ও সাহিত্য: বিষয়ভিত্তিক প্রস্তুতি · লিয়ানা বুকস"><meta property="og:description" content="ইংরেজি ভাষা ও সাহিত্য: ৪২টি টপিক ধরে প্রস্তুতি: বিসিএস ও চাকরির প্রশ্নে অনুশীলন, ব্যাখ্যা আর টপিক টেস্ট।">
 <meta property="og:url" content="https://lyannabooks.com/subject/english/"><meta property="og:image" content="https://lyannabooks.com/img/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
@@ -27,7 +27,7 @@
 <div class="wrap">
 <a class="back" href="/subject/">← সব বিষয়</a>
 <h1>ইংরেজি ভাষা ও সাহিত্য</h1>
-<p class="sub">৪টি টপিক · প্রতিটিতে অনুশীলন, তারপর টপিক টেস্ট</p>
+<p class="sub">৪২টি টপিক · প্রতিটিতে অনুশীলন, তারপর টপিক টেস্ট</p>
 <div class="meter" aria-hidden="true"><i id="bar" style="width:0"></i></div>
 <p class="pr" id="pr"></p>
 <div class="tiles" id="list"><p class="sub">লোড হচ্ছে…</p></div>
@@ -41,6 +41,7 @@ const fmt=x=>(x<0?'−':'')+bn(Number.isInteger(Math.abs(x))?Math.abs(x):Math.ab
 const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}};
 const P=get('subj:v1',{}),T=P.t||{},W=get('subj:w',{});
 const GL={b:'বিসিএসের প্রশ্ন',x:'অন্য পরীক্ষার প্রশ্ন',l:'সম্ভাব্য প্রশ্ন'};
+const SHOW=20;
 fetch('/subject/data/english.json').then(r=>r.json()).then(D=>{
   const list=document.getElementById('list');list.innerHTML='';
   let done=0,openId=null;
@@ -53,7 +54,9 @@ fetch('/subject/data/english.json').then(r=>r.json()).then(D=>{
     const pan=document.createElement('div');pan.className='panel';pan.hidden=true;
     let h='';
     (D.kinds||['b','x','l']).forEach(k=>{const ss=t.sets.filter(x=>x.kind===k);if(!ss.length)return;
-      h+=`<div class="step"><h3>${GL[k]||ss[0].label}</h3><div class="pills">`+ss.map(x=>`<a class="pill${s[x.id]?' ok':''}" href="/subject/q/?t=${t.id}&s=${x.id}">সেট ${bn(x.k)}</a>`).join('')+'</div></div>'});
+      const sh=Math.max(SHOW,ss.reduce((m,x,i)=>s[x.id]?i+2:m,0)),more=ss.length-sh;  // long lists: first sets, the rest on tap
+      h+=`<div class="step"><h3>${GL[k]||ss[0].label}</h3><div class="pills">`+ss.map((x,i)=>`<a class="pill${s[x.id]?' ok':''}" href="/subject/q/?t=${t.id}&s=${x.id}"${i>=sh&&more>0?' hidden':''}>সেট ${bn(x.k)}</a>`).join('')
+        +(more>0?`<button type="button" class="pill more" onclick="this.parentNode.querySelectorAll('[hidden]').forEach(e=>e.hidden=false);this.remove()">আরও ${bn(more)}টি সেট</button>`:'')+'</div></div>'});
     h+=`<div class="step"><h3>টপিক টেস্ট</h3><a class="go${nd?'':' lock'}" href="/subject/q/?t=${t.id}&s=test">${nd?`টেস্ট দিন: ${bn(D.test)} প্রশ্ন, সময়সহ`:'আগে অন্তত একটি সেট অনুশীলন করুন'}</a><p class="note">${bn(Math.round(D.pass*100))}% বা বেশি পেলে টপিক সম্পন্ন।</p></div>`;
     pan.innerHTML=h;box.appendChild(pan);
     box.firstChild.onclick=()=>{const o=pan.hidden;document.querySelectorAll('.topic').forEach(b=>{b.classList.remove('open');b.lastChild.hidden=true;b.firstChild.setAttribute('aria-expanded','false')});
