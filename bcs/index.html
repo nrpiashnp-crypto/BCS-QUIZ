@@ -293,7 +293,7 @@ function finish(){
   paper.forEach((qi,i)=>{const q=Q[qi],k=q.s||'অন্যান্য';bys[k]=bys[k]||[0,0,0];bys[k][2]++;if(pick[i]<0)return;if(pick[i]===q.a){ok++;bys[k][0]++}else{bad++;bys[k][1]++}});
   const n=paper.length,blank=n-ok-bad,score=ok-bad*NEG,used=Math.min(MIN*60,Math.round((Date.now()-startAt)/1000));
   const d=new Date(),ds=bn(d.getDate())+'/'+bn(d.getMonth()+1)+'/'+bn(d.getFullYear());
-  const h=store(true)||[];h.push({d:ds,s:score,n,g:NEG});store(false,h);window.LBA&&LBA.save({k:histKey()+'#'+(h.length-1),c:'bcs',t:E.title,s:score,n,ok,no:bad,sec:used,sb:Object.fromEntries(Object.entries(bys).map(([k,v])=>[k,[v[0],v[2]]]))});
+  const h=store(true)||[];h.push({d:ds,s:score,n,g:NEG});store(false,h);window.LBA&&LBA.save({k:histKey()+'#'+(h.length-1),c:'bcs',t:E.title,s:score,n,ok,no:bad,sec:used,sb:Object.fromEntries(Object.entries(bys).map(([k,v])=>[k,[v[0],v[2]]])),qa:LBA.qa(paper.map(i=>Q[i]),pick)});
   const pc=score/n;
   $('scorebox').innerHTML=`<div class="big">${fmt(score)} / ${bn(n)}</div>
    <div class="stats"><span class="ok">সঠিক ${bn(ok)}</span><span class="no">ভুল ${bn(bad)}</span><span class="skip">উত্তর দেননি ${bn(blank)}</span><span>সময় ${bn(Math.floor(used/60))} মিনিট ${bn(used%60)} সেকেন্ড</span></div>

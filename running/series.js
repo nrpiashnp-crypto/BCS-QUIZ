@@ -114,7 +114,7 @@ function finish(){
     if(pick[i]<0)return;if(pick[i]===q.a){ok++;T[0]++;S[0]++}else{bad++;T[1]++}});
   const n=Q.length,blank=n-ok-bad,score=ok-bad*NEG,used=Math.min(MIN*60,Math.round((Date.now()-startAt)/1000));
   const d=new Date(),ds=bn(d.getDate())+'/'+bn(d.getMonth()+1)+'/'+bn(d.getFullYear());
-  const st=load();(st[E.id]=st[E.id]||[]).push({d:ds,s:score,n,g:NEG,p:score/n,sb:byS,ts:Date.now()});save(st);window.LBA&&LBA.save({k:KEY()+':'+E.id+'#'+(st[E.id].length-1),c:'run',t:(P.short||'')+' · '+lab(E)+': '+E.title,s:score,n,ok,no:bad,sec:used,sb:byS});
+  const st=load();(st[E.id]=st[E.id]||[]).push({d:ds,s:score,n,g:NEG,p:score/n,sb:byS,ts:Date.now()});save(st);window.LBA&&LBA.save({k:KEY()+':'+E.id+'#'+(st[E.id].length-1),c:'run',t:(P.short||'')+' · '+lab(E)+': '+E.title,s:score,n,ok,no:bad,sec:used,sb:byS,qa:LBA.qa(Q,pick)});
   const pc=score/n,pct=x=>bn(Math.round(x*100));
   $('scorebox').innerHTML=`<p class="kick">${lab(E)} · ${esc(E.title)}</p><div class="big">${fmt(score)} / ${bn(n)}</div>
    <div class="stats"><span class="ok">সঠিক ${bn(ok)}</span><span class="no">ভুল ${bn(bad)}</span><span class="skip">উত্তর দেননি ${bn(blank)}</span><span>সময় ${bn(Math.floor(used/60))} মিনিট ${bn(used%60)} সেকেন্ড</span></div>

@@ -35,7 +35,7 @@
 </div>
 <div class="bar" id="bar" hidden></div>
 <script>
-/* এক পাতায় তিন কাজ: অনুশীলন সেট (?t=<টপিক>&s=<সেট>), টপিক টেস্ট (?t=<টপিক>&s=test), ভুলের খাতা (?w=sci)।
+/* এক পাতায় তিন কাজ: অনুশীলন সেট (?t=<টপিক>&s=<সেট>), টপিক টেস্ট (?t=<টপিক>&s=test), ভুলের খাতা (?w=<বিষয়>, যেমন sci)।
    অনুশীলনে সময় নেই, উত্তর দিলেই ব্যাখ্যা; টেস্টে সময় আর −০.৫। অগ্রগতি 'subj:v1', ভুল প্রশ্ন 'subj:w' = {<id>: প্রশ্ন + tp}। */
 const bn=n=>String(n).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
 const fmt=x=>(x<0?'−':'')+bn(Number.isInteger(Math.abs(x))?Math.abs(x):Math.abs(x).toFixed(1));
@@ -44,7 +44,10 @@ const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch(e){ret
 const put=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const U=new URLSearchParams(location.search),TP=U.get('t'),SET=U.get('s'),WR=U.get('w');
-const SUBJ={sci:'science'},sub=(TP||WR||'sci').split('-')[0],ROAD='/subject/'+SUBJ[sub]+'/';
+const SUBJ={sci:'science',bn:'bangla',eng:'english',bda:'bangladesh',intl:'international',geo:'geography',ict:'ict',math:'math',mental:'mental',ethics:'ethics'};
+const sub=SUBJ[(TP||WR||'sci').split('-')[0]]?(TP||WR||'sci').split('-')[0]:'sci',ROAD='/subject/'+SUBJ[sub]+'/';
+$('back').href=ROAD;
+if(sub==='sci'){const b=document.createElement('script');b.src='/js/book-link.js';b.dataset.kind='science';document.body.appendChild(b)} /* বইয়ের লিংক শুধু বিজ্ঞানে */
 const src=q=>`<span class="src">${q.t==='l'?'সম্ভাব্য প্রশ্ন':q.s||''}</span>`;
 function markWrong(q,good,tp){const W=get('subj:w',{});if(good)delete W[q.id];else W[q.id]=Object.assign({},q,{tp:tp||q.tp});
   const ks=Object.keys(W);if(ks.length>400)ks.slice(0,ks.length-400).forEach(k=>delete W[k]);put('subj:w',W)}
@@ -91,7 +94,7 @@ function test(pool,D,T,next){
     paper.forEach((q,i)=>{if(pick[i]<0)markWrong(q,false,TP)});
     const score=ok-no*0.5,pass=score>=D.pass*N,sec=Math.round((Date.now()-t0)/1000);
     const p=prog(p=>{p.best=Math.max(p.best==null?-99:p.best,score);p.n=N;if(pass)p.pass=true;p.ts=Date.now()});
-    window.LBA&&LBA.save({k:'subj-'+TP+'#'+Date.now(),c:'subj',t:T.name,s:score,n:N,ok,no,sec});
+    window.LBA&&LBA.save({k:'subj-'+TP+'#'+Date.now(),c:'subj',t:T.name,s:score,n:N,ok,no,sec,qa:LBA.qa(paper,pick)});
     const r=$('result');r.hidden=false;
     r.innerHTML=`<div class="score"><div class="big">${fmt(score)} / ${bn(N)}</div><div class="stats"><span class="ok">সঠিক ${bn(ok)}</span><span class="no">ভুল ${bn(no)}</span><span class="skip">উত্তর দেননি ${bn(N-ok-no)}</span></div>
       <p class="msg">${pass?'অভিনন্দন! টপিকটি সম্পন্ন হয়েছে।':`সম্পন্ন হতে লাগবে ${fmt(D.pass*N)}। ভুলগুলো দেখে আরেকটি সেট অনুশীলন করে আবার টেস্ট দিন।`}</p></div><h2>উত্তর ও ব্যাখ্যা</h2>`;
@@ -127,7 +130,6 @@ fetch('/subject/data/'+SUBJ[sub]+'.json').then(r=>r.json()).then(D=>{
   }));
 }).catch(()=>{$('ttl').textContent='পাতাটি পাওয়া যায়নি';$('sub').innerHTML='<a href="/subject/">সব বিষয় দেখুন →</a>'});
 </script>
-<script src="/js/book-link.js" data-kind="science" defer></script>
 <script src="/js/math.js" defer></script>
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "6b92edeb250b475e9d759f64df8eb91e"}'></script><!-- End Cloudflare Web Analytics -->
 </body>

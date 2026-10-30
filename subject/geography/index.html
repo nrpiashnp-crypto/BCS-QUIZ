@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="theme-color" content="#13294b">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ভূগোল, পরিবেশ ও দুর্যোগ ব্যবস্থাপনা: বিষয়ভিত্তিক প্রস্তুতি · লিয়ানা বুকস</title>
+<meta name="description" content="ভূগোল, পরিবেশ ও দুর্যোগ ব্যবস্থাপনা: ৫টি টপিক ধরে প্রস্তুতি: বিসিএস ও চাকরির প্রশ্নে অনুশীলন, ব্যাখ্যা আর টপিক টেস্ট।">
+<link rel="canonical" href="https://lyannabooks.com/subject/geography/">
+<meta property="og:type" content="website"><meta property="og:site_name" content="লিয়ানা বুকস">
+<meta property="og:title" content="ভূগোল, পরিবেশ ও দুর্যোগ ব্যবস্থাপনা: বিষয়ভিত্তিক প্রস্তুতি · লিয়ানা বুকস"><meta property="og:description" content="ভূগোল, পরিবেশ ও দুর্যোগ ব্যবস্থাপনা: ৫টি টপিক ধরে প্রস্তুতি: বিসিএস ও চাকরির প্রশ্নে অনুশীলন, ব্যাখ্যা আর টপিক টেস্ট।">
+<meta property="og:url" content="https://lyannabooks.com/subject/geography/"><meta property="og:image" content="https://lyannabooks.com/img/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/img/logo/apple-touch-icon.png">
+<link rel="preload" href="/fonts/AnekBangla-bengali.woff2" as="font" type="font/woff2" crossorigin>
+
+<link rel="stylesheet" href="/fonts/fonts.css">
+<link rel="stylesheet" href="/subject/s.css">
+<link rel="manifest" href="/manifest.webmanifest">
+<script src="/js/app.js" defer></script>
+<script src="/js/account.js" defer></script>
+<link rel="stylesheet" href="/css/omr.css"><script src="/js/omr.js" defer></script>
+</head>
+<body>
+<div class="sitebar"><a href="/" aria-label="লিয়ানা বুকস"><img src="/img/logo/li-mark.svg" alt="" width="34" height="44"><span class="lgn-n">লিয়ানা বুকস</span></a><nav class="sec" aria-label="সাইটের অংশ"><a href="/bcs/">বিসিএস</a><a href="/jobs/">চাকরি</a><a href="/science/">বিজ্ঞান</a><a href="/running/">চলমান</a></nav></div>
+<div class="wrap">
+<a class="back" href="/subject/">← সব বিষয়</a>
+<h1>ভূগোল, পরিবেশ ও দুর্যোগ ব্যবস্থাপনা</h1>
+<p class="sub">৫টি টপিক · প্রতিটিতে অনুশীলন, তারপর টপিক টেস্ট</p>
+<div class="meter" aria-hidden="true"><i id="bar" style="width:0"></i></div>
+<p class="pr" id="pr"></p>
+<div class="tiles" id="list"><p class="sub">লোড হচ্ছে…</p></div>
+<a class="mine" id="wrong" hidden style="margin-top:16px"></a>
+</div>
+<script>
+/* রোডম্যাপ: /subject/data/geography.json থেকে টপিক আর সেটের তালিকা। অগ্রগতি এই ফোনে 'subj:v1' =
+   {t:{<টপিক>:{s:{<সেট>:[সঠিক,মোট,সময়]}, best:<টেস্টের সেরা নম্বর>, pass:true|false}}}; ভুল প্রশ্ন 'subj:w' (q/ পাতা লেখে)। */
+const bn=n=>String(n).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+const fmt=x=>(x<0?'−':'')+bn(Number.isInteger(Math.abs(x))?Math.abs(x):Math.abs(x).toFixed(1));
+const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}};
+const P=get('subj:v1',{}),T=P.t||{},W=get('subj:w',{});
+const GL={b:'বিসিএসের প্রশ্ন',x:'অন্য পরীক্ষার প্রশ্ন',l:'সম্ভাব্য প্রশ্ন'};
+fetch('/subject/data/geography.json').then(r=>r.json()).then(D=>{
+  const list=document.getElementById('list');list.innerHTML='';
+  let done=0,openId=null;
+  D.topics.forEach(t=>{
+    const p=T[t.id]||{},s=p.s||{},nd=t.sets.filter(x=>s[x.id]).length;
+    if(p.pass)done++;else if(!openId)openId=t.id;
+    const box=document.createElement('div');box.className='topic';box.id=t.id;
+    const info=[`অনুশীলন ${bn(nd)}/${bn(t.sets.length)}`];if(p.best!=null)info.push(`টেস্ট ${fmt(p.best)}/${bn(p.n||D.test)}`);
+    box.innerHTML=`<button type="button" class="tile${p.pass?' done':''}" aria-expanded="false"><span class="ic">${p.pass?'✓':bn(t.no)}</span><span class="tx"><b>${t.name}</b><small>${info.join(' · ')}</small></span><span class="bt">▾</span></button>`;
+    const pan=document.createElement('div');pan.className='panel';pan.hidden=true;
+    let h='';
+    ['b','x','l'].forEach(k=>{const ss=t.sets.filter(x=>x.kind===k);if(!ss.length)return;
+      h+=`<div class="step"><h3>${GL[k]}</h3><div class="pills">`+ss.map(x=>`<a class="pill${s[x.id]?' ok':''}" href="/subject/q/?t=${t.id}&s=${x.id}">সেট ${bn(x.k)}</a>`).join('')+'</div></div>'});
+    h+=`<div class="step"><h3>টপিক টেস্ট</h3><a class="go${nd?'':' lock'}" href="/subject/q/?t=${t.id}&s=test">${nd?`টেস্ট দিন: ${bn(D.test)} প্রশ্ন, সময়সহ`:'আগে অন্তত একটি সেট অনুশীলন করুন'}</a><p class="note">${bn(Math.round(D.pass*100))}% বা বেশি পেলে টপিক সম্পন্ন।</p></div>`;
+    pan.innerHTML=h;box.appendChild(pan);
+    box.firstChild.onclick=()=>{const o=pan.hidden;document.querySelectorAll('.topic').forEach(b=>{b.classList.remove('open');b.lastChild.hidden=true;b.firstChild.setAttribute('aria-expanded','false')});
+      if(o){pan.hidden=false;box.classList.add('open');box.firstChild.setAttribute('aria-expanded','true')}};
+    list.appendChild(box);
+  });
+  document.getElementById('bar').style.width=(done/D.topics.length*100)+'%';
+  document.getElementById('pr').textContent=`${bn(done)}/${bn(D.topics.length)} টপিক সম্পন্ন`;
+  const want=location.hash.slice(1)||openId;const el=want&&document.getElementById(want);
+  if(el){el.firstChild.click();if(location.hash)el.scrollIntoView({block:'start'})}
+  const nw=Object.values(W).filter(q=>q.tp&&q.tp.startsWith('geo-')).length,w=document.getElementById('wrong');
+  if(nw){w.href='/subject/q/?w=geo';w.innerHTML=`ভুলের খাতা: <b>${bn(nw)}টি</b> প্রশ্ন আবার অনুশীলন করুন →`;w.hidden=false}
+}).catch(()=>{document.getElementById('list').innerHTML='<p class="sub">তালিকা আনা যায়নি। ইন্টারনেট দেখে আবার চেষ্টা করুন।</p>'});
+</script>
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "6b92edeb250b475e9d759f64df8eb91e"}'></script><!-- End Cloudflare Web Analytics -->
+<!--seo-links--><nav style="max-width:760px;margin:24px auto 0;padding:0 16px 24px;text-align:center;font:13px/1.8 'Noto Sans Bengali',system-ui,sans-serif"><a href="/" style="color:inherit;opacity:.75">লিয়ানা বুকস</a> · <a href="/questions/" style="color:inherit;opacity:.75">সব প্রশ্ন ও সমাধান</a> · <a href="https://www.facebook.com/profile.php?id=61595898604238" target="_blank" rel="noopener" style="color:inherit;opacity:.75"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true" style="vertical-align:-2px;margin-right:4px"><path fill="currentColor" d="M13.5 22v-8.2h2.8l.4-3.3h-3.2V8.4c0-.9.3-1.6 1.6-1.6h1.7V3.9a23 23 0 0 0-2.5-.1c-2.5 0-4.2 1.5-4.2 4.3v2.4H7.3v3.3h2.8V22h3.4Z"/></svg>ফেসবুক পেজ</a></nav><!--/seo-links-->
+</body>
+</html>
