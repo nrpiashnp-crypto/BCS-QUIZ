@@ -1,8 +1,9 @@
 /* রেজাল্টের নিচে শুভকামনা, একটা পরামর্শ আর বইয়ের কার্ড। স্কোর বক্স (#scorebox) ভরলেই নিজে থেকে বসে যায়।
    অধ্যায়ের পাতায় একবার: <script src="/js/result-card.js" defer></script>
-   নম্বর নেয় স্কোর বক্সের .ok/.no/.skip থেকে, অধ্যায়ের নাম book-link.js-এর data-chapter থেকে, নম্বর header .book থেকে। */
+   নম্বর নেয় স্কোর বক্সের .ok/.no/.skip থেকে, অধ্যায়ের নাম book-link.js-এর data-chapter থেকে, নম্বর header .book থেকে।
+   /bcs/ আর /jobs/ হাবে #scorebox পরে তৈরি হয়, তাই পুরো পাতা দেখে রাখা হয়; নেগেটিভ মার্ক পাতা LBX.neg-এ জানায়। কোড: LB-BCS, LB-JOBS। */
 (function(){
-  var box=document.getElementById('scorebox');if(!box)return;
+  var hub=/^\/(bcs|jobs)\//.test(location.pathname);
   var en=function(s){return +String(s).replace(/[০-৯]/g,function(d){return '০১২৩৪৫৬৭৮৯'.indexOf(d)}).replace(/[^0-9.]/g,'')||0};
   var bn=function(x){return String(x).replace(/[0-9]/g,function(d){return '০১২৩৪৫৬৭৮৯'[d]})};
   var bl=document.querySelector('script[src*="book-link.js"]'),ch=bl&&bl.dataset.chapter;
@@ -36,37 +37,43 @@
   document.head.appendChild(st);
 
   function wish(r){
-    if(r>=.8)return ['দারুণ! আপনি তৈরি হচ্ছেন','এই অধ্যায়ে আপনার প্রস্তুতি পরীক্ষার হলের জন্য প্রায় তৈরি। এই ধারা ধরে রাখুন, শুভকামনা রইল।'];
-    if(r>=.6)return ['ভালো ভিত্তি তৈরি হয়েছে','আর কয়েকটা ভুল ঠিক করলেই অধ্যায়টা আপনার। পরের বার আরও ভালো হবে, শুভকামনা।'];
+    if(r>=.8)return ['দারুণ! আপনি তৈরি হচ্ছেন',(hub?'এই পরীক্ষায়':'এই অধ্যায়ে')+' আপনার প্রস্তুতি পরীক্ষার হলের জন্য প্রায় তৈরি। এই ধারা ধরে রাখুন, শুভকামনা রইল।'];
+    if(r>=.6)return ['ভালো ভিত্তি তৈরি হয়েছে','আর কয়েকটা ভুল ঠিক করলেই '+(hub?'পরীক্ষাটা':'অধ্যায়টা')+' আপনার। পরের বার আরও ভালো হবে, শুভকামনা।'];
     if(r>=.4)return ['অর্ধেক পথ পার হয়েছেন','আজকের প্রতিটা ভুল পরীক্ষার হলে একটা করে নম্বর বাঁচাবে। লেগে থাকুন, শুভকামনা।'];
     return ['শুরুটা এভাবেই হয়','যাঁরা বিজ্ঞানে ভালো করেন, তাঁরাও একদিন এখান থেকেই শুরু করেছিলেন। হাল ছাড়বেন না, শুভকামনা রইল।'];
   }
-  function tip(ok,bad,blank,n,r){
-    if(bad>=4&&bad*2>ok)return 'নেগেটিভ মার্কিংয়ে আপনার '+bn(bad*.5)+' নম্বর কাটা গেছে। নিশ্চিত না হলে উত্তর ছেড়ে দেওয়াই ভালো।';
+  function tip(ok,bad,blank,n,r,neg){
+    if(neg&&bad>=4&&bad*2>ok)return 'নেগেটিভ মার্কিংয়ে আপনার '+bn(bad*neg)+' নম্বর কাটা গেছে। নিশ্চিত না হলে উত্তর ছেড়ে দেওয়াই ভালো।';
     if(blank>=Math.max(3,n*.3))return bn(blank)+'টি প্রশ্ন ছেড়ে দিয়েছেন। নিচের ব্যাখ্যাগুলো পড়ে নিলে পরের বার এগুলোও পারবেন।';
     if(r>=.8)return '২-৩ দিন পর আবার দিন। বিরতি দিয়ে আবার পড়লে পড়া অনেক দিন মনে থাকে।';
     return 'নিচে ভুল প্রশ্নগুলোর ব্যাখ্যা আগে পড়ুন, তারপর ২-৩ দিন পর আবার পরীক্ষা দিন।';
   }
   function render(){
+    var box=document.getElementById('scorebox');if(!box)return;
     var g=function(c){var e=box.querySelector('.'+c);return e?en(e.textContent):0};
     var ok=g('ok'),bad=g('no'),blank=g('skip'),n=ok+bad+blank;if(!n)return;
-    var r=(ok-bad*.5)/n;
+    var neg=window.LBX&&LBX.neg!=null?+LBX.neg:.5,r=(ok-bad*neg)/n;
+    var sig=[ok,bad,blank,neg].join('/'),old=document.querySelector('.rc');
+    if(old&&old.dataset.sig===sig&&old.parentNode===box.parentNode)return;
     var w=wish(r),low=r<.6,chName=ch?(no?'অধ্যায় '+no+': '+ch:ch+' অধ্যায়'):'';
-    var head=low?(ch?'এই অধ্যায়টা একবার গুছিয়ে পড়ে নিন':'অধ্যায়গুলো একবার গুছিয়ে পড়ে নিন'):(no?'বাকি ২০টা অধ্যায়ও এভাবে তৈরি করুন':'পুরো বিজ্ঞান এভাবে তৈরি করুন');
-    var body=low&&ch?'“লিয়ানা বিসিএস বিজ্ঞান” বইয়ের '+chName+'-এ এই পরীক্ষার প্রতিটা বিষয় সহজ ভাষায় সাজানো, কোন বিসিএসে কী এসেছে তা চিহ্নিত।'
+    var head=hub?'বিসিএস ও চাকরির বিজ্ঞান এক বইয়ে তৈরি করুন':low?(ch?'এই অধ্যায়টা একবার গুছিয়ে পড়ে নিন':'অধ্যায়গুলো একবার গুছিয়ে পড়ে নিন'):(no?'বাকি ২০টা অধ্যায়ও এভাবে তৈরি করুন':'পুরো বিজ্ঞান এভাবে তৈরি করুন');
+    var body=hub?'“লিয়ানা বিসিএস বিজ্ঞান”: বিগত বিসিএস ও চাকরির পরীক্ষার প্রশ্ন বিশ্লেষণ করে লেখা। ২১টা অধ্যায়ে প্রিলি আর লিখিত দুটোর বিজ্ঞান, কোন পরীক্ষায় কী এসেছে তা চিহ্নিত।'
+      :low&&ch?'“লিয়ানা বিসিএস বিজ্ঞান” বইয়ের '+chName+'-এ এই পরীক্ষার প্রতিটা বিষয় সহজ ভাষায় সাজানো, কোন বিসিএসে কী এসেছে তা চিহ্নিত।'
       :'“লিয়ানা বিসিএস বিজ্ঞান”: ২১টা অধ্যায়, প্রিলি আর লিখিত দুটোর বিজ্ঞান এক বইয়ে।';
-    var old=document.querySelector('.rc');if(old)old.remove();
-    var d=document.createElement('div');d.className='rc';
+    if(old)old.remove();
+    var d=document.createElement('div');d.className='rc';d.dataset.sig=sig;
     d.innerHTML='<div class="rc-wish"><span class="rc-tag">শুভকামনা</span><h3>'+w[0]+'</h3><p>'+w[1]+'</p>'+
-      '<p class="rc-tip"><b>পরামর্শ:</b> '+tip(ok,bad,blank,n,r)+'</p></div>'+
+      '<p class="rc-tip"><b>পরামর্শ:</b> '+tip(ok,bad,blank,n,r,neg)+'</p></div>'+
       '<div class="rc-book"><img src="/img/cover.webp" alt="লিয়ানা বিসিএস বিজ্ঞান বইয়ের প্রচ্ছদ" width="78" loading="lazy">'+
       '<div><div class="t">লিয়ানা বুকস-এর বই · প্রি-অর্ডার চলছে</div><h4>'+head+'</h4><p>'+body+'</p>'+
       '<div class="rc-code"><span>আপনার জন্য কোড</span><code>'+CODE+'</code><span>প্রতি কপিতে আরও ৳২০ ছাড়</span></div>'+
       '<p class="rc-price"><b>৳৩৩০</b><s>৳৫০০</s>কোডসহ · ডেলিভারি ফ্রি</p>'+
       '<div class="rc-cta"><a class="go" href="/book/?preorder&from='+slug+'-result&code='+CODE+'">প্রি-অর্ডার করুন →</a><a class="s" href="/sample/sound/?from='+slug+'-result">নমুনা অধ্যায় পড়ুন</a></div>'+
       '<p class="rc-note">সব পরীক্ষা সবসময় ফ্রি থাকবে। বই বিক্রির টাকায় সাইটটা চলে।</p></div></div>';
-    box.parentNode.insertBefore(d,box.nextSibling);
+    var after=box.nextElementSibling&&box.nextElementSibling.id==='weak'?box.nextElementSibling:box;
+    after.parentNode.insertBefore(d,after.nextSibling);
     try{localStorage.setItem('lb:code',CODE)}catch(e){}
   }
-  new MutationObserver(render).observe(box,{childList:true});
+  var t;new MutationObserver(function(){clearTimeout(t);t=setTimeout(render,50)}).observe(document.body,{childList:true,subtree:true});
+  render();
 })();

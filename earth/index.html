@@ -135,7 +135,7 @@ footer{margin-top:24px;font-size:14px;color:var(--muted)}
 </section>
 
 <section id="exam" hidden>
-  <div class="bar"><span class="clock" id="clock">১৫:০০</span><span>উত্তর <b id="ans">০</b> / <b id="tot">২৫</b></span><button class="btn" id="submit" type="button">জমা দিন</button></div>
+  <div class="bar"><span class="clock" id="clock" role="timer" aria-label="বাকি সময়">১৫:০০</span><span>উত্তর <b id="ans">০</b> / <b id="tot">২৫</b></span><button class="btn" id="submit" type="button">জমা দিন</button></div>
   <main id="elist"></main>
   <div class="btns"><button class="btn" id="submit2" type="button">জমা দিন</button></div>
 </section>
@@ -187,9 +187,9 @@ function startExam(){
     const s=document.createElement('section');s.className='q';
     s.innerHTML=`<div class="qh"><span class="num">${bn(i+1)}.</span><p class="qt">${q.q}${srcLine(q)}</p></div><div class="opts"></div>`;
     const o=s.querySelector('.opts');
-    q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';
+    q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';b.setAttribute('aria-pressed','false');
       b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;
-      b.onclick=()=>{pick[i]=pick[i]===j?-1:j;[...o.children].forEach(x=>x.classList.toggle('sel',x===b&&pick[i]===j));$('ans').textContent=bn(pick.filter(x=>x>=0).length)};
+      b.onclick=()=>{pick[i]=pick[i]===j?-1:j;[...o.children].forEach(x=>{const s=x===b&&pick[i]===j;x.classList.toggle('sel',s);x.setAttribute('aria-pressed',s)});$('ans').textContent=bn(pick.filter(x=>x>=0).length)};
       o.appendChild(b)});
     box.appendChild(s);
   });
@@ -245,7 +245,7 @@ function renderPrac(){
     const s=document.createElement('section');s.className='q';
     s.innerHTML=`<div class="qh"><span class="num">${bn(i+1)}.</span><p class="qt">${q.q}${srcLine(q)}</p></div><div class="opts"></div>`;
     const o=s.querySelector('.opts');
-    q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';
+    q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';b.setAttribute('aria-pressed','false');
       b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;
       b.onclick=()=>{[...o.children].forEach(x=>x.disabled=true);o.children[q.a].classList.add('right');
         const good=j===q.a;if(!good)b.classList.add('wrong');pdone++;if(good)pok++;upd();window.LW&&LW.mark(q,good);

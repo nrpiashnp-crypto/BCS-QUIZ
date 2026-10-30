@@ -314,7 +314,7 @@ async function exam(id){
    <div class="facts"><div class="fact"><b>${bn(Q.length)}</b><span>প্রশ্ন</span></div><div class="fact"><b>${bn(MIN)}</b><span>মিনিট</span></div></div><b id="negt" hidden></b>
    <p class="lbl">নেগেটিভ মার্কিং</p><div class="chips" id="negc"><button type="button" class="chip" data-v="0.5" aria-pressed="true">−০.৫</button><button type="button" class="chip" data-v="0.25" aria-pressed="false">−০.২৫</button><button type="button" class="chip" data-v="0" aria-pressed="false">নেই</button></div>
    <div class="hist" id="hist" hidden></div></section>
-  <section id="exam" hidden><div class="bar"><span class="clock" id="clock"></span><span>উত্তর <b id="ans">০</b> / <b>${bn(Q.length)}</b></span><button class="btn" id="submit" type="button">জমা দিন</button></div><main id="elist"></main><div class="btns"><button class="btn" id="submit2" type="button">জমা দিন</button></div></section>
+  <section id="exam" hidden><div class="bar"><span class="clock" id="clock" role="timer" aria-label="বাকি সময়"></span><span>উত্তর <b id="ans">০</b> / <b>${bn(Q.length)}</b></span><button class="btn" id="submit" type="button">জমা দিন</button></div><main id="elist"></main><div class="btns"><button class="btn" id="submit2" type="button">জমা দিন</button></div></section>
   <section id="result" hidden><div class="score" id="scorebox"></div><div id="weak"></div><div class="btns"><button class="btn" id="again" type="button">আবার পরীক্ষা দিন</button><a class="btn ghost" href="${CAT[c].flat?'#/'+c:`#/${c}/${s}/${E.org}`}">অন্য পরীক্ষা</a></div><h2>উত্তর ও ব্যাখ্যা</h2><main id="rlist"></main></section>
   <section id="prac" hidden><div class="bar"><span>সঠিক <b id="pok">০</b> / উত্তর <b id="pdone">০</b> / মোট <b id="ptot">০</b></span><button class="btn ghost" id="back" type="button">শুরুর পাতা</button></div><div class="chips" id="chips"></div><main id="plist"></main></section>`;
   const dn=E.neg!=null?String(E.neg):'0.5';try{NEG=parseFloat(localStorage.getItem('job-neg')||dn)}catch(e){NEG=parseFloat(dn)}
@@ -339,8 +339,8 @@ function startExam(){
   paper.forEach((qi,i)=>{const q=Q[qi];
     const s=document.createElement('section');s.className='q';s.innerHTML=qhtml(q,i)+'<div class="opts"></div>';
     const o=s.querySelector('.opts');
-    q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;
-      b.onclick=()=>{pick[i]=pick[i]===j?-1:j;[...o.children].forEach(x=>x.classList.toggle('sel',x===b&&pick[i]===j));$('ans').textContent=bn(pick.filter(x=>x>=0).length)};o.appendChild(b)});
+    q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';b.setAttribute('aria-pressed','false');b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;
+      b.onclick=()=>{pick[i]=pick[i]===j?-1:j;[...o.children].forEach(x=>{const s=x===b&&pick[i]===j;x.classList.toggle('sel',s);x.setAttribute('aria-pressed',s)});$('ans').textContent=bn(pick.filter(x=>x>=0).length)};o.appendChild(b)});
     box.appendChild(s)});
   $('ans').textContent='০';startAt=Date.now();endAt=startAt+MIN*60000;tick();clearInterval(timer);timer=setInterval(tick,500);show('exam');
 }
@@ -382,7 +382,7 @@ function finish(){
     s.innerHTML=qhtml(q,i)+`<div class="opts">${q.o.map((t,j)=>`<button type="button" class="opt${j===q.a?' right':''}${j===p&&p!==q.a?' wrong':''}" disabled><span class="k">${K[j]}</span><span>${t}</span></button>`).join('')}</div>
      <div class="exp">${p<0?'<span class="skip">উত্তর দেননি।</span> সঠিক উত্তর: '+K[q.a]+'।':p===q.a?'<span class="ok">সঠিক (+১)।</span>':'<span class="no">ভুল ('+(NEG?'−'+bn(NEG):'০')+')।</span> সঠিক উত্তর: '+K[q.a]+'।'} ${q.e||''}<a class="bl" href="../book/">লিয়ানা বুকস · ‘লিয়ানা বিসিএস বিজ্ঞান’ বইটি দেখুন →</a></div>`;
     box.appendChild(s)});
-  window.LBX={file:new URL(E.file,location.href).pathname,idx:paper.slice(),picks:pick.slice()};
+  window.LBX={file:new URL(E.file,location.href).pathname,idx:paper.slice(),picks:pick.slice(),neg:NEG};
   show('result');drawHist();
 }
 function renderPrac(f){
@@ -394,7 +394,7 @@ function renderPrac(f){
   const box=$('plist');box.innerHTML='';
   L.forEach((q,i)=>{const s=document.createElement('section');s.className='q';s.innerHTML=qhtml(q,i)+'<div class="opts"></div>';
     const o=s.querySelector('.opts');
-    q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;
+    q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';b.setAttribute('aria-pressed','false');b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;
       b.onclick=()=>{[...o.children].forEach(x=>x.disabled=true);o.children[q.a].classList.add('right');const g=j===q.a;if(!g)b.classList.add('wrong');done++;if(g)ok++;upd();
         const e=document.createElement('div');e.className='exp';e.innerHTML=`<span class="${g?'ok':'no'}">${g?'সঠিক।':'ভুল। সঠিক উত্তর: '+K[q.a]+'।'}</span> ${q.e||''}<a class="bl" href="../book/">লিয়ানা বুকস · ‘লিয়ানা বিসিএস বিজ্ঞান’ বইটি দেখুন →</a>`;s.appendChild(e)};o.appendChild(b)});
     box.appendChild(s)});
@@ -421,6 +421,7 @@ fetch('data/catalog.json').then(r=>r.json()).then(c=>{CATALOG=c;route()}).catch(
 </script>
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "6b92edeb250b475e9d759f64df8eb91e"}'></script><!-- End Cloudflare Web Analytics -->
 <script src="/js/score-mark.js" defer></script>
+<script src="/js/result-card.js" defer></script>
 <script src="/js/account.js" defer></script>
 <!--seo-links--><nav style="max-width:760px;margin:24px auto 0;padding:0 16px 24px;text-align:center;font:13px/1.8 'Noto Sans Bengali',system-ui,sans-serif"><a href="/" style="color:inherit;opacity:.75">লিয়ানা বুকস</a> · <a href="/questions/#gb" style="color:inherit;opacity:.75">ব্যাংক ও সরকারি চাকরির প্রশ্ন ও সমাধান পড়ুন</a> · <a href="/questions/" style="color:inherit;opacity:.75">সব প্রশ্ন ও সমাধান</a> · <a href="https://www.facebook.com/profile.php?id=61595898604238" target="_blank" rel="noopener" style="color:inherit;opacity:.75"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true" style="vertical-align:-2px;margin-right:4px"><path fill="currentColor" d="M13.5 22v-8.2h2.8l.4-3.3h-3.2V8.4c0-.9.3-1.6 1.6-1.6h1.7V3.9a23 23 0 0 0-2.5-.1c-2.5 0-4.2 1.5-4.2 4.3v2.4H7.3v3.3h2.8V22h3.4Z"/></svg>ফেসবুক পেজ</a></nav><!--/seo-links-->
 </body>
