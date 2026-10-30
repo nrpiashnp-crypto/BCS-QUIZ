@@ -91,7 +91,7 @@ addEventListener('DOMContentLoaded',function(){
 const $=id=>document.getElementById(id);
 const bn=n=>String(n).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
 const en=s=>+String(s).replace(/[০-৯]/g,d=>'০১২৩৪৫৬৭৮৯'.indexOf(d));
-const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=x=>(x<0?'−':'')+bn(Math.abs(Math.round(x*100)/100));
 const pct=r=>Math.round(Math.max(0,r)*100);
 const tone=p=>p>=50?'g':p>=30?'m':'r';

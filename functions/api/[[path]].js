@@ -390,6 +390,8 @@ async function chSetup(db) {
 }
 // এক আইপি থেকে ঘণ্টায় ৩০টা চ্যালেঞ্জ; একটা চ্যালেঞ্জে এক আইপির ৩টা আর মোট ১০০০টা চেষ্টা বোর্ডে ওঠে
 const CH_MAX_Q = 200, CH_MAX_BYTES = 300000, CH_PER_HOUR = 30, CH_IP_TRIES = 3, CH_MAX_TRIES = 1000;
+// সব আইপি মিলিয়ে দিনে এতগুলোর বেশি চ্যালেঞ্জ জমা হয় না, যাতে আইপি বদলে বদলে কেউ D1-এর দৈনিক লেখার কোটা শেষ করতে না পারে
+const CH_PER_DAY_ALL = 3000;
 // প্রশ্নে শুধু এই ট্যাগগুলো থাকে, কোনো অ্যাট্রিবিউট ছাড়া; ছবি শুধু এই সাইটের (/…) src দিয়ে। পাতাও আবার ছেঁকে নেয়
 const CH_TAGS = new Set(['b', 'i', 'u', 'sub', 'sup', 'br', 'table', 'thead', 'tbody', 'tr', 'td', 'th', 'span', 'p', 'div', 'small', 'strong', 'em']);
 const chImg = t => { const m = t.match(/\ssrc\s*=\s*["']?(\/(?!\/)[\w\-./%]+)/i); return m ? '<img src="' + m[1] + '" alt="">' : ''; };
@@ -445,6 +447,8 @@ async function challenge(path, req, db) {
     const ip = await chIp(req), now = Date.now();
     const recent = await db.prepare('SELECT COUNT(*) AS n FROM ch WHERE iph = ? AND ts > ?').bind(ip, now - 3600e3).first();
     if (recent && recent.n >= CH_PER_HOUR) return json({error: 'slow'}, 429);
+    const today = await db.prepare('SELECT COUNT(*) AS n FROM ch WHERE ts > ?').bind(now - 86400e3).first();
+    if (today && today.n >= CH_PER_DAY_ALL) return json({error: 'slow'}, 429);
     let qs, picks, ok, sec, title = str(body.title, 120) || '', src = str(body.src, 200) || '', parent = null;
     if (typeof body.from === 'string') {
       // পাল্টা চ্যালেঞ্জ: একই প্রশ্ন, আর নম্বর সেটাই যা এই ফোন ওই চ্যালেঞ্জে আসলে পেয়েছে
@@ -511,8 +515,9 @@ async function challenge(path, req, db) {
 export async function onRequest({request: req, env}) {
   const url = new URL(req.url), path = url.pathname.replace(/^\/api\/?/, '').replace(/\/+$/, ''), m = req.method;
   if (m === 'POST') {
+    // ব্রাউজার সব POST-এ Origin পাঠায়; না থাকলে বা অন্য সাইটের হলে নেওয়া হয় না (CSRF)
     const o = req.headers.get('Origin');
-    if (o && o !== url.origin) return json({error: 'origin'}, 403);
+    if (!o || o !== url.origin) return json({error: 'origin'}, 403);
   }
   const db = env.DB;
   try {
