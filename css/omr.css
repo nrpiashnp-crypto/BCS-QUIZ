@@ -112,3 +112,15 @@ a{color:#13294b}
 .chx-b{flex:1 1 120px;border:1.4px solid #13294b;background:#fff;color:#13294b!important}
 .chx-b.wa{background:#1e7a46;border-color:#1e7a46;color:#fff!important}
 .chx-b.fb{background:#1b4ea0;border-color:#1b4ea0;color:#fff!important}
+
+/* হোভার: মাউস নিলে বোঝা যাবে কোনটা চাপা যায় (হাতের কার্সর + রং/উঁচু হওয়া); ফোনে ছোঁয়ার পর .btn একটু ডুবে যায় */
+a,button,summary,[role=button],.chip,.tile,.oc,.tl,.ch2,.opt:not(:disabled){cursor:pointer}
+button:disabled{cursor:default}
+.btn,.chip,.tile,.oc,.tl,.ch2,.more,.cta,.chx-b,.sitebar nav a{transition:background-color .15s,border-color .15s,color .15s,box-shadow .15s,transform .15s}
+.btn.ghost:hover{background:#fff1f5!important;border-color:#c8326a!important}
+.btn:hover,.cta:hover,.more:hover,.chx-b:hover{box-shadow:0 2px 0 rgba(19,41,75,.25);transform:translateY(-1px)}
+.btn:active,.cta:active,.more:active,.chx-b:active{transform:translateY(1px);box-shadow:none}
+.chip:hover:not([aria-pressed="true"]){border-color:#c8326a!important;background:#fff1f5!important}
+.tile:hover,.oc:hover,.tl:hover,.ch2:hover{border-color:#c8326a!important;box-shadow:0 3px 12px rgba(19,41,75,.1);transform:translateY(-1px)}
+.more:hover{border-color:#c8326a!important;background:#fff1f5!important}
+.exp .bl:hover,.sub a:hover,.crumb a:hover,.lh a:hover,p a:hover{text-decoration:underline}
