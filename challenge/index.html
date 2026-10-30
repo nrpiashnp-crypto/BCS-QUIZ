@@ -137,7 +137,7 @@ button{font:inherit;cursor:pointer}
   <div class="vs"><div class="side"><span class="who" id="iname"></span><span class="pts" id="ipts"></span><span class="tm" id="itm"></span></div>
     <span class="vsx">বনাম</span><div class="side me"><span class="who">আপনি</span><span class="pts">?</span><span class="tm">দেখা যাক!</span></div></div>
   <form class="start" id="iform"><label><span>আপনার নাম</span><input id="iname2" maxlength="24" autocomplete="given-name" placeholder="যেমন: করিম" required></label><button class="btn" type="submit">পরীক্ষা শুরু করুন</button></form>
-  <ul class="rules"><li>সময় শেষ হলে নিজে থেকে জমা হবে</li><li>ভুলে নম্বর কাটা নেই</li><li>প্রথমবারের ফলই বোর্ডে ওঠে</li></ul>
+  <ul class="rules"><li>সময় শেষ হলে নিজে থেকে জমা হবে</li><li>ভুলে নম্বর কাটা নেই, শুধু সঠিক সংখ্যা তুলনা হয়</li><li>প্রথমবারের ফলই বোর্ডে ওঠে</li></ul>
   <div id="iboard"></div>
 </section>
 
@@ -174,7 +174,7 @@ button{font:inherit;cursor:pointer}
 </section>
 </div>
 <script src="/js/account.js" defer></script>
-<script src="/js/challenge.js?v=2"></script>
+<script src="/js/challenge.js?v=3"></script>
 <script>
 (function(){
 var $=function(i){return document.getElementById(i)},K=['ক','খ','গ','ঘ','ঙ','চ'],bn=LBC.bn,ls=LBC.store,safe=LBC.safe;
@@ -249,7 +249,7 @@ fetch('/api/ch/'+id).then(function(r){if(r.status===404)throw 404;if(!r.ok)throw
   var done=null;try{done=JSON.parse(ls('ch:done:'+id)||'null')}catch(e){}
   if(done&&done.me){done.top=c.top;done.count=c.count;if(c.mine)done.rank=c.mine.rank;return result(done)}
   if(ls('ch:own:'+id))return own(c);
-  intro(c)}).catch(function(e){if(e!==404)$('errp').textContent='এখন খোলা গেল না। ইন্টারনেট সংযোগ দেখে পাতাটা আবার খুলুন।';show('err')});
+  intro(c)}).catch(function(e){if(e!==404)$('errp').textContent=navigator.onLine===false||typeof e!=='number'?'এখন খোলা গেল না। ইন্টারনেট সংযোগ দেখে পাতাটা আবার খুলুন।':'সার্ভারে সমস্যা হচ্ছে, একটু পরে পাতাটা আবার খুলুন।';show('err')});
 })();
 </script>
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "6b92edeb250b475e9d759f64df8eb91e"}'></script><!-- End Cloudflare Web Analytics -->

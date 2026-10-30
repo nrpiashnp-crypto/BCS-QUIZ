@@ -39,8 +39,6 @@
       '.lba-card{display:flex;flex-direction:column;align-items:center;gap:8px;border-style:solid;border-color:#e6c97a;background:rgba(230,201,122,.10);padding:16px 16px 12px}'+
       '.lba-card b{font-size:17px;color:var(--ink,#1d1f21)}.lba-card small{font-size:13px}.lba-g{min-height:44px;display:grid;place-items:center}'+
       '.lba-x{background:none;border:0;padding:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer}'+
-      '@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .lba-card b{color:#f1efe9}}:root[data-theme="dark"] .lba-card b{color:#f1efe9}'+
-      '@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .lba-note a{color:#e6c97a}}:root[data-theme="dark"] .lba-note a{color:#e6c97a}'+
       'nav.sec a.lba-me{display:grid;place-items:center;flex-shrink:0;width:30px;height:30px;margin-left:4px;border-radius:50%;background:rgba(230,201,122,.18);color:#e6c97a;text-decoration:none;overflow:hidden;padding:0;align-self:center}'+
       '.lba-me img{width:100%;height:100%;object-fit:cover}.lba-me svg{width:18px;height:18px}'+
       '@media(max-width:340px){nav.sec a.lba-me{display:none}}';
@@ -124,7 +122,7 @@
   function badge(){
     var nav=document.querySelector('.sitebar nav.sec, .bar nav.sec');if(!nav||document.querySelector('.lba-me'))return;
     style();
-    var u=user(),a=document.createElement('a');a.className='lba-me';a.href='/account/';
+    var u=user(),a=document.createElement('a');a.className='lba-me';a.href='/account/';a.setAttribute('aria-label','আমার ড্যাশবোর্ড');a.title='আমার ড্যাশবোর্ড';
     a.setAttribute('aria-label',u?'আমার ড্যাশবোর্ড':'লগইন ও আমার ড্যাশবোর্ড');a.title=a.getAttribute('aria-label');
     if(location.pathname==='/account/')a.setAttribute('aria-current','page');
     a.innerHTML=u&&u.pic?'<img src="'+u.pic.replace(/"/g,'')+'" alt="" referrerpolicy="no-referrer">'

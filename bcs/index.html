@@ -275,7 +275,7 @@ function startExam(){
     const s=document.createElement('section');s.className='q';s.innerHTML=qhtml(q,i)+'<div class="opts"></div>';
     const o=s.querySelector('.opts');
     q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;
-      b.onclick=()=>{if(pick[i]>=0)return;pick[i]=j;b.classList.add('sel');[...o.children].forEach(x=>x.disabled=true);$('ans').textContent=bn(pick.filter(x=>x>=0).length)};o.appendChild(b)});
+      b.onclick=()=>{pick[i]=pick[i]===j?-1:j;[...o.children].forEach(x=>x.classList.toggle('sel',x===b&&pick[i]===j));$('ans').textContent=bn(pick.filter(x=>x>=0).length)};o.appendChild(b)});
     box.appendChild(s)});
   $('ans').textContent='০';startAt=Date.now();endAt=startAt+MIN*60000;tick();clearInterval(timer);timer=setInterval(tick,500);show('exam');
 }
@@ -313,6 +313,7 @@ function finish(){
     s.innerHTML=qhtml(q,i)+`<div class="opts">${q.o.map((t,j)=>`<button type="button" class="opt${j===q.a?' right':''}${j===p&&p!==q.a?' wrong':''}" disabled><span class="k">${K[j]}</span><span>${t}</span></button>`).join('')}</div>
      <div class="exp">${p<0?'<span class="skip">উত্তর দেননি।</span> সঠিক উত্তর: '+K[q.a]+'।':p===q.a?'<span class="ok">সঠিক (+১)।</span>':'<span class="no">ভুল ('+(NEG?'−'+bn(NEG):'০')+')।</span> সঠিক উত্তর: '+K[q.a]+'।'} ${q.e||''}${BOOK}</div>`;
     box.appendChild(s)});
+  window.LBX={file:new URL(E.file,location.href).pathname,idx:paper.slice(),picks:pick.slice()};
   show('result');drawHist();
 }
 function renderPrac(f){
