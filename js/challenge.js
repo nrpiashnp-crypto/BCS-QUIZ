@@ -45,8 +45,15 @@ function share(box,id,text){var u=link(id),msg=text+'\n'+u;
    if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(msg).then(done,old);else old()};
   var mo=box.querySelector('.mo');if(mo)mo.onclick=function(){navigator.share({title:'লিয়ানা বুকস চ্যালেঞ্জ',text:text,url:u}).catch(function(){})};
   box.hidden=false}
-function post(body){return fetch('/api/ch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json().then(function(j){if(!r.ok||!j.id)throw j;return j})})}
-function fail(e){return e&&e.error==='slow'?'এক ঘণ্টায় অনেকগুলো চ্যালেঞ্জ হয়ে গেছে, একটু পরে আবার চেষ্টা করুন।':e&&e.error==='bad'?'এই পরীক্ষা থেকে চ্যালেঞ্জ বানানো গেল না।':e&&e.error==='first'?'আগে চ্যালেঞ্জটা নিজে দিয়ে নিন, তারপর পাল্টা চ্যালেঞ্জ বানানো যাবে।':'ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।'}
+/* সার্ভার ৩০০ KB-র বেশি নেয় না; বড় পরীক্ষায় (২০০ প্রশ্ন, লম্বা ব্যাখ্যা) আগে ব্যাখ্যা ছোট করা হয়, তারপর বাদ, তবু বড় হলে প্রশ্ন কমানো */
+var MAXB=280000;
+function bytes(o){return new TextEncoder().encode(JSON.stringify(o)).length}
+function fit(body){if(!body.qs||bytes(body)<=MAXB)return body;
+  var cut=function(n){body.qs.forEach(function(q){if(q.e&&q.e.length>n)q.e=q.e.slice(0,n).replace(/<[^>]*$/,'')+(n?'…':'')})};
+  var steps=[1500,700,300,0];for(var i=0;i<steps.length&&bytes(body)>MAXB;i++)cut(steps[i]);
+  while(bytes(body)>MAXB&&body.qs.length>3){body.qs.pop();body.picks.pop()}return body}
+function post(body){return fetch('/api/ch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(fit(body))}).then(function(r){return r.json().catch(function(){return {error:'http'+r.status}}).then(function(j){if(!r.ok||!j.id)throw j;return j})})}
+function fail(e){return e&&e.error==='slow'?'এক ঘণ্টায় অনেকগুলো চ্যালেঞ্জ হয়ে গেছে, একটু পরে আবার চেষ্টা করুন।':e&&e.error==='bad'?'এই পরীক্ষা থেকে চ্যালেঞ্জ বানানো গেল না।':e&&e.error==='first'?'আগে চ্যালেঞ্জটা নিজে দিয়ে নিন, তারপর পাল্টা চ্যালেঞ্জ বানানো যাবে।':e&&e.error==='big'?'পরীক্ষাটা খুব বড়, লিংক বানানো গেল না।':e&&e.error?'সার্ভারে সমস্যা হচ্ছে ('+String(e.error).slice(0,20)+'), একটু পরে আবার চেষ্টা করুন।':'ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।'}
 
 function card(list){var el=document.createElement('div');el.className='chx';
   el.innerHTML='<div class="chx-h"><span class="chx-i" aria-hidden="true">⚔</span><div><b>বন্ধুকে চ্যালেঞ্জ করুন</b><small>এই প্রশ্নগুলোতেই বন্ধু আপনাকে হারাতে পারবে? লিংক পাঠান, লগইন ছাড়াই দিতে পারবে।</small></div></div>'+

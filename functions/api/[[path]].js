@@ -515,9 +515,9 @@ async function challenge(path, req, db) {
 export async function onRequest({request: req, env}) {
   const url = new URL(req.url), path = url.pathname.replace(/^\/api\/?/, '').replace(/\/+$/, ''), m = req.method;
   if (m === 'POST') {
-    // ব্রাউজার সব POST-এ Origin পাঠায়; না থাকলে বা অন্য সাইটের হলে নেওয়া হয় না (CSRF)
+    // অন্য সাইট থেকে আসা POST নেওয়া হয় না (CSRF); Origin না থাকলে আটকানো হয় না, কিছু ব্রাউজার একই সাইটের অনুরোধে পাঠায় না
     const o = req.headers.get('Origin');
-    if (!o || o !== url.origin) return json({error: 'origin'}, 403);
+    if (o && o !== url.origin) return json({error: 'origin'}, 403);
   }
   const db = env.DB;
   try {
