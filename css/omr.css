@@ -3,7 +3,7 @@
 :root{--paper:#f8f5ee!important;--ink:#1d1f21!important;--muted:#5d5a55!important;--rule:#e6d3d9!important;--card:#fffdf7!important;
   --navy:#13294b!important;--accent:#13294b!important;--accent-ink:#fff!important;--sel:#f7e6ec!important;--gold:#c8326a!important;--gold-hi:#f3cbd8!important;
   --soft:#f4ede3!important;--good:#1e7a46!important;--good-bg:#e5f3ea!important;--bad:#b3261e!important;--bad-bg:#fbe9e7!important;--warn:#8a5a00!important;
-  --pink:#c8326a;color-scheme:light!important}
+  --pink:#c8326a;color-scheme:only light!important}
 body{background:#f8f5ee!important;color:#1d1f21;position:relative;overflow-x:hidden;min-height:100vh}
 .omr{position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
 .omr svg{position:absolute;left:0;top:0}
