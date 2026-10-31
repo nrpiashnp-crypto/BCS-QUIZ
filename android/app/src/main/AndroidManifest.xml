@@ -6,6 +6,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <queries>
+        <package android:name="com.android.chrome" />
         <intent>
             <action android:name="android.support.customtabs.action.CustomTabsService" />
         </intent>
@@ -22,7 +23,7 @@
         <meta-data android:name="asset_statements" android:resource="@string/asset_statements" />
 
         <activity
-            android:name="com.google.androidbrowserhelper.trusted.LauncherActivity"
+            android:name=".Launcher"
             android:alwaysRetainTaskState="true"
             android:exported="true"
             android:label="@string/app_name">
