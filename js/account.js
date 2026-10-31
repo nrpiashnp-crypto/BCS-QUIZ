@@ -66,7 +66,7 @@
   }
   function done(el){
     el.className='lba-note';
-    el.innerHTML='✓ ফলটি আপনার ড্যাশবোর্ডে জমা হলো। <a href="/account/">ড্যাশবোর্ড দেখুন →</a>';
+    el.innerHTML='✓ ফলটি আপনার রেজাল্ট কার্ডে জমা হলো। <a href="/account/">রেজাল্ট কার্ড দেখুন →</a>';
   }
   function note(){
     var el=slot();if(!el)return;
@@ -132,8 +132,8 @@
   function badge(){
     var nav=document.querySelector('.sitebar nav.sec, .bar nav.sec');if(!nav||document.querySelector('.lba-me'))return;
     style();
-    var u=user(),a=document.createElement('a');a.className='lba-me';a.href='/account/';a.setAttribute('aria-label','আমার ড্যাশবোর্ড');a.title='আমার ড্যাশবোর্ড';
-    a.setAttribute('aria-label',u?'আমার ড্যাশবোর্ড':'লগইন ও আমার ড্যাশবোর্ড');a.title=a.getAttribute('aria-label');
+    var u=user(),a=document.createElement('a');a.className='lba-me';a.href='/account/';a.setAttribute('aria-label','আমার রেজাল্ট কার্ড');a.title='আমার রেজাল্ট কার্ড';
+    a.setAttribute('aria-label',u?'আমার রেজাল্ট কার্ড':'লগইন ও রেজাল্ট কার্ড');a.title=a.getAttribute('aria-label');
     if(location.pathname==='/account/')a.setAttribute('aria-current','page');
     a.innerHTML=u&&u.pic?'<img src="'+u.pic.replace(/"/g,'')+'" alt="" referrerpolicy="no-referrer">'
       :'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>';
