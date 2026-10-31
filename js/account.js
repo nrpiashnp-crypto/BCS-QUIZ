@@ -5,6 +5,9 @@
      c  = ধরন: ch অধ্যায় · jsci চাকরির বিজ্ঞান · bcs · job · run চলমান সিরিজ;  sb = {বিষয়: [সঠিক, মোট]}
      qa = LBA.qa(প্রশ্নের তালিকা, pick): উত্তর দেওয়া প্রতিটা প্রশ্নের [id, ঠিক 1/ভুল 0]; লগইন থাকলে 'lb:qa'-তে জমে /api/att-এর সঙ্গে যায়,
           সার্ভারে নাম ছাড়া প্রশ্ন ধরে গোনা হয় (কঠিনতা আর বেশি ভুল হওয়া প্রশ্ন বের করতে)
+     qd = প্রতিটি প্রশ্ন [id, দাগানো বিকল্প (ফাঁকা −1)]; LBA.qa() ডাকলেই নিজে তৈরি হয়, তাই কোনো পাতা বদলাতে হয় না।
+          ফলের সঙ্গে ফোনে থাকে (শেষ QD_KEEP টা ফলে) আর লগইন থাকলে সার্ভারে ব্যবহারকারীর নামে যায় (attq), কাস্টম প্ল্যানের জন্য।
+          লগইন না করে দেওয়া পরীক্ষাও পরে লগইন করলে উত্তরসহ যায়।
    পাতায় একবার: <script src="/js/account.js" defer></script>। নাম না দিলে অধ্যায়ের নাম book-link.js-এর data-chapter থেকে নেয়।
    লগইনের খবর 'lb:u'-তে রাখা হয়, তাই সাধারণ পাতায় সার্ভারে কোনো অনুরোধ যায় না (শুধু ফল জমা দিতে)। */
 (function(){
@@ -13,6 +16,7 @@
   var dev=get('lb:dev','');
   if(!dev){dev=Math.random().toString(36).slice(2,10);set('lb:dev',dev)}
   var user=function(){return get('lb:u',null)};
+  var QD_KEEP=150,lastQd=null;
 
   var busy=false;
   function flush(){
@@ -109,13 +113,19 @@
   function save(r){
     var a={k:dev+':'+r.k,ts:Date.now(),c:r.c||'ch',t:r.t||chapter()||document.title.split(/\s[·:]\s|:/)[0],p:location.pathname+location.hash,
       s:r.s,n:r.n,ok:r.ok,no:r.no,sec:r.sec};
+    var qd=r.qd||lastQd;lastQd=null;if(qd&&qd.length)a.qd=qd;
     if(r.sb){var sb={};Object.keys(r.sb).forEach(function(k){if(k&&r.sb[k][1])sb[k]=r.sb[k]});if(Object.keys(sb).length)a.sb=sb}
-    var all=get('lb:att',[]);all.push(a);set('lb:att',all.slice(-400));
+    var all=get('lb:att',[]);all.push(a);all=all.slice(-400);
+    // পুরোনো ফলের উত্তর-তালিকা বাদ (ফোনের জায়গা), সার শুধু থাকে
+    for(var i=0;i<all.length-QD_KEEP;i++)if(all[i].qd)delete all[i].qd;
+    set('lb:att',all);
     if(user()){var q=get('lb:q',[]);q.push(a);set('lb:q',q.slice(-1000));
       if(r.qa&&r.qa.length)set('lb:qa',get('lb:qa',[]).concat(r.qa).slice(-3000));flush()}
     note();
   }
-  function qa(qs,pick){var o=[];(qs||[]).forEach(function(q,i){if(q&&q.id&&pick[i]>=0)o.push([q.id,pick[i]===q.a?1:0])});return o}
+  function qa(qs,pick){
+    lastQd=(qs||[]).map(function(q,i){return [q&&q.id||'',pick[i]>=0?pick[i]:-1]}).filter(function(x){return x[0]});
+    var o=[];(qs||[]).forEach(function(q,i){if(q&&q.id&&pick[i]>=0)o.push([q.id,pick[i]===q.a?1:0])});return o}
   function chapter(){var b=document.querySelector('script[src*="book-link.js"]');return b&&b.dataset.chapter}
 
   // উপরের নীল বারে ছোট একটা গোল: লগইন থাকলে নিজের ছবি
