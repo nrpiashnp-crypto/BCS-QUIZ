@@ -1,0 +1,44 @@
+plugins { id 'com.android.application' }
+
+// সাইনিং চাবি রিপোতে নেই; GitHub Secrets থেকে পরিবেশ-চলক হয়ে আসে (.github/workflows/android.yml)
+def ks = System.getenv('LYANNA_KEYSTORE')
+
+android {
+    namespace 'com.lyannabooks.app'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'com.lyannabooks.app'
+        minSdk 21
+        targetSdk 36
+        versionCode 1
+        versionName '1.0.0'
+    }
+
+    signingConfigs {
+        if (ks) {
+            upload {
+                storeFile file(ks)
+                storePassword System.getenv('LYANNA_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('LYANNA_KEY_ALIAS')
+                keyPassword System.getenv('LYANNA_KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (ks) signingConfig signingConfigs.upload
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+}

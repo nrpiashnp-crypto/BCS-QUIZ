@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="theme-color" content="#13294b">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>শিক্ষার্থীদের ফল · লিয়ানা বুকস</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+
+:root{--paper:#fbfaf7;--ink:#1d1f21;--muted:#5f6366;--rule:#d9d6cf;--card:#fff;--navy:#13294b;--gold:#a8792a;--gold-hi:#e0b45c;--soft:#e9edf4;--mark:#fbe7a6;--link:#13294b;
+  --display:'Tiro Bangla',Georgia,serif;--body:'Noto Sans Bengali',system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#15181a;--ink:#e9e7e2;--muted:#a3a7aa;--rule:#33383b;--card:#1d2124;--gold:#e0b45c;--soft:#1c2536;--mark:#5a4a1c;--link:#e6c97a;color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#15181a;--ink:#e9e7e2;--muted:#a3a7aa;--rule:#33383b;--card:#1d2124;--gold:#e0b45c;--soft:#1c2536;--mark:#5a4a1c;--link:#e6c97a;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6}
+a{color:var(--link)}
+.bar{background:var(--navy);display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 16px;padding-top:max(8px,env(safe-area-inset-top,0px))}
+.bar img{width:96px;height:auto;display:block}.bar span{color:#e6c97a;font-size:14px}
+.wrap{max-width:860px;margin:0 auto;padding:20px 16px 120px}
+h1{font-family:var(--display);font-weight:400;font-size:28px;margin:0 0 4px}
+h2{font-family:var(--display);font-weight:400;font-size:20px;margin:26px 0 8px}
+.sub{color:var(--muted);margin:0 0 14px;font-size:14.5px}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:14px 16px}
+.btn{display:inline-block;background:var(--navy);color:#fff;border:0;border-radius:10px;padding:9px 16px;font:inherit;font-weight:600;font-size:15px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--link);border:1px solid var(--rule)}
+.btn:disabled{opacity:.5;cursor:default}
+:root[data-theme="dark"] .btn:not(.ghost){background:#e0b45c;color:#13294b}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn:not(.ghost){background:#e0b45c;color:#13294b}}
+form.q{display:flex;flex-wrap:wrap;gap:8px}
+form.q input[type=search]{flex:1 1 260px;min-width:0;font:inherit;font-size:17px;padding:10px 12px;border:1px solid var(--rule);border-radius:10px;background:var(--card);color:var(--ink)}
+select{font:inherit;font-size:14px;padding:8px;border:1px solid var(--rule);border-radius:10px;background:var(--card);color:var(--ink);max-width:100%}
+.stats{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;color:var(--muted);margin:10px 0 0}
+.stats b{color:var(--ink);font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--rule);vertical-align:top}
+th{color:var(--muted);font-weight:600}
+tr.pick{cursor:pointer}tr.pick:hover{background:var(--soft)}
+.ok{color:#2e7d4f;font-weight:600}.bad{color:#b23b3b;font-weight:600}.dim{color:var(--muted)}
+.day{background:var(--soft);font-weight:600}
+.scroll{overflow-x:auto}
+</style>
+</head>
+<body>
+<div class="bar"><a href="/" aria-label="লিয়ানা বুকস"><img src="/img/logo/li-mark.svg" alt="" width="34" height="44"><span class="lgn-n">লিয়ানা বুকস</span></a><span>অ্যাডমিন</span></div>
+<main class="wrap">
+<h1>শিক্ষার্থীদের ফল</h1>
+<p class="sub">লগইন করা শিক্ষার্থীদের প্রতিটি পরীক্ষা আর প্রতিটি উত্তর। শুধু অ্যাডমিন দেখতে পান। "উত্তর জমেছে" ঘরে ✓ মানে প্রশ্নের সংখ্যা আর সঠিক+ভুলের সংখ্যা উত্তর-তালিকার সঙ্গে মিলেছে।</p>
+<div id="msg" class="card dim">লোড হচ্ছে…</div>
+<section id="list" hidden><h2>শিক্ষার্থী</h2><div class="card scroll"><table><thead><tr><th>নাম</th><th>ইমেইল</th><th>পরীক্ষা</th><th>উত্তরসহ</th><th>শেষ পরীক্ষা</th></tr></thead><tbody id="users"></tbody></table></div></section>
+<section id="one" hidden>
+<h2 id="who"></h2>
+<p class="stats" id="sum"></p>
+<p><button class="btn" id="dl">JSON নামান</button> <button class="btn ghost" id="back">সবার তালিকায় ফিরুন</button></p>
+<div class="card scroll"><table><thead><tr><th>সময়</th><th>পরীক্ষা</th><th>নম্বর</th><th>সঠিক</th><th>ভুল</th><th>ফাঁকা</th><th>সময় লেগেছে</th><th>উত্তর জমেছে</th></tr></thead><tbody id="rows"></tbody></table></div>
+</section>
+</main>
+<script>
+const $=id=>document.getElementById(id),bn=x=>String(x).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const dhaka=ts=>new Date(ts).toLocaleString('en-GB',{timeZone:'Asia/Dhaka',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});
+const dayOf=ts=>new Date(ts).toLocaleDateString('en-GB',{timeZone:'Asia/Dhaka'});
+const mins=s=>s==null?'':bn(Math.floor(s/60))+' মি '+bn(s%60)+' সে';
+async function api(p){const r=await fetch('/api/'+p,{credentials:'same-origin',cache:'no-store'});if(r.status===401)throw 'login';if(r.status===403)throw 'admin';if(!r.ok)throw 'err';return r.json()}
+function fail(e){$('msg').hidden=false;$('msg').innerHTML=e==='login'?'আগে <a href="/account/">লগইন করুন</a> (অ্যাডমিন ইমেইল দিয়ে)।':e==='admin'?'এই ইমেইল অ্যাডমিন তালিকায় নেই।':'সার্ভার থেকে আনা যায়নি, আবার চেষ্টা করুন।'}
+// একটা ফল ঠিকমতো জমেছে কি না: উত্তর-তালিকার দৈর্ঘ্য = n, আর দাগানো = সঠিক + ভুল
+function check(a){if(!a.qd)return {ok:false,txt:'নেই',blank:a.n-(a.ok||0)-(a.no||0)};const ans=a.qd.filter(x=>x[1]>=0).length;
+  const good=a.qd.length===a.n&&(a.ok==null||a.no==null||ans===a.ok+a.no);return {ok:good,txt:good?'✓':'গরমিল ('+bn(a.qd.length)+'/'+bn(a.n)+')',blank:a.n-(a.ok||0)-(a.no||0)}}
+let cur=null;
+async function list(){
+  const j=await api('admin/learners');$('msg').hidden=true;$('one').hidden=true;$('list').hidden=false;
+  $('users').innerHTML=j.users.map(u=>`<tr class="pick" data-id="${u.id}"><td>${esc(u.name)}</td><td>${esc(u.email)}</td><td>${bn(u.tests)}</td><td>${bn(u.withq)}</td><td>${u.last?dhaka(u.last):'—'}</td></tr>`).join('')||'<tr><td colspan="5" class="dim">কেউ নেই</td></tr>';
+  document.querySelectorAll('#users tr.pick').forEach(tr=>tr.onclick=()=>one(tr.dataset.id));
+}
+async function one(id){
+  const j=await api('admin/att?uid='+encodeURIComponent(id));cur=j;$('list').hidden=true;$('one').hidden=false;history.replaceState(null,'','#'+id);
+  $('who').textContent=(j.user.name||'')+' · '+(j.user.email||'');
+  let last='',html='',good=0,withq=0;
+  j.att.forEach(a=>{const d=dayOf(a.ts),c=check(a);if(a.qd)withq++;if(c.ok)good++;
+    if(d!==last){last=d;html+=`<tr class="day"><td colspan="8">${bn(d)}</td></tr>`}
+    html+=`<tr><td>${dhaka(a.ts).split(', ')[1]||''}</td><td>${esc(a.t)}</td><td>${a.s==null?'':bn(Math.round(a.s*100)/100)} / ${bn(a.n)}</td><td>${bn(a.ok??'')}</td><td>${bn(a.no??'')}</td><td>${c.blank==null?'':bn(c.blank)}</td><td>${mins(a.sec)}</td><td class="${c.ok?'ok':a.qd?'bad':'dim'}">${c.txt}</td></tr>`});
+  $('rows').innerHTML=html||'<tr><td colspan="8" class="dim">কোনো পরীক্ষা নেই</td></tr>';
+  $('sum').innerHTML=`<span>মোট পরীক্ষা <b>${bn(j.att.length)}</b></span><span>উত্তরসহ <b>${bn(withq)}</b></span><span>ঠিকমতো মিলেছে <b>${bn(good)}</b></span>`;
+}
+$('back').onclick=()=>{history.replaceState(null,'',location.pathname);list().catch(fail)};
+$('dl').onclick=()=>{if(!cur)return;const b=new Blob([JSON.stringify(cur)],{type:'application/json'}),a=document.createElement('a');
+  a.href=URL.createObjectURL(b);a.download='learner-'+cur.user.id+'-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)};
+(location.hash.length>1?one(location.hash.slice(1)):list()).catch(fail);
+</script>
+</body>
+</html>

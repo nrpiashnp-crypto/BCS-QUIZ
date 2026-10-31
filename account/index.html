@@ -174,7 +174,7 @@ function draw(rows,mine){
   }
   h+=`<h2>পরীক্ষার ইতিহাস</h2><div class="rows">${rows.slice(0,shown).map(x=>`<a class="row" href="${esc(x.p||'/exams/')}"><span class="nm">${esc(x.t||KIND[x.c]||'পরীক্ষা')}</span><span class="vl t${tone(pct(r(x)))}">${fmt(x.s)}/${bn(x.n)}</span><span class="mt">${day(x.ts)} · ${KIND[x.c]||''}${x.ok!=null?' · সঠিক '+bn(x.ok)+', ভুল '+bn(x.no):''}</span></a>`).join('')}</div>`+
     (rows.length>shown?`<button type="button" class="btn ghost more" id="more">আরও দেখুন (${bn(rows.length-shown)})</button>`:'');
-  if(mine)h+='<div class="danger"><button type="button" class="lnk" id="del">আমার সব তথ্য মুছে ফেলুন</button></div>';
+  if(mine)h+='<p style="font-size:13.5px;text-align:center;margin:18px 0 0;color:var(--muted,#5f6366)">লগইন থাকলে আপনার প্রতিটি উত্তর আপনার অ্যাকাউন্টে থাকে, যাতে আপনার দুর্বল জায়গা ধরে প্রস্তুতির পরিকল্পনা বানানো যায়। <a href="/privacy/">বিস্তারিত</a></p><div class="danger"><button type="button" class="lnk" id="del">আমার সব তথ্য মুছে ফেলুন</button></div>';
   D.innerHTML=h;
   if($('more'))$('more').onclick=()=>{shown+=50;draw(rows,mine)};
   if($('del'))$('del').onclick=delAll;

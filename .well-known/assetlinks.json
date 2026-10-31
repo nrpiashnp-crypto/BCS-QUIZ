@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.lyannabooks.app",
+    "sha256_cert_fingerprints": [
+      "9C:5A:DD:97:9F:25:E8:4E:85:57:D1:B2:2A:C2:38:A6:FE:DD:B0:39:F4:8B:A6:BB:42:31:56:DB:DD:9A:09:F4"
+    ]
+  }
+}]

@@ -7,6 +7,10 @@
    GET  /api/att       → নিজের সব পরীক্ষার ফল
    POST /api/att       {a:[ফল…]} → জমা (একই k দুবার এলে একবারই থাকে)
    POST /api/delete    → নিজের সব তথ্য মুছে যায়
+   প্রতিটি উত্তর (ব্যবহারকারী ধরে, কাস্টম প্ল্যানের জন্য): /api/att-এর প্রতিটি ফলে qd = [[প্রশ্ন-id, দাগানো বিকল্প (ফাঁকা −1)], …]
+   → attq টেবিল (uid, k, ts, qd "id:বিকল্প,id:বিকল্প"), প্রতি পরীক্ষায় এক সারি (দিনে ১ লাখ সারি-লেখার সীমা মাথায় রেখে)
+   অ্যাডমিন (ADMIN_EMAILS): GET /api/admin/learners → সব ব্যবহারকারী, কয়টা পরীক্ষা, কয়টায় উত্তরের তালিকা আছে
+                           GET /api/admin/att?uid=… বা ?email=… → ওই ব্যবহারকারীর সব ফল আর উত্তর (পাতা /admin/learners/)
    প্রশ্ন ধরে উত্তরের হিসাব: POST /api/att-এর সঙ্গে {q:[[প্রশ্ন-id, ঠিক 1 / ভুল 0], …]} (শুধু লগইন করা ব্যবহারকারী) → qstat টেবিল
    (qid, দেখানো n, ঠিক ok, শেষ দেখা last), কার উত্তর সেটা রাখা হয় না। GET /api/qstat → {ts, rows:[[qid,n,ok,last]]}, সবার জন্য,
    ৬ ঘণ্টা ক্যাশে থাকে; Lyanna_data-র tools/pull_signals.py সপ্তাহে একবার এটা archive/signals/difficulty.json-এ আনে
@@ -51,6 +55,23 @@ async function quota(db, uid, a, q) {
   const addA = att ? a : 0, addQ = qa ? q : 0;
   if (addA || addQ) await db.prepare('UPDATE users SET an = ?, qn = ?, qday = ? WHERE id = ?').bind(an + addA, qn + addQ, day, uid).run();
   return {att, qa};
+}
+
+const ATTQ = 'CREATE TABLE IF NOT EXISTS attq(uid INTEGER NOT NULL, k TEXT NOT NULL, ts INTEGER NOT NULL, qd TEXT NOT NULL, PRIMARY KEY(uid, k))';
+const MAX_QD = 300;
+let attqReady = false;
+async function attqTable(db) { if (!attqReady) { await db.prepare(ATTQ).run(); attqReady = true; } }
+
+// একটা পরীক্ষার প্রতিটি প্রশ্ন: "id:বিকল্প" (ফাঁকা −1); id না মিললে বা তালিকা খালি হলে null
+function cleanQd(list) {
+  if (!Array.isArray(list) || !list.length) return null;
+  const out = [];
+  for (const x of list.slice(0, MAX_QD)) {
+    if (!Array.isArray(x) || typeof x[0] !== 'string' || !QID.test(x[0])) continue;
+    const p = Number.isInteger(x[1]) && x[1] >= -1 && x[1] <= 9 ? x[1] : -1;
+    out.push(x[0] + ':' + p);
+  }
+  return out.length ? out.join(',') : null;
 }
 
 function qaCount(list) {
@@ -544,6 +565,35 @@ async function challenge(path, req, db, env) {
   return json({error: 'not found'}, 404);
 }
 
+// অ্যাডমিন: কার কী ফল, প্রতিটি উত্তরসহ (কাস্টম প্ল্যান আর দিন-শেষের ডেটা-যাচাইয়ের জন্য)
+async function admin(path, url, env, db, u) {
+  if (!isAdmin(u, env)) return json({error: 'admin'}, 403);
+  await attqTable(db);
+  if (path === 'admin/learners') {
+    const {results} = await db.prepare(`SELECT u.id, u.name, u.email, u.created, u.seen,
+        (SELECT COUNT(*) FROM att a WHERE a.uid = u.id) tests,
+        (SELECT COUNT(*) FROM attq q WHERE q.uid = u.id) withq,
+        (SELECT MAX(ts) FROM att a WHERE a.uid = u.id) last
+      FROM users u ORDER BY last DESC NULLS LAST, u.id DESC LIMIT 1000`).all();
+    return json({ts: Date.now(), users: results});
+  }
+  if (path === 'admin/att') {
+    const em = (url.searchParams.get('email') || '').trim().toLowerCase(), id = parseInt(url.searchParams.get('uid') || '', 10);
+    const who = em ? await db.prepare('SELECT id, name, email, created, seen FROM users WHERE lower(email) = ?').bind(em).first()
+      : id ? await db.prepare('SELECT id, name, email, created, seen FROM users WHERE id = ?').bind(id).first() : null;
+    if (!who) return json({error: 'no user'}, 404);
+    const [a, q] = await db.batch([
+      db.prepare('SELECT k, ts, c, t, p, s, n, ok, no, sec, sb FROM att WHERE uid = ? ORDER BY ts').bind(who.id),
+      db.prepare('SELECT k, ts, qd FROM attq WHERE uid = ? ORDER BY ts').bind(who.id)
+    ]);
+    const qd = new Map(q.results.map(r => [r.k, r.qd.split(',').map(x => { const i = x.lastIndexOf(':'); return [x.slice(0, i), +x.slice(i + 1)]; })]));
+    return json({ts: Date.now(), user: who,
+      att: a.results.map(r => ({...r, sb: r.sb ? JSON.parse(r.sb) : null, qd: qd.get(r.k) || null}))},
+      200, {'Cache-Control': 'no-store'});
+  }
+  return json({error: 'not found'}, 404);
+}
+
 export async function onRequest({request: req, env}) {
   const url = new URL(req.url), path = url.pathname.replace(/^\/api\/?/, '').replace(/\/+$/, ''), m = req.method;
   if (m === 'POST') {
@@ -572,6 +622,7 @@ export async function onRequest({request: req, env}) {
     if (path === 'qstat' && m === 'GET') return await qstat(req, db);
     if (!u) return json({error: 'login'}, 401);
 
+    if (path.startsWith('admin/')) return await admin(path, url, env, db, u);
     if (path === 'att' && m === 'GET') {
       const {results} = await db.prepare('SELECT k, ts, c, t, p, s, n, ok, no, sec, sb FROM att WHERE uid = ? ORDER BY ts DESC LIMIT ?')
         .bind(u.id, MAX_ROWS).all();
@@ -589,12 +640,24 @@ export async function onRequest({request: req, env}) {
         const st = db.prepare('INSERT OR IGNORE INTO att(uid, k, ts, c, t, p, s, n, ok, no, sec, sb) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)');
         await db.batch(rows.map(r => st.bind(u.id, ...r)));
       }
+      // প্রতিটি উত্তর: ফলের k আর ts ধরে, একই k দুবার নয়। শুধু যে ফল এই জমায় গ্রহণ হলো তার উত্তর, তাই দৈনিক সীমার ভেতরেই থাকে
+      const keep = new Set(rows.map(r => r[0]));
+      const qds = (Array.isArray(body.a) ? body.a : []).slice(0, MAX_BATCH)
+        .map(a => a && typeof a === 'object' && str(a.k, 120) && num(a.ts) ? [str(a.k, 120), Math.round(a.ts), cleanQd(a.qd)] : null)
+        .filter(x => x && x[2] && keep.has(x[0]));
+      if (qds.length) {
+        await attqTable(db);
+        const sq = db.prepare('INSERT OR IGNORE INTO attq(uid, k, ts, qd) VALUES(?,?,?,?)');
+        await db.batch(qds.map(x => sq.bind(u.id, x[0], x[1], x[2])));
+      }
       // প্রশ্নের হিসাবের সীমা পার হলে চুপচাপ বাদ (এগুলো শুধু পরিসংখ্যান, ফোনে জমিয়ে রাখার দরকার নেই)
       const qs = can.qa ? await saveQa(db, by) : 0;
-      return json({ok: true, saved: rows.length, qs});
+      return json({ok: true, saved: rows.length, qs, qd: qds.length});
     }
     if (path === 'delete' && m === 'POST') {
+      await attqTable(db);
       await db.batch([
+        db.prepare('DELETE FROM attq WHERE uid = ?').bind(u.id),
         db.prepare('DELETE FROM att WHERE uid = ?').bind(u.id),
         db.prepare('DELETE FROM sessions WHERE uid = ?').bind(u.id),
         db.prepare('DELETE FROM users WHERE id = ?').bind(u.id)
