@@ -1,0 +1,47 @@
+# Android অ্যাপ (android/) বিল্ড করে: APK (সরাসরি ফোনে বসানোর জন্য) আর AAB (Google Play-তে তোলার জন্য)।
+# সাইনিং চাবি Secrets-এ: LYANNA_KEYSTORE_B64, LYANNA_KEYSTORE_PASSWORD, LYANNA_KEY_ALIAS, LYANNA_KEY_PASSWORD।
+# চাবি না থাকলে শুধু পরীক্ষার (debug) APK হয়।
+name: Android app
+on:
+  push:
+    paths: ['android/**', '.github/workflows/android.yml']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+      - name: Signing key
+        env:
+          KS: ${{ secrets.LYANNA_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KS" ]; then
+            echo "$KS" | base64 -d > "$RUNNER_TEMP/upload.jks"
+            echo "LYANNA_KEYSTORE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+          fi
+      - name: Build
+        working-directory: android
+        env:
+          LYANNA_KEYSTORE_PASSWORD: ${{ secrets.LYANNA_KEYSTORE_PASSWORD }}
+          LYANNA_KEY_ALIAS: ${{ secrets.LYANNA_KEY_ALIAS }}
+          LYANNA_KEY_PASSWORD: ${{ secrets.LYANNA_KEY_PASSWORD }}
+        run: |
+          if [ -n "$LYANNA_KEYSTORE" ]; then
+            gradle --no-daemon assembleRelease bundleRelease
+            mkdir -p out && cp app/build/outputs/apk/release/*.apk out/lyanna-books.apk && cp app/build/outputs/bundle/release/*.aab out/lyanna-books.aab
+          else
+            gradle --no-daemon assembleDebug
+            mkdir -p out && cp app/build/outputs/apk/debug/*.apk out/lyanna-books-debug.apk
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lyanna-books-android
+          path: android/out/
