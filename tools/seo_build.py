@@ -50,6 +50,9 @@ def rd(p):
 def wr(p, s):
     if p.endswith('index.html') and p != 'index.html':
         s = theme_apply(s)
+        # প্রশ্নের ব্যাখ্যা থাকলে প্রতিটির নিচে "প্রশ্নে ভুল আছে? জানান" বোতাম (js/report.js)
+        if '<div class="exp">' in s and '/js/report.js' not in s:
+            s = s.replace('</head>', '<script src="/js/report.js" defer></script></head>', 1)
     full = os.path.join(R, p)
     os.makedirs(os.path.dirname(full), exist_ok=True)
     old = open(full, encoding='utf-8').read() if os.path.exists(full) else None
@@ -176,7 +179,8 @@ def qblock(q, i, show_src=True):
     srch = f'<span class="src">{" · ".join(extra)}</span>' if extra else ''
     ans = q['o'][q['a']] if 0 <= q['a'] < len(q['o']) else ''
     exp = f'<div class="exp"><b class="h">উত্তর: {K[q["a"]] if q["a"] < len(K) else ""}. {ans}</b><br>{q["e"]}</div>' if q.get('e') else ''
-    return f'<li class="q" id="q{i}"><div class="qt"><span class="n">{bn(i)}.</span> {q["q"]}{srch}</div><ul>{opts}</ul>{exp}</li>'
+    did = f' data-id="{esc(q["id"])}"' if q.get('id') else ''
+    return f'<li class="q" id="q{i}"{did}><div class="qt"><span class="n">{bn(i)}.</span> {q["q"]}{srch}</div><ul>{opts}</ul>{exp}</li>'
 
 
 def by_subject(Q, show_src=False):

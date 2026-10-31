@@ -89,7 +89,7 @@ function drawHist(){
 }
 function startExam(){
   pick=Q.map(()=>-1);const box=$('elist');box.innerHTML='';
-  Q.forEach((q,i)=>{const s=document.createElement('section');s.className='q';s.innerHTML=qhtml(q,i)+'<div class="opts"></div>';
+  Q.forEach((q,i)=>{const s=document.createElement('section');s.className='q';if(q&&q.id)s.dataset.id=q.id;s.innerHTML=qhtml(q,i)+'<div class="opts"></div>';
     const o=s.querySelector('.opts');
     q.o.forEach((t,j)=>{const b=document.createElement('button');b.type='button';b.className='opt';b.innerHTML=`<span class="k">${K[j]}</span><span>${t}</span>`;
       b.onclick=()=>{if(pick[i]>=0)return;pick[i]=j;b.classList.add('sel');[...o.children].forEach(x=>x.disabled=true);$('ans').textContent=bn(pick.filter(x=>x>=0).length)};o.appendChild(b)});
@@ -138,7 +138,7 @@ function finish(){
   $('weak').innerHTML=benchCmp(st)+wbox+tbox;
   const nx=nextTask(load());const nb=$('nextbtn');if(nx){nb.href='#/x/'+nx.id;nb.textContent='পরের টাস্ক: '+lab(nx)+' →'}else{nb.textContent='সব টাস্ক →'}
   const box=$('rlist');box.innerHTML='';
-  Q.forEach((q,i)=>{const p=pick[i];const s=document.createElement('section');s.className='q';
+  Q.forEach((q,i)=>{const p=pick[i];const s=document.createElement('section');s.className='q';if(q&&q.id)s.dataset.id=q.id;
     s.innerHTML=qhtml(q,i)+`<div class="opts">${q.o.map((t,j)=>`<button type="button" class="opt${j===q.a?' right':''}${j===p&&p!==q.a?' wrong':''}" disabled><span class="k">${K[j]}</span><span>${t}</span></button>`).join('')}</div>
      <div class="exp">${p<0?'<span class="skip">উত্তর দেননি।</span> সঠিক উত্তর: '+K[q.a]+'।':p===q.a?'<span class="ok">সঠিক (+১)।</span>':'<span class="no">ভুল ('+(NEG?'−'+bn(NEG):'০')+')।</span> সঠিক উত্তর: '+K[q.a]+'।'} ${q.e||''}${q.t&&P.topics&&P.topics[q.t]?`<span class="src">টপিক: ${esc(tname(q.t))}</span>`:''}</div>`;
     box.appendChild(s)});

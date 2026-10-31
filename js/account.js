@@ -144,4 +144,6 @@
   function init(){badge();flush()}
   document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init):init();
   addEventListener('online',flush);
+  // প্রতিটি ব্যাখ্যার নিচে "প্রশ্নে ভুল আছে? জানান" (js/report.js); প্রশ্ন দেখানো সব পাতায় account.js আছে
+  if(!window.LBR){var r=document.createElement('script');r.src='/js/report.js';r.defer=true;document.head.appendChild(r)}
 })();

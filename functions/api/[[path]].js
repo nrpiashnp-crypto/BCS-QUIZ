@@ -28,7 +28,11 @@
    POST /api/ch {name,title,src,qs:[{q,o,a,e}],picks,sec} বা {from:<id>,name} (আগে ওই চ্যালেঞ্জ দেওয়া লাগে) → {id}
    GET  /api/ch/<id>      → প্রশ্ন (উত্তর ছাড়া), চ্যালেঞ্জদাতার নম্বর, সেরা তিনজন, আগে দিয়ে থাকলে নিজের র‍্যাংক (mine)
    POST /api/ch/<id>/start → পরীক্ষা শুরুর সময় (সময় সার্ভারে গোনা হয়)
-   POST /api/ch/<id>/try {name,picks,sec} → নম্বর, উত্তর-ব্যাখ্যা, র‍্যাংক */
+   POST /api/ch/<id>/try {name,picks,sec} → নম্বর, উত্তর-ব্যাখ্যা, র‍্যাংক
+   প্রশ্নে ভুল জানানো (লগইন লাগে না; বোতাম js/report.js):
+   POST /api/report {qid?, page, q, kind: ans|exp|q|other, note?} → {ok}
+   অ্যাডমিন: GET /api/admin/reports?st=new|done|all → তালিকা (পাতা /admin/reports/); POST /api/admin/reports {ids:[…], st}
+   যাচাইয়ের কাজ LY Quiz & Sheets-এর; Lyanna_data-তে টেনে নেওয়ার জন্য একই GET-এর JSON। */
 const COOKIE = 'lb_s', AGE = 180 * 86400;
 const MAX_BATCH = 300, MAX_ROWS = 3000;
 
@@ -565,8 +569,47 @@ async function challenge(path, req, db, env) {
   return json({error: 'not found'}, 404);
 }
 
+// ---------- প্রশ্নে ভুল জানানো (লগইন লাগে না) ----------
+// এক সারি = এক অভিযোগ। আইপি রাখা হয় না, শুধু হ্যাশ (সীমা টানার জন্য)। লগইন থাকলে uid।
+const REP_SCHEMA = [
+  'CREATE TABLE IF NOT EXISTS rep(id INTEGER PRIMARY KEY, ts INTEGER NOT NULL, qid TEXT, page TEXT, q TEXT, kind TEXT, note TEXT, uid INTEGER, ip TEXT, st TEXT NOT NULL DEFAULT \'new\')',
+  'CREATE INDEX IF NOT EXISTS rep_ip ON rep(ip, ts)',
+  'CREATE INDEX IF NOT EXISTS rep_st ON rep(st, ts)',
+  'CREATE TABLE IF NOT EXISTS ch_day(k TEXT PRIMARY KEY, n INTEGER NOT NULL)'
+];
+let REP_READY = false;
+async function repSetup(db) {
+  if (REP_READY) return;
+  await db.batch(REP_SCHEMA.map(x => db.prepare(x)));
+  REP_READY = true;
+}
+// এক আইপি থেকে ঘণ্টায় ২০টা, দিনে ৬০টা; সবার মিলিয়ে দিনে ৩০০০টা (D1-এর দৈনিক লেখার সীমা বাঁচাতে)
+const REP_KINDS = new Set(['ans', 'exp', 'q', 'other']), REP_PER_HOUR = 20, REP_PER_DAY_IP = 60, REP_PER_DAY_ALL = 3000;
+const repText = (v, n) => (typeof v === 'string' ? v.normalize('NFC') : '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, n);
+async function report(req, db, u) {
+  const b = await req.json().catch(() => ({}));
+  const kind = REP_KINDS.has(b.kind) ? b.kind : 'other';
+  const qid = /^[\w-]{1,40}$/.test(b.qid || '') ? b.qid : null;
+  const page = repText(b.page, 200).replace(/^https?:\/\/[^/]+/, '');
+  // শুধু এই সাইটের পথ (/...), নইলে অ্যাডমিন পাতার লিংকে javascript: ইত্যাদি ঢুকতে পারে
+  const safePage = /^\/(?!\/)[^\s"'<>]*$/.test(page) ? page : '';
+  const q = repText(b.q, 400), note = repText(b.note, 600);
+  if (!qid && !q) return json({error: 'empty'}, 400);
+  await repSetup(db);
+  const ip = await chIp(req), now = Date.now();
+  // একই মানুষ একই প্রশ্নে একই ধরনের অভিযোগ দিনে একবারই
+  const same = await db.prepare('SELECT 1 FROM rep WHERE ip = ? AND ts > ? AND kind = ? AND (qid = ? OR q = ?) LIMIT 1')
+    .bind(ip, now - 86400e3, kind, qid || '', q).first();
+  if (same) return json({ok: true, dup: 1});
+  const c = await db.prepare('SELECT SUM(ts > ?) h, COUNT(*) d FROM rep WHERE ip = ? AND ts > ?').bind(now - 3600e3, ip, now - 86400e3).first();
+  if ((c && (c.h >= REP_PER_HOUR || c.d >= REP_PER_DAY_IP)) || !await chDay(db, 'rep', REP_PER_DAY_ALL)) return json({error: 'slow'}, 429);
+  await db.prepare('INSERT INTO rep(ts, qid, page, q, kind, note, uid, ip) VALUES(?,?,?,?,?,?,?,?)')
+    .bind(now, qid, safePage, q, kind, note, u ? u.id : null, ip).run();
+  return json({ok: true});
+}
+
 // অ্যাডমিন: কার কী ফল, প্রতিটি উত্তরসহ (কাস্টম প্ল্যান আর দিন-শেষের ডেটা-যাচাইয়ের জন্য)
-async function admin(path, url, env, db, u) {
+async function admin(path, url, env, db, u, req) {
   if (!isAdmin(u, env)) return json({error: 'admin'}, 403);
   await attqTable(db);
   if (path === 'admin/learners') {
@@ -590,6 +633,22 @@ async function admin(path, url, env, db, u) {
     return json({ts: Date.now(), user: who,
       att: a.results.map(r => ({...r, sb: r.sb ? JSON.parse(r.sb) : null, qd: qd.get(r.k) || null}))},
       200, {'Cache-Control': 'no-store'});
+  }
+  if (path === 'admin/reports') {
+    await repSetup(db);
+    if (req.method === 'POST') {
+      const b = await req.json().catch(() => ({}));
+      const ids = (Array.isArray(b.ids) ? b.ids : []).filter(Number.isInteger).slice(0, 200);
+      const st = b.st === 'done' || b.st === 'new' || b.st === 'no' ? b.st : null;
+      if (!ids.length || !st) return json({error: 'bad'}, 400);
+      await db.batch(ids.map(id => db.prepare('UPDATE rep SET st = ? WHERE id = ?').bind(st, id)));
+      return json({ok: true, n: ids.length});
+    }
+    const st = url.searchParams.get('st') || 'new';
+    const {results} = await db.prepare(`SELECT r.id, r.ts, r.qid, r.page, r.q, r.kind, r.note, r.st, u.name uname, u.email uemail
+      FROM rep r LEFT JOIN users u ON u.id = r.uid ${st === 'all' ? '' : 'WHERE r.st = ?'} ORDER BY r.ts DESC LIMIT 2000`)
+      .bind(...(st === 'all' ? [] : [st])).all();
+    return json({ts: Date.now(), rows: results}, 200, {'Cache-Control': 'no-store'});
   }
   return json({error: 'not found'}, 404);
 }
@@ -620,9 +679,10 @@ export async function onRequest({request: req, env}) {
     }
     if (path.startsWith('lib/')) return await lib(path, req, url, env, db, u);
     if (path === 'qstat' && m === 'GET') return await qstat(req, db);
+    if (path === 'report' && m === 'POST') return await report(req, db, u);
     if (!u) return json({error: 'login'}, 401);
 
-    if (path.startsWith('admin/')) return await admin(path, url, env, db, u);
+    if (path.startsWith('admin/')) return await admin(path, url, env, db, u, req);
     if (path === 'att' && m === 'GET') {
       const {results} = await db.prepare('SELECT k, ts, c, t, p, s, n, ok, no, sec, sb FROM att WHERE uid = ? ORDER BY ts DESC LIMIT ?')
         .bind(u.id, MAX_ROWS).all();

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="theme-color" content="#13294b">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>প্রশ্নে ভুলের অভিযোগ · লিয়ানা বুকস</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+
+:root{--paper:#fbfaf7;--ink:#1d1f21;--muted:#5f6366;--rule:#d9d6cf;--card:#fff;--navy:#13294b;--gold:#a8792a;--gold-hi:#e0b45c;--soft:#e9edf4;--mark:#fbe7a6;--link:#13294b;
+  --display:'Tiro Bangla',Georgia,serif;--body:'Noto Sans Bengali',system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#15181a;--ink:#e9e7e2;--muted:#a3a7aa;--rule:#33383b;--card:#1d2124;--gold:#e0b45c;--soft:#1c2536;--mark:#5a4a1c;--link:#e6c97a;color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#15181a;--ink:#e9e7e2;--muted:#a3a7aa;--rule:#33383b;--card:#1d2124;--gold:#e0b45c;--soft:#1c2536;--mark:#5a4a1c;--link:#e6c97a;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6}
+a{color:var(--link)}
+.bar{background:var(--navy);display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 16px;padding-top:max(8px,env(safe-area-inset-top,0px))}
+.bar img{width:96px;height:auto;display:block}.bar span{color:#e6c97a;font-size:14px}
+.wrap{max-width:860px;margin:0 auto;padding:20px 16px 120px}
+h1{font-family:var(--display);font-weight:400;font-size:28px;margin:0 0 4px}
+h2{font-family:var(--display);font-weight:400;font-size:20px;margin:26px 0 8px}
+.sub{color:var(--muted);margin:0 0 14px;font-size:14.5px}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:14px 16px}
+.btn{display:inline-block;background:var(--navy);color:#fff;border:0;border-radius:10px;padding:9px 16px;font:inherit;font-weight:600;font-size:15px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--link);border:1px solid var(--rule)}
+.btn:disabled{opacity:.5;cursor:default}
+:root[data-theme="dark"] .btn:not(.ghost){background:#e0b45c;color:#13294b}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn:not(.ghost){background:#e0b45c;color:#13294b}}
+form.q{display:flex;flex-wrap:wrap;gap:8px}
+form.q input[type=search]{flex:1 1 260px;min-width:0;font:inherit;font-size:17px;padding:10px 12px;border:1px solid var(--rule);border-radius:10px;background:var(--card);color:var(--ink)}
+select{font:inherit;font-size:14px;padding:8px;border:1px solid var(--rule);border-radius:10px;background:var(--card);color:var(--ink);max-width:100%}
+.stats{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;color:var(--muted);margin:10px 0 0}
+.stats b{color:var(--ink);font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--rule);vertical-align:top}
+th{color:var(--muted);font-weight:600}
+tr.pick{cursor:pointer}tr.pick:hover{background:var(--soft)}
+.ok{color:#2e7d4f;font-weight:600}.bad{color:#b23b3b;font-weight:600}.dim{color:var(--muted)}
+.day{background:var(--soft);font-weight:600}
+.scroll{overflow-x:auto}
+.rep td.q{max-width:380px}.rep .k{display:inline-block;font-size:12.5px;padding:1px 8px;border-radius:99px;background:var(--soft);white-space:nowrap}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 12px}.tabs button[aria-pressed="true"]{background:var(--navy);color:#fff}
+</style>
+</head>
+<body>
+<div class="bar"><a href="/" aria-label="লিয়ানা বুকস"><img src="/img/logo/li-mark.svg" alt="" width="34" height="44"><span class="lgn-n">লিয়ানা বুকস</span></a><span>অ্যাডমিন</span></div>
+<main class="wrap">
+<h1>প্রশ্নে ভুলের অভিযোগ</h1>
+<p class="sub">শিক্ষার্থীরা প্রশ্নের নিচের "প্রশ্নে ভুল আছে? জানান" থেকে যা পাঠিয়েছেন। যাচাই করে ঠিক করার কাজ LY Quiz &amp; Sheets-এর; ঠিক হলে "ঠিক করা হয়েছে" চাপুন।</p>
+<div class="tabs"><button class="btn ghost" data-st="new" aria-pressed="true">নতুন</button><button class="btn ghost" data-st="done" aria-pressed="false">ঠিক করা হয়েছে</button><button class="btn ghost" data-st="no" aria-pressed="false">ভুল নয়</button><button class="btn ghost" data-st="all" aria-pressed="false">সব</button> <button class="btn" id="dl">JSON নামান</button></div>
+<div id="msg" class="card dim">লোড হচ্ছে…</div>
+<div class="card scroll" id="box" hidden><table class="rep"><thead><tr><th>সময়</th><th>কী ভুল</th><th>প্রশ্ন ও মন্তব্য</th><th>পাতা</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
+</main>
+<script>
+const $=id=>document.getElementById(id),bn=x=>String(x).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const dhaka=ts=>new Date(ts).toLocaleString('en-GB',{timeZone:'Asia/Dhaka',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
+const KN={ans:'উত্তর ভুল',exp:'ব্যাখ্যায় ভুল',q:'প্রশ্ন/অপশন',other:'অন্য'};
+let st='new',cur=null;
+async function api(p,b){const r=await fetch('/api/'+p,b?{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:{credentials:'same-origin',cache:'no-store'});
+  if(r.status===401)throw 'login';if(r.status===403)throw 'admin';if(!r.ok)throw 'err';return r.json()}
+function fail(e){$('msg').hidden=false;$('box').hidden=true;$('msg').innerHTML=e==='login'?'আগে <a href="/account/">লগইন করুন</a> (অ্যাডমিন ইমেইল দিয়ে)।':e==='admin'?'এই ইমেইল অ্যাডমিন তালিকায় নেই।':'সার্ভারে সমস্যা, পরে চেষ্টা করুন।'}
+async function load(){
+  const j=await api('admin/reports?st='+st);cur=j;
+  $('msg').hidden=!!j.rows.length;$('msg').textContent='কোনো অভিযোগ নেই।';$('box').hidden=!j.rows.length;
+  $('rows').innerHTML=j.rows.map(r=>`<tr data-id="${r.id}"><td>${dhaka(r.ts)}</td><td><span class="k">${KN[r.kind]||esc(r.kind)}</span></td>
+    <td class="q">${esc(r.q)}${r.qid?' <span class="dim">('+esc(r.qid)+')</span>':''}${r.note?'<br><b>মন্তব্য:</b> '+esc(r.note):''}${r.uname?'<br><span class="dim">'+esc(r.uname)+'</span>':''}</td>
+    <td>${/^\/(?!\/)/.test(r.page||'')?'<a href="'+esc(r.page)+'" target="_blank" rel="noopener">'+esc(r.page)+'</a>':esc(r.page)}</td>
+    <td>${r.st==='new'?'<button class="btn ghost" data-s="done">ঠিক করা হয়েছে</button> <button class="btn ghost" data-s="no">ভুল নয়</button>':'<button class="btn ghost" data-s="new">আবার নতুন</button>'}</td></tr>`).join('');
+  document.querySelectorAll('#rows button[data-s]').forEach(b=>b.onclick=async()=>{b.disabled=true;
+    try{await api('admin/reports',{ids:[+b.closest('tr').dataset.id],st:b.dataset.s});b.closest('tr').remove()}catch(e){fail(e)}});
+}
+document.querySelectorAll('.tabs button[data-st]').forEach(b=>b.onclick=()=>{st=b.dataset.st;
+  document.querySelectorAll('.tabs button[data-st]').forEach(o=>o.setAttribute('aria-pressed',o===b?'true':'false'));load().catch(fail)});
+$('dl').onclick=()=>{if(!cur)return;const b=new Blob([JSON.stringify(cur)],{type:'application/json'}),a=document.createElement('a');
+  a.href=URL.createObjectURL(b);a.download='reports-'+st+'-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)};
+load().catch(fail);
+</script>
+</body>
+</html>
