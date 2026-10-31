@@ -7,6 +7,10 @@ on:
     paths: ['android/**', '.github/workflows/android.yml']
   workflow_dispatch:
 
+# সাইন করা বিল্ড main-এ হলে GitHub Release বানায়; সাইট /app/download থেকে সবশেষটা দেয়।
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -45,3 +49,12 @@ jobs:
         with:
           name: lyanna-books-android
           path: android/out/
+      - name: Publish for the site (/app/download)
+        if: env.LYANNA_KEYSTORE != '' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: app-${{ github.run_number }}
+          name: লিয়ানা বুকস অ্যাপ ১.০.${{ github.run_number }}
+          body: সাইটের /app/ পাতা থেকে নামানো যায়। শুধু অ্যাপের ফাইল; সাইটের কোড নয়।
+          files: android/out/lyanna-books.apk
+          make_latest: true

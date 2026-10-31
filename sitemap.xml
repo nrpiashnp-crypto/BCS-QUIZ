@@ -3,6 +3,7 @@
   <url><loc>https://lyannabooks.com/</loc><lastmod>2026-10-30</lastmod></url>
   <url><loc>https://lyannabooks.com/acid/</loc><lastmod>2026-10-30</lastmod></url>
   <url><loc>https://lyannabooks.com/air/</loc><lastmod>2026-10-30</lastmod></url>
+  <url><loc>https://lyannabooks.com/app/</loc></url>
   <url><loc>https://lyannabooks.com/bcs/</loc><lastmod>2026-10-30</lastmod></url>
   <url><loc>https://lyannabooks.com/biology/</loc><lastmod>2026-10-30</lastmod></url>
   <url><loc>https://lyannabooks.com/book/</loc><lastmod>2026-10-30</lastmod></url>
@@ -24,13 +25,13 @@
   <url><loc>https://lyannabooks.com/modern/</loc><lastmod>2026-10-30</lastmod></url>
   <url><loc>https://lyannabooks.com/plants/</loc><lastmod>2026-10-30</lastmod></url>
   <url><loc>https://lyannabooks.com/polymer/</loc><lastmod>2026-10-30</lastmod></url>
-  <url><loc>https://lyannabooks.com/privacy/</loc><lastmod>2026-10-29</lastmod></url>
+  <url><loc>https://lyannabooks.com/privacy/</loc><lastmod>2026-10-31</lastmod></url>
   <url><loc>https://lyannabooks.com/questions/</loc><lastmod>2026-10-30</lastmod></url>
   <url><loc>https://lyannabooks.com/resources/</loc><lastmod>2026-10-30</lastmod></url>
-  <url><loc>https://lyannabooks.com/running/</loc><lastmod>2026-10-29</lastmod></url>
+  <url><loc>https://lyannabooks.com/running/</loc><lastmod>2026-10-30</lastmod></url>
   <url><loc>https://lyannabooks.com/science/</loc><lastmod>2026-10-30</lastmod></url>
   <url><loc>https://lyannabooks.com/sound/</loc><lastmod>2026-10-31</lastmod></url>
-  <url><loc>https://lyannabooks.com/subject/</loc><lastmod>2026-10-30</lastmod></url>
+  <url><loc>https://lyannabooks.com/subject/</loc><lastmod>2026-10-31</lastmod></url>
   <url><loc>https://lyannabooks.com/water/</loc><lastmod>2026-10-30</lastmod></url>
   <url><loc>https://lyannabooks.com/acid/mcq/</loc><lastmod>2026-10-30</lastmod></url>
   <url><loc>https://lyannabooks.com/air/mcq/</loc><lastmod>2026-10-30</lastmod></url>
@@ -75,7 +76,7 @@
   <url><loc>https://lyannabooks.com/bcs/48/</loc><lastmod>2026-10-30</lastmod></url>
   <url><loc>https://lyannabooks.com/bcs/49/</loc><lastmod>2026-10-30</lastmod></url>
   <url><loc>https://lyannabooks.com/bcs/50/</loc><lastmod>2026-10-30</lastmod></url>
-  <url><loc>https://lyannabooks.com/bcs/question-solution/</loc><lastmod>2026-10-28</lastmod></url>
+  <url><loc>https://lyannabooks.com/bcs/question-solution/</loc><lastmod>2026-10-30</lastmod></url>
   <url><loc>https://lyannabooks.com/biology/mcq/</loc><lastmod>2026-10-30</lastmod></url>
   <url><loc>https://lyannabooks.com/disease/mcq/</loc><lastmod>2026-10-30</lastmod></url>
   <url><loc>https://lyannabooks.com/earth/mcq/</loc><lastmod>2026-10-30</lastmod></url>
@@ -822,19 +823,21 @@
   <url><loc>https://lyannabooks.com/plants/mcq/</loc><lastmod>2026-10-30</lastmod></url>
   <url><loc>https://lyannabooks.com/polymer/mcq/</loc><lastmod>2026-10-30</lastmod></url>
   <url><loc>https://lyannabooks.com/resources/mcq/</loc><lastmod>2026-10-30</lastmod></url>
-  <url><loc>https://lyannabooks.com/running/petrobangla/</loc><lastmod>2026-10-29</lastmod></url>
-  <url><loc>https://lyannabooks.com/running/sub-registrar/</loc><lastmod>2026-10-29</lastmod></url>
+  <url><loc>https://lyannabooks.com/running/petrobangla/</loc><lastmod>2026-10-30</lastmod></url>
+  <url><loc>https://lyannabooks.com/running/sub-registrar/</loc><lastmod>2026-10-30</lastmod></url>
   <url><loc>https://lyannabooks.com/sample/sound/</loc><lastmod>2026-10-30</lastmod></url>
   <url><loc>https://lyannabooks.com/sound/mcq/</loc><lastmod>2026-10-31</lastmod></url>
-  <url><loc>https://lyannabooks.com/subject/bangla/</loc><lastmod>2026-10-30</lastmod></url>
-  <url><loc>https://lyannabooks.com/subject/bangladesh/</loc><lastmod>2026-10-30</lastmod></url>
+  <url><loc>https://lyannabooks.com/subject/bangla/</loc><lastmod>2026-10-31</lastmod></url>
+  <url><loc>https://lyannabooks.com/subject/bangladesh/</loc><lastmod>2026-10-31</lastmod></url>
+  <url><loc>https://lyannabooks.com/subject/economics/</loc><lastmod>2026-10-31</lastmod></url>
   <url><loc>https://lyannabooks.com/subject/english/</loc><lastmod>2026-10-30</lastmod></url>
-  <url><loc>https://lyannabooks.com/subject/ethics/</loc><lastmod>2026-10-30</lastmod></url>
-  <url><loc>https://lyannabooks.com/subject/geography/</loc><lastmod>2026-10-30</lastmod></url>
-  <url><loc>https://lyannabooks.com/subject/ict/</loc><lastmod>2026-10-30</lastmod></url>
-  <url><loc>https://lyannabooks.com/subject/international/</loc><lastmod>2026-10-30</lastmod></url>
+  <url><loc>https://lyannabooks.com/subject/ethics/</loc><lastmod>2026-10-31</lastmod></url>
+  <url><loc>https://lyannabooks.com/subject/geography/</loc><lastmod>2026-10-31</lastmod></url>
+  <url><loc>https://lyannabooks.com/subject/ict/</loc><lastmod>2026-10-31</lastmod></url>
+  <url><loc>https://lyannabooks.com/subject/international/</loc><lastmod>2026-10-31</lastmod></url>
+  <url><loc>https://lyannabooks.com/subject/law/</loc><lastmod>2026-10-31</lastmod></url>
   <url><loc>https://lyannabooks.com/subject/math/</loc><lastmod>2026-10-30</lastmod></url>
-  <url><loc>https://lyannabooks.com/subject/mental/</loc><lastmod>2026-10-30</lastmod></url>
+  <url><loc>https://lyannabooks.com/subject/mental/</loc><lastmod>2026-10-31</lastmod></url>
   <url><loc>https://lyannabooks.com/subject/samprotik/</loc><lastmod>2026-10-30</lastmod></url>
   <url><loc>https://lyannabooks.com/subject/science/</loc><lastmod>2026-10-30</lastmod></url>
   <url><loc>https://lyannabooks.com/water/mcq/</loc><lastmod>2026-10-30</lastmod></url>
