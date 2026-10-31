@@ -30,17 +30,43 @@ const MAX_BATCH = 300, MAX_ROWS = 3000;
 
 const QSTAT = 'CREATE TABLE IF NOT EXISTS qstat(qid TEXT PRIMARY KEY, n INTEGER NOT NULL, ok INTEGER NOT NULL, last INTEGER)';
 const MAX_QA = 600, QID = /^q[0-9a-f]{10}$/;
-let qstatReady = false;
+// একজন ব্যবহারকারী দিনে (ঢাকার সময় নয়, UTC দিন) এর বেশি ফল আর প্রশ্নের হিসাব জমা দিতে পারে না;
+// এক অনুরোধে একই প্রশ্ন সর্বোচ্চ QA_SAME বার গোনা হয়, যাতে একজন একা কোনো প্রশ্নের কঠিনতা উল্টে দিতে না পারে
+const ATT_PER_DAY = 3000, QA_PER_DAY = 3000, QA_SAME = 2;
+let qstatReady = false, quotaReady = false;
 
-// একই প্রশ্ন এক অনুরোধে কয়েকবার এলে একসঙ্গে যোগ হয়, তাই প্রতিটা প্রশ্নে একটাই সারি লেখা
-async function saveQa(db, list) {
+// দৈনিক গণনা users টেবিলেই থাকে (একটা সারি হালনাগাদ, আলাদা টেবিল নয়)। আগে পড়ে দেখা, তারপর শুধু নেওয়া অংশ যোগ:
+// সীমা পার হওয়া অনুরোধে কিছুই লেখা হয় না, তাই বারবার চেষ্টা করেও কোটা খরচ করা যায় না
+async function quota(db, uid, a, q) {
+  if (!quotaReady) {
+    for (const col of ['qday', 'an', 'qn']) try { await db.prepare('ALTER TABLE users ADD COLUMN ' + col + ' INTEGER').run(); } catch (e) { /* আগেই আছে */ }
+    quotaReady = true;
+  }
+  const day = Math.floor(Date.now() / 86400e3);
+  const r = await db.prepare('SELECT qday, an, qn FROM users WHERE id = ?').bind(uid).first();
+  const an = r && r.qday === day ? r.an || 0 : 0, qn = r && r.qday === day ? r.qn || 0 : 0;
+  const att = !a || an + a <= ATT_PER_DAY;
+  // ফল আটকালে প্রশ্নের হিসাবও এখন নয় (ফোনে দুটোই থাকে, পরে একসঙ্গে যায়)
+  const qa = att && q > 0 && qn + q <= QA_PER_DAY;
+  const addA = att ? a : 0, addQ = qa ? q : 0;
+  if (addA || addQ) await db.prepare('UPDATE users SET an = ?, qn = ?, qday = ? WHERE id = ?').bind(an + addA, qn + addQ, day, uid).run();
+  return {att, qa};
+}
+
+function qaCount(list) {
   const by = new Map();
   for (const x of (Array.isArray(list) ? list : []).slice(0, MAX_QA)) {
     if (!Array.isArray(x) || typeof x[0] !== 'string' || !QID.test(x[0])) continue;
     const c = by.get(x[0]) || [0, 0];
+    if (c[0] >= QA_SAME) continue;
     c[0]++; if (x[1] === 1 || x[1] === true) c[1]++;
     by.set(x[0], c);
   }
+  return by;
+}
+
+// একই প্রশ্ন এক অনুরোধে কয়েকবার এলে একসঙ্গে যোগ হয়, তাই প্রতিটা প্রশ্নে একটাই সারি লেখা
+async function saveQa(db, by) {
   if (!by.size) return 0;
   if (!qstatReady) { await db.prepare(QSTAT).run(); qstatReady = true; }
   const now = Date.now(), st = db.prepare('INSERT INTO qstat(qid, n, ok, last) VALUES(?,?,?,?) ON CONFLICT(qid) DO UPDATE SET n = n + excluded.n, ok = ok + excluded.ok, last = excluded.last');
@@ -327,13 +353,34 @@ async function chSetup(db) {
   if (CH_READY) return;
   await db.batch(CH_SCHEMA.map(s => db.prepare(s)));
   try { await db.prepare('ALTER TABLE ch_try ADD COLUMN ip TEXT').run(); } catch (e) { /* আগেই আছে */ }
+  try { await db.prepare('ALTER TABLE ch_start ADD COLUMN ip TEXT').run(); } catch (e) { /* আগেই আছে */ }
   for (const col of ['ref', 'idx']) try { await db.prepare('ALTER TABLE ch ADD COLUMN ' + col + ' TEXT').run(); } catch (e) { /* আগেই আছে */ }
+  // সীমা গোনার সূচি: নইলে প্রতিটা গণনা পুরো টেবিল পড়ে
+  await db.batch(CH_INDEX.map(s => db.prepare(s)));
   CH_READY = true;
 }
-// এক আইপি থেকে ঘণ্টায় ৩০টা চ্যালেঞ্জ; একটা চ্যালেঞ্জে এক আইপির ৩টা আর মোট ১০০০টা চেষ্টা বোর্ডে ওঠে
-const CH_MAX_Q = 200, CH_MAX_BYTES = 600000, CH_PER_HOUR = 30, CH_IP_TRIES = 3, CH_MAX_TRIES = 1000;
-// সব আইপি মিলিয়ে দিনে এতগুলোর বেশি চ্যালেঞ্জ জমা হয় না, যাতে আইপি বদলে বদলে কেউ D1-এর দৈনিক লেখার কোটা শেষ করতে না পারে
+// আইপি ধরে গোনার সূচি (নইলে প্রতিটা গণনা পুরো টেবিল পড়ে)। সবার মিলিয়ে দৈনিক গণনা আলাদা ছোট টেবিলে (দিনে এক সারি),
+// কারণ D1 সূচির প্রতিটা ঘরকেও এক সারি লেখা ধরে, আর বড় সারির গণনা প্রতিবার অনেক সারি পড়ে
+const CH_INDEX = [
+  'CREATE INDEX IF NOT EXISTS ch_start_ip ON ch_start(ip, ts)',
+  'CREATE INDEX IF NOT EXISTS ch_try_ip ON ch_try(ip, ts)',
+  'CREATE TABLE IF NOT EXISTS ch_day(k TEXT PRIMARY KEY, n INTEGER NOT NULL)'
+];
+// সবার মিলিয়ে আজকের গণনা এক বাড়ায়; সীমা পার হলে কিছু লেখে না আর false দেয়
+async function chDay(db, kind, cap) {
+  const k = kind + ':' + Math.floor(Date.now() / 86400e3);
+  const r = await db.prepare('INSERT INTO ch_day(k, n) VALUES(?, 1) ON CONFLICT(k) DO UPDATE SET n = n + 1 WHERE n < ? RETURNING n').bind(k, cap).first();
+  return !!r;
+}
+// এক আইপি থেকে ঘণ্টায় ৩০টা আর দিনে ৬০টা চ্যালেঞ্জ; একটা চ্যালেঞ্জে এক আইপির ৩টা আর মোট ১০০০টা চেষ্টা বোর্ডে ওঠে
+const CH_MAX_Q = 200, CH_MAX_BYTES = 600000, CH_PER_HOUR = 30, CH_PER_DAY_IP = 60, CH_IP_TRIES = 3, CH_MAX_TRIES = 1000;
+// সব আইপি মিলিয়ে দিনে এতগুলোর বেশি চ্যালেঞ্জ জমা হয় না, যাতে আইপি বদলে বদলে কেউ D1-এর দৈনিক লেখার কোটা শেষ করতে না পারে।
+// এক আইপির দৈনিক সীমা আলাদা থাকায় একজন একা এই মোট সীমা শেষ করে অন্যদের আটকাতে পারে না
 const CH_PER_DAY_ALL = 3000;
+// লগইন ছাড়া "শুরু" আর "জমা": এক আইপি থেকে ঘণ্টায় এতগুলো, আর সবার মিলিয়ে দিনে এতগুলোর বেশি সারি লেখা হয় না
+// আইপির সীমা ঢিলা, কারণ মোবাইল নেটে হাজারো মানুষ একই আইপি ভাগ করেন; আসল বাঁধ সবার মিলিয়ে দৈনিক সীমা
+// (সীমায় পৌঁছালে দিনে মোটামুটি: শুরু ৫০০০×৩ + জমা ৫০০০×৪ + চ্যালেঞ্জ ৩০০০×৩ ≈ ৪৪ হাজার সারি লেখা, কোটার অর্ধেকের কম)
+const CH_START_PER_HOUR = 400, CH_START_PER_DAY_ALL = 5000, CH_TRY_PER_HOUR = 300, CH_TRY_PER_DAY_ALL = 5000;
 // প্রশ্নে শুধু এই ট্যাগগুলো থাকে, কোনো অ্যাট্রিবিউট ছাড়া; ছবি শুধু এই সাইটের (/…) src দিয়ে। পাতাও আবার ছেঁকে নেয়
 const CH_TAGS = new Set(['b', 'i', 'u', 'sub', 'sup', 'br', 'table', 'thead', 'tbody', 'tr', 'td', 'th', 'span', 'p', 'div', 'small', 'strong', 'em']);
 const chImg = t => { const m = t.match(/\ssrc\s*=\s*["']?(\/(?!\/)[\w\-./%]+)/i); return m ? '<img src="' + m[1] + '" alt="">' : ''; };
@@ -347,7 +394,13 @@ const chName = v => (typeof v === 'string' ? v.normalize('NFC') : '').replace(/[
 const chMins = n => Math.max(3, Math.ceil(n * 36 / 60));
 const chId = () => { const a = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789', r = new Uint8Array(8); crypto.getRandomValues(r); return [...r].map(x => a[x % a.length]).join(''); };
 // iph = আইপি + ব্রাউজার (একই বাসার দুই ফোন আলাদা গোনা হয়), ip = শুধু আইপি (সীমা টানার জন্য; ব্রাউজারের নাম বদলালেও এটা বদলায় না)
-const chIp = async req => (await sha((req.headers.get('CF-Connecting-IP') || '') + '|lb-ch-ip')).slice(0, 20);
+// IPv6-এ একজনের হাতে সাধারণত পুরো /64 থাকে, তাই সীমার জন্য প্রথম চার ভাগই ঠিকানা ধরা হয় (ঠিকানা বদলে বদলে সীমা পার হওয়া যায় না)
+const ipKey = s => {
+  if (!s.includes(':') || s.includes('.')) return s;
+  const [a, b = ''] = s.toLowerCase().split('::'), h = a ? a.split(':') : [], t = b ? b.split(':') : [];
+  return [...h, ...Array(Math.max(0, 8 - h.length - t.length)).fill('0'), ...t].slice(0, 4).map(x => x.replace(/^0+(?=.)/, '')).join(':') + '::/64';
+};
+const chIp = async req => (await sha(ipKey(req.headers.get('CF-Connecting-IP') || '') + '|lb-ch-ip')).slice(0, 20);
 const chIph = async req => (await sha((req.headers.get('CF-Connecting-IP') || '') + '|' + (req.headers.get('User-Agent') || '').slice(0, 80) + '|lb-ch')).slice(0, 20);
 const chPicks = (p, qs) => qs.map((q, i) => { const v = Array.isArray(p) ? p[i] : -1; return Number.isInteger(v) && v >= 0 && v < q.o.length ? v : -1; });
 const chScore = (p, qs) => qs.reduce((s, q, i) => s + (p[i] === q.a ? 1 : 0), 0);
@@ -407,10 +460,8 @@ async function challenge(path, req, db, env) {
     if (!body || typeof body !== 'object') return json({error: 'bad'}, 400);
     await chSetup(db);
     const ip = await chIp(req), now = Date.now();
-    const recent = await db.prepare('SELECT COUNT(*) AS n FROM ch WHERE iph = ? AND ts > ?').bind(ip, now - 3600e3).first();
-    if (recent && recent.n >= CH_PER_HOUR) return json({error: 'slow'}, 429);
-    const today = await db.prepare('SELECT COUNT(*) AS n FROM ch WHERE ts > ?').bind(now - 86400e3).first();
-    if (today && today.n >= CH_PER_DAY_ALL) return json({error: 'slow'}, 429);
+    const recent = await db.prepare('SELECT SUM(ts > ?) AS h, COUNT(*) AS d FROM ch WHERE iph = ? AND ts > ?').bind(now - 3600e3, ip, now - 86400e3).first();
+    if (recent && ((recent.h || 0) >= CH_PER_HOUR || (recent.d || 0) >= CH_PER_DAY_IP)) return json({error: 'slow'}, 429);
     let qs, picks, ok, sec, title = str(body.title, 120) || '', src = str(body.src, 200) || '', parent = null, ref = '', idx = null;
     if (typeof body.from === 'string') {
       // পাল্টা চ্যালেঞ্জ: একই প্রশ্ন, আর নম্বর সেটাই যা এই ফোন ওই চ্যালেঞ্জে আসলে পেয়েছে
@@ -435,6 +486,7 @@ async function challenge(path, req, db, env) {
       sec = Math.max(0, Math.min(chMins(qs.length) * 60, Math.round(num(body.sec) || 0)));
     }
     title = title.replace(/[<>]/g, '').trim(); src = chSrc(src);
+    if (!await chDay(db, 'ch', CH_PER_DAY_ALL)) return json({error: 'slow'}, 429);
     for (let i = 0; i < 3; i++) {
       const id = chId();
       const r = await db.prepare('INSERT OR IGNORE INTO ch(id, ts, name, title, src, n, mins, ok, sec, picks, qs, iph, parent, ref, idx) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
@@ -456,8 +508,15 @@ async function challenge(path, req, db, env) {
     return json({...head, qs: qs.map(q => ({q: q.q, o: q.o})), ...await chBoard(db, c), ...(t ? {mine: {ok: t.ok, sec: t.sec, rank: await chRank(db, c, t)}} : {})});
   }
   if (parts[2] === 'start' && m === 'POST') {
-    // পরীক্ষা শুরুর মুহূর্ত (প্রথমবারেরটাই থাকে), জমার সময় সেখান থেকেই সময় গোনা হয়
-    await db.prepare('INSERT OR IGNORE INTO ch_start(cid, iph, ts) VALUES(?,?,?)').bind(id, iph, now).run();
+    // পরীক্ষা শুরুর মুহূর্ত (প্রথমবারেরটাই থাকে), জমার সময় সেখান থেকেই সময় গোনা হয়।
+    // লগইন লাগে না, তাই সীমা: আগে থাকলে কিছু লেখা হয় না; আইপি বা সবার মিলিয়ে সীমা পার হলেও লেখা হয় না
+    // (পাতা উত্তর দেখে না; শুরুর সময় না থাকলে জমার সময় পাতার গোনা সময় নেওয়া হয়, সর্বোচ্চ নির্ধারিত সময়)
+    if (await db.prepare('SELECT 1 FROM ch_start WHERE cid = ? AND iph = ?').bind(id, iph).first()) return json({ok: true});
+    const ip = await chIp(req);
+    const mine = await db.prepare('SELECT COUNT(*) AS n FROM ch_start WHERE ip = ? AND ts > ?').bind(ip, now - 3600e3).first();
+    if (mine && mine.n >= CH_START_PER_HOUR) return json({ok: false, error: 'slow'}, 429);
+    if (!await chDay(db, 'start', CH_START_PER_DAY_ALL)) return json({ok: false, error: 'slow'}, 429);
+    await db.prepare('INSERT OR IGNORE INTO ch_start(cid, iph, ts, ip) VALUES(?,?,?,?)').bind(id, iph, now, ip).run();
     return json({ok: true});
   }
   if (parts[2] === 'try' && m === 'POST') {
@@ -473,7 +532,9 @@ async function challenge(path, req, db, env) {
       me = {name: chName(body.name), ok: chScore(picks, qs), sec: Math.max(0, Math.min(lim, sec)), picks};
       const ip = await chIp(req);
       const n = await db.prepare('SELECT COUNT(*) AS n, SUM(ip = ?) AS mine FROM ch_try WHERE cid = ?').bind(ip, id).first();
-      if ((n && n.n || 0) < CH_MAX_TRIES && (n && n.mine || 0) < CH_IP_TRIES)
+      // সব চ্যালেঞ্জ মিলিয়ে এক আইপির ঘণ্টার সীমা আর সবার দৈনিক সীমা; পার হলে নম্বর দেখায়, বোর্ডে ওঠে না
+      const h = await db.prepare('SELECT COUNT(*) AS n FROM ch_try WHERE ip = ? AND ts > ?').bind(ip, now - 3600e3).first();
+      if ((n && n.n || 0) < CH_MAX_TRIES && (n && n.mine || 0) < CH_IP_TRIES && (h && h.n || 0) < CH_TRY_PER_HOUR && await chDay(db, 'try', CH_TRY_PER_DAY_ALL))
         await db.prepare('INSERT OR IGNORE INTO ch_try(cid, ts, name, ok, sec, picks, iph, ip) VALUES(?,?,?,?,?,?,?,?)')
           .bind(id, now, me.name, me.ok, me.sec, JSON.stringify(me.picks), iph, ip).run();
       else me.off = 1;
@@ -519,11 +580,17 @@ export async function onRequest({request: req, env}) {
     if (path === 'att' && m === 'POST') {
       const body = await req.json().catch(() => ({}));
       const rows = (Array.isArray(body.a) ? body.a : []).slice(0, MAX_BATCH).map(clean).filter(Boolean);
+      const by = qaCount(body.q), qn = [...by.values()].reduce((s, c) => s + c[0], 0);
+      if (!rows.length && !qn) return json({ok: true, saved: 0, qs: 0});
+      const can = await quota(db, u.id, rows.length, qn);
+      // ফলের সীমা পার হলে 429: ফোনে জমা থাকে, পরের দিন যায়
+      if (rows.length && !can.att) return json({error: 'slow'}, 429);
       if (rows.length) {
         const st = db.prepare('INSERT OR IGNORE INTO att(uid, k, ts, c, t, p, s, n, ok, no, sec, sb) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)');
         await db.batch(rows.map(r => st.bind(u.id, ...r)));
       }
-      const qs = await saveQa(db, body.q);
+      // প্রশ্নের হিসাবের সীমা পার হলে চুপচাপ বাদ (এগুলো শুধু পরিসংখ্যান, ফোনে জমিয়ে রাখার দরকার নেই)
+      const qs = can.qa ? await saveQa(db, by) : 0;
       return json({ok: true, saved: rows.length, qs});
     }
     if (path === 'delete' && m === 'POST') {
