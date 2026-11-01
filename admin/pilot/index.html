@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="theme-color" content="#13294b">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>পাইলট ব্যাচ · লিয়ানা বুকস</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+
+:root{--paper:#fbfaf7;--ink:#1d1f21;--muted:#5f6366;--rule:#d9d6cf;--card:#fff;--navy:#13294b;--gold:#a8792a;--gold-hi:#e0b45c;--soft:#e9edf4;--mark:#fbe7a6;--link:#13294b;
+  --display:'Tiro Bangla',Georgia,serif;--body:'Noto Sans Bengali',system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#15181a;--ink:#e9e7e2;--muted:#a3a7aa;--rule:#33383b;--card:#1d2124;--gold:#e0b45c;--soft:#1c2536;--mark:#5a4a1c;--link:#e6c97a;color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#15181a;--ink:#e9e7e2;--muted:#a3a7aa;--rule:#33383b;--card:#1d2124;--gold:#e0b45c;--soft:#1c2536;--mark:#5a4a1c;--link:#e6c97a;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6}
+a{color:var(--link)}
+.bar{background:var(--navy);display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 16px;padding-top:max(8px,env(safe-area-inset-top,0px))}
+.bar img{width:96px;height:auto;display:block}.bar span{color:#e6c97a;font-size:14px}
+.wrap{max-width:860px;margin:0 auto;padding:20px 16px 120px}
+h1{font-family:var(--display);font-weight:400;font-size:28px;margin:0 0 4px}
+h2{font-family:var(--display);font-weight:400;font-size:20px;margin:26px 0 8px}
+.sub{color:var(--muted);margin:0 0 14px;font-size:14.5px}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:14px 16px}
+.btn{display:inline-block;background:var(--navy);color:#fff;border:0;border-radius:10px;padding:9px 16px;font:inherit;font-weight:600;font-size:15px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--link);border:1px solid var(--rule)}
+.btn:disabled{opacity:.5;cursor:default}
+:root[data-theme="dark"] .btn:not(.ghost){background:#e0b45c;color:#13294b}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn:not(.ghost){background:#e0b45c;color:#13294b}}
+form.q{display:flex;flex-wrap:wrap;gap:8px}
+form.q input[type=search]{flex:1 1 260px;min-width:0;font:inherit;font-size:17px;padding:10px 12px;border:1px solid var(--rule);border-radius:10px;background:var(--card);color:var(--ink)}
+select{font:inherit;font-size:14px;padding:8px;border:1px solid var(--rule);border-radius:10px;background:var(--card);color:var(--ink);max-width:100%}
+.stats{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;color:var(--muted);margin:10px 0 0}
+.stats b{color:var(--ink);font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--rule);vertical-align:top}
+th{color:var(--muted);font-weight:600}
+tr.pick{cursor:pointer}tr.pick:hover{background:var(--soft)}
+.ok{color:#2e7d4f;font-weight:600}.bad{color:#b23b3b;font-weight:600}.dim{color:var(--muted)}
+.day{background:var(--soft);font-weight:600}
+.scroll{overflow-x:auto}
+.rep td.q{max-width:380px}.rep .k{display:inline-block;font-size:12.5px;padding:1px 8px;border-radius:99px;background:var(--soft);white-space:nowrap}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 12px}.tabs button[aria-pressed="true"]{background:var(--navy);color:#fff}
+input[type=text],input[type=date],input[type=number],input[type=email]{font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--rule);border-radius:10px;background:var(--card);color:var(--ink);max-width:100%}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0}
+.row label{font-size:14px;color:var(--muted)}
+.key{font-family:ui-monospace,monospace;font-size:13px;word-break:break-all;background:var(--soft);padding:10px;border-radius:8px;margin:8px 0}
+.warn{color:#b23b3b;font-size:14px}
+</style>
+</head>
+<body>
+<div class="bar"><a href="/" aria-label="লিয়ানা বুকস"><img src="/img/logo/li-mark.svg" alt="" width="34" height="44"><span class="lgn-n">লিয়ানা বুকস</span></a><span>অ্যাডমিন</span></div>
+<main class="wrap">
+<h1>পাইলট ব্যাচ</h1>
+<p class="sub">কে কোন সংকেত-নম্বর (P01, P02…), রাতের মতামত, আর রপ্তানির চাবি। এই তালিকা শুধু এখানে থাকে, কোনো রিপোতে নয়। পরীক্ষার পাতায় লগইন করে ঢুকলেই শিক্ষার্থী নিজে থেকে পরের নম্বর পান।</p>
+<div id="msg" class="card dim">লোড হচ্ছে…</div>
+<div id="app" hidden>
+<div class="card">
+ <div class="row"><label for="b">ব্যাচ</label><input type="text" id="b" value="petrobangla-1" size="18" autocapitalize="off"> <button class="btn ghost" id="open">খুলুন</button></div>
+ <div class="row"><label for="tt">নাম</label><input type="text" id="tt" placeholder="পেট্রোবাংলা প্রথম ব্যাচ" size="26"></div>
+ <div class="row"><label for="sd">প্রথম দিন</label><input type="date" id="sd"> <label for="nd">কদিন</label><input type="number" id="nd" min="1" max="60" value="5" style="width:80px"> <button class="btn" id="save">রাখুন</button></div>
+ <p class="stats" id="now"></p>
+</div>
+<h2>সংকেত-নম্বর</h2>
+<div class="row"><input type="email" id="em" placeholder="শিক্ষার্থীর Gmail (আগে একবার লগইন করে থাকতে হবে)" style="flex:1 1 260px"><button class="btn ghost" id="add">নম্বর দিন</button></div>
+<div class="card scroll"><table><thead><tr><th>নম্বর</th><th>নাম</th><th>ইমেইল</th><th>মতামত</th><th>পরীক্ষা</th><th></th></tr></thead><tbody id="codes"></tbody></table></div>
+<h2>রাতের মতামত</h2>
+<div class="card scroll"><table><thead><tr><th>দিন</th><th>নম্বর</th><th>কষ্টের অংশ</th><th>কাজে লাগা অংশ</th><th>শিটে নেই</th><th>রেটিং</th><th>সময়</th></tr></thead><tbody id="fb"></tbody></table></div>
+<p class="row"><button class="btn ghost" id="dl">সব JSON নামান</button></p>
+<h2>রপ্তানির চাবি (GitHub Action)</h2>
+<div class="card"><p class="sub" id="kst"></p>
+<p class="sub">এই চাবি দিয়ে শুধু পাইলটের উত্তর আর মতামত পড়া যায়, সংকেত-নম্বরসহ; নাম, ইমেইল বা অন্য কিছু নয়, আর কিছু লেখা বা মোছা যায় না। চাবি একবারই দেখানো হয়; GitHub-এর Secrets-এ <b>LYANNA_EXPORT_KEY</b> নামে রাখুন, আর কোথাও নয়। নতুন বানালে আগেরটা সঙ্গে সঙ্গে বাতিল।</p>
+<button class="btn" id="mk">নতুন চাবি বানান</button><div id="kout"></div></div>
+</div>
+</main>
+<script>
+const $=id=>document.getElementById(id),bn=x=>String(x).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const dhaka=ts=>ts?new Date(ts).toLocaleString('en-GB',{timeZone:'Asia/Dhaka',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}):'';
+const MN={'30':'৩০ মি.','60':'১ ঘ.','120':'২ ঘ.','more':'বেশি'};
+let cur=null;
+async function api(p,b){const r=await fetch('/api/'+p,b?{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:{credentials:'same-origin',cache:'no-store'});
+  if(r.status===401)throw 'login';if(r.status===403)throw 'admin';const j=await r.json().catch(()=>({}));if(!r.ok)throw j.error||'err';return j}
+function fail(e){$('msg').hidden=false;$('msg').innerHTML=e==='login'?'আগে <a href="/account/">লগইন করুন</a> (অ্যাডমিন ইমেইল দিয়ে)।':e==='admin'?'এই ইমেইল অ্যাডমিন তালিকায় নেই।':e==='no user'?'এই ইমেইলে কেউ এখনো লগইন করেননি।':e==='no batch'?'আগে ব্যাচের তারিখ রাখুন।':e==='bad'?'তারিখ বা দিনসংখ্যা ঠিক নেই।':'সার্ভারে সমস্যা, পরে চেষ্টা করুন।'}
+async function load(){
+  const b=$('b').value.trim();const j=await api('admin/pilot?batch='+encodeURIComponent(b));cur=j;
+  $('msg').hidden=true;$('app').hidden=false;
+  $('kst').textContent=j.key?'চালু চাবি বানানো হয়েছে: '+dhaka(j.key):'এখনো কোনো চাবি নেই।';
+  const c=j.cfg;
+  if(c){$('tt').value=c.title||'';$('sd').value=c.start;$('nd').value=c.days;
+    const n=j.now;$('now').innerHTML=n.day<1?'ব্যাচ শুরু হয়নি (প্রথম দিন '+esc(c.start)+')।':n.day>c.days?'ব্যাচ শেষ।':'আজ <b>দিন '+bn(n.day)+'</b>; রাতের ফর্ম এখন <b>'+(n.open?'খোলা':'বন্ধ')+'</b> (খোলে রাত ৯টা, বন্ধ সকাল ৬টা)।';}
+  else $('now').textContent='এই ব্যাচ এখনো চালু হয়নি। প্রথম দিনের তারিখ আর কদিন বসিয়ে "রাখুন" চাপুন।';
+  $('codes').innerHTML=(j.codes||[]).map(r=>`<tr><td><b>${esc(r.code)}</b></td><td>${esc(r.name)}</td><td>${esc(r.email)}</td><td>${bn(r.fbn)}</td><td>${bn(r.tests)}</td><td><button class="btn ghost" data-c="${esc(r.code)}">বাদ</button></td></tr>`).join('')||'<tr><td colspan="6" class="dim">এখনো কেউ নেই।</td></tr>';
+  $('fb').innerHTML=(j.fb||[]).map(r=>`<tr><td>${bn(r.day)}</td><td>${esc(r.code||'(বাদ)')}</td><td>${esc(r.hard)}</td><td>${esc(r.useful)}</td><td>${r.miss===1?'হ্যাঁ'+(r.missq?' ('+bn(r.missq.split(',').length)+'টি)':''):r.miss===0?'না':''}</td><td>${r.rate?bn(r.rate):''}</td><td>${MN[r.mins]||''}</td></tr>`).join('')||'<tr><td colspan="7" class="dim">এখনো মতামত নেই।</td></tr>';
+  document.querySelectorAll('#codes button[data-c]').forEach(x=>x.onclick=async()=>{if(!confirm(x.dataset.c+' বাদ দেবেন? নম্বরটা আর কাউকে দেওয়া হবে না।'))return;
+    try{await api('admin/pilot',{act:'drop',batch:$('b').value.trim(),code:x.dataset.c});load()}catch(e){fail(e)}});
+}
+$('open').onclick=()=>load().catch(fail);
+$('save').onclick=async()=>{try{await api('admin/pilot',{act:'cfg',batch:$('b').value.trim(),start:$('sd').value,days:+$('nd').value,title:$('tt').value});await load()}catch(e){fail(e)}};
+$('add').onclick=async()=>{try{const j=await api('admin/pilot',{act:'add',batch:$('b').value.trim(),email:$('em').value});$('em').value='';await load();alert('নম্বর: '+j.code)}catch(e){fail(e)}};
+$('mk').onclick=async()=>{if(cur&&cur.key&&!confirm('আগের চাবি বাতিল হবে। GitHub-এ নতুনটা বসাতে হবে। এগোবেন?'))return;
+  try{const j=await api('admin/pilot',{act:'key'});
+    $('kout').innerHTML='<div class="key" id="kv">'+esc(j.key)+'</div><button class="btn ghost" id="cp">কপি করুন</button> <span class="warn">এই পাতা ছাড়লে চাবি আর দেখা যাবে না।</span>';
+    $('cp').onclick=()=>{navigator.clipboard.writeText(j.key).then(()=>{$('cp').textContent='কপি হয়েছে'})};load()}catch(e){fail(e)}};
+$('dl').onclick=()=>{if(!cur)return;const b=new Blob([JSON.stringify(cur)],{type:'application/json'}),a=document.createElement('a');
+  a.href=URL.createObjectURL(b);a.download='pilot-'+$('b').value.trim()+'-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)};
+load().catch(fail);
+</script>
+</body>
+</html>
