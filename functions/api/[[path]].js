@@ -703,11 +703,13 @@ const codeNo = code => parseInt(String(code || '').replace(/\D/g, ''), 10) || 0;
 // জোড় কোড → ক-দলের শিট আগে, বিজোড় → খ-দলের
 const earlyGroup = code => codeNo(code) % 2 === 0 ? 'ka' : 'kha';
 
+// চেনা ব্যাচ: সেট তোলার আগেই পাতা খোলে, মানুষ নাম দিয়ে যোগ দিতে পারেন, অ্যাডমিন অনুমোদন দিতে পারেন
+const PILOT_KNOWN = {'petrobangla-1': 'পেট্রোবাংলা প্রস্তুতি · প্রথম ব্যাচ'};
 async function pilotCfg(db, p) {
   const r = await db.prepare('SELECT cfg, updated FROM pilot WHERE id = ?').bind(p).first();
-  if (!r) return null;
-  const c = JSON.parse(r.cfg);
-  c.updated = r.updated;
+  if (!r && !PILOT_KNOWN[p]) return null;
+  const c = r ? JSON.parse(r.cfg) : pilotSlim({id: p, title: PILOT_KNOWN[p], topics: [], exams: []});
+  c.updated = r ? r.updated : 0;
   c.T = new Map(c.topics.map(t => [t.id, t]));
   c.E = new Map(c.exams.map(e => [e.no, e]));
   // প্রতিটি টপিকের প্রথম আর দ্বিতীয় পরীক্ষা (দিন ধরে)
@@ -911,11 +913,12 @@ async function pilot(path, req, url, env, db, u) {
       user: u ? pub(u) : null, member: null};
     const sched = e => ({no: e.no, day: e.day, topic: e.topic, name: (c.T.get(e.topic) || {}).name || e.topic, round: e.round});
     out.exams = c.start ? c.exams.map(sched) : [];
+    out.ready = !!c.exams.length;
     if (!u) return json(out);
     const mem = await pilotMem(db, p, u.id);
     if (!mem || mem.st === 'out') return json(out);
     out.member = {st: mem.st, code: mem.code || '', nick: mem.nick || ''};
-    if (mem.st !== 'ok' || !c.start || !mem.nick) return json(out);
+    if (mem.st !== 'ok' || !c.start || !c.exams.length || !mem.nick) return json(out);
     const [s, a] = await db.batch([
       db.prepare('SELECT no, ts, dl, done FROM pilot_sit WHERE pilot = ? AND uid = ?').bind(p, u.id),
       db.prepare('SELECT no, COUNT(*) k, SUM(ok) ok FROM pilot_ans WHERE pilot = ? AND uid = ? GROUP BY no').bind(p, u.id)
@@ -961,6 +964,7 @@ async function pilot(path, req, url, env, db, u) {
       return json(await pilotReportFor(db, c, w.uid, w.code));
     }
     if (!mem || mem.st !== 'ok') return json({error: 'member'}, 403);
+    if (!c.start || !c.exams.length) return json({error: 'soon'}, 403);
     if (now < dReveal(c, c.days)) return json({error: 'soon', at: dReveal(c, c.days)}, 403);
     return json(await pilotReportFor(db, c, u.id, mem.code));
   }
@@ -974,7 +978,7 @@ async function pilot(path, req, url, env, db, u) {
       .bind(p, u.id, t, now, now).run();
     return json({ok: true});
   }
-  if (!c.start) return json({error: 'nostart'}, 403);
+  if (!c.start || !c.exams.length) return json({error: 'nostart'}, 403);
   const no = parseInt(url.searchParams.get('no') || body.no, 10), e = c.E.get(no);
   if (!e) return json({error: 'bad'}, 400);
   const sit = await db.prepare('SELECT no, ts, dl, qs, rep, done FROM pilot_sit WHERE pilot = ? AND uid = ? AND no = ?').bind(p, u.id, no).first();
@@ -1068,7 +1072,7 @@ async function pilotAdmin(path, url, req, db) {
     const s = pilotSlim(c);
     if (typeof body.start === 'string') { if (body.start && !pOpen(body.start)) return json({error: 'date'}, 400); s.start = body.start; }
     if (typeof body.form === 'string') { s.form = body.form.trim(); if (s.form && pilotCheck({...s, form: s.form}).some(x => x.startsWith('form'))) return json({error: 'form'}, 400); }
-    await db.prepare('UPDATE pilot SET cfg = ?, updated = ? WHERE id = ?').bind(JSON.stringify(s), Date.now(), p).run();
+    await db.prepare('INSERT INTO pilot(id, cfg, updated) VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET cfg = excluded.cfg, updated = excluded.updated').bind(p, JSON.stringify(s), Date.now()).run();
     return json({ok: true, start: s.start, form: s.form});
   }
   if (path === 'admin/pilot/mem' && m === 'POST') {

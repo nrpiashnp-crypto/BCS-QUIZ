@@ -83,7 +83,7 @@ async function load(){
   $('msg').hidden=true;$('main').hidden=false;
   const c=D.cfg,am=c.attend_min;
   $('info').innerHTML=`<b>${esc(c.title)}</b><br>দিন: ${D.day==null?'তারিখ বসানো হয়নি':D.day<1?'শুরু হয়নি':D.day>c.days?'শেষ':bn(D.day)+' / '+bn(c.days)} · টপিক ${bn(c.topics.length)} · পরীক্ষা ${bn(c.exams.length)} · প্রশ্ন ${bn(D.qn)}`+
-    (D.missingN?`<br><span class="bad">সেটের ${bn(D.missingN)}টি প্রশ্ন এখনো তোলা হয়নি</span>`:'<br><span class="ok">সব প্রশ্ন তোলা আছে</span>')+
+    (!c.exams.length?'<br><span class="bad">প্রশ্নের সেট এখনো তোলা হয়নি</span> (মানুষ এখনই যোগ দিতে পারেন)':D.missingN?`<br><span class="bad">সেটের ${bn(D.missingN)}টি প্রশ্ন এখনো তোলা হয়নি</span>`:'<br><span class="ok">সব প্রশ্ন তোলা আছে</span>')+
     `<br>শিট নেই: ${c.topics.filter(t=>!t.sheet).map(t=>esc(t.name)).join(', ')||'<span class="ok">সব আছে</span>'} · রাতের ফর্ম: ${c.form?'<span class="ok">আছে</span>':'<span class="bad">নেই</span>'}`;
   $('start').value=c.start||'';$('form').value=c.form||'';
   const took={};D.ans.forEach(a=>{if(a.k>=am)took[a.uid]=(took[a.uid]||0)+1});

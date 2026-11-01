@@ -100,8 +100,8 @@ async function home(){
   if(!ME.user)return loginView();
   if(!ME.member)return nameView('join');
   if(!ME.member.nick)return nameView('name');
-  if(ME.member.st!=='ok')return V.innerHTML=head()+'<div class="card">আপনার অনুরোধ পৌঁছেছে। অনুমোদন হলে এই পাতায় পরীক্ষা দেখাবে।</div>';
-  if(!ME.start)return V.innerHTML=head()+'<div class="card">শুরুর তারিখ শিগগির জানানো হবে।</div>';
+  if(ME.member.st!=='ok')return V.innerHTML=head()+'<div class="card"><b>'+esc(ME.member.nick)+', আপনার অনুরোধ পৌঁছেছে।</b><br>অনুমোদন হলে এই পাতায় আপনার কোড আর পরীক্ষা দেখাবে।</div>';
+  if(!ME.start||!ME.ready)return V.innerHTML=head()+'<div class="card"><b>আপনি ব্যাচে আছেন।</b><br>প্রশ্ন আর শুরুর তারিখ শিগগির এই পাতায় আসবে। শুরুর আগে আপনাকে জানানো হবে।</div>';
   dash();flush();
 }
 // নাম বাধ্যতামূলক: এই নামেই শিক্ষক কথা বলবেন
