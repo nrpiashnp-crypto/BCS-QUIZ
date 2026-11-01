@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="theme-color" content="#13294b">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>পাইলট ব্যাচ · অ্যাডমিন · লিয়ানা বুকস</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+:root{--paper:#fbfaf7;--ink:#1d1f21;--muted:#5f6366;--rule:#d9d6cf;--card:#fff;--navy:#13294b;--soft:#e9edf4;--link:#13294b;
+  --display:'Tiro Bangla',Georgia,serif;--body:'Noto Sans Bengali',system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6}
+a{color:var(--link)}
+.bar{background:var(--navy);display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 16px;padding-top:max(8px,env(safe-area-inset-top,0px))}
+.bar img{width:26px;height:auto;display:block}.bar a{display:flex;gap:8px;align-items:center;color:#fff;text-decoration:none}.bar span{color:#e6c97a;font-size:14px}
+.wrap{max-width:900px;margin:0 auto;padding:20px 16px 120px}
+h1{font-family:var(--display);font-weight:400;font-size:26px;margin:0 0 4px}
+h2{font-family:var(--display);font-weight:400;font-size:20px;margin:24px 0 8px}
+.sub{color:var(--muted);margin:0 0 12px;font-size:14.5px}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:3px;padding:12px 14px;margin:0 0 10px}
+.btn{display:inline-block;background:var(--navy);color:#fff;border:0;border-radius:3px;padding:8px 14px;font:inherit;font-weight:600;font-size:15px;cursor:pointer;text-decoration:none}
+.btn.ghost{background:transparent;color:var(--link);border:1px solid var(--rule)}
+.btn:disabled{opacity:.5;cursor:default}
+input[type=text],input[type=date],input[type=url]{font:inherit;font-size:16px;padding:8px 10px;border:1px solid var(--rule);border-radius:3px;background:#fff;width:100%;max-width:520px}
+label{display:block;font-size:14px;color:var(--muted);margin:8px 0 2px}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--rule);vertical-align:top}th{color:var(--muted);font-weight:600}
+.scroll{overflow-x:auto}.dim{color:var(--muted)}.ok{color:#1e7a46;font-weight:600}.bad{color:#b3261e;font-weight:600}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+pre{white-space:pre-wrap;font-size:13px;background:var(--soft);padding:8px;border-radius:3px;margin:6px 0 0}
+</style>
+<link rel="stylesheet" href="/css/omr.css">
+</head>
+<body>
+<div class="bar"><a href="/" aria-label="লিয়ানা বুকস"><img src="/img/logo/li-mark.svg" alt="" width="34" height="44"><span class="lgn-n">লিয়ানা বুকস</span></a><span>অ্যাডমিন</span></div>
+<main class="wrap">
+<h1>পাইলট ব্যাচ</h1>
+<p class="sub">সেট তোলা, শুরুর তারিখ, সদস্য অনুমোদন, হাজিরা আর উত্তরের CSV। যা তুলবেন তার আসল কপি Lyanna_data-র <code>pilot/&lt;ব্যাচ&gt;/</code>-এ রাখুন।</p>
+<div class="card row"><label style="margin:0">ব্যাচ</label><input type="text" id="pid" value="petrobangla-1" style="max-width:240px"><button class="btn ghost" id="load">খুলুন</button> <a id="open" target="_blank" rel="noopener">পরীক্ষার্থীর পাতা →</a></div>
+<div id="msg" class="card dim">লোড হচ্ছে…</div>
+
+<section id="main" hidden>
+<h2>অবস্থা</h2><div class="card" id="info"></div>
+
+<h2>তারিখ আর রাতের ফর্ম</h2>
+<div class="card">
+<label for="start">শুরুর তারিখ (দিন ১, সকাল ৬টা থেকে)। বদলালে পুরো সূচি সরে যায়।</label><input type="date" id="start">
+<label for="form">Google Form-এর আগে-থেকে-বসানো লিংক। কোডের জায়গায় <code>{code}</code>, দিনের জায়গায় <code>{day}</code> লিখুন।</label><input type="url" id="form" placeholder="https://docs.google.com/forms/d/e/…/viewform?usp=pp_url&amp;entry.123={code}&amp;entry.456={day}">
+<p class="row" style="margin:10px 0 0"><button class="btn" id="saveCfg">রাখুন</button><span id="cfgMsg" class="dim"></span></p>
+</div>
+
+<h2>সদস্য</h2>
+<div class="card scroll"><table><thead><tr><th>কোড</th><th>নাম</th><th>অবস্থা</th><th>হাজিরা</th><th></th></tr></thead><tbody id="mem"></tbody></table>
+<p class="sub" style="margin:8px 0 0">অনুমোদন দিলে পরের খালি কোড বসে (P01, P02…)। জোড় কোড ক-দলের শিট আগে পান, বিজোড় খ-দলের। একবার দেওয়া কোড আর বদলায় না।</p></div>
+<div id="repBox"></div>
+
+<h2>রপ্তানি</h2>
+<div class="card row"><a class="btn" id="csv">সব উত্তরের CSV</a><a class="btn ghost" id="csvS">শিট খোলার CSV</a><span class="dim">নাম/ইমেইল নেই, শুধু কোড। Lyanna_data-র pilot/&lt;ব্যাচ&gt;/-এ রাখুন।</span></div>
+</section>
+
+<h2>সেট তোলা</h2>
+<div class="card">
+<p class="sub" style="margin:0 0 8px">LY Course-এর দেওয়া <code>set.json</code> (ছাঁচ: Lyanna_data/pilot/README.md)। আবার তুললে একই আইডির প্রশ্ন হালনাগাদ হয়।</p>
+<input type="file" id="file" accept=".json,application/json">
+<p class="row" style="margin:10px 0 0"><button class="btn" id="up" disabled>তুলুন</button><span id="upMsg" class="dim"></span></p>
+<pre id="chk" hidden></pre>
+</div>
+</main>
+<script>
+const $=id=>document.getElementById(id),bn=x=>String(x).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const mask=e=>e?e.replace(/^(.{3}).*@/,'$1…@'):'';
+let P=$('pid').value.trim(),D=null,SET=null;
+async function api(p,b){const r=await fetch('/api/'+p,b?{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:{credentials:'same-origin',cache:'no-store'});
+  const j=await r.json().catch(()=>({}));if(r.status===401)throw 'login';if(r.status===403)throw 'admin';if(!r.ok){const e=new Error(j.error||'err');e.j=j;throw e}return j}
+function fail(e){$('msg').hidden=false;$('msg').innerHTML=e==='login'?'আগে <a href="/account/">লগইন করুন</a> (অ্যাডমিন ইমেইল দিয়ে)।':e==='admin'?'এই ইমেইল অ্যাডমিন তালিকায় নেই।':e&&e.message==='no pilot'?'এই ব্যাচ এখনো তোলা হয়নি। নিচে সেট তুলুন।':'সার্ভারে সমস্যা, পরে চেষ্টা করুন।'}
+async function load(){
+  P=$('pid').value.trim();$('open').href='/pilot/'+encodeURIComponent(P)+'/';
+  $('csv').href='/api/admin/pilot/csv?p='+encodeURIComponent(P);$('csvS').href=$('csv').href+'&kind=sheets';
+  try{D=await api('admin/pilot?p='+encodeURIComponent(P))}catch(e){$('main').hidden=true;fail(e);return}
+  $('msg').hidden=true;$('main').hidden=false;
+  const c=D.cfg,am=c.attend_min;
+  $('info').innerHTML=`<b>${esc(c.title)}</b><br>দিন: ${D.day==null?'তারিখ বসানো হয়নি':D.day<1?'শুরু হয়নি':D.day>c.days?'শেষ':bn(D.day)+' / '+bn(c.days)} · টপিক ${bn(c.topics.length)} · পরীক্ষা ${bn(c.exams.length)} · প্রশ্ন ${bn(D.qn)}`+
+    (D.missingN?`<br><span class="bad">সেটের ${bn(D.missingN)}টি প্রশ্ন এখনো তোলা হয়নি</span>`:'<br><span class="ok">সব প্রশ্ন তোলা আছে</span>')+
+    `<br>শিট নেই: ${c.topics.filter(t=>!t.sheet).map(t=>esc(t.name)).join(', ')||'<span class="ok">সব আছে</span>'} · রাতের ফর্ম: ${c.form?'<span class="ok">আছে</span>':'<span class="bad">নেই</span>'}`;
+  $('start').value=c.start||'';$('form').value=c.form||'';
+  const took={};D.ans.forEach(a=>{if(a.k>=am)took[a.uid]=(took[a.uid]||0)+1});
+  const L={ok:'অনুমোদিত',wait:'অপেক্ষায়',out:'বাদ'};
+  $('mem').innerHTML=D.members.map(m=>`<tr data-u="${m.uid}"><td>${esc(m.code||'—')}</td><td>${esc(m.name)}<br><span class="dim">${esc(mask(m.email))}</span></td><td>${L[m.st]||m.st}</td>
+    <td>${bn(took[m.uid]||0)} / ${bn(c.exams.length)}${(took[m.uid]||0)>=c.pass?' <span class="ok">উত্তীর্ণ</span>':''}</td>
+    <td class="row">${m.st!=='ok'?'<button class="btn" data-a="ok">অনুমোদন</button>':''}${m.st!=='out'?'<button class="btn ghost" data-a="out">বাদ</button>':''}${m.code?'<button class="btn ghost" data-rep>রিপোর্ট</button><button class="btn ghost" data-reset>একটা পরীক্ষা মুছুন</button>':''}</td></tr>`).join('')||'<tr><td colspan="5" class="dim">এখনো কেউ যোগ দেননি।</td></tr>';
+  document.querySelectorAll('#mem [data-a]').forEach(b=>b.onclick=async()=>{b.disabled=true;await api('admin/pilot/mem',{p:P,uid:+b.closest('tr').dataset.u,act:b.dataset.a}).catch(fail);load()});
+  document.querySelectorAll('#mem [data-rep]').forEach(b=>b.onclick=async()=>{const code=b.closest('tr').children[0].textContent;
+    const r=await api('pilot/report?p='+encodeURIComponent(P)+'&code='+encodeURIComponent(code)).catch(()=>null);if(!r)return;
+    $('repBox').innerHTML=`<div class="card"><b>${esc(code)}</b> · হাজিরা ${bn(r.took)} · আন্দাজে ঠিক ${bn(r.guessOk)} · নিশ্চিত-ভুল ${bn(r.sureWrong)}<table><tbody>`+
+      r.topics.map(t=>`<tr><td>${esc(t.name)}</td><td>${t.pct==null?'—':bn(t.pct)+'%'}</td><td>${t.level||''}</td><td class="dim">১ম ${bn(t.r[0][0])}/${bn(t.r[0][1])} · ২য় ${bn(t.r[1][0])}/${bn(t.r[1][1])}</td></tr>`).join('')+'</tbody></table></div>';});
+  document.querySelectorAll('#mem [data-reset]').forEach(b=>b.onclick=async()=>{const no=prompt('কোন পরীক্ষা-নম্বর মুছবেন? (শুধু পরীক্ষা করে দেখার জন্য; উত্তর চিরতরে মুছে যাবে)');
+    if(!no)return;await api('admin/pilot/reset',{p:P,uid:+b.closest('tr').dataset.u,no:+no}).catch(fail);load()});
+}
+$('load').onclick=load;
+$('saveCfg').onclick=async()=>{$('cfgMsg').textContent='রাখা হচ্ছে…';
+  try{await api('admin/pilot/cfg',{p:P,start:$('start').value,form:$('form').value.trim()});$('cfgMsg').textContent='রাখা হয়েছে।';load()}
+  catch(e){$('cfgMsg').textContent=e.message==='form'?'ফর্মের লিংক Google Form-এর হতে হবে।':e.message==='date'?'তারিখ ঠিক নয়।':'রাখা যায়নি।'}};
+
+// সেট-ফাইল: আগে ফোনেই যাচাই, তারপর cfg আর প্রশ্ন (৪০টা করে)
+$('file').onchange=async()=>{
+  const f=$('file').files[0];$('up').disabled=true;$('chk').hidden=false;
+  try{SET=JSON.parse(await f.text())}catch(e){$('chk').textContent='JSON পড়া যায়নি: '+e.message;SET=null;return}
+  const q=SET.questions||{},need=new Set((SET.exams||[]).flatMap(e=>[...(e.qs||[]),...(e.fill||[])]));
+  const miss=[...need].filter(id=>!q[id]),bad=Object.entries(q).filter(([id,x])=>!/^q[0-9a-f]{10}$/.test(id)||!x||!x.q||!Array.isArray(x.o)||!Number.isInteger(x.a)||x.a<0||x.a>=x.o.length||!(SET.topics||[]).some(t=>t.id===x.t));
+  $('chk').textContent=`ব্যাচ: ${SET.id}\nটপিক: ${(SET.topics||[]).length}, পরীক্ষা: ${(SET.exams||[]).length}, প্রশ্ন: ${Object.keys(q).length}\n`+
+    (miss.length?`সেটে আছে কিন্তু questions-এ নেই: ${miss.length}টি (${miss.slice(0,5).join(', ')}…)\n`:'')+(bad.length?`ঠিক নয় এমন প্রশ্ন: ${bad.length}টি (${bad.slice(0,5).map(x=>x[0]).join(', ')})\n`:'')+
+    (miss.length||bad.length?'আগে ফাইল ঠিক করুন।':'ফাইল ঠিক আছে। বাকি নিয়ম (টপিক দুবার, মাঝে ২ দিন…) তোলার সময় সার্ভার যাচাই করবে।');
+  $('up').disabled=!!(miss.length||bad.length);
+  if(SET.id)$('pid').value=SET.id;
+};
+$('up').onclick=async()=>{
+  if(!SET)return;$('up').disabled=true;const P2=SET.id,{questions,...cfg}=SET;
+  try{await api('admin/pilot/set',{p:P2,cfg})}catch(e){$('upMsg').textContent='সেট নেওয়া হয়নি।';if(e.j&&e.j.list)$('chk').textContent=e.j.list.join('\n');$('up').disabled=false;return}
+  const list=Object.entries(questions).map(([id,x])=>({id,...x}));let n=0,bad=[];
+  for(let i=0;i<list.length;i+=40){$('upMsg').textContent=`প্রশ্ন তোলা হচ্ছে ${bn(i)}/${bn(list.length)}…`;
+    try{const r=await api('admin/pilot/q',{p:P2,qs:list.slice(i,i+40)});n+=r.n;bad=bad.concat(r.bad)}catch(e){$('upMsg').textContent='মাঝপথে থেমেছে, আবার "তুলুন" চাপুন (আগেরগুলো দুবার হবে না)।';$('up').disabled=false;return}}
+  $('upMsg').textContent=`হয়েছে: ${bn(n)}টি প্রশ্ন।`+(bad.length?` বাদ ${bn(bad.length)}টি: ${bad.slice(0,5).join(', ')}`:'');
+  $('pid').value=P2;load();
+};
+load();
+</script>
+</body>
+</html>

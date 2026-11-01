@@ -33,7 +33,8 @@
    প্রশ্নে ভুল জানানো (লগইন লাগে না; বোতাম js/report.js):
    POST /api/report {qid?, page, q, kind: ans|exp|q|other, note?} → {ok}
    অ্যাডমিন: GET /api/admin/reports?st=new|done|all → তালিকা (পাতা /admin/reports/); POST /api/admin/reports {ids:[…], st}
-   যাচাইয়ের কাজ LY Quiz & Sheets-এর; Lyanna_data-তে টেনে নেওয়ার জন্য একই GET-এর JSON। */
+   যাচাইয়ের কাজ LY Quiz & Sheets-এর; Lyanna_data-তে টেনে নেওয়ার জন্য একই GET-এর JSON।
+   পাইলট ব্যাচ (/pilot/<id>/, /admin/pilot/): নিচে "পাইলট ব্যাচ" অংশের মাথায় সব পথ। */
 const COOKIE = 'lb_s', AGE = 180 * 86400;
 const MAX_BATCH = 300, MAX_ROWS = 3000;
 
@@ -612,6 +613,7 @@ async function report(req, db, u) {
 // অ্যাডমিন: কার কী ফল, প্রতিটি উত্তরসহ (কাস্টম প্ল্যান আর দিন-শেষের ডেটা-যাচাইয়ের জন্য)
 async function admin(path, url, env, db, u, req) {
   if (!isAdmin(u, env)) return json({error: 'admin'}, 403);
+  if (path === 'admin/pilot' || path.startsWith('admin/pilot/')) return pilotAdmin(path, url, req, db);
   await attqTable(db);
   if (path === 'admin/learners') {
     const {results} = await db.prepare(`SELECT u.id, u.name, u.email, u.created, u.seen,
@@ -654,6 +656,482 @@ async function admin(path, url, env, db, u, req) {
   return json({error: 'not found'}, 404);
 }
 
+// ---------- পাইলট ব্যাচ (যেমন পেট্রোবাংলা প্রথম ব্যাচ): দিনভিত্তিক টপিক-পরীক্ষা, প্রতিটি উত্তর আলাদা সারি ----------
+/* পাতা /pilot/<id>/ (পরীক্ষার্থী) আর /admin/pilot/ (অ্যাডমিন)। প্রশ্নের সেট (উত্তরসহ) রিপোতে নয়, অ্যাডমিন পাতা থেকে D1-এ ওঠে;
+   আসল কপি Lyanna_data/pilot/<id>/set.json। সময় সব সার্ভারে গোনা, বাংলাদেশ সময় (UTC+6): দিন d খোলে start+(d-1) তারিখের সকাল ৬টায়
+   (= সেই তারিখের UTC মধ্যরাত), বন্ধ হয় ২৪ ঘণ্টা পরে। উত্তর আর ব্যাখ্যা শুধু বন্ধ হওয়ার পরে।
+   GET  /api/pilot/me?p=          → সূচি, নিজের অবস্থা, আজকের শিট, রাতের ফর্ম, রিপোর্ট আছে কি না
+   POST /api/pilot/join {p}       → যোগ দেওয়ার অনুরোধ (অ্যাডমিন অনুমোদন দিলে কোড P01, P02…)
+   POST /api/pilot/start {p,no}   → পরীক্ষা শুরু বা চলতিটা আবার খোলা: প্রশ্ন (উত্তর ছাড়া), শেষ সময়, আগে দেওয়া উত্তর
+   POST /api/pilot/ans {p,no,qid,pick,conf,sec} → একটি উত্তর = একটি সারি (pilot_ans); ঠিক/ভুল সার্ভারে, ফেরত যায় না
+   POST /api/pilot/done {p,no}
+   GET  /api/pilot/review?p=&no=  → বন্ধ হওয়ার পরে উত্তর, ব্যাখ্যা, নিজের দাগ
+   GET  /api/pilot/report?p=      → ৫ম দিন বন্ধ হওয়ার পরে নিজের রিপোর্ট (অ্যাডমিন &code=P03 দিয়ে যেকোনো সময়)
+   অ্যাডমিন: GET admin/pilot?p= · POST admin/pilot/set {p,cfg} · POST admin/pilot/q {p,qs:[…]} (এক বারে ৪০) ·
+            POST admin/pilot/cfg {p,start?,form?} · POST admin/pilot/mem {p,uid,act:ok|wait|out} ·
+            POST admin/pilot/reset {p,uid,no} (পরীক্ষা করে দেখার জন্য একটা পরীক্ষা মোছা) · GET admin/pilot/csv?p= (শুধু কোড, নাম নয়) */
+const PILOT_SCHEMA = [
+  'CREATE TABLE IF NOT EXISTS pilot(id TEXT PRIMARY KEY, cfg TEXT NOT NULL, updated INTEGER)',
+  'CREATE TABLE IF NOT EXISTS pilot_q(pilot TEXT NOT NULL, qid TEXT NOT NULL, topic TEXT, d TEXT NOT NULL, PRIMARY KEY(pilot, qid))',
+  'CREATE TABLE IF NOT EXISTS pilot_mem(pilot TEXT NOT NULL, uid INTEGER NOT NULL, code TEXT, st TEXT NOT NULL, ts INTEGER, PRIMARY KEY(pilot, uid))',
+  'CREATE TABLE IF NOT EXISTS pilot_sit(pilot TEXT NOT NULL, uid INTEGER NOT NULL, no INTEGER NOT NULL, ts INTEGER NOT NULL, dl INTEGER NOT NULL, qs TEXT NOT NULL, rep TEXT NOT NULL, done INTEGER, PRIMARY KEY(pilot, uid, no))',
+  'CREATE TABLE IF NOT EXISTS pilot_ans(pilot TEXT NOT NULL, uid INTEGER NOT NULL, no INTEGER NOT NULL, qid TEXT NOT NULL, topic TEXT, pick INTEGER NOT NULL, ok INTEGER NOT NULL, conf TEXT NOT NULL, sec INTEGER, ts INTEGER NOT NULL, rep INTEGER NOT NULL, late INTEGER, cts INTEGER, PRIMARY KEY(pilot, uid, no, qid))',
+  'CREATE TABLE IF NOT EXISTS pilot_sheet(pilot TEXT NOT NULL, uid INTEGER NOT NULL, topic TEXT NOT NULL, ts INTEGER NOT NULL, last INTEGER, n INTEGER NOT NULL, PRIMARY KEY(pilot, uid, topic))'
+];
+let pilotReady = false;
+async function pilotSetup(db) { if (!pilotReady) { await db.batch(PILOT_SCHEMA.map(s => db.prepare(s))); pilotReady = true; } }
+
+const PID = /^[a-z0-9]+(-[a-z0-9]+)*$/, TID = /^[a-z0-9]+(-[a-z0-9]+)*$/, DAY = 86400e3, H = 3600e3;
+const GRACE = 60e3; // ধীর নেটে শেষ উত্তরটা পৌঁছানোর সময়
+const LATE = 10 * 60e3; // ফোনে জমে থাকা উত্তর এর মধ্যে এলে নেওয়া হয়, late=1 চিহ্নসহ (বাদ দেওয়া নয়)
+// "2026-11-10" → দিন ১ খোলার মুহূর্ত (সকাল ৬টা ঢাকা = ০০:০০ UTC)
+const pOpen = start => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(start || ''); return m ? Date.UTC(+m[1], +m[2] - 1, +m[3]) : null; };
+const pDay = (c, now) => { const o = pOpen(c.start); return o == null ? null : Math.floor((now - o) / DAY) + 1; };
+const dOpen = (c, d) => pOpen(c.start) + (d - 1) * DAY;
+const dClose = (c, d) => dOpen(c, d) + DAY;
+// উত্তর খোলে দিন বন্ধের পরে আরও এক পরীক্ষার সময় + জমার সময়, যাতে ৫:৫৯-এ শুরু করা কেউ চলতি অবস্থায় উত্তর না দেখে
+const dReveal = (c, d) => dClose(c, d) + c.mins * 60e3 + GRACE + LATE;
+const codeNo = code => parseInt(String(code || '').replace(/\D/g, ''), 10) || 0;
+// জোড় কোড → ক-দলের শিট আগে, বিজোড় → খ-দলের
+const earlyGroup = code => codeNo(code) % 2 === 0 ? 'ka' : 'kha';
+
+async function pilotCfg(db, p) {
+  const r = await db.prepare('SELECT cfg, updated FROM pilot WHERE id = ?').bind(p).first();
+  if (!r) return null;
+  const c = JSON.parse(r.cfg);
+  c.updated = r.updated;
+  c.T = new Map(c.topics.map(t => [t.id, t]));
+  c.E = new Map(c.exams.map(e => [e.no, e]));
+  // প্রতিটি টপিকের প্রথম আর দ্বিতীয় পরীক্ষা (দিন ধরে)
+  const by = {};
+  for (const e of [...c.exams].sort((a, b) => a.day - b.day || a.no - b.no)) (by[e.topic] = by[e.topic] || []).push(e);
+  for (const e of c.exams) e.round = by[e.topic].indexOf(e) + 1;
+  c.byTopic = by;
+  return c;
+}
+
+// সেট যাচাই: অ্যাডমিন পাতাও একই নিয়ম দেখায়, তবু সার্ভারে আবার
+function pilotCheck(c) {
+  const err = [];
+  if (!c || typeof c !== 'object') return ['cfg নেই'];
+  if (!PID.test(c.id || '')) err.push('id ঠিক নয়');
+  if (c.start && !pOpen(c.start)) err.push('start তারিখ YYYY-MM-DD হবে');
+  const days = c.days || 5, n = c.n || 15, per = c.personal == null ? 3 : c.personal;
+  if (!Array.isArray(c.topics) || !c.topics.length) err.push('topics নেই');
+  else for (const t of c.topics) {
+    if (!TID.test(t.id || '')) err.push('টপিক-আইডি ঠিক নয়: ' + t.id);
+    if (t.group !== 'ka' && t.group !== 'kha') err.push('টপিক ' + t.id + ': group হবে ka বা kha');
+    if (t.sheet && !/^https:\/\//.test(t.sheet)) err.push('টপিক ' + t.id + ': sheet লিংক https:// দিয়ে');
+  }
+  const tids = new Set((c.topics || []).map(t => t.id)), seen = {}, nos = new Set();
+  if (!Array.isArray(c.exams) || !c.exams.length) err.push('exams নেই');
+  else for (const e of c.exams) {
+    if (!Number.isInteger(e.no) || nos.has(e.no)) err.push('পরীক্ষা-নম্বর ঠিক নয় বা দুবার: ' + e.no);
+    nos.add(e.no);
+    if (!Number.isInteger(e.day) || e.day < 1 || e.day > days) err.push('পরীক্ষা ' + e.no + ': day ১-' + days);
+    if (!tids.has(e.topic)) err.push('পরীক্ষা ' + e.no + ': অচেনা টপিক ' + e.topic);
+    if (!Array.isArray(e.qs) || e.qs.length !== n - per) err.push('পরীক্ষা ' + e.no + ': qs-এ ' + (n - per) + 'টি প্রশ্ন লাগবে (আছে ' + (e.qs || []).length + ')');
+    if (!Array.isArray(e.fill) || e.fill.length < per) err.push('পরীক্ষা ' + e.no + ': fill-এ অন্তত ' + per + 'টি বাড়তি প্রশ্ন লাগবে');
+    for (const q of [...(e.qs || []), ...(e.fill || [])]) if (!QID.test(q)) err.push('পরীক্ষা ' + e.no + ': প্রশ্ন-আইডি ঠিক নয় ' + q);
+    (seen[e.topic] = seen[e.topic] || []).push(e);
+  }
+  for (const [t, list] of Object.entries(seen)) {
+    if (list.length !== 2) { err.push('টপিক ' + t + ' আসছে ' + list.length + ' বার (২ বার লাগবে)'); continue; }
+    const [a, b] = list.sort((x, y) => x.day - y.day);
+    if (b.day - a.day < 2) err.push('টপিক ' + t + ': দুই পরীক্ষার মাঝে অন্তত ২ দিন (দিন ' + a.day + ' আর ' + b.day + ')');
+    const s1 = new Set([...a.qs, ...a.fill]);
+    if ([...b.qs, ...b.fill].some(q => s1.has(q))) err.push('টপিক ' + t + ': দ্বিতীয়বার নতুন প্রশ্ন হবে, কিছু প্রশ্ন দুবার');
+  }
+  if (c.form && !/^https:\/\/docs\.google\.com\/forms\/|^https:\/\/forms\.gle\//.test(c.form)) err.push('form লিংক Google Form-এর হবে');
+  return err.slice(0, 40);
+}
+
+// সার্ভারে রাখা cfg: শুধু দরকারি ঘর
+function pilotSlim(c) {
+  return {id: c.id, title: str(c.title, 120) || c.id, start: c.start || '', days: c.days || 5, n: c.n || 15,
+    personal: c.personal == null ? 3 : c.personal, mins: c.mins || 15, pass: c.pass || 18, form: c.form || '',
+    attend_min: Number.isInteger(c.attend_min) ? c.attend_min : 10,
+    sheet_early: c.sheet_early === 'day_start' ? 'day_start' : 'after_exam', late_hour: Number.isInteger(c.late_hour) ? c.late_hour : 18,
+    form_hour: Number.isInteger(c.form_hour) ? c.form_hour : 21,
+    topics: c.topics.map(t => ({id: t.id, name: str(t.name, 120) || t.id, group: t.group, sheet: t.sheet || ''})),
+    exams: c.exams.map(e => ({no: e.no, day: e.day, topic: e.topic, qs: e.qs, fill: e.fill}))};
+}
+
+async function pilotMem(db, p, uid) {
+  return db.prepare('SELECT uid, code, st, ts FROM pilot_mem WHERE pilot = ? AND uid = ?').bind(p, uid).first();
+}
+
+// এই মানুষের আগের দিনের ভুল (ফাঁকাও ভুল) থেকে ফেরত-প্রশ্ন; একই টপিক আগে, তারপর পুরোনো আগে; একটা প্রশ্ন একবারই ফেরে
+async function pickPersonal(db, c, uid, e) {
+  const k = c.personal == null ? 3 : c.personal;
+  if (!k) return [];
+  const [s, a] = await db.batch([
+    db.prepare('SELECT no, ts, qs, rep FROM pilot_sit WHERE pilot = ? AND uid = ? ORDER BY ts').bind(c.id, uid),
+    db.prepare('SELECT no, qid, ok FROM pilot_ans WHERE pilot = ? AND uid = ?').bind(c.id, uid)
+  ]);
+  const okBy = new Map(a.results.map(r => [r.no + ':' + r.qid, r.ok]));
+  const used = new Set(), cand = [], base = new Set(e.qs);
+  for (const r of s.results) {
+    const qs = r.qs.split(','), rep = r.rep.split(',');
+    qs.forEach((q, i) => { if (rep[i] === '1') used.add(q); });
+  }
+  for (const r of s.results) {
+    const x = c.E.get(r.no);
+    if (!x || x.day >= e.day) continue; // শুধু আগের দিনগুলো (যেগুলোর উত্তর এখন খোলা)
+    r.qs.split(',').forEach((q, i) => {
+      if (okBy.get(r.no + ':' + q) === 1 || used.has(q) || base.has(q)) return;
+      cand.push({q, i: cand.length});
+    });
+  }
+  const uniq = [...new Map(cand.map(x => [x.q, x])).values()];
+  if (!uniq.length) return [];
+  const topic = new Map();
+  for (let i = 0; i < uniq.length; i += 40) {
+    const part = uniq.slice(i, i + 40).map(x => x.q);
+    const {results} = await db.prepare(`SELECT qid, topic FROM pilot_q WHERE pilot = ? AND qid IN (${part.map(() => '?').join(',')})`).bind(c.id, ...part).all();
+    for (const r of results) topic.set(r.qid, r.topic);
+  }
+  return uniq.filter(x => topic.has(x.q))
+    .sort((x, y) => (topic.get(y.q) === e.topic) - (topic.get(x.q) === e.topic) || x.i - y.i)
+    .slice(0, k).map(x => x.q);
+}
+
+async function pilotQs(db, p, ids) {
+  const out = new Map();
+  for (let i = 0; i < ids.length; i += 40) {
+    const part = ids.slice(i, i + 40);
+    const {results} = await db.prepare(`SELECT qid, topic, d FROM pilot_q WHERE pilot = ? AND qid IN (${part.map(() => '?').join(',')})`).bind(p, ...part).all();
+    for (const r of results) out.set(r.qid, {topic: r.topic, ...JSON.parse(r.d)});
+  }
+  return out;
+}
+
+// একজনের সব পরীক্ষার অবস্থা
+function examState(c, e, sit, now) {
+  const o = dOpen(c, e.day), cl = dClose(c, e.day);
+  if (sit) {
+    if (!sit.done && now < sit.dl + GRACE) return 'going';
+    return now >= dReveal(c, e.day) ? 'closed' : 'done';
+  }
+  if (now < o) return 'soon';
+  if (now < cl) return 'open';
+  return now >= dReveal(c, e.day) ? 'missed' : 'shut';
+}
+
+// কোন শিট এখন খোলা
+function sheetsFor(c, code, sits, now) {
+  const early = earlyGroup(code), out = [], d5 = c.days || 5;
+  const lateAt = dOpen(c, d5) + ((c.late_hour == null ? 18 : c.late_hour) - 6) * H;
+  for (const t of c.topics) {
+    if (!t.sheet) continue;
+    const first = (c.byTopic[t.id] || [])[0];
+    if (!first) continue;
+    let at;
+    if (t.group === early) {
+      if (c.sheet_early === 'day_start') at = dOpen(c, first.day);
+      else {
+        const s = sits.get(first.no);
+        // প্রথম পরীক্ষা শেষ হলে (বা দিন বন্ধ হলে, পরীক্ষা না দিলেও)
+        at = s ? (s.done || s.dl + GRACE) : dClose(c, first.day);
+        if (s && !s.done && now < s.dl + GRACE) at = Infinity;
+      }
+    } else {
+      // ৫ম দিনের সন্ধ্যা, তবে সেদিনের সব পরীক্ষা শেষ হলে তবেই (নইলে দ্বিতীয় রাউন্ডের আগে শিট পড়া হয়ে যায়); না দিলে দিন বন্ধ হলে
+      const last = c.exams.filter(x => x.day === d5);
+      const fin = last.every(x => { const s = sits.get(x.no); return s && (s.done || now >= s.dl + GRACE); });
+      at = fin ? Math.max(lateAt, ...last.map(x => { const s = sits.get(x.no); return s.done || s.dl + GRACE; })) : dClose(c, d5);
+    }
+    if (now >= at) out.push({topic: t.id, name: t.name, url: t.sheet, at: Math.min(at, now), late: t.group !== early});
+  }
+  return out.sort((a, b) => b.at - a.at);
+}
+
+// হিসাব স্ক্রিপ্টে: দুই রাউন্ড মিলিয়ে, আন্দাজে ঠিক = ঠিক নয়, দেখানো-কিন্তু-ফাঁকা = ভুল; প্রশ্ন তার নিজের টপিকে গোনা
+async function pilotReportFor(db, c, uid, code) {
+  const [s, a] = await db.batch([
+    db.prepare('SELECT no, qs, rep FROM pilot_sit WHERE pilot = ? AND uid = ?').bind(c.id, uid),
+    db.prepare('SELECT no, qid, ok, conf FROM pilot_ans WHERE pilot = ? AND uid = ?').bind(c.id, uid)
+  ]);
+  const ans = new Map(a.results.map(r => [r.no + ':' + r.qid, r]));
+  const ids = [...new Set(s.results.flatMap(r => r.qs.split(',')))];
+  const qt = await pilotQs(db, c.id, ids);
+  const T = new Map(c.topics.map(t => [t.id, {id: t.id, name: t.name, sheet: t.sheet, n: 0, sure: 0, guessOk: 0, wrong: 0, blank: 0, r: [[0, 0], [0, 0]]}]));
+  // একই প্রশ্ন ফেরত এলে টপিকে একবারই গোনা, শেষ উত্তরটা ধরে (নইলে দুর্বলের ভুল দুবার গোনা হয়)
+  const last = new Map(), sitsSorted = [...s.results].sort((x, y) => ((c.E.get(x.no) || {}).day - (c.E.get(y.no) || {}).day) || x.no - y.no);
+  let guessOk = 0, guessed = 0, sure = 0, sureWrong = 0, back = 0, backFixed = 0;
+  for (const r of sitsSorted) {
+    const e = c.E.get(r.no), rep = r.rep.split(',');
+    r.qs.split(',').forEach((q, i) => {
+      const v = ans.get(r.no + ':' + q), x = T.get((qt.get(q) || {}).topic);
+      if (!x) return;
+      if (v) { if (v.conf === 'g') guessed++; else sure++; if (v.ok && v.conf === 'g') guessOk++; if (!v.ok && v.conf === 's') sureWrong++; }
+      if (rep[i] === '1') { back++; if (v && v.ok && v.conf === 's') backFixed++; }
+      else { const rd = e && e.round === 2 ? 1 : 0; x.r[rd][1]++; if (v && v.ok && v.conf === 's') x.r[rd][0]++; }
+      last.set(q, {x, v});
+    });
+  }
+  for (const {x, v} of last.values()) {
+    x.n++;
+    if (!v) x.blank++;
+    else if (v.ok && v.conf === 's') x.sure++;
+    else if (v.ok) x.guessOk++;
+    else x.wrong++;
+  }
+  const level = p => p < 60 ? 'weak' : p <= 80 ? 'mid' : 'strong';
+  const topics = [...T.values()].map(x => {
+    const pct = x.n ? Math.round(x.sure / x.n * 1000) / 10 : null;
+    return {...x, pct, level: pct == null ? null : level(pct)};
+  });
+  const order = topics.filter(x => x.pct != null).sort((a, b) => a.pct - b.pct || b.guessOk - a.guessOk || a.name.localeCompare(b.name))
+    .map(x => ({topic: x.id, name: x.name, sheet: x.sheet, pct: x.pct, level: x.level}));
+  const per = {};
+  for (const r of a.results) per[r.no] = (per[r.no] || 0) + 1;
+  const took = Object.values(per).filter(k => k >= c.attend_min).length;
+  return {code, topics, order, guessOk, guessed, sure, sureWrong, back, backFixed, took, total: c.exams.length, pass: took >= c.pass, attend_min: c.attend_min};
+}
+
+async function pilot(path, req, url, env, db, u) {
+  await pilotSetup(db);
+  const m = req.method, body = m === 'POST' ? await req.json().catch(() => ({})) : {};
+  const p = String(url.searchParams.get('p') || body.p || '');
+  if (!PID.test(p)) return json({error: 'bad'}, 400);
+  const c = await pilotCfg(db, p);
+  if (!c) return json({error: 'no pilot'}, 404);
+  const now = Date.now();
+  if (path === 'pilot/me' && m === 'GET') {
+    const out = {p, title: c.title, start: c.start, now, day: c.start ? pDay(c, now) : null, days: c.days, n: c.n, mins: c.mins, pass: c.pass,
+      user: u ? pub(u) : null, member: null};
+    const sched = e => ({no: e.no, day: e.day, topic: e.topic, name: (c.T.get(e.topic) || {}).name || e.topic, round: e.round});
+    out.exams = c.start ? c.exams.map(sched) : [];
+    if (!u) return json(out);
+    const mem = await pilotMem(db, p, u.id);
+    if (!mem || mem.st === 'out') return json(out);
+    out.member = {st: mem.st, code: mem.code || ''};
+    if (mem.st !== 'ok' || !c.start) return json(out);
+    const [s, a] = await db.batch([
+      db.prepare('SELECT no, ts, dl, done FROM pilot_sit WHERE pilot = ? AND uid = ?').bind(p, u.id),
+      db.prepare('SELECT no, COUNT(*) k, SUM(ok) ok FROM pilot_ans WHERE pilot = ? AND uid = ? GROUP BY no').bind(p, u.id)
+    ]);
+    const sits = new Map(s.results.map(r => [r.no, r])), cnt = new Map(a.results.map(r => [r.no, r]));
+    out.exams = c.exams.map(e => {
+      const st = examState(c, e, sits.get(e.no), now), x = {...sched(e), st, open: dOpen(c, e.day), close: dClose(c, e.day)};
+      const k = cnt.get(e.no);
+      x.answered = k ? k.k : 0;
+      if (st === 'closed' && k) x.ok = k.ok || 0;
+      if (st === 'going') x.left = sits.get(e.no).dl - now;
+      x.reveal = dReveal(c, e.day);
+      return x;
+    });
+    out.took = a.results.filter(r => r.k >= c.attend_min).length;
+    out.attend_min = c.attend_min;
+    out.sheets = sheetsFor(c, mem.code, sits, now);
+    // রাতের ফর্ম: দিন d-র রাত ৯টা থেকে পরদিন সকাল ৬টা
+    const d = pDay(c, now), fAt = d >= 1 && d <= c.days ? dOpen(c, d) + (c.form_hour - 6) * H : null;
+    if (c.form && fAt && now >= fAt) out.form = {day: d, url: c.form.replace(/\{code\}/g, encodeURIComponent(mem.code)).replace(/\{day\}/g, String(d))};
+    else if (c.form && fAt) out.formAt = fAt;
+    out.report = now >= dReveal(c, c.days);
+    out.reportAt = dReveal(c, c.days);
+    return json(out);
+  }
+  if (!u) return json({error: 'login'}, 401);
+  if (path === 'pilot/join' && m === 'POST') {
+    await db.prepare("INSERT OR IGNORE INTO pilot_mem(pilot, uid, code, st, ts) VALUES(?,?,NULL,'wait',?)").bind(p, u.id, now).run();
+    const mem = await pilotMem(db, p, u.id);
+    return json({member: {st: mem.st, code: mem.code || ''}});
+  }
+  const mem = await pilotMem(db, p, u.id), admin = isAdmin(u, env);
+  if (path === 'pilot/report' && m === 'GET') {
+    const code = url.searchParams.get('code');
+    if (code && admin) {
+      const w = await db.prepare("SELECT uid, code FROM pilot_mem WHERE pilot = ? AND code = ?").bind(p, code).first();
+      if (!w) return json({error: 'no member'}, 404);
+      return json(await pilotReportFor(db, c, w.uid, w.code));
+    }
+    if (!mem || mem.st !== 'ok') return json({error: 'member'}, 403);
+    if (now < dReveal(c, c.days)) return json({error: 'soon', at: dReveal(c, c.days)}, 403);
+    return json(await pilotReportFor(db, c, u.id, mem.code));
+  }
+  if (!mem || mem.st !== 'ok') return json({error: 'member'}, 403);
+  // শিটের লিংকে চাপ (শিট দেখানো আর খোলা আলাদা মাপা যায়)
+  if (path === 'pilot/sheet' && m === 'POST') {
+    const t = String(body.topic || '');
+    if (!c.T.has(t)) return json({error: 'bad'}, 400);
+    await db.prepare('INSERT INTO pilot_sheet(pilot, uid, topic, ts, last, n) VALUES(?,?,?,?,?,1) ON CONFLICT(pilot, uid, topic) DO UPDATE SET last = excluded.last, n = n + 1')
+      .bind(p, u.id, t, now, now).run();
+    return json({ok: true});
+  }
+  if (!c.start) return json({error: 'nostart'}, 403);
+  const no = parseInt(url.searchParams.get('no') || body.no, 10), e = c.E.get(no);
+  if (!e) return json({error: 'bad'}, 400);
+  const sit = await db.prepare('SELECT no, ts, dl, qs, rep, done FROM pilot_sit WHERE pilot = ? AND uid = ? AND no = ?').bind(p, u.id, no).first();
+
+  if (path === 'pilot/start' && m === 'POST') {
+    let s = sit;
+    if (!s) {
+      if (now < dOpen(c, e.day)) return json({error: 'soon', at: dOpen(c, e.day)}, 403);
+      if (now >= dClose(c, e.day)) return json({error: 'closed'}, 403);
+      const per = await pickPersonal(db, c, u.id, e), need = (c.personal == null ? 3 : c.personal) - per.length;
+      const fill = e.fill.filter(q => !e.qs.includes(q) && !per.includes(q)).slice(0, Math.max(0, need));
+      const qs = [...e.qs, ...fill, ...per], rep = [...e.qs.map(() => 0), ...fill.map(() => 0), ...per.map(() => 1)];
+      s = {no, ts: now, dl: now + c.mins * 60e3, qs: qs.join(','), rep: rep.join(','), done: null};
+      const r = await db.prepare('INSERT OR IGNORE INTO pilot_sit(pilot, uid, no, ts, dl, qs, rep, done) VALUES(?,?,?,?,?,?,?,NULL)')
+        .bind(p, u.id, no, s.ts, s.dl, s.qs, s.rep).run();
+      // একই সময়ে দুই ফোন থেকে শুরু হলে যেটা আগে লেখা হয়েছে সেটাই
+      if (!r.meta || !r.meta.changes) s = await db.prepare('SELECT no, ts, dl, qs, rep, done FROM pilot_sit WHERE pilot = ? AND uid = ? AND no = ?').bind(p, u.id, no).first();
+    }
+    if (s.done || now >= s.dl + GRACE) return json({error: 'done'}, 403);
+    const ids = s.qs.split(','), rep = s.rep.split(','), Q = await pilotQs(db, p, ids);
+    const {results} = await db.prepare('SELECT qid, pick, conf FROM pilot_ans WHERE pilot = ? AND uid = ? AND no = ?').bind(p, u.id, no).all();
+    return json({no, name: (c.T.get(e.topic) || {}).name || e.topic, left: s.dl - now, mins: c.mins,
+      qs: ids.filter(id => Q.has(id)).map((id, i) => ({id, q: Q.get(id).q, o: Q.get(id).o, r: rep[ids.indexOf(id)] === '1' ? 1 : 0})),
+      done: results.map(r => [r.qid, r.pick, r.conf])});
+  }
+  if (path === 'pilot/ans' && m === 'POST') {
+    if (!sit) return json({error: 'nosit'}, 403);
+    if (now > Math.min(sit.dl + GRACE + LATE, dReveal(c, e.day))) return json({error: 'late'}, 403);
+    const late = now > sit.dl + GRACE ? 1 : 0, cts = num(body.cts) ? Math.round(body.cts) : null;
+    const ids = sit.qs.split(','), i = ids.indexOf(String(body.qid || ''));
+    if (i < 0) return json({error: 'bad'}, 400);
+    const conf = body.conf === 's' || body.conf === 'g' ? body.conf : null, pick = body.pick;
+    const Q = (await pilotQs(db, p, [ids[i]])).get(ids[i]);
+    if (!Q || !conf || !Number.isInteger(pick) || pick < 0 || pick >= Q.o.length) return json({error: 'bad'}, 400);
+    const sec = Math.max(0, Math.min(Math.round(num(body.sec) || 0), c.mins * 60 + 60));
+    await db.prepare('INSERT OR IGNORE INTO pilot_ans(pilot, uid, no, qid, topic, pick, ok, conf, sec, ts, rep, late, cts) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)')
+      .bind(p, u.id, no, ids[i], Q.topic, pick, pick === Q.a ? 1 : 0, conf, sec, now, sit.rep.split(',')[i] === '1' ? 1 : 0, late, cts).run();
+    return json({ok: true});
+  }
+  if (path === 'pilot/done' && m === 'POST') {
+    if (sit && !sit.done) await db.prepare('UPDATE pilot_sit SET done = ? WHERE pilot = ? AND uid = ? AND no = ?').bind(Math.min(now, sit.dl + GRACE), p, u.id, no).run();
+    return json({ok: true});
+  }
+  if (path === 'pilot/review' && m === 'GET') {
+    if (now < dReveal(c, e.day)) return json({error: 'soon', at: dReveal(c, e.day)}, 403);
+    const ids = sit ? sit.qs.split(',') : e.qs, rep = sit ? sit.rep.split(',') : [];
+    const Q = await pilotQs(db, p, ids);
+    const {results} = await db.prepare('SELECT qid, pick, ok, conf FROM pilot_ans WHERE pilot = ? AND uid = ? AND no = ?').bind(p, u.id, no).all();
+    const A = new Map(results.map(r => [r.qid, r]));
+    return json({no, name: (c.T.get(e.topic) || {}).name || e.topic, took: !!sit,
+      qs: ids.filter(id => Q.has(id)).map((id, i) => { const q = Q.get(id), a = A.get(id);
+        return {id, q: q.q, o: q.o, a: q.a, e: q.e || '', r: rep[ids.indexOf(id)] === '1' ? 1 : 0, pick: a ? a.pick : -1, conf: a ? a.conf : ''}; })},
+      200, {'Cache-Control': 'no-store'});
+  }
+  return json({error: 'not found'}, 404);
+}
+
+const csvCell = v => { const s = v == null ? '' : String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+const dhakaIso = ts => ts ? new Date(ts + 6 * H).toISOString().replace('Z', '+06:00') : '';
+
+async function pilotAdmin(path, url, req, db) {
+  await pilotSetup(db);
+  const m = req.method, body = m === 'POST' ? await req.json().catch(() => ({})) : {};
+  const p = String(url.searchParams.get('p') || body.p || (body.cfg && body.cfg.id) || '');
+  if (!PID.test(p)) return json({error: 'bad'}, 400);
+  if (path === 'admin/pilot/set' && m === 'POST') {
+    const err = pilotCheck(body.cfg);
+    if (err.length) return json({error: 'check', list: err}, 400);
+    const old = await pilotCfg(db, p), s = pilotSlim(body.cfg);
+    // তারিখ আর ফর্ম অ্যাডমিন পাতায় আলাদা বদলানো যায়; নতুন সেটে না থাকলে আগেরটা থাকে
+    if (old) { if (!s.start) s.start = old.start; if (!s.form) s.form = old.form; }
+    await db.prepare('INSERT INTO pilot(id, cfg, updated) VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET cfg = excluded.cfg, updated = excluded.updated')
+      .bind(p, JSON.stringify(s), Date.now()).run();
+    return json({ok: true});
+  }
+  const c = await pilotCfg(db, p);
+  if (!c) return json({error: 'no pilot'}, 404);
+  if (path === 'admin/pilot/q' && m === 'POST') {
+    const list = (Array.isArray(body.qs) ? body.qs : []).slice(0, 40), bad = [];
+    const st = db.prepare('INSERT INTO pilot_q(pilot, qid, topic, d) VALUES(?,?,?,?) ON CONFLICT(pilot, qid) DO UPDATE SET topic = excluded.topic, d = excluded.d');
+    const rows = [];
+    for (const q of list) {
+      const o = Array.isArray(q && q.o) ? q.o.map(x => nfc(String(x)).slice(0, 600)) : [];
+      if (!q || !QID.test(q.id || '') || !c.T.has(q.t) || !nfc(q.q) || o.length < 2 || o.length > 6 || !Number.isInteger(q.a) || q.a < 0 || q.a >= o.length) { bad.push(q && q.id); continue; }
+      rows.push(st.bind(p, q.id, q.t, JSON.stringify({q: nfc(q.q).slice(0, 2000), o, a: q.a, e: nfc(q.e || '').slice(0, 6000)})));
+    }
+    if (rows.length) await db.batch(rows);
+    return json({ok: true, n: rows.length, bad});
+  }
+  if (path === 'admin/pilot/cfg' && m === 'POST') {
+    const s = pilotSlim(c);
+    if (typeof body.start === 'string') { if (body.start && !pOpen(body.start)) return json({error: 'date'}, 400); s.start = body.start; }
+    if (typeof body.form === 'string') { s.form = body.form.trim(); if (s.form && pilotCheck({...s, form: s.form}).some(x => x.startsWith('form'))) return json({error: 'form'}, 400); }
+    await db.prepare('UPDATE pilot SET cfg = ?, updated = ? WHERE id = ?').bind(JSON.stringify(s), Date.now(), p).run();
+    return json({ok: true, start: s.start, form: s.form});
+  }
+  if (path === 'admin/pilot/mem' && m === 'POST') {
+    const uid = parseInt(body.uid, 10), act = body.act;
+    if (!uid || !['ok', 'wait', 'out'].includes(act)) return json({error: 'bad'}, 400);
+    const w = await pilotMem(db, p, uid);
+    if (!w) return json({error: 'no member'}, 404);
+    let code = w.code;
+    if (act === 'ok' && !code) {
+      // পরের খালি নম্বর; একবার দেওয়া কোড আর বদলায় না (বাদ দিলেও), তাই রপ্তানিতে এক কোড সবসময় একই মানুষ
+      const {results} = await db.prepare('SELECT code FROM pilot_mem WHERE pilot = ? AND code IS NOT NULL').bind(p).all();
+      const max = results.reduce((x, r) => Math.max(x, codeNo(r.code)), 0);
+      code = 'P' + String(max + 1).padStart(2, '0');
+    }
+    await db.prepare('UPDATE pilot_mem SET st = ?, code = ? WHERE pilot = ? AND uid = ?').bind(act, code, p, uid).run();
+    return json({ok: true, code});
+  }
+  if (path === 'admin/pilot/reset' && m === 'POST') {
+    const uid = parseInt(body.uid, 10), no = parseInt(body.no, 10);
+    if (!uid || !no) return json({error: 'bad'}, 400);
+    await db.batch([
+      db.prepare('DELETE FROM pilot_ans WHERE pilot = ? AND uid = ? AND no = ?').bind(p, uid, no),
+      db.prepare('DELETE FROM pilot_sit WHERE pilot = ? AND uid = ? AND no = ?').bind(p, uid, no)
+    ]);
+    return json({ok: true});
+  }
+  if (path === 'admin/pilot/csv' && m === 'GET') {
+    const [mm, s, a] = await db.batch([
+      db.prepare("SELECT uid, code FROM pilot_mem WHERE pilot = ? AND code IS NOT NULL").bind(p),
+      db.prepare('SELECT uid, no, ts, dl, qs, rep FROM pilot_sit WHERE pilot = ? ORDER BY uid, no').bind(p),
+      db.prepare('SELECT uid, no, qid, topic, pick, ok, conf, sec, ts, rep, late FROM pilot_ans WHERE pilot = ?').bind(p)
+    ]);
+    if (url.searchParams.get('kind') === 'sheets') {
+      const cm = new Map(mm.results.map(r => [r.uid, r.code]));
+      const {results} = await db.prepare('SELECT uid, topic, ts, last, n FROM pilot_sheet WHERE pilot = ? ORDER BY uid, ts').bind(p).all();
+      const L = ['code,sheet_early_group,topic_id,topic_group,first_open,last_open,opens'];
+      for (const r of results) { const cd = cm.get(r.uid); if (!cd) continue;
+        L.push([cd, earlyGroup(cd), r.topic, (c.T.get(r.topic) || {}).group, dhakaIso(r.ts), dhakaIso(r.last), r.n].map(csvCell).join(',')); }
+      return new Response('\ufeff' + L.join('\n') + '\n', {headers: {'Content-Type': 'text/csv; charset=utf-8', 'Cache-Control': 'no-store',
+        'Content-Disposition': `attachment; filename="${p}-sheets.csv"`}});
+    }
+    const code = new Map(mm.results.map(r => [r.uid, r.code])), A = new Map(a.results.map(r => [r.uid + ':' + r.no + ':' + r.qid, r]));
+    const allIds = [...new Set(s.results.flatMap(r => r.qs.split(',')))], Q = await pilotQs(db, p, allIds);
+    const head = ['code', 'sheet_early_group', 'exam_no', 'day', 'exam_topic', 'round', 'position', 'qid', 'topic_id', 'pick', 'correct', 'confidence', 'seconds', 'answered_at', 'returned', 'answered', 'late', 'started_at'];
+    const lines = [head.join(',')];
+    for (const r of s.results) {
+      const cd = code.get(r.uid);
+      if (!cd) continue;
+      const e = c.E.get(r.no) || {}, rep = r.rep.split(',');
+      r.qs.split(',').forEach((q, i) => {
+        const v = A.get(r.uid + ':' + r.no + ':' + q);
+        lines.push([cd, earlyGroup(cd), r.no, e.day, e.topic, e.round, i + 1, q, (Q.get(q) || {}).topic || '',
+          v ? v.pick : -1, v ? v.ok : 0, v ? (v.conf === 's' ? 'sure' : 'guess') : '', v ? v.sec : '', v ? dhakaIso(v.ts) : '',
+          rep[i] === '1' ? 1 : 0, v ? 1 : 0, v ? v.late || 0 : '', dhakaIso(r.ts)].map(csvCell).join(','));
+      });
+    }
+    return new Response('﻿' + lines.join('\n') + '\n', {headers: {'Content-Type': 'text/csv; charset=utf-8', 'Cache-Control': 'no-store',
+      'Content-Disposition': `attachment; filename="${p}-answers.csv"`}});
+  }
+  if (path === 'admin/pilot' && m === 'GET') {
+    const [mm, s, a, q] = await db.batch([
+      db.prepare('SELECT m.uid, m.code, m.st, m.ts, u.name, u.email FROM pilot_mem m LEFT JOIN users u ON u.id = m.uid WHERE m.pilot = ? ORDER BY m.code IS NULL, m.code, m.ts').bind(p),
+      db.prepare('SELECT uid, no, ts, done FROM pilot_sit WHERE pilot = ?').bind(p),
+      db.prepare('SELECT uid, no, COUNT(*) k, SUM(ok) ok, SUM(conf = \'g\') g FROM pilot_ans WHERE pilot = ? GROUP BY uid, no').bind(p),
+      db.prepare('SELECT COUNT(*) n FROM pilot_q WHERE pilot = ?').bind(p)
+    ]);
+    const slim = pilotSlim(c);
+    const need = new Set(c.exams.flatMap(e => [...e.qs, ...e.fill]));
+    const {results: have} = await db.prepare('SELECT qid FROM pilot_q WHERE pilot = ?').bind(p).all();
+    const hs = new Set(have.map(r => r.qid)), missing = [...need].filter(x => !hs.has(x));
+    return json({ts: Date.now(), cfg: {...slim, exams: slim.exams.map(e => ({no: e.no, day: e.day, topic: e.topic}))}, day: c.start ? pDay(c, Date.now()) : null,
+      qn: q.results[0].n, missing: missing.slice(0, 50), missingN: missing.length, members: mm.results,
+      sits: s.results, ans: a.results}, 200, {'Cache-Control': 'no-store'});
+  }
+  return json({error: 'not found'}, 404);
+}
+
 export async function onRequest({request: req, env}) {
   const url = new URL(req.url), path = url.pathname.replace(/^\/api\/?/, '').replace(/\/+$/, ''), m = req.method;
   if (m === 'POST') {
@@ -681,6 +1159,7 @@ export async function onRequest({request: req, env}) {
     if (path.startsWith('lib/')) return await lib(path, req, url, env, db, u);
     if (path === 'qstat' && m === 'GET') return await qstat(req, db);
     if (path === 'report' && m === 'POST') return await report(req, db, u);
+    if (path.startsWith('pilot/')) return await pilot(path, req, url, env, db, u);
     if (!u) return json({error: 'login'}, 401);
 
     if (path.startsWith('admin/')) return await admin(path, url, env, db, u, req);
