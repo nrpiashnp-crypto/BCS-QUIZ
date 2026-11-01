@@ -11,6 +11,8 @@ body{background:#f8f5ee!important;color:#1d1f21;position:relative;overflow-x:hid
 /* header: stacked লি logo, ক খ গ ঘ bubble nav */
 .sitebar,body>.bar{background:transparent!important;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
   padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));border-bottom:1.4px solid rgba(200,50,106,.45);box-shadow:none}
+/* কম্পিউটারে: হোমের মতো লোগো আর মেনু মাঝের ~১০০০px-এর কিনারে, বাঁয়ে OMR দাগের ওপর নয় */
+@media (min-width:900px){.sitebar,body>.bar{padding-left:max(72px,calc((100% - 1000px)/2));padding-right:max(24px,calc((100% - 1000px)/2))}}
 .sitebar>a:first-child,body>.bar>a:first-child{display:flex;flex-direction:column;align-items:center;text-decoration:none}
 .sitebar>a:first-child img,body>.bar>a:first-child img{width:auto!important;height:44px!important;display:block}
 .lgn-n{font:500 11.5px/1.2 'Lyanna Wordmark','Noto Sans Bengali',sans-serif;color:#2f6b3a;white-space:nowrap;margin-top:1px}
