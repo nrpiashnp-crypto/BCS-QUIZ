@@ -2,6 +2,7 @@
 <html lang="bn">
 <head>
 <meta charset="utf-8">
+<meta name="color-scheme" content="only light">
 <meta name="theme-color" content="#13294b">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>আমার রেজাল্ট কার্ড · লিয়ানা বুকস</title>
@@ -28,8 +29,8 @@ h1{font-family:var(--display);font-weight:400;font-size:30px;margin:4px 0 2px;te
 h2{font-family:var(--display);font-weight:400;font-size:22px;margin:28px 0 10px}
 .sub{text-align:center;color:var(--muted);margin:0 0 18px}
 .card{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:16px}
-.pitch{border-color:var(--gold-hi);text-align:center;padding:20px 16px}
-.pitch h2{margin:0 0 10px}
+.pitch{border-color:var(--gold-hi);text-align:center;padding:14px 16px}
+.pitch h2{margin:0 0 10px}.pitch .pt{margin:0 0 12px;font-size:16px}
 .pitch ul{list-style:none;margin:0 auto 16px;padding:0;max-width:420px;text-align:left}
 .pitch li{position:relative;padding:3px 0 3px 30px;font-size:16px}
 .pitch li::before{content:"";position:absolute;left:4px;top:10px;width:14px;height:8px;border-left:2.5px solid var(--gold);border-bottom:2.5px solid var(--gold);transform:rotate(-45deg)}
@@ -70,6 +71,56 @@ a.row:hover{border-color:var(--gold)}
 .danger .lnk{color:var(--bad)}
 .local{font-size:14px;color:var(--muted);text-align:center;margin:8px 0 0}
 footer{text-align:center;color:var(--muted);font-size:13px;margin-top:40px}
+
+/* রেজাল্ট কার্ড: কাগজের মার্কশিটের মতো */
+.rc{margin-top:16px;background:#fffdf7;border:1.4px solid var(--navy);border-radius:3px;position:relative;box-shadow:0 2px 0 rgba(19,41,75,.12)}
+.rc::before{content:"";position:absolute;inset:5px;border:1px solid #c8326a;opacity:.5;pointer-events:none}
+.rc .hd{background:var(--navy);color:#fff;padding:12px 18px;display:flex;align-items:center;gap:14px}
+.rc .hd img{height:50px;width:auto}
+.rc .hd .t{flex:1;min-width:0}.rc .hd small{display:block;font-size:12.5px;color:#e0b45c}
+.rc .hd b{display:block;font:400 24px/1.2 var(--display)}
+.rc .hd .no{font-size:11.5px;text-align:right;color:#cfd6e3;line-height:1.5}
+.whoc{display:flex;gap:14px;align-items:center;padding:16px 18px 4px}
+.whoc .ph{width:58px;height:58px;flex:none;border:1.4px solid var(--navy);border-radius:2px;background:#e9e3d6;display:grid;place-items:center;color:var(--navy);font:400 26px var(--display);overflow:hidden}
+.whoc .ph img{width:100%;height:100%;object-fit:cover}
+.whoc dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:1px 10px;font-size:14.5px}
+.whoc dt{color:var(--muted)}.whoc dd{margin:0;font-weight:600}
+.rc .flt{display:flex;gap:6px;flex-wrap:wrap;padding:10px 18px 0}
+.rc .flt button{font:inherit;font-size:13.5px;padding:4px 12px;border:1.3px solid #c8326a;border-radius:99px;background:#fff;color:var(--ink);cursor:pointer}
+.rc .flt button[aria-pressed="true"]{background:var(--navy)!important;border-color:var(--navy)!important;color:#fff!important}
+.rc .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 18px 0;margin:0}
+.rc .st{border:1.3px solid #c8326a;border-radius:3px;text-align:center;padding:8px 4px;background:#fff}
+.rc .st b{display:block;font:400 28px/1.2 var(--display);color:var(--navy)}
+.rc .st small{font-size:12.5px;color:var(--muted)}
+.rc h3{font:400 19px/1.3 var(--display);color:var(--navy);margin:20px 18px 6px;display:flex;align-items:center;gap:8px}
+.rc h3::after{content:"";flex:1;border-top:1px dashed #d9d3c4}
+.rc .pad{padding:0 18px}
+.rc .two{display:grid;grid-template-columns:140px 1fr;gap:14px;align-items:center;padding:0 18px}
+.rc .lg{margin:0;padding:0;list-style:none;font-size:14px}
+.rc .lg li{display:flex;align-items:center;gap:7px;margin:3px 0}.rc .lg i{width:11px;height:11px;border-radius:2px;flex:none}
+.rc .lg em{margin-left:auto;font-style:normal;color:var(--muted)}
+.rc .tags{display:flex;gap:8px;flex-wrap:wrap;padding:12px 18px 0;font-size:14px}
+.rc .tags span{padding:5px 10px;border-radius:3px}
+.rc .tags .w{background:#fde8ef;color:#8e1f49}.rc .tags .s{background:#e3f1e8;color:#1f6b3e}
+.rc .adv{font-size:15px}.rc .adv p{margin:0 0 6px}.rc .adv .go a{color:#c8326a;font-weight:600;text-decoration:none}
+.rc .tb{width:calc(100% - 36px);margin:0 18px;border-collapse:collapse;font-size:14px}
+.rc .tb th{font-weight:600;color:var(--muted);text-align:left;border-bottom:1.3px solid var(--navy);padding:6px 4px}
+.rc .tb td{border-bottom:1px solid #d9d3c4;padding:7px 4px;vertical-align:middle}
+.rc .tb td:first-child{white-space:nowrap;color:var(--muted)}
+.rc .tb .ex{color:var(--ink);text-decoration:none}
+.rc .tb .sc{font-weight:700;color:var(--navy);white-space:nowrap}
+.rc .tb .sh{color:#c8326a;font-weight:600;text-decoration:none;white-space:nowrap}
+.rc .more{margin:12px auto 0}
+.wish{display:flex;gap:14px;align-items:center;margin:22px 18px 0;padding:14px 16px;background:var(--navy);border-radius:3px;color:#fff}
+.wish img{height:58px;width:auto;flex:none}
+.wish small{display:block;color:#e0b45c;font-size:12.5px;margin-bottom:2px}
+.wish p{margin:0;font:400 16.5px/1.6 var(--display)}
+.rc .ft{display:flex;justify-content:space-between;align-items:flex-end;padding:18px 18px 16px}
+.rc .ft small{color:var(--muted);font-size:12px}
+.sig{font:400 22px var(--display);color:var(--navy);border-bottom:1px solid var(--ink);padding:0 12px 2px;display:inline-block}
+.seal{width:74px;height:74px;flex:none;border:1.6px solid #c8326a;border-radius:50%;display:grid;place-items:center;color:#c8326a;font:400 12px/1.2 var(--display);text-align:center;transform:rotate(-12deg);opacity:.85}
+.seal img{width:18px;height:24px;display:block;margin:0 auto 2px}
+@media(max-width:520px){.rc .two{grid-template-columns:118px 1fr}.rc .st b{font-size:24px}.rc .hd img{height:42px}.rc .tb{font-size:13.5px}}
 </style>
 <link rel="manifest" href="/manifest.webmanifest">
 <script src="/js/app.js" defer></script>
@@ -141,55 +192,100 @@ async function localRows(){
   return Object.values(out).sort((a,b)=>b.ts-a.ts);
 }
 
-// ---------- ড্যাশবোর্ড ----------
-let shown=20;
-function draw(rows,mine){
+// ---------- রেজাল্ট কার্ড ----------
+let shown=20,FLT='all',ME=null;
+const GRP={all:['সব পরীক্ষা',()=>true],bcs:['বিসিএস',x=>x.c==='bcs'],job:['চাকরি',x=>x.c==='job'||x.c==='run'],sci:['বিজ্ঞান',x=>x.c==='ch'||x.c==='jsci'],subj:['বিষয়ভিত্তিক',x=>x.c==='subj']};
+const COL=['#c8326a','#13294b','#e0b45c','#6f8fb8','#2f6b3a','#bdb6a6'];
+const ALIAS={English:'ইংরেজি','সাধারণ গণিত':'গণিত'};
+const MONL=['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
+const longDay=ts=>{const d=new Date(ts);return bn(d.getDate())+' '+MONL[d.getMonth()]+' '+bn(d.getFullYear())};
+const ago=ts=>{const d=Math.floor((new Date().setHours(0,0,0,0)-new Date(ts).setHours(0,0,0,0))/864e5);return d<=0?'আজ':d===1?'গতকাল':day(ts)};
+// প্রতিটা পরীক্ষা বিষয় ধরে [সঠিক, মোট]; বিষয় না থাকলে পরীক্ষার ধরনই বিষয়
+function bySubject(rows){
+  const b={};
+  rows.forEach(x=>{
+    const add=(s,ok,n)=>{s=ALIAS[s]||s;const v=b[s]=b[s]||[0,0];v[0]+=ok;v[1]+=n};
+    if(x.sb&&Object.keys(x.sb).length)Object.entries(x.sb).forEach(([s,v])=>add(s,+v[0]||0,+v[1]||0));
+    else add(x.c==='ch'||x.c==='jsci'?'সাধারণ বিজ্ঞান':x.c==='subj'?(x.t||'বিষয়ভিত্তিক'):(KIND[x.c]||'অন্যান্য'),Math.max(0,x.ok!=null?x.ok:Math.round(x.s)),x.n);
+  });
+  return Object.entries(b).map(([s,v])=>({s,ok:v[0],n:v[1],bad:v[1]-v[0],v:v[1]?v[0]/v[1]:0}));
+}
+function lineChart(rows){
+  const L=rows.slice(0,10).reverse();if(L.length<2)return '';
+  const X=i=>35+i*(277/(L.length-1)),Y=x=>85-Math.max(0,Math.min(1,x.s/x.n))*70;
+  const pts=L.map((x,i)=>X(i).toFixed(1)+','+Y(x).toFixed(1)).join(' '),lst=L[L.length-1];
+  return `<h3>অগ্রগতি · শেষ ${bn(L.length)}টা পরীক্ষা</h3><div class="pad"><svg viewBox="0 0 320 100" width="100%" role="img" aria-label="শেষ ${bn(L.length)}টা পরীক্ষার নম্বর">
+   <g stroke="#d9d3c4" stroke-dasharray="3 4"><line x1="28" x2="315" y1="15" y2="15"/><line x1="28" x2="315" y1="50" y2="50"/><line x1="28" x2="315" y1="85" y2="85"/></g>
+   <g font-size="9" fill="#5f6366"><text x="0" y="18">১০০%</text><text x="5" y="53">৫০%</text><text x="12" y="88">০%</text></g>
+   <polyline fill="none" stroke="#13294b" stroke-width="2" points="${pts}"/>
+   <g fill="#fffdf7" stroke="#c8326a" stroke-width="1.6">${L.map((x,i)=>`<circle cx="${X(i).toFixed(1)}" cy="${Y(x).toFixed(1)}" r="${i===L.length-1?4.5:3.5}"${i===L.length-1?' fill="#c8326a"':''}><title>${esc(x.t||'')}: ${bn(pct(x.s/x.n))}%</title></circle>`).join('')}</g>
+   <text x="${X(L.length-1).toFixed(1)}" y="${(Y(lst)-8).toFixed(1)}" font-size="10" text-anchor="end" fill="#c8326a" font-weight="700">${bn(pct(lst.s/lst.n))}%</text></svg></div>`;
+}
+function pieChart(S){
+  const bad=S.filter(s=>s.bad>0).sort((a,b)=>b.bad-a.bad);if(!bad.length)return '';
+  const tot=bad.reduce((t,s)=>t+s.bad,0),top=bad.slice(0,5).map(s=>[s.s,s.bad]);
+  if(bad.length>5)top.push(['অন্যান্য',bad.slice(5).reduce((t,s)=>t+s.bad,0)]);
+  let off=0;const C=2*Math.PI*40;
+  const arcs=top.map((x,i)=>{const l=x[1]/tot*C,s=`<circle cx="60" cy="60" r="40" stroke="${COL[i]}" stroke-dasharray="${l.toFixed(2)} ${C.toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}"/>`;off+=l;return s}).join('');
+  return `<h3>ভুল কোথা থেকে আসছে</h3><div class="two"><svg viewBox="0 0 120 120" width="100%" role="img" aria-label="বিষয় ধরে ভুলের ভাগ"><g transform="rotate(-90 60 60)" fill="none" stroke-width="26">${arcs}</g>
+    <text x="60" y="58" text-anchor="middle" font-size="16" fill="#13294b" font-family="Tiro Bangla">${bn(tot)}</text><text x="60" y="73" text-anchor="middle" font-size="9" fill="#5f6366">ভুল ও ফাঁকা</text></svg>
+    <ul class="lg">${top.map((x,i)=>`<li><i style="background:${COL[i]}"></i><span>${esc(x[0])}</span><em>${bn(Math.round(x[1]/tot*100))}%</em></li>`).join('')}</ul></div>`;
+}
+// আপনার জন্য পরামর্শ: যথেষ্ট প্রশ্ন আছে এমন বিষয়ের মধ্যে সবচেয়ে কম সঠিক
+function advice(S,rows){
+  const enough=S.filter(s=>s.n>=10).sort((a,b)=>a.v-b.v);
+  let t;
+  if(rows.length<3||!enough.length)t='<p>আরও কয়েকটা পরীক্ষা দিন। তখন এখানে দেখাবে কোন বিষয়ে বেশি সময় দেওয়া দরকার।</p>';
+  else{
+    const w=enough.slice(0,2).filter(s=>s.v<.75),best=enough[enough.length-1];
+    t=w.length?w.map((s,i)=>`<p><b>${i?'তারপর':'আগে'}: ${esc(s.s)}।</b> ${bn(s.n)}টা প্রশ্নের ${bn(s.ok)}টা সঠিক (${bn(pct(s.v))}%)। ${i?'এরপর এই বিষয়ের পুরোনো প্রশ্নগুলো আরেকবার দেখুন।':'এই সপ্তাহে প্রতিদিন এই বিষয়ের একটা টপিক পড়ে ছোট টেস্ট দিন।'}</p>`).join('')+'<p class="go"><a href="/subject/">বিষয় ধরে পড়ুন →</a></p>'
+      :`<p>সব বিষয়েই ভালো করছেন। ${esc(best.s)} আপনার সবচেয়ে শক্ত জায়গা। এখন পূর্ণ মডেল টেস্ট দিয়ে সময় সামলানোর অভ্যাস করুন।</p><p class="go"><a href="/bcs/">বিসিএসের পুরো প্রশ্নপত্র →</a></p>`;
+  }
+  const tags=enough.length>=2?`<div class="tags"><span class="w">সবচেয়ে দুর্বল: ${esc(enough[0].s)}</span><span class="s">সবচেয়ে ভালো: ${esc(enough[enough.length-1].s)}</span></div>`:'';
+  return tags+`<h3>আপনার জন্য পরামর্শ</h3><div class="pad adv">${t}</div>`;
+}
+// শুভকামনা: ফলের ধারা দেখে একটা ভালো কথা; একই দিনে একই কথা
+function wish(rows){
+  const name=ME&&ME.name?esc(ME.name.split(/\s+/)[0])+', ':'';
+  const last=rows[0],lp=last?last.s/last.n:0,prev=rows.slice(1,6),pa=prev.length?prev.reduce((t,x)=>t+x.s/x.n,0)/prev.length:lp;
+  const pick=a=>a[new Date().getDate()%a.length];
+  let m;const P=x=>bn(pct(x))+'%';
+  if(!rows.length)m='প্রথম পরীক্ষাটাই সবচেয়ে কঠিন। আজ একটা দিয়ে শুরু করুন।';
+  else if(prev.length&&lp-pa>=.05)m=`আগের ${bn(prev.length)}টা পরীক্ষার গড় ছিল ${P(pa)}, শেষটায় পেয়েছেন ${P(lp)}। পড়া কাজে লাগছে, এভাবেই চালিয়ে যান।`;
+  else if(lp<.4)m=pick(['কম নম্বর মানে আপনি এখন জানেন কোথায় পড়তে হবে। ভুলগুলো আজ একবার দেখে নিন, কাল এগুলোই আপনার নম্বর হবে।','শুরুতে সবারই নম্বর কম থাকে। শেষ পরীক্ষার উত্তরপত্র খুলে শুধু ভুলগুলো আরেকবার পড়ুন, পরের বার ফল বদলাবে।']);
+  else if(lp>=.75)m=`শেষ পরীক্ষায় ${P(lp)}। প্রস্তুতি ভালো জায়গায় আছে, এখন নিয়মিত থাকাটাই আসল কাজ।`;
+  else m=pick([`এ পর্যন্ত ${bn(rows.length)}টা পরীক্ষা দিয়েছেন। প্রতিদিন একটু একটু করে এগোনোই আসল প্রস্তুতি।`,'যেখানে ভুল বেশি, সেখানে আজ আধা ঘণ্টা দিন। ছোট ছোট উন্নতিই শেষে বড় পার্থক্য গড়ে।']);
+  return `<div class="wish"><img src="/img/logo/final-onnavy-transparent.svg" alt="লিয়ানা বুকস"><div><small>শুভকামনা</small><p>${name}${m}</p></div></div>`;
+}
+function draw(all,mine){
   const D=$('dash');
-  if(!rows.length){D.innerHTML=mine?'<p class="empty" style="margin-top:24px">এখনো কোনো পরীক্ষা দেননি। <a href="/exams/">পরীক্ষা দিন →</a></p>':'';return}
-  const r=x=>x.s/x.n,avg=rows.reduce((a,x)=>a+r(x),0)/rows.length,week=rows.filter(x=>x.ts>Date.now()-7*864e5).length;
-  let h=mine?'':'<h2>এই ফোনের ফল</h2><p class="local" style="text-align:left;margin:-4px 0 0">লগইন না করলে এগুলো শুধু এই ফোনে থাকে।</p>';
-  h+=`<div class="stats"><div class="stat"><b>${bn(rows.length)}</b><span>মোট পরীক্ষা</span></div><div class="stat"><b>${bn(pct(avg))}%</b><span>গড় নম্বর</span></div><div class="stat"><b>${bn(week)}</b><span>গত ৭ দিনে</span></div></div>`;
-  const last=rows.slice(0,20).reverse();
-  if(last.length>1)h+=`<h2>সাম্প্রতিক অগ্রগতি</h2><div class="trend" role="img" aria-label="শেষ ${bn(last.length)}টি পরীক্ষার নম্বর">${last.map(x=>`<i class="${tone(pct(r(x)))}" style="height:${Math.max(3,pct(r(x)))}%" title="${esc(x.t)}: ${bn(pct(r(x)))}%"></i>`).join('')}</div><p class="cap">শেষ ${bn(last.length)}টি পরীক্ষা, বাঁ থেকে ডানে পুরোনো থেকে নতুন (নম্বর শতাংশে)</p>`;
-
-  // অধ্যায়: শেষ ৩টি পরীক্ষার গড়
-  const byc={};rows.filter(x=>x.c==='ch').forEach(x=>{const s=(x.p||'').split('/')[1];if(CHN[s])(byc[s]=byc[s]||[]).push(x)});
-  const chs=CH.filter(([s])=>byc[s]).map(([s,nm])=>{const L=byc[s],l3=L.slice(0,3);return {s,nm,k:L.length,last:pct(r(L[0])),best:Math.max(...L.map(x=>pct(r(x)))),v:pct(l3.reduce((a,x)=>a+r(x),0)/l3.length)}});
-  // বিষয়: সব পরীক্ষার বিষয়ভিত্তিক হিসাব যোগ করে
-  const ALIAS={English:'ইংরেজি','সাধারণ গণিত':'গণিত'},bys={};rows.forEach(x=>{if(x.sb)Object.entries(x.sb).forEach(([k,v])=>{k=ALIAS[k]||k;const b=bys[k]=bys[k]||[0,0];b[0]+=v[0];b[1]+=v[1]})});
-  const subs=Object.entries(bys).filter(([,v])=>v[1]>=10).map(([k,v])=>({k,ok:v[0],n:v[1],v:pct(v[0]/v[1])})).sort((a,b)=>a.v-b.v);
-  const weak=[...chs.filter(c=>c.v<50).map(c=>({nm:c.nm+' (অধ্যায়)',v:c.v,href:'/'+c.s+'/',mt:'শেষ '+bn(Math.min(3,c.k))+'টি পরীক্ষার গড়'})),
-    ...subs.filter(s=>s.v<50).map(s=>({nm:s.k,v:s.v,mt:bn(s.n)+'টি প্রশ্নের '+bn(s.ok)+'টি সঠিক'}))].sort((a,b)=>a.v-b.v).slice(0,5);
-  if(chs.length||subs.length){
-    h+='<h2>দুর্বল জায়গা</h2>'+(weak.length?`<div class="rows">${weak.map(w=>`<${w.href?`a href="${w.href}"`:'div'} class="row"><span class="nm">${esc(w.nm)}</span><span class="vl t${tone(w.v)}">${bn(w.v)}%</span><span class="mb"><i class="${tone(w.v)}" style="width:${w.v}%"></i></span><span class="mt">${w.mt}${w.href?' · আবার দিন →':''}</span></${w.href?'a':'div'}>`).join('')}</div>`
-      :'<p class="wait">বড় কোনো দুর্বলতা নেই, ৫০%-এর নিচে কোনো অধ্যায় বা বিষয় নেই। চমৎকার!</p>');
-  }
-  if(chs.length){
-    h+=`<h2>বিজ্ঞানের অধ্যায়</h2><div class="rows">${chs.map(c=>`<a class="row" href="/${c.s}/"><span class="nm">${esc(c.nm)}</span><span class="vl t${tone(c.last)}">${bn(c.last)}%</span><span class="mb"><i class="${tone(c.last)}" style="width:${c.last}%"></i></span><span class="mt">${bn(c.k)} বার দিয়েছেন · শেষবার ${bn(c.last)}% · সেরা ${bn(c.best)}%</span></a>`).join('')}</div>`+
-      (chs.length<CH.length?`<p class="cap">বাকি ${bn(CH.length-chs.length)}টি অধ্যায় এখনো দেননি। <a href="/science/">অধ্যায়গুলো দেখুন →</a></p>`:'');
-  }
-  if(subs.length){
-    const S=[...subs].sort((a,b)=>b.n-a.n);
-    h+=`<h2>বিষয়ভিত্তিক</h2><div class="rows">${S.map(s=>`<div class="row"><span class="nm">${esc(s.k)}</span><span class="vl t${tone(s.v)}">${bn(s.v)}%</span><span class="mb"><i class="${tone(s.v)}" style="width:${s.v}%"></i></span><span class="mt">${bn(s.n)}টি প্রশ্নের ${bn(s.ok)}টি সঠিক</span></div>`).join('')}</div>`;
-  }
-  h+=`<h2>পরীক্ষার ইতিহাস</h2><div class="rows">${rows.slice(0,shown).map(x=>`<a class="row" href="${esc(x.p||'/exams/')}"><span class="nm">${esc(x.t||KIND[x.c]||'পরীক্ষা')}</span><span class="vl t${tone(pct(r(x)))}">${fmt(x.s)}/${bn(x.n)}</span><span class="mt">${day(x.ts)} · ${KIND[x.c]||''}${x.ok!=null?' · সঠিক '+bn(x.ok)+', ভুল '+bn(x.no):''}</span></a>`).join('')}</div>`+
-    (rows.length>shown?`<button type="button" class="btn ghost more" id="more">আরও দেখুন (${bn(rows.length-shown)})</button>`:'');
+  if(!all.length){D.innerHTML=mine?'<p class="empty" style="margin-top:24px">এখনো কোনো পরীক্ষা দেননি। <a href="/exams/">পরীক্ষা দিন →</a></p>':'';return}
+  const has=Object.keys(GRP).filter(g=>g==='all'||all.some(GRP[g][1]));if(!has.includes(FLT))FLT='all';
+  const rows=all.filter(GRP[FLT][1]);
+  const r=x=>x.s/x.n,avg=rows.length?rows.reduce((a,x)=>a+r(x),0)/rows.length:0,week=rows.filter(x=>x.ts>Date.now()-7*864e5).length;
+  const S=bySubject(rows),first=all[all.length-1],u=ME;
+  let h=`<div class="rc"><div class="hd"><img src="/img/logo/final-onnavy-transparent.svg" alt="লিয়ানা বুকস"><div class="t"><small>বিসিএস ও চাকরি প্রস্তুতি</small><b>রেজাল্ট কার্ড</b></div><div class="no">তারিখ<br>${longDay(Date.now())}</div></div>
+   <div class="whoc"><div class="ph">${u&&u.pic?`<img src="${esc(u.pic)}" alt="" referrerpolicy="no-referrer">`:esc(((u&&u.name)||'আ').slice(0,1))}</div><dl><dt>নাম</dt><dd>${esc((u&&u.name)||'এই ফোনের পরীক্ষার্থী')}</dd><dt>প্রথম পরীক্ষা</dt><dd>${longDay(first.ts)}</dd><dt>শেষ পরীক্ষা</dt><dd>${ago(all[0].ts)}</dd></dl></div>
+   ${has.length>2?`<div class="flt" role="group">${has.map(g=>`<button type="button" data-g="${g}" aria-pressed="${g===FLT}">${GRP[g][0]}</button>`).join('')}</div>`:''}
+   <div class="stats"><div class="st"><b>${bn(rows.length)}</b><small>মোট পরীক্ষা</small></div><div class="st"><b>${bn(pct(avg))}%</b><small>গড় নম্বর</small></div><div class="st"><b>${bn(week)}</b><small>এই সপ্তাহের পরীক্ষা</small></div></div>
+   ${lineChart(rows)}${pieChart(S)}${advice(S,rows)}
+   <h3>পরীক্ষার তালিকা</h3><table class="tb"><thead><tr><th>তারিখ</th><th>পরীক্ষা</th><th>নম্বর</th><th></th></tr></thead><tbody>${rows.slice(0,shown).map(x=>`<tr><td>${ago(x.ts)}</td><td><a class="ex" href="${esc(x.p||'/exams/')}">${esc(x.t||KIND[x.c]||'পরীক্ষা')}</a></td><td class="sc">${fmt(x.s)}/${bn(x.n)}</td><td>${mine||x.qd?`<a class="sh" href="/account/script/?k=${encodeURIComponent(x.k)}">উত্তরপত্র →</a>`:''}</td></tr>`).join('')}</tbody></table>
+   ${rows.length>shown?`<button type="button" class="btn ghost more" id="more">আরও দেখুন (${bn(rows.length-shown)})</button>`:''}
+   ${wish(rows)}
+   <div class="ft"><div><span class="sig">লিয়ানা</span><br><small>${mine?'আপনার অ্যাকাউন্ট থেকে হিসাব, সব ফোনে একই':'এই ফোনে রাখা ফল থেকে হিসাব'}</small></div><div class="seal"><div><img src="/img/logo/li-mark.svg" alt="">লিয়ানা<br>বুকস</div></div></div></div>`;
   if(mine)h+='<p style="font-size:13.5px;text-align:center;margin:18px 0 0;color:var(--muted,#5f6366)">লগইন থাকলে আপনার প্রতিটি উত্তর আপনার অ্যাকাউন্টে থাকে, যাতে আপনার দুর্বল জায়গা ধরে প্রস্তুতির পরিকল্পনা বানানো যায়। <a href="/privacy/">বিস্তারিত</a></p><div class="danger"><button type="button" class="lnk" id="del">আমার সব তথ্য মুছে ফেলুন</button></div>';
+  else h+='<p class="local">লগইন না করলে এই ফল শুধু এই ফোনে থাকে।</p>';
   D.innerHTML=h;
-  if($('more'))$('more').onclick=()=>{shown+=50;draw(rows,mine)};
+  D.querySelectorAll('.flt button').forEach(b=>b.onclick=()=>{FLT=b.dataset.g;shown=20;draw(all,mine)});
+  if($('more'))$('more').onclick=()=>{shown+=50;draw(all,mine)};
   if($('del'))$('del').onclick=delAll;
 }
 
 // ---------- লগইন ----------
 function pitch(cid,n){
-  $('top').innerHTML=`<div class="card pitch"><h2>লগইন করলে পাবেন</h2><ul>
-    <li>সব পরীক্ষার ফল এক জায়গায়, ফোন বদলালেও হারাবে না</li>
-    <li>অধ্যায় আর বিষয় ধরে নিজের অগ্রগতি</li>
-    <li>কোথায় দুর্বল, তার তালিকা</li>
-    <li>মোবাইল আর কম্পিউটারে একই হিসাব</li></ul>
-    ${cid?'<div id="gbtn"></div>':'<p class="wait">লগইন শিগগিরই চালু হচ্ছে। ততক্ষণ এই ফোনের ফল নিচে দেখতে পাবেন।</p>'}
-    ${n?`<p class="fine">এই ফোনে আগের ${bn(n)}টি পরীক্ষার ফল আছে। লগইন করলে এগুলোও যোগ করতে পারবেন।</p>`:''}
-    <p class="fine">পাসওয়ার্ড বা ফোন নম্বর লাগে না। শুধু নাম, ইমেইল আর পরীক্ষার ফল রাখা হয়, যেকোনো সময় মুছে ফেলা যায়। <a href="/privacy/">বিস্তারিত</a></p></div>`;
+  $('top').innerHTML=`<div class="card pitch"><p class="pt">লগইন করলে ফল সব ফোনে থাকবে, হারাবে না।${n?` এই ফোনের ${bn(n)}টা পরীক্ষাও যোগ হবে।`:''}</p>
+    ${cid?'<div id="gbtn"></div>':'<p class="wait">লগইন শিগগিরই চালু হচ্ছে।</p>'}
+    <p class="fine">পাসওয়ার্ড বা ফোন নম্বর লাগে না। <a href="/privacy/">কী রাখা হয়</a></p></div>`;
   if(cid)gis(cid);
 }
 function gis(cid){
@@ -221,6 +317,7 @@ async function delAll(){
   set('lb:u',null);set('lb:q',[]);set('lb:noimp',0);main();
 }
 function head(u){
+  ME=u;
   $('sub').textContent='আপনার সব পরীক্ষার ফল, সব ফোনে একই।';
   $('top').innerHTML=`<div class="card me"><span class="av">${u.pic?`<img src="${esc(u.pic)}" alt="" referrerpolicy="no-referrer">`:esc((u.name||'?').slice(0,1))}</span><span class="who"><b>${esc(u.name||'আমার অ্যাকাউন্ট')}</b><small>${esc(u.email)}</small></span><button type="button" class="lnk" id="out">লগআউট</button></div><div id="imp"></div>`;
   $('out').onclick=logout;
@@ -246,7 +343,7 @@ async function main(){
   let me=null,cid='',online=true;
   try{const j=await fetch('/api/me',{credentials:'same-origin',cache:'no-store'}).then(r=>r.json());me=j.user;cid=j.cid}catch(e){online=false;me=get('lb:u',null)}
   if(online)set('lb:u',me);
-  if(!me){pitch(cid,local.length);draw(local,false);return}
+  if(!me){ME=null;pitch(cid,local.length);draw(local,false);return}
   head(me);
   if(!online){$('imp').innerHTML='<p class="local">ইন্টারনেট নেই, তাই শুধু এই ফোনের ফল দেখানো হচ্ছে।</p>';draw(local,true);return}
   await L.flush();

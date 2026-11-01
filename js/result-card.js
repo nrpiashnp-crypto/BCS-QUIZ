@@ -13,7 +13,11 @@
   var st=document.createElement('style');
   st.textContent=
     '.rc{margin:14px 0}'+
-    '.rc-wish{position:relative;border-radius:12px;padding:16px 16px 14px;background:var(--rc-soft);text-align:center}'+
+    '.rc-hist{margin:0 0 12px;padding:12px 14px;border:1.3px solid #c8326a;border-radius:3px;background:#fffdf7;font-size:14.5px;line-height:1.6}'+
+    '.rc-hist ul{list-style:none;margin:6px 0 8px;padding:0;display:flex;flex-wrap:wrap;gap:4px 16px}'+
+    '.rc-hist li span{font-weight:700;color:#13294b}.rc-hist li.now span{color:#c8326a}'+
+    '.rc-hist a{display:inline-block;margin-top:4px;color:#c8326a;font-weight:600;text-decoration:none}'+
+        '.rc-wish{position:relative;border-radius:12px;padding:16px 16px 14px;background:var(--rc-soft);text-align:center}'+
     '.rc-tag{display:inline-block;font-size:12px;font-weight:600;letter-spacing:.02em;color:var(--rc-gold-ink);background:var(--rc-gold);border-radius:99px;padding:2px 10px}'+
     '.rc-wish h3{font-family:var(--display,serif);font-weight:400;font-size:23px;line-height:1.3;margin:10px 0 6px;color:var(--rc-navy-ink)}'+
     '.rc-wish p{margin:0;font-size:15px;line-height:1.7}'+
@@ -70,7 +74,24 @@
       '<p class="rc-note">সব পরীক্ষা সবসময় ফ্রি থাকবে।</p></div></div>';
     var after=box.nextElementSibling&&box.nextElementSibling.id==='weak'?box.nextElementSibling:box;
     after.parentNode.insertBefore(d,after.nextSibling);
+    setTimeout(function(){hist(d)},400);
     try{localStorage.setItem('lb:code',CODE)}catch(e){}
+  }
+  /* একই পরীক্ষা আগে কবে কত পেয়েছিলেন (এই ফোনের 'lb:att' থেকে), আর রেজাল্ট কার্ডের লিংক */
+  function hist(d){
+    if(!d.isConnected||d.querySelector('.rc-hist'))return;
+    var all=[];try{all=JSON.parse(localStorage.getItem('lb:att')||'[]')}catch(e){}
+    var base=function(k){return String(k||'').replace(/^[^:]*:/,'').replace(/#[^#]*$/,'')},last=all[all.length-1];
+    if(!last||Date.now()-last.ts>10*60e3)return;
+    var b=base(last.k),prev=all.filter(function(x){return x&&x!==last&&base(x.k)===b}).slice(-4).reverse();
+    var M=['জানু','ফেব্রু','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টে','অক্টো','নভে','ডিসে'];
+    var day=function(ts){var t=new Date(ts);return bn(t.getDate())+' '+M[t.getMonth()]};
+    var sc=function(x){return bn(Math.round(x.s*100)/100)+'/'+bn(x.n)};
+    var h=document.createElement('div');h.className='rc-hist';
+    h.innerHTML='<b>'+(prev.length?'এই পরীক্ষা আগেও দিয়েছেন':'এটা এই পরীক্ষায় আপনার প্রথম চেষ্টা')+'</b>'+
+      (prev.length?'<ul>'+prev.map(function(x){return '<li>'+day(x.ts)+': <span>'+sc(x)+'</span></li>'}).join('')+'<li class="now">আজ: <span>'+sc(last)+'</span></li></ul>':'')+
+      '<a href="/account/">সব পরীক্ষা আর উত্তরপত্র: রেজাল্ট কার্ড →</a>';
+    d.insertBefore(h,d.firstChild);
   }
   var t;new MutationObserver(function(){clearTimeout(t);t=setTimeout(render,50)}).observe(document.body,{childList:true,subtree:true});
   render();

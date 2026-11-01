@@ -111,7 +111,7 @@
   }
 
   function save(r){
-    var a={k:dev+':'+r.k,ts:Date.now(),c:r.c||'ch',t:r.t||chapter()||document.title.split(/\s[·:]\s|:/)[0],p:location.pathname+location.hash,
+    var a={k:dev+':'+r.k,ts:Date.now(),c:r.c||'ch',t:r.t||chapter()||document.title.split(/\s[·:]\s|:/)[0],p:location.pathname+location.search+location.hash,
       s:r.s,n:r.n,ok:r.ok,no:r.no,sec:r.sec};
     var qd=r.qd||lastQd;lastQd=null;if(qd&&qd.length)a.qd=qd;
     if(r.sb){var sb={};Object.keys(r.sb).forEach(function(k){if(k&&r.sb[k][1])sb[k]=r.sb[k]});if(Object.keys(sb).length)a.sb=sb}
