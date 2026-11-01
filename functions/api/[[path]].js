@@ -33,7 +33,14 @@
    প্রশ্নে ভুল জানানো (লগইন লাগে না; বোতাম js/report.js):
    POST /api/report {qid?, page, q, kind: ans|exp|q|other, note?} → {ok}
    অ্যাডমিন: GET /api/admin/reports?st=new|done|all → তালিকা (পাতা /admin/reports/); POST /api/admin/reports {ids:[…], st}
-   যাচাইয়ের কাজ LY Quiz & Sheets-এর; Lyanna_data-তে টেনে নেওয়ার জন্য একই GET-এর JSON। */
+   যাচাইয়ের কাজ LY Quiz & Sheets-এর; Lyanna_data-তে টেনে নেওয়ার জন্য একই GET-এর JSON।
+   রাতের মতামত আর পাইলট ব্যাচ (যেমন petrobangla-1; পাতায় /js/day-fb.js):
+   GET  /api/fb?batch=     → আজ রাতের ফর্ম খোলা কি না (রাত ৯টা থেকে সকাল ৬টা, ঢাকা), কততম দিন, নিজের আগের উত্তর
+                             (লগইন থাকলে প্রথমবারেই একটা সংকেত-নম্বর P01, P02… পায়; নম্বর শুধু অ্যাডমিন দেখেন)
+   POST /api/fb {batch, hard, useful, miss, missq, rate, mins} → জমা; একই রাতে আবার পাঠালে বদলায়, সকাল ৬টার পরে বন্ধ
+   অ্যাডমিন: GET/POST /api/admin/pilot (শুরুর তারিখ, কদিন, সংকেত-তালিকা, রপ্তানির চাবি) → পাতা /admin/pilot/
+   রপ্তানি (GitHub Action, Lyanna_data): GET /api/export/pilot?batch=&day= , হেডার Authorization: Bearer <চাবি>
+   → শুধু সংকেত-নম্বরসহ উত্তর আর মতামত, নাম/ইমেইল ছাড়া। চাবির শুধু হ্যাশ D1-এ থাকে; চাবি শুধু এই এক পথে পড়তে পারে। */
 const COOKIE = 'lb_s', AGE = 180 * 86400;
 const MAX_BATCH = 300, MAX_ROWS = 3000;
 
@@ -609,6 +616,169 @@ async function report(req, db, u) {
   return json({ok: true});
 }
 
+// ===== রাতের মতামত আর পাইলট ব্যাচ =====
+// ব্যাচের শুরুর তারিখ আর দিনসংখ্যা অ্যাডমিন পাতা থেকে বসে; তার আগে ফর্ম কোথাও খোলে না।
+// "দিন N" = শুরুর দিন থেকে N-তম দিন, সকাল ৬টা থেকে পরদিন সকাল ৬টা (ঢাকা); ফর্ম খোলা সেই দিনের রাত ৯টা থেকে সকাল ৬টা।
+const PILOT_SCHEMA = [
+  'CREATE TABLE IF NOT EXISTS pilot(batch TEXT PRIMARY KEY, start TEXT NOT NULL, days INTEGER NOT NULL, title TEXT, nextn INTEGER NOT NULL DEFAULT 1)',
+  'CREATE TABLE IF NOT EXISTS pilot_code(batch TEXT NOT NULL, code TEXT NOT NULL, uid INTEGER NOT NULL, ts INTEGER, PRIMARY KEY(batch, code))',
+  'CREATE UNIQUE INDEX IF NOT EXISTS pilot_code_u ON pilot_code(batch, uid)',
+  'CREATE TABLE IF NOT EXISTS fb(batch TEXT NOT NULL, day INTEGER NOT NULL, uid INTEGER NOT NULL, ts INTEGER, upd INTEGER, nup INTEGER, hard TEXT, useful TEXT, miss INTEGER, missq TEXT, rate INTEGER, mins TEXT, PRIMARY KEY(batch, day, uid))',
+  'CREATE TABLE IF NOT EXISTS export_key(name TEXT PRIMARY KEY, hash TEXT NOT NULL, ts INTEGER)'
+];
+let PILOT_READY = false;
+async function pilotSetup(db) {
+  if (PILOT_READY) return;
+  await db.batch(PILOT_SCHEMA.map(x => db.prepare(x)));
+  PILOT_READY = true;
+}
+const BATCH = /^[a-z0-9-]{2,40}$/, PID = /^[\w-]{1,40}$/, DK = 6 * 3600e3, DAYMS = 86400e3, H6 = 6 * 3600e3;
+const MINS = new Set(['30', '60', '120', 'more']), FB_MAX_UPD = 40;
+// ঢাকার ঘড়িকে UTC ধরে হিসাব (বাংলাদেশে সময় বদলায় না): t = এখন + ৬ ঘণ্টা
+const dIdx = t => Math.floor((t - H6) / DAYMS);              // সকাল ৬টা থেকে পরের সকাল ৬টা = এক দিন
+const startIdx = cfg => Math.floor(Date.parse(cfg.start + 'T00:00:00Z') / DAYMS);
+// এখন ব্যাচের কততম দিন, আর রাতের ফর্ম খোলা কি না
+function pilotNow(cfg, now = Date.now()) {
+  const t = now + DK, h = new Date(t).getUTCHours(), day = dIdx(t) - startIdx(cfg) + 1;
+  const inRange = day >= 1 && day <= cfg.days;
+  const dayStart = (dIdx(t) * DAYMS + H6) - DK;               // আজকের দিনের শুরু (সকাল ৬টা), আসল UTC
+  return {day, open: inRange && (h >= 21 || h < 6),
+    opens: dayStart + 15 * 3600e3, closes: dayStart + DAYMS, inRange};
+}
+// দিন N-এর সময়সীমা (আসল UTC): সেই দিন সকাল ৬টা থেকে পরদিন সকাল ৬টা
+const dayWin = (cfg, n) => { const a = (startIdx(cfg) + n - 1) * DAYMS + H6 - DK; return [a, a + DAYMS]; };
+
+async function pilotCfg(db, batch) {
+  if (!BATCH.test(batch || '')) return null;
+  await pilotSetup(db);
+  return db.prepare('SELECT batch, start, days, title FROM pilot WHERE batch = ?').bind(batch).first();
+}
+// ব্যবহারকারীর সংকেত-নম্বর; না থাকলে পরের নম্বর (P01, P02…; বাদ দেওয়া নম্বর আর ফেরে না)
+async function pilotCode(db, batch, uid, make) {
+  const r = await db.prepare('SELECT code FROM pilot_code WHERE batch = ? AND uid = ?').bind(batch, uid).first();
+  if (r || !make) return r ? r.code : null;
+  const n = await db.prepare('UPDATE pilot SET nextn = nextn + 1 WHERE batch = ? RETURNING nextn - 1 AS n').bind(batch).first();
+  if (!n) return null;
+  const code = 'P' + String(n.n).padStart(2, '0');
+  await db.prepare('INSERT OR IGNORE INTO pilot_code(batch, code, uid, ts) VALUES(?,?,?,?)').bind(batch, code, uid, Date.now()).run();
+  const again = await db.prepare('SELECT code FROM pilot_code WHERE batch = ? AND uid = ?').bind(batch, uid).first();
+  return again ? again.code : null;
+}
+const fbOut = r => r ? {hard: r.hard || '', useful: r.useful || '', miss: r.miss, missq: r.missq ? r.missq.split(',') : [],
+  rate: r.rate, mins: r.mins || '', ts: r.ts, upd: r.upd} : null;
+
+async function dayFb(req, url, db, u) {
+  const m = req.method, b = m === 'POST' ? await req.json().catch(() => ({})) : null;
+  const batch = m === 'POST' ? b.batch : url.searchParams.get('batch');
+  const cfg = await pilotCfg(db, batch);
+  if (!cfg) return json({on: false});
+  const now = pilotNow(cfg), base = {on: true, day: now.day, days: cfg.days, open: now.open, opens: now.opens, closes: now.closes};
+  if (!u) return json({...base, login: false}, m === 'POST' ? 401 : 200);
+  if (m === 'GET') {
+    // পাতা খুললেই (লগইন থাকলে) ব্যাচে নাম ওঠে; সংকেত-নম্বর ব্যবহারকারীকে দেখানো হয় না
+    await pilotCode(db, cfg.batch, u.id, now.day <= cfg.days);
+    const r = now.inRange ? await db.prepare('SELECT * FROM fb WHERE batch = ? AND day = ? AND uid = ?').bind(cfg.batch, now.day, u.id).first() : null;
+    return json({...base, login: true, mine: fbOut(r)});
+  }
+  if (!now.open) return json({...base, error: 'closed'}, 409);
+  const hard = repText(b.hard, 400), useful = PID.test(b.useful || '') ? b.useful : null;
+  const miss = b.miss === 1 || b.miss === true ? 1 : b.miss === 0 || b.miss === false ? 0 : null;
+  const missq = miss === 1 && Array.isArray(b.missq) ? [...new Set(b.missq.filter(x => typeof x === 'string' && PID.test(x)))].slice(0, 15).join(',') : '';
+  const rate = Number.isInteger(b.rate) && b.rate >= 1 && b.rate <= 5 ? b.rate : null;
+  const mins = MINS.has(String(b.mins)) ? String(b.mins) : null;
+  if (!hard && !useful && miss === null && !rate && !mins) return json({error: 'empty'}, 400);
+  await pilotCode(db, cfg.batch, u.id, true);
+  const old = await db.prepare('SELECT nup FROM fb WHERE batch = ? AND day = ? AND uid = ?').bind(cfg.batch, now.day, u.id).first();
+  if (old && old.nup >= FB_MAX_UPD) return json({error: 'slow'}, 429);
+  const t = Date.now();
+  await db.prepare(`INSERT INTO fb(batch, day, uid, ts, upd, nup, hard, useful, miss, missq, rate, mins) VALUES(?,?,?,?,?,0,?,?,?,?,?,?)
+    ON CONFLICT(batch, day, uid) DO UPDATE SET upd = excluded.upd, nup = nup + 1, hard = excluded.hard, useful = excluded.useful,
+    miss = excluded.miss, missq = excluded.missq, rate = excluded.rate, mins = excluded.mins`)
+    .bind(cfg.batch, now.day, u.id, t, t, hard, useful, miss, missq, rate, mins).run();
+  return json({...base, ok: true, mine: {hard, useful: useful || '', miss, missq: missq ? missq.split(',') : [], rate, mins: mins || '', ts: old ? null : t, upd: t}});
+}
+
+// একটা দিনের উত্তর আর মতামত, শুধু সংকেত-নম্বর দিয়ে (নাম, ইমেইল, ছবি, ব্যবহারকারী-id কিছুই নয়)
+async function pilotDump(db, cfg, n) {
+  const [a, b] = dayWin(cfg, n);
+  await attqTable(db);
+  const [codes, fbs, att, q] = await db.batch([
+    db.prepare('SELECT code, ts FROM pilot_code WHERE batch = ? ORDER BY code').bind(cfg.batch),
+    db.prepare('SELECT c.code, f.ts, f.upd, f.hard, f.useful, f.miss, f.missq, f.rate, f.mins FROM fb f JOIN pilot_code c ON c.batch = f.batch AND c.uid = f.uid WHERE f.batch = ? AND f.day = ? ORDER BY c.code').bind(cfg.batch, n),
+    db.prepare('SELECT c.code, x.k, x.ts, x.c, x.t, x.p, x.s, x.n, x.ok, x.no, x.sec, x.sb FROM att x JOIN pilot_code c ON c.uid = x.uid WHERE c.batch = ? AND x.ts >= ? AND x.ts < ? ORDER BY c.code, x.ts').bind(cfg.batch, a, b),
+    db.prepare('SELECT c.code, x.k, x.qd FROM attq x JOIN pilot_code c ON c.uid = x.uid WHERE c.batch = ? AND x.ts >= ? AND x.ts < ?').bind(cfg.batch, a, b)
+  ]);
+  const qd = new Map(q.results.map(r => [r.code + '|' + r.k, r.qd.split(',').map(x => { const i = x.lastIndexOf(':'); return [x.slice(0, i), +x.slice(i + 1)]; })]));
+  // ফলের k-র শুরুতে ফোনের আইডি থাকে ("abc123:sound-scores#0"); সেটা বাদ
+  const kk = k => String(k).replace(/^[^:]*:/, '');
+  return {batch: cfg.batch, title: cfg.title || '', start: cfg.start, day: n, from: a, to: b, made: Date.now(),
+    participants: codes.results.map(r => r.code),
+    feedback: fbs.results.map(r => ({code: r.code, ts: r.ts, upd: r.upd, hard: r.hard || '', useful: r.useful || '', miss: r.miss,
+      missq: r.missq ? r.missq.split(',') : [], rate: r.rate, mins: r.mins || ''})),
+    answers: att.results.map(r => ({code: r.code, k: kk(r.k), ts: r.ts, c: r.c, t: r.t, p: r.p, s: r.s, n: r.n, ok: r.ok, no: r.no, sec: r.sec,
+      sb: r.sb ? JSON.parse(r.sb) : null, qd: qd.get(r.code + '|' + r.k) || null}))};
+}
+
+// GitHub Action-এর জন্য: চাবি (Bearer) মিললে শুধু পড়া; কিছু লেখে না
+async function pilotExport(req, url, db) {
+  await pilotSetup(db);
+  const m = (req.headers.get('Authorization') || '').match(/^Bearer\s+([A-Za-z0-9_-]{32,128})$/);
+  const k = await db.prepare("SELECT hash FROM export_key WHERE name = 'pilot'").first();
+  if (!m || !k || await sha(m[1]) !== k.hash) return json({error: 'key'}, 401);
+  const cfg = await pilotCfg(db, url.searchParams.get('batch'));
+  if (!cfg) return json({error: 'no batch'}, 404);
+  // দিন না দিলে: আজ সকাল ৬টায় যে রাত শেষ হলো, সেই দিন
+  const d = parseInt(url.searchParams.get('day') || '', 10), n = d || pilotNow(cfg).day - 1;
+  if (!(n >= 1 && n <= cfg.days)) return json({none: true, day: n, days: cfg.days});
+  return json(await pilotDump(db, cfg, n));
+}
+
+async function pilotAdmin(req, url, db) {
+  await pilotSetup(db);
+  if (req.method === 'POST') {
+    const b = await req.json().catch(() => ({}));
+    if (b.act === 'key') {
+      // নতুন রপ্তানির চাবি: একবারই দেখানো হয়, D1-এ শুধু হ্যাশ; নতুন বানালে আগেরটা বাতিল
+      const raw = [...crypto.getRandomValues(new Uint8Array(32))].map(x => x.toString(16).padStart(2, '0')).join('');
+      await db.prepare("INSERT INTO export_key(name, hash, ts) VALUES('pilot', ?, ?) ON CONFLICT(name) DO UPDATE SET hash = excluded.hash, ts = excluded.ts")
+        .bind(await sha(raw), Date.now()).run();
+      return json({ok: true, key: raw});
+    }
+    if (!BATCH.test(b.batch || '')) return json({error: 'batch'}, 400);
+    if (b.act === 'cfg') {
+      const start = /^\d{4}-\d{2}-\d{2}$/.test(b.start || '') && !isNaN(Date.parse(b.start)) ? b.start : null;
+      const days = Number.isInteger(b.days) && b.days >= 1 && b.days <= 60 ? b.days : null;
+      if (!start || !days) return json({error: 'bad'}, 400);
+      await db.prepare('INSERT INTO pilot(batch, start, days, title) VALUES(?,?,?,?) ON CONFLICT(batch) DO UPDATE SET start = excluded.start, days = excluded.days, title = excluded.title')
+        .bind(b.batch, start, days, repText(b.title, 120)).run();
+      return json({ok: true});
+    }
+    if (b.act === 'add') {
+      const who = await db.prepare('SELECT id FROM users WHERE lower(email) = ?').bind(String(b.email || '').trim().toLowerCase()).first();
+      if (!who) return json({error: 'no user'}, 404);
+      if (!await pilotCfg(db, b.batch)) return json({error: 'no batch'}, 404);
+      return json({ok: true, code: await pilotCode(db, b.batch, who.id, true)});
+    }
+    if (b.act === 'drop' && /^P\d{1,4}$/.test(b.code || '')) {
+      await db.prepare('DELETE FROM pilot_code WHERE batch = ? AND code = ?').bind(b.batch, b.code).run();
+      return json({ok: true});
+    }
+    return json({error: 'bad'}, 400);
+  }
+  const batch = url.searchParams.get('batch') || '';
+  const [all, key] = await db.batch([db.prepare('SELECT batch, start, days, title FROM pilot ORDER BY start DESC'),
+    db.prepare("SELECT ts FROM export_key WHERE name = 'pilot'")]);
+  const cfg = all.results.find(x => x.batch === batch) || null;
+  if (!cfg) return json({batches: all.results, key: key.results[0] ? key.results[0].ts : null, cfg: null});
+  const [codes, fbs] = await db.batch([
+    db.prepare(`SELECT c.code, c.ts, u.id uid, u.name, u.email, (SELECT COUNT(*) FROM fb f WHERE f.batch = c.batch AND f.uid = c.uid) fbn,
+      (SELECT COUNT(*) FROM att a WHERE a.uid = c.uid AND a.ts >= ?) tests FROM pilot_code c LEFT JOIN users u ON u.id = c.uid
+      WHERE c.batch = ? ORDER BY c.code`).bind(dayWin(cfg, 1)[0], cfg.batch),
+    db.prepare('SELECT c.code, f.day, f.ts, f.upd, f.hard, f.useful, f.miss, f.missq, f.rate, f.mins FROM fb f LEFT JOIN pilot_code c ON c.batch = f.batch AND c.uid = f.uid WHERE f.batch = ? ORDER BY f.day, c.code').bind(cfg.batch)
+  ]);
+  return json({batches: all.results, key: key.results[0] ? key.results[0].ts : null, cfg, now: pilotNow(cfg), codes: codes.results, fb: fbs.results});
+}
+
 // অ্যাডমিন: কার কী ফল, প্রতিটি উত্তরসহ (কাস্টম প্ল্যান আর দিন-শেষের ডেটা-যাচাইয়ের জন্য)
 async function admin(path, url, env, db, u, req) {
   if (!isAdmin(u, env)) return json({error: 'admin'}, 403);
@@ -635,6 +805,7 @@ async function admin(path, url, env, db, u, req) {
       att: a.results.map(r => ({...r, sb: r.sb ? JSON.parse(r.sb) : null, qd: qd.get(r.k) || null}))},
       200, {'Cache-Control': 'no-store'});
   }
+  if (path === 'admin/pilot') return pilotAdmin(req, url, db);
   if (path === 'admin/reports') {
     await repSetup(db);
     if (req.method === 'POST') {
@@ -681,6 +852,8 @@ export async function onRequest({request: req, env}) {
     if (path.startsWith('lib/')) return await lib(path, req, url, env, db, u);
     if (path === 'qstat' && m === 'GET') return await qstat(req, db);
     if (path === 'report' && m === 'POST') return await report(req, db, u);
+    if (path === 'export/pilot' && m === 'GET') return await pilotExport(req, url, db);
+    if (path === 'fb' && (m === 'GET' || m === 'POST')) return await dayFb(req, url, db, u);
     if (!u) return json({error: 'login'}, 401);
 
     if (path.startsWith('admin/')) return await admin(path, url, env, db, u, req);
@@ -731,7 +904,10 @@ export async function onRequest({request: req, env}) {
     }
     if (path === 'delete' && m === 'POST') {
       await attqTable(db);
+      await pilotSetup(db);
       await db.batch([
+        db.prepare('DELETE FROM fb WHERE uid = ?').bind(u.id),
+        db.prepare('DELETE FROM pilot_code WHERE uid = ?').bind(u.id),
         db.prepare('DELETE FROM attq WHERE uid = ?').bind(u.id),
         db.prepare('DELETE FROM att WHERE uid = ?').bind(u.id),
         db.prepare('DELETE FROM sessions WHERE uid = ?').bind(u.id),
