@@ -76,7 +76,7 @@ async function load(){
 document.querySelectorAll('.tabs button[data-st]').forEach(b=>b.onclick=()=>{st=b.dataset.st;
   document.querySelectorAll('.tabs button[data-st]').forEach(o=>o.setAttribute('aria-pressed',o===b?'true':'false'));load().catch(fail)});
 $('dl').onclick=()=>{if(!cur)return;const b=new Blob([JSON.stringify(cur)],{type:'application/json'}),a=document.createElement('a');
-  a.href=URL.createObjectURL(b);a.download='reports-'+st+'-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)};
+  a.href=URL.createObjectURL(b);a.download='reports-'+st+'-'+new Date(Date.now()+6*36e5).toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)};
 load().catch(fail);
 </script>
 </body>
