@@ -5,6 +5,7 @@
    POST /api/login     {credential: Google ID token} → সেশন কুকি
    POST /api/logout
    GET  /api/att       → নিজের সব পরীক্ষার ফল
+   GET  /api/att/one?k= → একটা ফল আর তার প্রতিটি উত্তর (উত্তরপত্র)
    POST /api/att       {a:[ফল…]} → জমা (একই k দুবার এলে একবারই থাকে)
    POST /api/delete    → নিজের সব তথ্য মুছে যায়
    প্রতিটি উত্তর (ব্যবহারকারী ধরে, কাস্টম প্ল্যানের জন্য): /api/att-এর প্রতিটি ফলে qd = [[প্রশ্ন-id, দাগানো বিকল্প (ফাঁকা −1)], …]
@@ -683,6 +684,20 @@ export async function onRequest({request: req, env}) {
     if (!u) return json({error: 'login'}, 401);
 
     if (path.startsWith('admin/')) return await admin(path, url, env, db, u, req);
+    // একটা পরীক্ষার ফল আর প্রতিটি উত্তর (নিজের উত্তরপত্র দেখার পাতা /account/script/)
+    if (path === 'att/one' && m === 'GET') {
+      const k = str(url.searchParams.get('k') || '', 120);
+      if (!k) return json({error: 'bad'}, 400);
+      await attqTable(db);
+      const [a, q] = await db.batch([
+        db.prepare('SELECT k, ts, c, t, p, s, n, ok, no, sec, sb FROM att WHERE uid = ? AND k = ?').bind(u.id, k),
+        db.prepare('SELECT qd FROM attq WHERE uid = ? AND k = ?').bind(u.id, k)
+      ]);
+      const r = a.results[0];
+      if (!r) return json({error: 'not found'}, 404);
+      const qd = q.results[0] ? q.results[0].qd.split(',').map(x => { const i = x.lastIndexOf(':'); return [x.slice(0, i), +x.slice(i + 1)]; }) : null;
+      return json({a: {...r, sb: r.sb ? JSON.parse(r.sb) : null, qd}}, 200, {'Cache-Control': 'no-store'});
+    }
     if (path === 'att' && m === 'GET') {
       const {results} = await db.prepare('SELECT k, ts, c, t, p, s, n, ok, no, sec, sb FROM att WHERE uid = ? ORDER BY ts DESC LIMIT ?')
         .bind(u.id, MAX_ROWS).all();
