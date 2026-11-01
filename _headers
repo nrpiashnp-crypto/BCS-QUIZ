@@ -30,5 +30,8 @@
   Cache-Control: no-store
 /challenge/*
   X-Robots-Tag: noindex
+/pilot/*
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-cache
 /c/*
   X-Robots-Tag: noindex

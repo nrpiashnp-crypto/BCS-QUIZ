@@ -3,3 +3,6 @@
 /c/*  /challenge/  200
 # অ্যান্ড্রয়েড অ্যাপের ফাইল: GitHub Releases-এর সবশেষ সাইন করা APK (.github/workflows/android.yml বানায়)
 /app/download  https://github.com/nrpiashnp-crypto/BCS-QUIZ/releases/latest/download/lyanna-books.apk  302
+# /pilot/<ব্যাচ>/ পাইলট ব্যাচের পাতা (যেমন /pilot/petrobangla-1/); সব ব্যাচ একই পাতা, ব্যাচ চেনে ঠিকানা থেকে
+/pilot/:id/  /pilot/  200
+/pilot/:id  /pilot/  200

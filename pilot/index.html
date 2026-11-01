@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="theme-color" content="#13294b">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>প্রস্তুতি ব্যাচ · লিয়ানা বুকস</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+:root{--paper:#f8f5ee;--ink:#1d1f21;--muted:#5d5a55;--rule:#e6d3d9;--card:#fffdf7;--navy:#13294b;--pink:#c8326a;--soft:#f4ede3;--good:#1e7a46;--good-bg:#e5f3ea;--bad:#b3261e;--bad-bg:#fbe9e7;--warn:#8a5a00;
+  --display:'Tiro Bangla',Georgia,serif;--body:'Noto Sans Bengali',system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6}
+a{color:var(--navy)}
+.sitebar{background:var(--navy);display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 16px;padding-top:max(8px,env(safe-area-inset-top,0px))}
+.sitebar a{display:flex;align-items:center;gap:8px;color:#fff;text-decoration:none}.sitebar img{width:26px;height:auto}
+.sitebar .who{color:#e6c97a;font-size:14px}
+.wrap{max-width:640px;margin:0 auto;padding:18px 16px 110px}
+h1{font-family:var(--display);font-weight:400;font-size:25px;line-height:1.3;margin:0 0 4px}
+h2{font-family:var(--display);font-weight:400;font-size:19px;margin:22px 0 8px}
+.sub{color:var(--muted);font-size:14.5px;margin:0 0 12px}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:3px;padding:12px 14px;margin:0 0 10px}
+.btn{display:inline-block;background:var(--navy);color:#fff;border:0;border-radius:3px;padding:10px 18px;font:inherit;font-weight:600;font-size:16px;cursor:pointer;text-decoration:none}
+.btn.ghost{background:transparent;color:var(--navy);border:1px solid var(--rule)}
+.btn:disabled{opacity:.45;cursor:default}
+.ex{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.ex b{font-weight:600}.ex small{display:block;color:var(--muted);font-size:13.5px}
+.st{font-size:13.5px;color:var(--muted);white-space:nowrap}
+.st.ok{color:var(--good)}
+.dim{color:var(--muted)}
+.list{list-style:none;padding:0;margin:0}.list li{padding:6px 0;border-bottom:1px dashed var(--rule)}.list li:last-child{border:0}
+.prog{height:6px;background:var(--soft);border-radius:3px;overflow:hidden;margin:6px 0 2px}.prog i{display:block;height:100%;background:var(--navy)}
+details summary{cursor:pointer;color:var(--navy);padding:6px 0}
+/* পরীক্ষা */
+.qh{display:flex;justify-content:space-between;color:var(--muted);font-size:14px;margin:0 0 8px}
+.qt{font-size:17.5px;margin:0 0 14px}
+.opt{display:flex;gap:12px;align-items:center;width:100%;text-align:left;background:#fffdf7;border:1px solid var(--rule);border-radius:3px;padding:11px 12px;margin:0 0 8px;font:inherit;font-size:16px;color:var(--ink);cursor:pointer}
+.opt .k{width:26px;height:26px;min-width:26px;border:1.4px solid var(--pink);border-radius:50%;display:inline-grid;place-items:center;color:var(--pink);font-size:13px;flex:none}
+.opt.sel{border-color:var(--ink)}.opt.sel .k{background:var(--ink);border-color:var(--ink);color:#fffdf7}
+.opt:disabled{cursor:default}
+.opt.right{background:var(--good-bg)}.opt.right .k{background:var(--good);border-color:var(--good);color:#fff}
+.opt.wrong{background:var(--bad-bg)}.opt.wrong .k{background:var(--bad);border-color:var(--bad);color:#fff}
+.conf{display:flex;gap:8px;margin:14px 0 4px}.conf button{flex:1;padding:12px 6px;font:inherit;font-size:16px;font-weight:600;border:1.4px solid var(--navy);border-radius:3px;background:transparent;color:var(--navy);cursor:pointer}
+.conf button[aria-pressed="true"]{background:var(--navy);color:#fff}
+.conf button:disabled{opacity:.4;cursor:default}
+.hint{font-size:13.5px;color:var(--muted);min-height:22px}
+.timer{position:fixed;left:0;right:0;bottom:0;background:#f8f5ee;border-top:1px solid var(--rule);padding:10px 16px;padding-bottom:max(10px,env(safe-area-inset-bottom,0px));text-align:center;font-size:15px;color:var(--muted)}
+.timer.last{color:var(--warn);font-weight:600}
+.net{font-size:13px;color:var(--warn)}
+/* ফল ও রিপোর্ট */
+.rv .exp{font-size:14.5px;color:var(--ink);background:var(--soft);padding:8px 10px;border-radius:3px;margin-top:6px}
+.tag{display:inline-block;font-size:12.5px;padding:0 7px;border:1px solid var(--rule);border-radius:3px;color:var(--muted);margin-left:4px}
+table{width:100%;border-collapse:collapse;font-size:15px}th,td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--rule)}th{color:var(--muted);font-weight:600;font-size:13.5px}
+.lv-weak{color:var(--bad);font-weight:600}.lv-mid{color:var(--warn);font-weight:600}.lv-strong{color:var(--good);font-weight:600}
+</style>
+<link rel="stylesheet" href="/css/omr.css">
+</head>
+<body>
+<div class="sitebar"><a href="/" aria-label="লিয়ানা বুকস"><img src="/img/logo/li-mark.svg" alt="" width="34" height="44"><span class="lgn-n">লিয়ানা বুকস</span></a><span class="who" id="who"></span></div>
+<main class="wrap" id="view"><p class="dim">লোড হচ্ছে…</p></main>
+<div class="timer" id="timer" hidden></div>
+<script>
+const P=(location.pathname.match(/^\/pilot\/([a-z0-9-]+)/)||[])[1]||new URLSearchParams(location.search).get('p')||'';
+const $=id=>document.getElementById(id),V=$('view');
+const bn=x=>String(x).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]),K='কখগঘঙচ';
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const MON=['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
+// সব সময় বাংলাদেশ সময়ে দেখানো (UTC+6), ফোনের ঘড়ি যা-ই থাকুক
+const dk=ts=>{const d=new Date(ts+6*36e5);return {d:d.getUTCDate(),m:d.getUTCMonth(),h:d.getUTCHours(),mi:d.getUTCMinutes()}};
+const when=ts=>{const x=dk(ts),h=x.h%12||12,ap=x.h<12?'সকাল':x.h<16?'দুপুর':x.h<18?'বিকেল':x.h<20?'সন্ধ্যা':'রাত';return bn(x.d)+' '+MON[x.m]+', '+ap+' '+bn(h)+':'+bn(String(x.mi).padStart(2,'0'))};
+const get=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}};
+const set=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+async function api(p,b){const r=await fetch('/api/pilot/'+p,b?{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({p:P,...b})}:{credentials:'same-origin',cache:'no-store'});
+  const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(j.error||'err');e.j=j;e.s=r.status;throw e}return j}
+let ME=null,EX=null,tick=null,clockOff=0;
+
+// ---------- উত্তর জমার সারি: নেট না থাকলেও হারায় না ----------
+const QK='lb:pilot:'+P+':q';
+let sending=false;
+async function flush(){
+  if(sending)return;const q=get(QK,[]);if(!q.length){net();return}
+  sending=true;
+  try{for(const a of q){
+    try{await api('ans',a)}catch(e){if(!e.s)throw e/* নেট নেই: পরে */}
+    set(QK,get(QK,[]).filter(x=>!(x.no===a.no&&x.qid===a.qid)));
+  }}catch(e){}finally{sending=false;net()}
+}
+function net(){const n=document.querySelector('.net');if(n){const k=get(QK,[]).length;n.textContent=k?bn(k)+'টি উত্তর এখনো সার্ভারে যায়নি, নেট এলে নিজে যাবে':''}}
+addEventListener('online',flush);setInterval(flush,15000);
+
+// ---------- শুরু ----------
+async function home(){
+  clearInterval(tick);$('timer').hidden=true;
+  try{ME=await api('me?p='+encodeURIComponent(P))}catch(e){V.innerHTML='<h1>এই ব্যাচ পাওয়া যায়নি</h1><p class="sub">লিংকটা ঠিক আছে কি না দেখুন।</p>';return}
+  clockOff=ME.now-Date.now();
+  document.title=ME.title+' · লিয়ানা বুকস';
+  $('who').textContent=ME.member&&ME.member.code?(ME.member.nick?ME.member.nick+' · ':'')+ME.member.code:'';
+  if(!ME.user)return loginView();
+  if(!ME.member)return nameView('join');
+  if(!ME.member.nick)return nameView('name');
+  if(ME.member.st!=='ok')return V.innerHTML=head()+'<div class="card">আপনার অনুরোধ পৌঁছেছে। অনুমোদন হলে এই পাতায় পরীক্ষা দেখাবে।</div>';
+  if(!ME.start)return V.innerHTML=head()+'<div class="card">শুরুর তারিখ শিগগির জানানো হবে।</div>';
+  dash();flush();
+}
+// নাম বাধ্যতামূলক: এই নামেই শিক্ষক কথা বলবেন
+function nameView(kind){
+  V.innerHTML=head()+`<div class="card"><label for="nick"><b>আপনার নাম</b></label>
+    <p class="sub" style="margin:2px 0 8px">যে নামে আমরা আপনাকে ডাকব, বাংলায় বা ইংরেজিতে (যেমন "রাহিম" বা "রাহিম উদ্দিন")।</p>
+    <input id="nick" maxlength="40" autocomplete="name" value="${esc(ME.member&&ME.member.nick||'')}" style="font:inherit;font-size:17px;padding:10px 12px;border:1px solid var(--rule);border-radius:3px;width:100%;background:#fff">
+    <p class="hint" id="nh"></p><button class="btn" id="join">${kind==='join'?'ব্যাচে যোগ দিন':'রাখুন'}</button>
+    ${kind==='join'?'<p class="sub" style="margin:8px 0 0">অনুমোদনের পরে আপনার কোড (যেমন P০১) দেখাবে।</p>':''}</div>`;
+  $('join').onclick=async()=>{const n=$('nick').value.trim();
+    if(n.length<2){$('nh').textContent='নাম লিখুন (অন্তত ২ অক্ষর)।';$('nick').focus();return}
+    $('join').disabled=true;
+    try{await api(kind,{nick:n});home()}catch(e){$('join').disabled=false;$('nh').textContent=e.message==='nick'?'নামটা ঠিক নয়; শুধু অক্ষরে নাম লিখুন।':'রাখা যায়নি, নেট দেখে আবার চেষ্টা করুন।'}};
+}
+const head=()=>`<h1>${esc(ME.title)}</h1><p class="sub">${bn(ME.days)} দিন, প্রতিদিন ${bn(4)}টি পরীক্ষা। প্রতিটিতে ${bn(ME.n)} প্রশ্ন, ${bn(ME.mins)} মিনিট, একবারই দেওয়া যাবে।</p>`;
+
+function loginView(){
+  V.innerHTML=head()+'<div class="card"><p>পরীক্ষা দিতে আগে Google দিয়ে লগইন করুন। পাসওয়ার্ড লাগে না।</p><div id="g"></div></div>';
+  fetch('/api/me',{credentials:'same-origin'}).then(r=>r.json()).then(j=>{
+    if(!j.cid){$('g').innerHTML='<a href="/account/">লগইন করুন →</a>';return}
+    const go=()=>{google.accounts.id.initialize({client_id:j.cid,ux_mode:'popup',context:'signin',callback:res=>{
+      $('g').textContent='লগইন হচ্ছে…';
+      fetch('/api/login',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({credential:res.credential})})
+        .then(r=>r.json()).then(x=>{if(x.user)set('lb:u',x.user);home()}).catch(()=>{$('g').textContent='লগইন হয়নি, আবার চেষ্টা করুন।'})}});
+      google.accounts.id.renderButton($('g'),{theme:'filled_blue',size:'large',shape:'pill',text:'continue_with',locale:'bn',width:260})};
+    const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.async=true;s.onload=go;
+    s.onerror=()=>{$('g').innerHTML='<a href="/account/">লগইন করুন →</a>'};document.head.appendChild(s);
+  });
+}
+
+const STL={soon:'পরে খুলবে',open:'',going:'চলছে',done:'দেওয়া হয়েছে',shut:'বন্ধ',closed:'দেওয়া হয়েছে',missed:'দেওয়া হয়নি'};
+function exRow(e){
+  let right='';
+  if(e.st==='open')right=`<button class="btn" data-go="${e.no}">শুরু করুন</button>`;
+  else if(e.st==='going')right=`<button class="btn" data-go="${e.no}">চালিয়ে যান</button>`;
+  else if(e.st==='closed'||e.st==='missed')right=`<button class="btn ghost" data-rv="${e.no}">উত্তর দেখুন</button>`;
+  else right=`<span class="st">${STL[e.st]}</span>`;
+  const info=e.st==='closed'&&e.ok!=null?`${bn(e.ok)}টি ঠিক`:e.st==='done'?`উত্তর দেখা যাবে ${when(e.reveal)}-এর পরে`:e.st==='soon'?`খুলবে ${when(e.open)}`:e.st==='open'?`বন্ধ হবে ${when(e.close)}`:e.st==='missed'?'দেওয়া হয়নি':e.st==='shut'?`উত্তর দেখা যাবে ${when(e.reveal)}-এর পরে`:'';
+  return `<div class="card ex"><div><b>${esc(e.name)}</b>${e.round===2?'<span class="tag">দ্বিতীয়বার</span>':''}<small>${info}</small></div>${right}</div>`;
+}
+function dash(){
+  const now=Date.now()+clockOff,d=Math.max(1,Math.min(ME.days,ME.day||1)),before=(ME.day||0)<1,after=(ME.day||0)>ME.days;
+  const today=ME.exams.filter(e=>e.day===d),past=ME.exams.filter(e=>e.day<d||after&&e.day===d);
+  let h=head();
+  h+=`<div class="card"><b>হাজিরা:</b> ${bn(ME.took)} / ${bn(ME.exams.length)}টি পরীক্ষা <span class="dim">(${bn(ME.pass)}টি হলে উত্তীর্ণ)</span><div class="prog"><i style="width:${Math.round(ME.took/ME.exams.length*100)}%"></i></div><span class="net"></span></div>`;
+  if(ME.report)h+=`<div class="card ex"><div><b>আপনার রিপোর্ট তৈরি</b><small>কোন টপিক শক্ত, কোনটা দুর্বল, কোন শিট আগে পড়বেন</small></div><button class="btn" id="rep">দেখুন</button></div>`;
+  if(!after){
+    h+=`<h2>${before?'প্রথম দিন':'আজ · দিন '+bn(d)}</h2>`;
+    if(before)h+=`<p class="sub">শুরু ${when(ME.exams[0]?ME.exams.find(e=>e.day===1).open:0)}।</p>`;
+    h+=today.map(exRow).join('');
+  }
+  if(ME.form)h+=`<div class="card ex"><div><b>আজকের ছোট ফর্ম</b><small>দিন ${bn(ME.form.day)}-এর অভিজ্ঞতা, ২-৩ মিনিট</small></div><a class="btn" href="${esc(ME.form.url)}" target="_blank" rel="noopener">ফর্ম খুলুন</a></div>`;
+  else if(ME.formAt&&!after)h+=`<p class="sub">আজকের ছোট ফর্ম আসবে ${when(ME.formAt)}।</p>`;
+  if(ME.sheets&&ME.sheets.length)h+='<h2>পড়ার শিট</h2><div class="card"><ul class="list">'+ME.sheets.map((s,i)=>`<li><a href="${esc(s.url)}" target="_blank" rel="noopener" data-sh="${esc(s.topic)}">${esc(s.name)}</a>${now-s.at<20*36e5?' <span class="tag">নতুন</span>':''}</li>`).join('')+'</ul></div>';
+  if(past.length)h+=`<details><summary>আগের দিনের পরীক্ষা (${bn(past.length)})</summary>`+past.map(exRow).join('')+'</details>';
+  V.innerHTML=h;net();
+  V.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>exam(+b.dataset.go));
+  V.querySelectorAll('[data-rv]').forEach(b=>b.onclick=()=>review(+b.dataset.rv));
+  V.querySelectorAll('[data-sh]').forEach(a=>a.addEventListener('click',()=>{api('sheet',{topic:a.dataset.sh}).catch(()=>{})}));
+  if($('rep'))$('rep').onclick=report;
+  scrollTo(0,0);
+}
+
+// ---------- পরীক্ষা: এক প্রশ্ন করে, অপশনে প্রথম চাপেই লক, তারপর নিশ্চিত/আন্দাজ ----------
+// অপশনের ক্রম: কোড আর প্রশ্ন ধরে স্থির এলোমেলো, তাই আবার খুললেও একই ক্রম
+function order(n,seed){let h=2166136261;for(const c of seed)h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;
+  const a=[...Array(n).keys()];for(let i=n-1;i>0;i--){h=Math.imul(h^(h>>>15),2246822507)>>>0;const j=h%(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
+async function exam(no){
+  V.innerHTML='<p class="dim">প্রশ্ন আসছে…</p>';
+  try{EX=await api('start',{no})}catch(e){V.innerHTML=`<div class="card">${e.message==='soon'?'এই পরীক্ষা এখনো খোলেনি।':e.message==='closed'?'এই পরীক্ষার সময় শেষ।':e.message==='done'?'এই পরীক্ষা আগেই দেওয়া হয়েছে।':'খোলা যায়নি। নেট দেখে আবার চেষ্টা করুন।'}</div><button class="btn ghost" onclick="home()">ফিরে যান</button>`;return}
+  EX.end=Date.now()+EX.left;
+  const sent=new Map(EX.done.map(x=>[x[0],x])),local=get(QK,[]).filter(a=>a.no===no);
+  local.forEach(a=>sent.set(a.qid,[a.qid,a.pick,a.conf]));
+  EX.i=EX.qs.findIndex(q=>!sent.has(q.id));if(EX.i<0)return finish();
+  timer();show();
+}
+function timer(){
+  const t=$('timer');t.hidden=false;clearInterval(tick);
+  const f=()=>{const s=Math.max(0,Math.round((EX.end-Date.now())/1000));t.textContent='সময় '+bn(String(Math.floor(s/60)).padStart(2,'0'))+':'+bn(String(s%60).padStart(2,'0'));
+    t.classList.toggle('last',s<=60);if(!s){clearInterval(tick);finish()}};
+  f();tick=setInterval(f,1000);
+}
+function show(){
+  const q=EX.qs[EX.i],ord=order(q.o.length,(ME.member.code||'')+q.id);let pick=-1,conf='';const t0=Date.now();
+  V.innerHTML=`<div class="qh"><span>${esc(EX.name)}</span><span>প্রশ্ন ${bn(EX.i+1)} / ${bn(EX.qs.length)}</span></div>
+    <div class="qt">${esc(q.q)}</div>
+    ${ord.map((oi,k)=>`<button class="opt" data-o="${oi}"><span class="k">${K[k]}</span><span>${esc(q.o[oi])}</span></button>`).join('')}
+    <div class="conf"><button data-c="s" aria-pressed="false">নিশ্চিত</button><button data-c="g" aria-pressed="false">আন্দাজ</button></div>
+    <div class="hint" id="hint">উত্তর দাগান, তারপর বলুন উত্তরটা নিশ্চিত না আন্দাজ।</div><div class="net"></div>`;
+  net();
+  const next=()=>{
+    if(pick<0||!conf)return;
+    const a={no:EX.no,qid:q.id,pick,conf,sec:Math.round((Date.now()-t0)/1000),cts:Date.now()+clockOff};
+    const qq=get(QK,[]);qq.push(a);set(QK,qq);flush();
+    V.querySelectorAll('button').forEach(b=>b.disabled=true);
+    setTimeout(()=>{EX.i++;EX.i<EX.qs.length?show():finish()},350);
+  };
+  V.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+    if(pick>=0)return;pick=+b.dataset.o;b.classList.add('sel');
+    V.querySelectorAll('.opt').forEach(o=>o.disabled=true);
+    $('hint').textContent=conf?'':'এবার "নিশ্চিত" বা "আন্দাজ" চাপুন।';next()});
+  V.querySelectorAll('.conf button').forEach(b=>b.onclick=()=>{
+    conf=b.dataset.c;V.querySelectorAll('.conf button').forEach(o=>o.setAttribute('aria-pressed',o===b?'true':'false'));
+    $('hint').textContent=pick<0?'এবার উত্তর দাগান।':'';next()});
+  scrollTo(0,0);
+}
+async function finish(){
+  clearInterval(tick);$('timer').hidden=true;
+  await flush();
+  api('done',{no:EX.no}).catch(()=>{});
+  const left=get(QK,[]).filter(a=>a.no===EX.no).length;
+  V.innerHTML=`<div class="card"><h2 style="margin-top:0">জমা হয়েছে</h2><p>সঠিক উত্তর আর ব্যাখ্যা দেখা যাবে এই দিনের পরীক্ষা বন্ধ হওয়ার পরে।</p>${left?`<p class="net">${bn(left)}টি উত্তর এখনো সার্ভারে যায়নি। পাতাটা বন্ধ না করে নেট চালু রাখুন।</p>`:''}<button class="btn" id="back">পরের ধাপ</button></div>`;
+  $('back').onclick=home;
+}
+
+// ---------- উত্তর আর ব্যাখ্যা ----------
+async function review(no){
+  V.innerHTML='<p class="dim">লোড হচ্ছে…</p>';
+  let r;try{r=await api('review?p='+encodeURIComponent(P)+'&no='+no)}catch(e){V.innerHTML=`<div class="card">${e.message==='soon'?'উত্তর এখনো খোলেনি, '+when(e.j.at)+'-এর পরে।':'খোলা যায়নি।'}</div><button class="btn ghost" onclick="home()">ফিরে যান</button>`;return}
+  const ok=r.qs.filter(q=>q.pick===q.a).length;
+  V.innerHTML=`<button class="btn ghost" onclick="home()">← ফিরে যান</button><h1 style="margin-top:12px">${esc(r.name)}</h1>
+    <p class="sub">${r.took?`${bn(r.qs.length)}টির মধ্যে ${bn(ok)}টি ঠিক`:'এই পরীক্ষা দেননি; প্রশ্ন আর উত্তর দেখে নিন।'}</p>`+
+    r.qs.map((q,i)=>`<div class="card rv"><div class="qh"><span>প্রশ্ন ${bn(i+1)}${q.r?' <span class="tag">আগের ভুল</span>':''}</span><span>${q.pick<0?'ফাঁকা':q.conf==='g'?'আন্দাজ':'নিশ্চিত'}</span></div>
+      <div class="qt">${esc(q.q)}</div>${q.o.map((o,k)=>`<div class="opt${k===q.a?' right':k===q.pick?' wrong':''}"><span class="k">${K[k]}</span><span>${esc(o)}</span></div>`).join('')}
+      ${q.e?`<div class="exp">${esc(q.e)}</div>`:''}</div>`).join('');
+  scrollTo(0,0);
+}
+
+// ---------- ৬ষ্ঠ দিনের রিপোর্ট ----------
+const LV={weak:'দুর্বল',mid:'মাঝারি',strong:'শক্ত'};
+async function report(){
+  V.innerHTML='<p class="dim">লোড হচ্ছে…</p>';
+  let r;try{r=await api('report?p='+encodeURIComponent(P))}catch(e){V.innerHTML='<div class="card">রিপোর্ট এখনো তৈরি হয়নি।</div><button class="btn ghost" onclick="home()">ফিরে যান</button>';return}
+  const pct=x=>x==null?'—':bn(Math.round(x))+'%';
+  V.innerHTML=`<button class="btn ghost" onclick="home()">← ফিরে যান</button><h1 style="margin-top:12px">আপনার রিপোর্ট · ${esc(r.code)}</h1>
+    <div class="card"><b>হাজিরা:</b> ${bn(r.took)} / ${bn(r.total)} ${r.pass?'<span class="lv-strong">· উত্তীর্ণ</span>':'<span class="dim">· উত্তীর্ণ হতে '+bn(ME.pass)+'টি লাগত</span>'}<br>
+    <b>আন্দাজে ঠিক:</b> ${bn(r.guessOk)}টি <span class="dim">(এগুলো ঠিক ধরা হয়নি)</span><br>
+    <b>নিশ্চিত বলে ভুল:</b> ${bn(r.sureWrong)}টি${r.back?`<br><b>আগের ভুল প্রশ্ন ফেরত:</b> ${bn(r.back)}টি, এবার নিশ্চিতভাবে ঠিক ${bn(r.backFixed)}টি`:''}</div>
+    <h2>টপিক ধরে</h2><div class="card"><table><thead><tr><th>টপিক</th><th>ঠিক</th><th>অবস্থা</th></tr></thead><tbody>`+
+    r.topics.map(t=>`<tr><td>${esc(t.name)}</td><td>${pct(t.pct)}</td><td class="lv-${t.level||''}">${t.level?LV[t.level]:'—'}</td></tr>`).join('')+
+    `</tbody></table><p class="sub" style="margin:8px 0 0">দুই দিনের পরীক্ষা মিলিয়ে, শুধু নিশ্চিতভাবে ঠিক উত্তর গোনা। ৬০%-এর কম দুর্বল, ৬০-৮০% মাঝারি, ৮০%-এর বেশি শক্ত।</p></div>
+    <h2>কোন শিট আগে পড়বেন</h2><div class="card"><ol style="margin:0;padding-left:22px">`+
+    r.order.map(o=>`<li>${o.sheet?`<a href="${esc(o.sheet)}" target="_blank" rel="noopener" data-sh="${esc(o.topic)}">${esc(o.name)}</a>`:esc(o.name)} <span class="lv-${o.level}">· ${LV[o.level]}</span></li>`).join('')+'</ol></div>';
+  V.querySelectorAll('[data-sh]').forEach(a=>a.addEventListener('click',()=>{api('sheet',{topic:a.dataset.sh}).catch(()=>{})}));
+  scrollTo(0,0);
+}
+home();
+</script>
+<script src="/js/math.js" defer></script>
+</body>
+</html>
