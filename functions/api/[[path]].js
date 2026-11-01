@@ -679,7 +679,15 @@ const PILOT_SCHEMA = [
   'CREATE TABLE IF NOT EXISTS pilot_sheet(pilot TEXT NOT NULL, uid INTEGER NOT NULL, topic TEXT NOT NULL, ts INTEGER NOT NULL, last INTEGER, n INTEGER NOT NULL, PRIMARY KEY(pilot, uid, topic))'
 ];
 let pilotReady = false;
-async function pilotSetup(db) { if (!pilotReady) { await db.batch(PILOT_SCHEMA.map(s => db.prepare(s))); pilotReady = true; } }
+async function pilotSetup(db) {
+  if (pilotReady) return;
+  await db.batch(PILOT_SCHEMA.map(s => db.prepare(s)));
+  // যে নামে PIASH ডাকবেন (Google-এর নাম প্রায়ই ইংরেজি বা অচেনা); শুধু D1-এ, রপ্তানিতে নয়
+  try { await db.prepare('ALTER TABLE pilot_mem ADD COLUMN nick TEXT').run(); } catch (e) { /* আগেই আছে */ }
+  pilotReady = true;
+}
+// নাম: ২-৪০ অক্ষর, অক্ষর থাকতে হবে (শুধু সংখ্যা/চিহ্ন নয়)
+const cleanNick = v => { const n = nfc(String(v || '')).replace(/\s+/g, ' ').slice(0, 40); return n.length >= 2 && /[\p{L}]/u.test(n) && !/[<>@]/.test(n) ? n : null; };
 
 const PID = /^[a-z0-9]+(-[a-z0-9]+)*$/, TID = /^[a-z0-9]+(-[a-z0-9]+)*$/, DAY = 86400e3, H = 3600e3;
 const GRACE = 60e3; // ধীর নেটে শেষ উত্তরটা পৌঁছানোর সময়
@@ -758,7 +766,7 @@ function pilotSlim(c) {
 }
 
 async function pilotMem(db, p, uid) {
-  return db.prepare('SELECT uid, code, st, ts FROM pilot_mem WHERE pilot = ? AND uid = ?').bind(p, uid).first();
+  return db.prepare('SELECT uid, code, st, ts, nick FROM pilot_mem WHERE pilot = ? AND uid = ?').bind(p, uid).first();
 }
 
 // এই মানুষের আগের দিনের ভুল (ফাঁকাও ভুল) থেকে ফেরত-প্রশ্ন; একই টপিক আগে, তারপর পুরোনো আগে; একটা প্রশ্ন একবারই ফেরে
@@ -906,8 +914,8 @@ async function pilot(path, req, url, env, db, u) {
     if (!u) return json(out);
     const mem = await pilotMem(db, p, u.id);
     if (!mem || mem.st === 'out') return json(out);
-    out.member = {st: mem.st, code: mem.code || ''};
-    if (mem.st !== 'ok' || !c.start) return json(out);
+    out.member = {st: mem.st, code: mem.code || '', nick: mem.nick || ''};
+    if (mem.st !== 'ok' || !c.start || !mem.nick) return json(out);
     const [s, a] = await db.batch([
       db.prepare('SELECT no, ts, dl, done FROM pilot_sit WHERE pilot = ? AND uid = ?').bind(p, u.id),
       db.prepare('SELECT no, COUNT(*) k, SUM(ok) ok FROM pilot_ans WHERE pilot = ? AND uid = ? GROUP BY no').bind(p, u.id)
@@ -934,10 +942,15 @@ async function pilot(path, req, url, env, db, u) {
     return json(out);
   }
   if (!u) return json({error: 'login'}, 401);
-  if (path === 'pilot/join' && m === 'POST') {
-    await db.prepare("INSERT OR IGNORE INTO pilot_mem(pilot, uid, code, st, ts) VALUES(?,?,NULL,'wait',?)").bind(p, u.id, now).run();
+  // যোগ দেওয়া আর নাম বদলানো একই পথে; নাম ছাড়া যোগ দেওয়া যায় না
+  if ((path === 'pilot/join' || path === 'pilot/name') && m === 'POST') {
+    const nick = cleanNick(body.nick);
+    if (!nick) return json({error: 'nick'}, 400);
+    if (path === 'pilot/join') await db.prepare("INSERT OR IGNORE INTO pilot_mem(pilot, uid, code, st, ts, nick) VALUES(?,?,NULL,'wait',?,?)").bind(p, u.id, now, nick).run();
+    await db.prepare('UPDATE pilot_mem SET nick = ? WHERE pilot = ? AND uid = ?').bind(nick, p, u.id).run();
     const mem = await pilotMem(db, p, u.id);
-    return json({member: {st: mem.st, code: mem.code || ''}});
+    if (!mem) return json({error: 'member'}, 403);
+    return json({member: {st: mem.st, code: mem.code || '', nick: mem.nick || ''}});
   }
   const mem = await pilotMem(db, p, u.id), admin = isAdmin(u, env);
   if (path === 'pilot/report' && m === 'GET') {
@@ -952,6 +965,7 @@ async function pilot(path, req, url, env, db, u) {
     return json(await pilotReportFor(db, c, u.id, mem.code));
   }
   if (!mem || mem.st !== 'ok') return json({error: 'member'}, 403);
+  if (!mem.nick) return json({error: 'nick'}, 403);
   // শিটের লিংকে চাপ (শিট দেখানো আর খোলা আলাদা মাপা যায়)
   if (path === 'pilot/sheet' && m === 'POST') {
     const t = String(body.topic || '');
@@ -1116,7 +1130,7 @@ async function pilotAdmin(path, url, req, db) {
   }
   if (path === 'admin/pilot' && m === 'GET') {
     const [mm, s, a, q] = await db.batch([
-      db.prepare('SELECT m.uid, m.code, m.st, m.ts, u.name, u.email FROM pilot_mem m LEFT JOIN users u ON u.id = m.uid WHERE m.pilot = ? ORDER BY m.code IS NULL, m.code, m.ts').bind(p),
+      db.prepare('SELECT m.uid, m.code, m.st, m.ts, m.nick, u.name, u.email FROM pilot_mem m LEFT JOIN users u ON u.id = m.uid WHERE m.pilot = ? ORDER BY m.code IS NULL, m.code, m.ts').bind(p),
       db.prepare('SELECT uid, no, ts, done FROM pilot_sit WHERE pilot = ?').bind(p),
       db.prepare('SELECT uid, no, COUNT(*) k, SUM(ok) ok, SUM(conf = \'g\') g FROM pilot_ans WHERE pilot = ? GROUP BY uid, no').bind(p),
       db.prepare('SELECT COUNT(*) n FROM pilot_q WHERE pilot = ?').bind(p)

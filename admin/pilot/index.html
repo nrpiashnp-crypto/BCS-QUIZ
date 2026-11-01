@@ -88,7 +88,7 @@ async function load(){
   $('start').value=c.start||'';$('form').value=c.form||'';
   const took={};D.ans.forEach(a=>{if(a.k>=am)took[a.uid]=(took[a.uid]||0)+1});
   const L={ok:'অনুমোদিত',wait:'অপেক্ষায়',out:'বাদ'};
-  $('mem').innerHTML=D.members.map(m=>`<tr data-u="${m.uid}"><td>${esc(m.code||'—')}</td><td>${esc(m.name)}<br><span class="dim">${esc(mask(m.email))}</span></td><td>${L[m.st]||m.st}</td>
+  $('mem').innerHTML=D.members.map(m=>`<tr data-u="${m.uid}"><td>${esc(m.code||'—')}</td><td>${m.nick?'<b>'+esc(m.nick)+'</b>':'<span class="bad">নাম দেননি</span>'}<br><span class="dim">Google: ${esc(m.name)} · ${esc(mask(m.email))}</span></td><td>${L[m.st]||m.st}</td>
     <td>${bn(took[m.uid]||0)} / ${bn(c.exams.length)}${(took[m.uid]||0)>=c.pass?' <span class="ok">উত্তীর্ণ</span>':''}</td>
     <td class="row">${m.st!=='ok'?'<button class="btn" data-a="ok">অনুমোদন</button>':''}${m.st!=='out'?'<button class="btn ghost" data-a="out">বাদ</button>':''}${m.code?'<button class="btn ghost" data-rep>রিপোর্ট</button><button class="btn ghost" data-reset>একটা পরীক্ষা মুছুন</button>':''}</td></tr>`).join('')||'<tr><td colspan="5" class="dim">এখনো কেউ যোগ দেননি।</td></tr>';
   document.querySelectorAll('#mem [data-a]').forEach(b=>b.onclick=async()=>{b.disabled=true;await api('admin/pilot/mem',{p:P,uid:+b.closest('tr').dataset.u,act:b.dataset.a}).catch(fail);load()});

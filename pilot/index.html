@@ -96,12 +96,25 @@ async function home(){
   try{ME=await api('me?p='+encodeURIComponent(P))}catch(e){V.innerHTML='<h1>এই ব্যাচ পাওয়া যায়নি</h1><p class="sub">লিংকটা ঠিক আছে কি না দেখুন।</p>';return}
   clockOff=ME.now-Date.now();
   document.title=ME.title+' · লিয়ানা বুকস';
-  $('who').textContent=ME.member&&ME.member.code?'আপনার কোড '+ME.member.code:'';
+  $('who').textContent=ME.member&&ME.member.code?(ME.member.nick?ME.member.nick+' · ':'')+ME.member.code:'';
   if(!ME.user)return loginView();
-  if(!ME.member)return V.innerHTML=head()+`<div class="card"><p>এই ব্যাচে যোগ দিতে নিচে চাপুন। অনুমোদনের পরে আপনার কোড (যেমন P০১) দেখাবে।</p><button class="btn" id="join">ব্যাচে যোগ দিন</button></div>`,$('join').onclick=async()=>{$('join').disabled=true;await api('join',{});home()};
+  if(!ME.member)return nameView('join');
+  if(!ME.member.nick)return nameView('name');
   if(ME.member.st!=='ok')return V.innerHTML=head()+'<div class="card">আপনার অনুরোধ পৌঁছেছে। অনুমোদন হলে এই পাতায় পরীক্ষা দেখাবে।</div>';
   if(!ME.start)return V.innerHTML=head()+'<div class="card">শুরুর তারিখ শিগগির জানানো হবে।</div>';
   dash();flush();
+}
+// নাম বাধ্যতামূলক: এই নামেই শিক্ষক কথা বলবেন
+function nameView(kind){
+  V.innerHTML=head()+`<div class="card"><label for="nick"><b>আপনার নাম</b></label>
+    <p class="sub" style="margin:2px 0 8px">যে নামে আমরা আপনাকে ডাকব, বাংলায় বা ইংরেজিতে (যেমন "রাহিম" বা "রাহিম উদ্দিন")।</p>
+    <input id="nick" maxlength="40" autocomplete="name" value="${esc(ME.member&&ME.member.nick||'')}" style="font:inherit;font-size:17px;padding:10px 12px;border:1px solid var(--rule);border-radius:3px;width:100%;background:#fff">
+    <p class="hint" id="nh"></p><button class="btn" id="join">${kind==='join'?'ব্যাচে যোগ দিন':'রাখুন'}</button>
+    ${kind==='join'?'<p class="sub" style="margin:8px 0 0">অনুমোদনের পরে আপনার কোড (যেমন P০১) দেখাবে।</p>':''}</div>`;
+  $('join').onclick=async()=>{const n=$('nick').value.trim();
+    if(n.length<2){$('nh').textContent='নাম লিখুন (অন্তত ২ অক্ষর)।';$('nick').focus();return}
+    $('join').disabled=true;
+    try{await api(kind,{nick:n});home()}catch(e){$('join').disabled=false;$('nh').textContent=e.message==='nick'?'নামটা ঠিক নয়; শুধু অক্ষরে নাম লিখুন।':'রাখা যায়নি, নেট দেখে আবার চেষ্টা করুন।'}};
 }
 const head=()=>`<h1>${esc(ME.title)}</h1><p class="sub">${bn(ME.days)} দিন, প্রতিদিন ${bn(4)}টি পরীক্ষা। প্রতিটিতে ${bn(ME.n)} প্রশ্ন, ${bn(ME.mins)} মিনিট, একবারই দেওয়া যাবে।</p>`;
 
