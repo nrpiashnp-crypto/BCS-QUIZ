@@ -17,8 +17,8 @@ function make(el){
  el.setAttribute('role','img');
  if(!el.hasAttribute('aria-label'))el.setAttribute('aria-label','ছোট্ট লিয়ানা ধাপে ধাপে বড় হয়ে চাকরিজীবী হচ্ছে');
  el.style.display='block';el.style.cursor='pointer';el.title='আবার দেখতে চাপুন';
- var dots='';for(var i=0;i<4;i++)dots+='<circle data-d="'+i+'" cx="'+(200+(i-1.5)*26)+'" cy="402" r="5" fill="#e4ded2"/>';
- el.innerHTML='<svg viewBox="0 0 400 420" width="100%" style="display:block;max-width:360px;margin:auto" aria-hidden="true"><circle cx="200" cy="215" r="178" fill="#f3e9d4"/>'+dots+'<g transform="translate(200 378) scale(1.85)">'+FIGS+'<g data-s></g></g></svg>';
+ var cp=el.hasAttribute('compact'); var dots='';if(!cp)for(var i=0;i<4;i++)dots+='<circle data-d="'+i+'" cx="'+(200+(i-1.5)*26)+'" cy="402" r="5" fill="#e4ded2"/>';
+ el.innerHTML='<svg viewBox="'+(cp?'20 35 360 360':'0 0 400 420')+'" width="100%" style="display:block;max-width:360px;margin:auto" aria-hidden="true"><circle cx="200" cy="215" r="178" fill="#f3e9d4"/>'+dots+'<g transform="translate(200 378) scale(1.85)">'+FIGS+'<g data-s></g></g></svg>';
  var F=[1,2,3,4].map(function(i){return el.querySelector('[data-f="'+i+'"]')}),S=el.querySelector('[data-s]'),D=el.querySelectorAll('[data-d]'),E=el.querySelectorAll('.eyes');
  E.forEach(function(e){e.style.transformBox='fill-box';e.style.transformOrigin='center'});
  function render(t,blink){var st=[{o:cl(t/.2),s:.4+.6*back(cl(t/.45))},{o:0,s:1},{o:0,s:1},{o:0,s:1}],h='';
