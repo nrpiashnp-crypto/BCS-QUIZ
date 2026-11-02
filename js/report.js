@@ -1,15 +1,17 @@
-/* প্রশ্নে ভুল জানান: প্রতিটি ব্যাখ্যার (.exp, হোমের আজকের প্রশ্নে .tqe) নিচে ছোট বোতাম।
+/* প্রশ্নে ভুল জানান / ব্যাখ্যা বুঝিনি: প্রতিটি ব্যাখ্যার (.exp, হোমের আজকের প্রশ্নে .tqe) নিচে ছোট বোতাম।
    চাপলে ছোট ফর্ম (কী ভুল + চাইলে দু-লাইন), পাঠায় POST /api/report। লগইন লাগে না।
    প্রশ্ন চেনা: কাছের [data-id] থেকে প্রশ্নের id; না পেলে পাতার Q তালিকায় লেখা মিলিয়ে; তাও না পেলে প্রশ্নের লেখা।
    পাতায় একবার: <script src="/js/report.js" defer></script> (account.js নিজে থেকেই এটা লোড করে)। */
 (function(){
   if(window.LBR)return;window.LBR=1;
-  var K=[['ans','উত্তর ভুল'],['exp','ব্যাখ্যায় ভুল'],['q','প্রশ্ন বা অপশনে ভুল'],['other','অন্য কিছু']];
+  var K=[['hard','ব্যাখ্যা বুঝিনি'],['ans','উত্তর ভুল'],['exp','ব্যাখ্যায় ভুল'],['q','প্রশ্ন বা অপশনে ভুল'],['other','অন্য কিছু']];
   var st=document.createElement('style');
-  st.textContent='.rq{display:block;margin-top:8px;padding:0;border:0;background:none;font:400 12.5px/1.4 "Noto Sans Bengali",sans-serif;color:var(--muted,#5f6366);cursor:pointer;text-align:left;opacity:.9}'+
-    '.rq:hover{color:#c8326a;text-decoration:underline}'+
+  st.textContent='.rq{display:block;margin-top:10px;padding:7px 12px;border:1.3px solid #c8326a;border-radius:3px;background:#fffdf7;font:600 13.5px/1.45 "Noto Sans Bengali",sans-serif;color:#c8326a;cursor:pointer;text-align:left}'+
+    '.rq small{display:block;font-weight:400;font-size:12.5px;color:#5f6366;margin-top:1px}'+
+    '.rq:hover{background:#fdf1f5}'+
     '.rqf{margin-top:10px;padding:12px;border:1.3px solid #c8326a;border-radius:3px;background:#fffdf7;font:400 14.5px/1.5 "Noto Sans Bengali",sans-serif;color:#1d1f21}'+
     '.rqf p{margin:0 0 8px;font-weight:600;color:#13294b}'+
+    '.rqf p small{display:block;font-weight:400;font-size:13px;color:#5f6366;margin-top:2px}'+
     '.rqf .ks{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}'+
     '.rqf .ks button{font:inherit;font-size:13.5px;padding:5px 11px;border:1.3px solid #c8326a;border-radius:99px;background:#fff;color:#1d1f21;cursor:pointer}'+
     '.rqf .ks button[aria-pressed="true"]{background:#13294b!important;border-color:#13294b!important;color:#fff!important}'+
@@ -44,28 +46,29 @@
     var text=qText(box,exp),id=qId(box,text),key=id||text.slice(0,80);
     if(sent()[key]){btn.outerHTML='<div class="rqd">✓ এই প্রশ্নের কথা আগেই জানিয়েছেন। ধন্যবাদ!</div>';return}
     var f=document.createElement('div');f.className='rqf';
-    f.innerHTML='<p>এই প্রশ্নে কী ভুল?</p><div class="ks" role="group">'+K.map(function(k){return '<button type="button" data-k="'+k[0]+'" aria-pressed="false">'+k[1]+'</button>'}).join('')+
-      '</div><textarea maxlength="600" placeholder="চাইলে লিখুন: সঠিক উত্তর কী, বা কোথায় ভুল (ঐচ্ছিক)"></textarea>'+
+    f.innerHTML='<p>কী মনে হলো এই প্রশ্নে?<small>আপনার এক-দুই লাইনে প্রশ্ন আর ব্যাখ্যা আরও ভালো হবে, আর তার সুফল পাবেন লাখো প্রার্থী।</small></p><div class="ks" role="group">'+K.map(function(k){return '<button type="button" data-k="'+k[0]+'" aria-pressed="false">'+k[1]+'</button>'}).join('')+
+      '</div><textarea maxlength="600" placeholder="যেভাবে পারেন লিখুন: বাংলা, Banglish বা English। কোথায় আটকালেন, বা কী হলে ভালো হতো?"></textarea>'+
       '<div class="ac"><button type="button" class="go" disabled>পাঠান</button><button type="button" class="x">বাদ দিন</button></div>';
     btn.replaceWith(f);
-    var kind='',go=f.querySelector('.go');
+    var kind='',go=f.querySelector('.go'),ta=f.querySelector('textarea');
+    ta.oninput=function(){go.disabled=!kind&&!ta.value.trim()};
     f.querySelectorAll('.ks button').forEach(function(b){b.onclick=function(){
       f.querySelectorAll('.ks button').forEach(function(o){o.setAttribute('aria-pressed','false')});
-      b.setAttribute('aria-pressed','true');kind=b.dataset.k;go.disabled=false}});
+      b.setAttribute('aria-pressed','true');kind=b.dataset.k;go.disabled=false;ta.focus()}});
     f.querySelector('.x').onclick=function(){f.replaceWith(make())};
     go.onclick=function(){
       go.disabled=true;go.textContent='পাঠানো হচ্ছে…';
       fetch('/api/report',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',
-        body:JSON.stringify({qid:id,page:location.pathname+location.search,q:text,kind:kind,note:f.querySelector('textarea').value})})
+        body:JSON.stringify({qid:id,page:location.pathname+location.search,q:text,kind:kind||'other',note:f.querySelector('textarea').value})})
       .then(function(r){if(!r.ok)throw r.status;mark(key);
-        f.outerHTML='<div class="rqd">✓ ধন্যবাদ! আমরা যাচাই করে ঠিক করে দেব।</div>'})
+        f.outerHTML='<div class="rqd">✓ ধন্যবাদ! আপনার কথা পৌঁছেছে। যাচাই করে প্রশ্নটা ঠিক বা আরও সহজ করা হবে, যাতে পরের সবাই উপকার পায়।</div>'})
       .catch(function(s){go.disabled=false;go.textContent='পাঠান';
         var m=f.querySelector('.er')||f.appendChild(Object.assign(document.createElement('div'),{className:'er'}));
         m.style.cssText='margin-top:6px;font-size:13px;color:#b45309';
         m.textContent=s===429?'আজ অনেক জানানো হয়েছে, কাল আবার চেষ্টা করুন।':'পাঠানো গেল না, আবার চেষ্টা করুন।'});
     };
   }
-  function make(){var b=document.createElement('button');b.type='button';b.className='rq';b.textContent='⚑ প্রশ্নে ভুল আছে? জানান';b.onclick=function(){open(b)};return b}
+  function make(){var b=document.createElement('button');b.type='button';b.className='rq';b.innerHTML='✎ ভুল পেলেন, বা ব্যাখ্যা বোঝেননি? জানান<small>আপনার দু-লাইনে আরও লাখো প্রার্থীর পড়া ভালো হবে</small>';b.onclick=function(){open(b)};return b}
   function add(el){
     if(!el.classList||!(el.classList.contains('exp')||el.classList.contains('tqe')))return;
     if(el.querySelector(':scope>.rq,:scope>.rqf,:scope>.rqd'))return;
