@@ -586,7 +586,7 @@ async function repSetup(db) {
   REP_READY = true;
 }
 // এক আইপি থেকে ঘণ্টায় ২০টা, দিনে ৬০টা; সবার মিলিয়ে দিনে ৩০০০টা (D1-এর দৈনিক লেখার সীমা বাঁচাতে)
-const REP_KINDS = new Set(['ans', 'exp', 'q', 'other']), REP_PER_HOUR = 20, REP_PER_DAY_IP = 60, REP_PER_DAY_ALL = 3000;
+const REP_KINDS = new Set(['hard', 'ans', 'exp', 'q', 'other']), REP_PER_HOUR = 20, REP_PER_DAY_IP = 60, REP_PER_DAY_ALL = 3000;
 const repText = (v, n) => (typeof v === 'string' ? v.normalize('NFC') : '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, n);
 async function report(req, db, u) {
   const b = await req.json().catch(() => ({}));

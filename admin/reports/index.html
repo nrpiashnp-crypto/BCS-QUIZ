@@ -58,7 +58,7 @@ tr.pick{cursor:pointer}tr.pick:hover{background:var(--soft)}
 const $=id=>document.getElementById(id),bn=x=>String(x).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const dhaka=ts=>new Date(ts).toLocaleString('en-GB',{timeZone:'Asia/Dhaka',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
-const KN={ans:'উত্তর ভুল',exp:'ব্যাখ্যায় ভুল',q:'প্রশ্ন/অপশন',other:'অন্য'};
+const KN={hard:'বুঝিনি',ans:'উত্তর ভুল',exp:'ব্যাখ্যায় ভুল',q:'প্রশ্ন/অপশন',other:'অন্য'};
 let st='new',cur=null;
 async function api(p,b){const r=await fetch('/api/'+p,b?{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:{credentials:'same-origin',cache:'no-store'});
   if(r.status===401)throw 'login';if(r.status===403)throw 'admin';if(!r.ok)throw 'err';return r.json()}
