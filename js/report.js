@@ -1,10 +1,19 @@
-/* প্রশ্নে ভুল জানান / ব্যাখ্যা বুঝিনি: প্রতিটি ব্যাখ্যার (.exp, হোমের আজকের প্রশ্নে .tqe) নিচে ছোট বোতাম।
-   চাপলে ছোট ফর্ম (কী ভুল + চাইলে দু-লাইন), পাঠায় POST /api/report। লগইন লাগে না।
+/* প্রশ্নে ভুল জানান / ব্যাখ্যা বুঝিনি, আর কথা বলে মতামত (🎤 Whisper দিয়ে লেখায় বদলায়): প্রতিটি ব্যাখ্যার (.exp, হোমের আজকের প্রশ্নে .tqe) নিচে ছোট বোতাম।
+   চাপলে ছোট ফর্ম (কী ভুল + চাইলে দু-লাইন, বা 🎤 চেপে বলে), পাঠায় POST /api/report। লগইন লাগে না।
+   🎤 বোতাম শুধু যেসব ফোনে মাইক্রোফোন+রেকর্ডিং সমর্থিত (ফিচার-ডিটেক্ট) দেখা যায়; চাপলে অডিও রেকর্ড করে POST /api/stt-এ পাঠায়
+   (সার্ভারে Cloudflare Workers AI Whisper দিয়ে লেখায় বদলায়), ফেরত আসা লেখা মতামতের ঘরে বসে, ছাত্র ঠিক করে "পাঠান" চাপে।
+   অডিও কোথাও জমা থাকে না (সার্ভারেও না), শুধু লেখাটা rep টেবিলে যায়, src='voice' চিহ্নসহ।
    প্রশ্ন চেনা: কাছের [data-id] থেকে প্রশ্নের id; না পেলে পাতার Q তালিকায় লেখা মিলিয়ে; তাও না পেলে প্রশ্নের লেখা।
    পাতায় একবার: <script src="/js/report.js" defer></script> (account.js নিজে থেকেই এটা লোড করে)। */
 (function(){
   if(window.LBR)return;window.LBR=1;
   var K=[['hard','ব্যাখ্যা বুঝিনি'],['ans','উত্তর ভুল'],['exp','ব্যাখ্যায় ভুল'],['q','প্রশ্ন বা অপশনে ভুল'],['other','অন্য কিছু']];
+  var MIC=!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia&&window.MediaRecorder),MIC_MS=25000;
+  function micType(){
+    var c=['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg;codecs=opus'],i;
+    for(i=0;i<c.length;i++)if(window.MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(c[i]))return c[i];
+    return '';
+  }
   var st=document.createElement('style');
   st.textContent='.rq{display:block;margin-top:10px;padding:7px 12px;border:1.3px solid #c8326a;border-radius:3px;background:#fffdf7;font:600 13.5px/1.45 "Noto Sans Bengali",sans-serif;color:#c8326a;cursor:pointer;text-align:left}'+
     '.rq small{display:block;font-weight:400;font-size:12.5px;color:#5f6366;margin-top:1px}'+
@@ -16,6 +25,11 @@
     '.rqf .ks button{font:inherit;font-size:13.5px;padding:5px 11px;border:1.3px solid #c8326a;border-radius:99px;background:#fff;color:#1d1f21;cursor:pointer}'+
     '.rqf .ks button[aria-pressed="true"]{background:#13294b!important;border-color:#13294b!important;color:#fff!important}'+
     '.rqf textarea{width:100%;box-sizing:border-box;min-height:58px;padding:8px;border:1.2px solid #c9c4b8;border-radius:3px;font:inherit;font-size:14px;resize:vertical;background:#fff;color:#1d1f21}'+
+    '.rqf .mc{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}'+
+    '.rqf .mb{font:600 13.5px/1 "Noto Sans Bengali",sans-serif;padding:7px 13px;border:1.3px solid #13294b;border-radius:99px;background:#fff;color:#13294b;cursor:pointer}'+
+    '.rqf .mb[aria-pressed="true"]{background:#c8326a;border-color:#c8326a;color:#fff}'+
+    '.rqf .mb:disabled{opacity:.5;cursor:default}'+
+    '.rqf .mst{font-size:12.5px;color:#5f6366}'+
     '.rqf .ac{display:flex;gap:10px;align-items:center;margin-top:8px}'+
     '.rqf .go{font:600 14px/1 "Noto Sans Bengali",sans-serif;padding:9px 16px;border:0;border-radius:3px;background:#13294b;color:#fff;cursor:pointer}'+
     '.rqf .go:disabled{opacity:.5;cursor:default}'+
@@ -47,19 +61,55 @@
     if(sent()[key]){btn.outerHTML='<div class="rqd">✓ এই প্রশ্নের কথা আগেই জানিয়েছেন। ধন্যবাদ!</div>';return}
     var f=document.createElement('div');f.className='rqf';
     f.innerHTML='<p>কী মনে হলো এই প্রশ্নে?<span class="hl">আপনার দু-এক লাইনের উত্তরে আমাদের ব্যাখ্যা আরও ভালো হবে, আর তার সুফল পাবেন লাখ লাখ প্রার্থী।</span></p><div class="ks" role="group">'+K.map(function(k){return '<button type="button" data-k="'+k[0]+'" aria-pressed="false">'+k[1]+'</button>'}).join('')+
-      '</div><textarea maxlength="600" placeholder="যেভাবে পারেন লিখুন: বাংলা, Banglish বা English। কোথায় আটকালেন, বা কী হলে ভালো হতো?"></textarea>'+
+      '</div>'+(MIC?'<div class="mc"><button type="button" class="mb" aria-pressed="false">🎤 বলে লিখুন</button><span class="mst"></span></div>':'')+
+      '<textarea maxlength="600" placeholder="যেভাবে পারেন লিখুন: বাংলা, Banglish বা English। কোথায় আটকালেন, বা কী হলে ভালো হতো?"></textarea>'+
       '<div class="ac"><button type="button" class="go" disabled>পাঠান</button><button type="button" class="x">বাদ দিন</button></div>';
     btn.replaceWith(f);
-    var kind='',go=f.querySelector('.go'),ta=f.querySelector('textarea');
+    var kind='',go=f.querySelector('.go'),ta=f.querySelector('textarea'),usedVoice=false,rec=null,stream=null;
+    function micStop(){if(rec&&rec.state!=='inactive')rec.stop();if(stream){stream.getTracks().forEach(function(t){t.stop()});stream=null}}
     ta.oninput=function(){go.disabled=!kind&&!ta.value.trim()};
     f.querySelectorAll('.ks button').forEach(function(b){b.onclick=function(){
       f.querySelectorAll('.ks button').forEach(function(o){o.setAttribute('aria-pressed','false')});
       b.setAttribute('aria-pressed','true');kind=b.dataset.k;go.disabled=false;ta.focus()}});
-    f.querySelector('.x').onclick=function(){f.replaceWith(make())};
+    f.querySelector('.x').onclick=function(){micStop();f.replaceWith(make())};
+    if(MIC){
+      var mb=f.querySelector('.mb'),mst=f.querySelector('.mst'),sending=false;
+      mb.onclick=function(){
+        if(rec&&rec.state==='recording'){mb.disabled=true;mb.textContent='থামছে…';rec.stop();return}
+        if(sending)return;
+        mst.textContent='';
+        navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){
+          stream=s;var chunks=[],type=micType();
+          try{rec=type?new MediaRecorder(s,{mimeType:type}):new MediaRecorder(s)}catch(e){rec=new MediaRecorder(s)}
+          rec.ondataavailable=function(e){if(e.data&&e.data.size)chunks.push(e.data)};
+          rec.onstop=function(){
+            if(stream){stream.getTracks().forEach(function(t){t.stop()});stream=null}
+            mb.disabled=false;mb.setAttribute('aria-pressed','false');mb.textContent='🎤 বলে লিখুন';
+            var blob=new Blob(chunks,{type:rec.mimeType||type||'audio/webm'});
+            if(!blob.size){mst.textContent='';return}
+            sending=true;mb.disabled=true;mst.textContent='লেখা হচ্ছে…';
+            fetch('/api/stt',{method:'POST',credentials:'same-origin',headers:{'Content-Type':blob.type||'audio/webm'},body:blob})
+              .then(function(r){if(!r.ok)throw r.status;return r.json()})
+              .then(function(j){
+                sending=false;mb.disabled=false;mst.textContent='';
+                var t=clean(j&&j.text||'');
+                if(!t){mst.textContent='কিছু শোনা যায়নি, আবার চেষ্টা করুন বা লিখুন।';return}
+                ta.value=(ta.value.trim()?ta.value.trim()+' ':'')+t;usedVoice=true;ta.oninput();ta.focus();
+              })
+              .catch(function(s){sending=false;mb.disabled=false;
+                mst.textContent=s===429?'এখন অনেকবার হয়েছে, একটু পরে চেষ্টা করুন।':s===503?'এই মুহূর্তে এটা চালু নেই, লিখে পাঠান।':'লেখায় বদলানো গেল না, আবার চেষ্টা করুন বা লিখুন।';
+              });
+          };
+          rec.start();mb.setAttribute('aria-pressed','true');mb.textContent='⏹ থামুন';mst.textContent='বলুন… (সর্বোচ্চ ২৫ সেকেন্ড)';
+          setTimeout(function(){if(rec&&rec.state==='recording')rec.stop()},MIC_MS);
+        }).catch(function(){mst.textContent='মাইক্রোফোনের অনুমতি লাগবে।'});
+      };
+    }
     go.onclick=function(){
-      go.disabled=true;go.textContent='পাঠানো হচ্ছে…';
-      fetch('/api/report',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',
-        body:JSON.stringify({qid:id,page:location.pathname+location.search,q:text,kind:kind||'other',note:f.querySelector('textarea').value})})
+      micStop();go.disabled=true;go.textContent='পাঠানো হচ্ছে…';
+      var body={qid:id,page:location.pathname+location.search,q:text,kind:kind||'other',note:f.querySelector('textarea').value};
+      if(usedVoice)body.src='voice';
+      fetch('/api/report',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(body)})
       .then(function(r){if(!r.ok)throw r.status;mark(key);
         f.outerHTML='<div class="rqd">✓ ধন্যবাদ! আপনার কথা পৌঁছেছে। যাচাই করে প্রশ্নটা ঠিক বা আরও সহজ করা হবে, যাতে পরের সবাই উপকার পায়।</div>'})
       .catch(function(s){go.disabled=false;go.textContent='পাঠান';

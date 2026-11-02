@@ -66,7 +66,7 @@ function fail(e){$('msg').hidden=false;$('box').hidden=true;$('msg').innerHTML=e
 async function load(){
   const j=await api('admin/reports?st='+st);cur=j;
   $('msg').hidden=!!j.rows.length;$('msg').textContent='কোনো অভিযোগ নেই।';$('box').hidden=!j.rows.length;
-  $('rows').innerHTML=j.rows.map(r=>`<tr data-id="${r.id}"><td>${dhaka(r.ts)}</td><td><span class="k">${KN[r.kind]||esc(r.kind)}</span></td>
+  $('rows').innerHTML=j.rows.map(r=>`<tr data-id="${r.id}"><td>${dhaka(r.ts)}</td><td><span class="k">${KN[r.kind]||esc(r.kind)}</span>${r.src==='voice'?' 🎤':''}</td>
     <td class="q">${esc(r.q)}${r.qid?' <span class="dim">('+esc(r.qid)+')</span>':''}${r.note?'<br><b>মন্তব্য:</b> '+esc(r.note):''}${r.uname?'<br><span class="dim">'+esc(r.uname)+'</span>':''}</td>
     <td>${/^\/(?!\/)/.test(r.page||'')?'<a href="'+esc(r.page)+'" target="_blank" rel="noopener">'+esc(r.page)+'</a>':esc(r.page)}</td>
     <td>${r.st==='new'?'<button class="btn ghost" data-s="done">ঠিক করা হয়েছে</button> <button class="btn ghost" data-s="no">ভুল নয়</button>':'<button class="btn ghost" data-s="new">আবার নতুন</button>'}</td></tr>`).join('');

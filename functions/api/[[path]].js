@@ -31,9 +31,12 @@
    POST /api/ch/<id>/start → পরীক্ষা শুরুর সময় (সময় সার্ভারে গোনা হয়)
    POST /api/ch/<id>/try {name,picks,sec} → নম্বর, উত্তর-ব্যাখ্যা, র‍্যাংক
    প্রশ্নে ভুল জানানো (লগইন লাগে না; বোতাম js/report.js):
-   POST /api/report {qid?, page, q, kind: ans|exp|q|other, note?} → {ok}
+   POST /api/report {qid?, page, q, kind: ans|exp|q|other, note?, src?: voice} → {ok}
    অ্যাডমিন: GET /api/admin/reports?st=new|done|all → তালিকা (পাতা /admin/reports/); POST /api/admin/reports {ids:[…], st}
    যাচাইয়ের কাজ LY Quiz & Sheets-এর; Lyanna_data-তে টেনে নেওয়ার জন্য একই GET-এর JSON।
+   ভয়েস মতামত (লগইন লাগে না; 🎤 বোতাম js/report.js-এর অংশ, ফিচার-ডিটেক্ট করে দেখায়):
+   POST /api/stt  (body = অডিও বাইট, যেকোনো Content-Type: audio/*) → {text} (Cloudflare Workers AI Whisper দিয়ে বাংলা লেখা)
+   AI বাইন্ডিং না থাকলে {error:'setup'} 503। অডিও কোথাও জমা থাকে না, শুধু ফেরত আসা লেখাটা পরে /api/report-এ src='voice' নিয়ে যেতে পারে।
    পাইলট ব্যাচ (/pilot/<id>/, /admin/pilot/): নিচে "পাইলট ব্যাচ" অংশের মাথায় সব পথ। */
 const COOKIE = 'lb_s', AGE = 180 * 86400;
 const MAX_BATCH = 300, MAX_ROWS = 3000;
@@ -583,6 +586,8 @@ let REP_READY = false;
 async function repSetup(db) {
   if (REP_READY) return;
   await db.batch(REP_SCHEMA.map(x => db.prepare(x)));
+  // কোথা থেকে মতামত এলো (যেমন 'voice' = 🎤 Whisper দিয়ে বলা থেকে লেখা); পুরোনো সারিতে খালি
+  try { await db.prepare('ALTER TABLE rep ADD COLUMN src TEXT').run(); } catch (e) { /* আগেই আছে */ }
   REP_READY = true;
 }
 // এক আইপি থেকে ঘণ্টায় ২০টা, দিনে ৬০টা; সবার মিলিয়ে দিনে ৩০০০টা (D1-এর দৈনিক লেখার সীমা বাঁচাতে)
@@ -605,9 +610,45 @@ async function report(req, db, u) {
   if (same) return json({ok: true, dup: 1});
   const c = await db.prepare('SELECT SUM(ts > ?) h, COUNT(*) d FROM rep WHERE ip = ? AND ts > ?').bind(now - 3600e3, ip, now - 86400e3).first();
   if ((c && (c.h >= REP_PER_HOUR || c.d >= REP_PER_DAY_IP)) || !await chDay(db, 'rep', REP_PER_DAY_ALL)) return json({error: 'slow'}, 429);
-  await db.prepare('INSERT INTO rep(ts, qid, page, q, kind, note, uid, ip) VALUES(?,?,?,?,?,?,?,?)')
-    .bind(now, qid, safePage, q, kind, note, u ? u.id : null, ip).run();
+  const src = b.src === 'voice' ? 'voice' : null;
+  await db.prepare('INSERT INTO rep(ts, qid, page, q, kind, note, uid, ip, src) VALUES(?,?,?,?,?,?,?,?,?)')
+    .bind(now, qid, safePage, q, kind, note, u ? u.id : null, ip, src).run();
   return json({ok: true});
+}
+
+// ---------- ভয়েস মতামত: অডিও → লেখা (Cloudflare Workers AI, Whisper) ----------
+// অডিও সার্ভারে আসে, লেখায় বদলে ফেরত যায়; কোথাও জমা থাকে না (ডিস্কে বা D1-এ লেখা হয় না)।
+// চালু হতে Cloudflare Pages-এ "AI" বাইন্ডিং লাগবে (PIASH-এর Mac/ড্যাশবোর্ড থেকে, অনুমতি নিয়ে); না থাকলে 'setup' 503।
+// নিউরন খরচ কম রাখতে রক্ষণশীল সীমা (ফ্রি ১০,০০০ নিউরন/দিন, মডেলটা ~৪৬.৬৩ নিউরন/মিনিট অডিও)।
+const STT_SCHEMA = [
+  'CREATE TABLE IF NOT EXISTS stt_ip(ip TEXT NOT NULL, ts INTEGER NOT NULL)',
+  'CREATE INDEX IF NOT EXISTS stt_ip_ts ON stt_ip(ip, ts)',
+  'CREATE TABLE IF NOT EXISTS ch_day(k TEXT PRIMARY KEY, n INTEGER NOT NULL)'
+];
+let STT_READY = false;
+async function sttSetup(db) { if (STT_READY) return; await db.batch(STT_SCHEMA.map(s => db.prepare(s))); STT_READY = true; }
+// ~৩০ সেকেন্ড webm/opus অডিওর জন্য যথেষ্ট; তার বেশি মাপের অনুরোধ বাতিল
+const STT_MAX_BYTES = 1500000;
+// এক আইপি থেকে ঘণ্টায়/দিনে এতগুলো, সবার মিলিয়ে দিনে এতগুলো (ফ্রি নিউরনের অনেক ভেতরে, যাতে কখনো বিল না আসে)
+const STT_PER_HOUR = 20, STT_PER_DAY_IP = 40, STT_PER_DAY_ALL = 400;
+async function stt(req, env, db) {
+  if (!env.AI) return json({error: 'setup'}, 503);
+  const buf = await req.arrayBuffer();
+  if (!buf.byteLength) return json({error: 'empty'}, 400);
+  if (buf.byteLength > STT_MAX_BYTES) return json({error: 'big'}, 413);
+  await sttSetup(db);
+  const ip = await chIp(req), now = Date.now();
+  const c = await db.prepare('SELECT SUM(ts > ?) h, COUNT(*) d FROM stt_ip WHERE ip = ? AND ts > ?').bind(now - 3600e3, ip, now - 86400e3).first();
+  if ((c && (c.h >= STT_PER_HOUR || c.d >= STT_PER_DAY_IP)) || !await chDay(db, 'stt', STT_PER_DAY_ALL)) return json({error: 'slow'}, 429);
+  await db.prepare('INSERT INTO stt_ip(ip, ts) VALUES(?,?)').bind(ip, now).run();
+  // টেবিলটা ছোট রাখতে পুরোনো সারি মাঝে মাঝে ছেঁটে দেওয়া (প্রতি অনুরোধে না, মাঝে মাঝে)
+  if (Math.random() < 0.02) await db.prepare('DELETE FROM stt_ip WHERE ts < ?').bind(now - 2 * 86400e3).run().catch(() => {});
+  let out;
+  try {
+    out = await env.AI.run('@cf/openai/whisper-large-v3-turbo', {audio: [...new Uint8Array(buf)], language: 'bn', task: 'transcribe'});
+  } catch (e) { return json({error: 'ai'}, 502); }
+  const text = repText(out && out.text, 600);
+  return json({text});
 }
 
 // অ্যাডমিন: কার কী ফল, প্রতিটি উত্তরসহ (কাস্টম প্ল্যান আর দিন-শেষের ডেটা-যাচাইয়ের জন্য)
@@ -648,7 +689,7 @@ async function admin(path, url, env, db, u, req) {
       return json({ok: true, n: ids.length});
     }
     const st = url.searchParams.get('st') || 'new';
-    const {results} = await db.prepare(`SELECT r.id, r.ts, r.qid, r.page, r.q, r.kind, r.note, r.st, u.name uname, u.email uemail
+    const {results} = await db.prepare(`SELECT r.id, r.ts, r.qid, r.page, r.q, r.kind, r.note, r.st, r.src, u.name uname, u.email uemail
       FROM rep r LEFT JOIN users u ON u.id = r.uid ${st === 'all' ? '' : 'WHERE r.st = ?'} ORDER BY r.ts DESC LIMIT 2000`)
       .bind(...(st === 'all' ? [] : [st])).all();
     return json({ts: Date.now(), rows: results}, 200, {'Cache-Control': 'no-store'});
@@ -1177,6 +1218,7 @@ export async function onRequest({request: req, env}) {
     if (path.startsWith('lib/')) return await lib(path, req, url, env, db, u);
     if (path === 'qstat' && m === 'GET') return await qstat(req, db);
     if (path === 'report' && m === 'POST') return await report(req, db, u);
+    if (path === 'stt' && m === 'POST') return await stt(req, env, db);
     if (path.startsWith('pilot/')) return await pilot(path, req, url, env, db, u);
     if (!u) return json({error: 'login'}, 401);
 
