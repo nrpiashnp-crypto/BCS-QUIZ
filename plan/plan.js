@@ -11,7 +11,8 @@ const $=id=>document.getElementById(id);
 const bn=x=>String(x).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]),K='কখগঘঙচ';
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 // প্রশ্ন/অপশনের লেখায় ছাপার ঘরের কয়েকটা নিরীহ ট্যাগ (মোটা, বাঁকা, নিচে দাগ, সূচক) আসল রূপে; বাকি সব লেখা হিসেবেই
-const rich=s=>esc(s).replace(/&lt;(\/?)(b|i|u|em|strong|sup|sub)&gt;/gi,'<$1$2>').replace(/&lt;br\s*\/?&gt;|&lt;\/?p&gt;/gi,'<br>').replace(/^(<br>)+|(<br>)+$/g,'');
+const ENT={'&lt;':'<','&gt;':'>','&amp;':'&','&quot;':'"','&#39;':"'",'&nbsp;':' '};
+const rich=s=>esc(String(s==null?'':s).replace(/&(lt|gt|amp|quot|#39|nbsp);/g,m=>ENT[m]).replace(/`([^`]*)`/g,'$1')).replace(/&lt;(\/?)(b|i|u|em|strong|sup|sub)&gt;/gi,'<$1$2>').replace(/&lt;br\s*\/?&gt;|&lt;\/?p&gt;/gi,'<br>').replace(/^(<br>)+|(<br>)+$/g,'');
 // উৎসাহের এক লাইন: প্রতি ৮টা উত্তরের পরের প্রশ্নে নিচে চুপচাপ দেখায় (বাধা নয়, চাপার কিছু নয়)
 const CHEER=[
   'ওঠো, জাগো, লক্ষ্যে না পৌঁছানো পর্যন্ত থেমো না।|স্বামী বিবেকানন্দ',
@@ -181,7 +182,8 @@ function show(){
     set(LK(EX.part),L);EX.queue.shift();
     V.querySelectorAll('button').forEach(b=>b.disabled=true);
     if(Object.keys(L.a).length-L.sent.length>=5)sendPart(EX.part,false).catch(()=>{});
-    setTimeout(()=>{EX.queue.length?show():finish()},pick>=0?300:120);
+    // পরের প্রশ্ন: দাগটা এক মুহূর্ত দেখা যায়, তারপর হালকা মিলিয়ে নতুন প্রশ্ন ফুটে ওঠে (ঝট করে বদল নয়)
+    setTimeout(()=>{V.classList.add('qout');setTimeout(()=>{EX.queue.length?show():finish();requestAnimationFrame(()=>requestAnimationFrame(()=>V.classList.remove('qout')))},150)},pick>=0?220:0);
   };
   V.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{b.classList.add('sel');go(+b.dataset.o)});
   $('sk').onclick=()=>go(-1);
