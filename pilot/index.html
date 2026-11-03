@@ -87,7 +87,7 @@ async function flush(){
     set(QK,get(QK,[]).filter(x=>!(x.no===a.no&&x.qid===a.qid)));
   }}catch(e){}finally{sending=false;net()}
 }
-function net(){const n=document.querySelector('.net');if(n){const k=get(QK,[]).length;n.textContent=k?bn(k)+'টি উত্তর এখনো সার্ভারে যায়নি, নেট এলে নিজে যাবে':''}}
+function net(){const n=document.querySelector('.net');if(n){const k=get(QK,[]).length;n.textContent=k?bn(k)+'টি উত্তর এখনো সার্ভারে যায়নি, নেট এলে যাবে':''}}
 addEventListener('online',flush);setInterval(flush,15000);
 
 // ---------- শুরু ----------
@@ -100,29 +100,29 @@ async function home(){
   if(!ME.user)return loginView();
   if(!ME.member)return nameView('join');
   if(!ME.member.nick)return nameView('name');
-  if(ME.member.st!=='ok')return V.innerHTML=head()+'<div class="card"><b>'+esc(ME.member.nick)+', আপনার অনুরোধ পৌঁছেছে।</b><br>অনুমোদন হলে এই পাতায় আপনার কোড আর পরীক্ষা দেখাবে।</div>';
-  if(!ME.start||!ME.ready)return V.innerHTML=head()+'<div class="card"><b>আপনি ব্যাচে আছেন।</b><br>রোজের রুটিন আর পরীক্ষা শিগগির এই পাতায় আসবে। ততক্ষণ ওপরের অবস্থা-যাচাই পরীক্ষাটা দিয়ে রাখুন।</div>';
+  if(ME.member.st!=='ok')return V.innerHTML=head()+'<div class="card"><b>'+esc(ME.member.nick)+', আপনার অনুরোধ পৌঁছেছে।</b><br>অনুমোদন হলে এখানেই আপনার কোড আর পরীক্ষা দেখাবে।</div>';
+  if(!ME.start||!ME.ready)return V.innerHTML=head()+'<div class="card"><b>আপনি ব্যাচে আছেন।</b><br>রুটিন এখনো তৈরি হয়নি। ততক্ষণ ওপরের অবস্থা-যাচাই পরীক্ষাটা দিন।</div>';
   dash();flush();
 }
 // নাম বাধ্যতামূলক: এই নামেই শিক্ষক কথা বলবেন
 function nameView(kind){
   V.innerHTML=head()+`<div class="card"><label for="nick"><b>আপনার নাম</b></label>
-    <p class="sub" style="margin:2px 0 8px">যে নামে আমরা আপনাকে ডাকব, বাংলায় বা ইংরেজিতে (যেমন "রাহিম" বা "রাহিম উদ্দিন")।</p>
+    <p class="sub" style="margin:2px 0 8px">বাংলায় বা ইংরেজিতে (যেমন রাহিম উদ্দিন)</p>
     <input id="nick" maxlength="40" autocomplete="name" value="${esc(ME.member&&ME.member.nick||'')}" style="font:inherit;font-size:17px;padding:10px 12px;border:1px solid var(--rule);border-radius:3px;width:100%;background:#fff">
     <p class="hint" id="nh"></p><button class="btn" id="join">${kind==='join'?'ব্যাচে যোগ দিন':'রাখুন'}</button>
     ${kind==='join'?'<p class="sub" style="margin:8px 0 0">অনুমোদনের পরে আপনার কোড (যেমন P০১) দেখাবে।</p>':''}</div>`;
   $('join').onclick=async()=>{const n=$('nick').value.trim();
-    if(n.length<2){$('nh').textContent='নাম লিখুন (অন্তত ২ অক্ষর)।';$('nick').focus();return}
+    if(n.length<2){$('nh').textContent='নাম লিখুন, অন্তত ২ অক্ষর।';$('nick').focus();return}
     $('join').disabled=true;
-    try{await api(kind,{nick:n});home()}catch(e){$('join').disabled=false;$('nh').textContent=e.message==='nick'?'নামটা ঠিক নয়; শুধু অক্ষরে নাম লিখুন।':'রাখা যায়নি, নেট দেখে আবার চেষ্টা করুন।'}};
+    try{await api(kind,{nick:n});home()}catch(e){$('join').disabled=false;$('nh').textContent=e.message==='nick'?'শুধু অক্ষরে নাম লিখুন।':'রাখা যায়নি, নেট দেখে আবার চেষ্টা করুন।'}};
 }
 // সেট ওঠার আগে: অবস্থা-যাচাই (৬ ভাগ, /plan/pb/, সেট pb-start) এই পাতা থেকেই
 const DIAG=[['ইংরেজি',50,30],['গাণিতিক যুক্তি',40,35],['বাংলা ভাষা ও ব্যাকরণ',35,21],['বাংলা সাহিত্য',27,16],['বাংলাদেশ বিষয়াবলি',43,26],['আন্তর্জাতিক বিষয়াবলি ও কম্পিউটার',55,33]];
-const diagCard=()=>`<div class="card"><b>প্রথম কাজ: অবস্থা-যাচাই পরীক্ষা</b><p class="sub" style="margin:2px 0 8px">${bn(250)} প্রশ্ন, ${bn(6)} ভাগে। প্রতিটা ভাগ আলাদা সময়ে দেওয়া যায়। সব ভাগ শেষে দেখবেন কোন বিষয়ে আপনি কোথায় আছেন।</p><ol style="margin:0 0 10px;padding-left:22px">${DIAG.map(d=>`<li>${d[0]} <span class="dim">· ${bn(d[1])} প্রশ্ন, ${bn(d[2])} মিনিট</span></li>`).join('')}</ol><a class="btn" href="/plan/pb/">পরীক্ষা দিন →</a></div>`;
-const head=()=>ME.ready?`<h1>${esc(ME.title)}</h1><p class="sub">${bn(ME.days)} দিন, প্রতিদিন ${bn(4)}টি পরীক্ষা। প্রতিটিতে ${bn(ME.n)} প্রশ্ন, ${bn(ME.mins)} মিনিট, একবারই দেওয়া যাবে।</p>`:`<h1>${esc(ME.title)}</h1>`+diagCard();
+const diagCard=()=>`<div class="card"><b>প্রথম কাজ: অবস্থা-যাচাই পরীক্ষা</b><p class="sub" style="margin:2px 0 8px">${bn(250)} প্রশ্ন, ${bn(6)} ভাগে। সব ভাগ শেষে বিষয় ধরে আপনার অবস্থা।</p><ol style="margin:0 0 10px;padding-left:22px">${DIAG.map(d=>`<li>${d[0]} <span class="dim">: ${bn(d[1])} প্রশ্ন, ${bn(d[2])} মিনিট</span></li>`).join('')}</ol><a class="btn" href="/plan/pb/">পরীক্ষা দিন →</a></div>`;
+const head=()=>ME.ready?`<h1>${esc(ME.title)}</h1><p class="sub">${bn(ME.days)} দিন, রোজ ${bn(4)}টি পরীক্ষা। প্রতিটি ${bn(ME.n)} প্রশ্ন, ${bn(ME.mins)} মিনিট, একবারই।</p>`:`<h1>${esc(ME.title)}</h1>`+diagCard();
 
 function loginView(){
-  V.innerHTML=head()+'<div class="card"><p>পরীক্ষা দিতে আগে Google দিয়ে লগইন করুন। পাসওয়ার্ড লাগে না।</p><div id="g"></div></div>';
+  V.innerHTML=head()+'<div class="card"><p>পরীক্ষা দিতে Google দিয়ে লগইন করুন। পাসওয়ার্ড লাগে না।</p><div id="g"></div></div>';
   fetch('/api/me',{credentials:'same-origin'}).then(r=>r.json()).then(j=>{
     if(!j.cid){$('g').innerHTML='<a href="/account/">লগইন করুন →</a>';return}
     const go=()=>{google.accounts.id.initialize({client_id:j.cid,ux_mode:'popup',context:'signin',callback:res=>{
@@ -150,14 +150,14 @@ function dash(){
   const today=ME.exams.filter(e=>e.day===d),past=ME.exams.filter(e=>e.day<d||after&&e.day===d);
   let h=head();
   h+=`<div class="card"><b>হাজিরা:</b> ${bn(ME.took)} / ${bn(ME.exams.length)}টি পরীক্ষা <span class="dim">(${bn(ME.pass)}টি হলে উত্তীর্ণ)</span><div class="prog"><i style="width:${Math.round(ME.took/ME.exams.length*100)}%"></i></div><span class="net"></span></div>`;
-  if(ME.report)h+=`<div class="card ex"><div><b>আপনার রিপোর্ট তৈরি</b><small>কোন টপিক শক্ত, কোনটা দুর্বল, কোন শিট আগে পড়বেন</small></div><button class="btn" id="rep">দেখুন</button></div>`;
+  if(ME.report)h+=`<div class="card ex"><div><b>আপনার রিপোর্ট তৈরি</b><small>টপিক ধরে অবস্থা আর কোন শিট আগে</small></div><button class="btn" id="rep">দেখুন</button></div>`;
   if(!after){
-    h+=`<h2>${before?'প্রথম দিন':'আজ · দিন '+bn(d)}</h2>`;
-    if(before)h+=`<p class="sub">শুরু ${when(ME.exams[0]?ME.exams.find(e=>e.day===1).open:0)}।</p>`;
+    h+=`<h2>${before?'প্রথম দিন':'আজ, দিন '+bn(d)}</h2>`;
+    if(before)h+=`<p class="sub">শুরু ${when(ME.exams[0]?ME.exams.find(e=>e.day===1).open:0)}</p>`;
     h+=today.map(exRow).join('');
   }
-  if(ME.form)h+=`<div class="card ex"><div><b>আজকের ছোট ফর্ম</b><small>দিন ${bn(ME.form.day)}-এর অভিজ্ঞতা, ২-৩ মিনিট</small></div><a class="btn" href="${esc(ME.form.url)}" target="_blank" rel="noopener">ফর্ম খুলুন</a></div>`;
-  else if(ME.formAt&&!after)h+=`<p class="sub">আজকের ছোট ফর্ম আসবে ${when(ME.formAt)}।</p>`;
+  if(ME.form)h+=`<div class="card ex"><div><b>আজকের ফর্ম</b><small>দিন ${bn(ME.form.day)} নিয়ে, ২-৩ মিনিট</small></div><a class="btn" href="${esc(ME.form.url)}" target="_blank" rel="noopener">ফর্ম খুলুন</a></div>`;
+  else if(ME.formAt&&!after)h+=`<p class="sub">আজকের ফর্ম খুলবে ${when(ME.formAt)}।</p>`;
   if(ME.sheets&&ME.sheets.length)h+='<h2>পড়ার শিট</h2><div class="card"><ul class="list">'+ME.sheets.map((s,i)=>`<li><a href="${esc(s.url)}" target="_blank" rel="noopener" data-sh="${esc(s.topic)}">${esc(s.name)}</a>${now-s.at<20*36e5?' <span class="tag">নতুন</span>':''}</li>`).join('')+'</ul></div>';
   if(past.length)h+=`<details><summary>আগের দিনের পরীক্ষা (${bn(past.length)})</summary>`+past.map(exRow).join('')+'</details>';
   V.innerHTML=h;net();
@@ -174,7 +174,7 @@ function order(n,seed){let h=2166136261;for(const c of seed)h=Math.imul(h^c.char
   const a=[...Array(n).keys()];for(let i=n-1;i>0;i--){h=Math.imul(h^(h>>>15),2246822507)>>>0;const j=h%(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
 async function exam(no){
   V.innerHTML='<p class="dim">প্রশ্ন আসছে…</p>';
-  try{EX=await api('start',{no})}catch(e){V.innerHTML=`<div class="card">${e.message==='soon'?'এই পরীক্ষা এখনো খোলেনি।':e.message==='closed'?'এই পরীক্ষার সময় শেষ।':e.message==='done'?'এই পরীক্ষা আগেই দেওয়া হয়েছে।':'খোলা যায়নি। নেট দেখে আবার চেষ্টা করুন।'}</div><button class="btn ghost" onclick="home()">ফিরে যান</button>`;return}
+  try{EX=await api('start',{no})}catch(e){V.innerHTML=`<div class="card">${e.message==='soon'?'এই পরীক্ষা এখনো খোলেনি।':e.message==='closed'?'সময় শেষ।':e.message==='done'?'আগেই দেওয়া হয়েছে।':'খোলা যায়নি। নেট দেখে আবার চেষ্টা করুন।'}</div><button class="btn ghost" onclick="home()">ফিরে যান</button>`;return}
   EX.end=Date.now()+EX.left;
   const sent=new Map(EX.done.map(x=>[x[0],x])),local=get(QK,[]).filter(a=>a.no===no);
   local.forEach(a=>sent.set(a.qid,[a.qid,a.pick,a.conf]));
@@ -193,7 +193,7 @@ function show(){
     <div class="qt">${esc(q.q)}</div>
     ${ord.map((oi,k)=>`<button class="opt" data-o="${oi}"><span class="k">${K[k]}</span><span>${esc(q.o[oi])}</span></button>`).join('')}
     <div class="conf"><button data-c="s" aria-pressed="false">নিশ্চিত</button><button data-c="g" aria-pressed="false">আন্দাজ</button></div>
-    <div class="hint" id="hint">উত্তর দাগান, তারপর বলুন উত্তরটা নিশ্চিত না আন্দাজ।</div><div class="net"></div>`;
+    <div class="hint" id="hint">উত্তর দাগান, তারপর বলুন নিশ্চিত না আন্দাজ।</div><div class="net"></div>`;
   net();
   const next=()=>{
     if(pick<0||!conf)return;
@@ -205,7 +205,7 @@ function show(){
   V.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
     if(pick>=0)return;pick=+b.dataset.o;b.classList.add('sel');
     V.querySelectorAll('.opt').forEach(o=>o.disabled=true);
-    $('hint').textContent=conf?'':'এবার "নিশ্চিত" বা "আন্দাজ" চাপুন।';next()});
+    $('hint').textContent=conf?'':'এবার: নিশ্চিত না আন্দাজ?';next()});
   V.querySelectorAll('.conf button').forEach(b=>b.onclick=()=>{
     conf=b.dataset.c;V.querySelectorAll('.conf button').forEach(o=>o.setAttribute('aria-pressed',o===b?'true':'false'));
     $('hint').textContent=pick<0?'এবার উত্তর দাগান।':'';next()});
@@ -216,14 +216,14 @@ async function finish(){
   await flush();
   api('done',{no:EX.no}).catch(()=>{});
   const left=get(QK,[]).filter(a=>a.no===EX.no).length;
-  V.innerHTML=`<div class="card"><h2 style="margin-top:0">জমা হয়েছে</h2><p>সঠিক উত্তর আর ব্যাখ্যা দেখা যাবে এই দিনের পরীক্ষা বন্ধ হওয়ার পরে।</p>${left?`<p class="net">${bn(left)}টি উত্তর এখনো সার্ভারে যায়নি। পাতাটা বন্ধ না করে নেট চালু রাখুন।</p>`:''}<button class="btn" id="back">পরের ধাপ</button></div>`;
+  V.innerHTML=`<div class="card"><h2 style="margin-top:0">জমা হয়েছে</h2><p>সঠিক উত্তর আর ব্যাখ্যা দেখা যাবে এই দিনের পরীক্ষা বন্ধ হলে।</p>${left?`<p class="net">${bn(left)}টি উত্তর এখনো সার্ভারে যায়নি; নেট চালু রেখে এই পাতায় থাকুন।</p>`:''}<button class="btn" id="back">পরের ধাপ</button></div>`;
   $('back').onclick=home;
 }
 
 // ---------- উত্তর আর ব্যাখ্যা ----------
 async function review(no){
   V.innerHTML='<p class="dim">লোড হচ্ছে…</p>';
-  let r;try{r=await api('review?p='+encodeURIComponent(P)+'&no='+no)}catch(e){V.innerHTML=`<div class="card">${e.message==='soon'?'উত্তর এখনো খোলেনি, '+when(e.j.at)+'-এর পরে।':'খোলা যায়নি।'}</div><button class="btn ghost" onclick="home()">ফিরে যান</button>`;return}
+  let r;try{r=await api('review?p='+encodeURIComponent(P)+'&no='+no)}catch(e){V.innerHTML=`<div class="card">${e.message==='soon'?'উত্তর খুলবে '+when(e.j.at)+'-এর পরে।':'খোলা যায়নি।'}</div><button class="btn ghost" onclick="home()">ফিরে যান</button>`;return}
   const ok=r.qs.filter(q=>q.pick===q.a).length;
   V.innerHTML=`<button class="btn ghost" onclick="home()">← ফিরে যান</button><h1 style="margin-top:12px">${esc(r.name)}</h1>
     <p class="sub">${r.took?`${bn(r.qs.length)}টির মধ্যে ${bn(ok)}টি ঠিক`:'এই পরীক্ষা দেননি; প্রশ্ন আর উত্তর দেখে নিন।'}</p>`+
@@ -239,10 +239,10 @@ async function report(){
   V.innerHTML='<p class="dim">লোড হচ্ছে…</p>';
   let r;try{r=await api('report?p='+encodeURIComponent(P))}catch(e){V.innerHTML='<div class="card">রিপোর্ট এখনো তৈরি হয়নি।</div><button class="btn ghost" onclick="home()">ফিরে যান</button>';return}
   const pct=x=>x==null?'—':bn(Math.round(x))+'%';
-  V.innerHTML=`<button class="btn ghost" onclick="home()">← ফিরে যান</button><h1 style="margin-top:12px">আপনার রিপোর্ট · ${esc(r.code)}</h1>
-    <div class="card"><b>হাজিরা:</b> ${bn(r.took)} / ${bn(r.total)} ${r.pass?'<span class="lv-strong">· উত্তীর্ণ</span>':'<span class="dim">· উত্তীর্ণ হতে '+bn(ME.pass)+'টি লাগত</span>'}<br>
-    <b>আন্দাজে ঠিক:</b> ${bn(r.guessOk)}টি <span class="dim">(এগুলো ঠিক ধরা হয়নি)</span><br>
-    <b>নিশ্চিত বলে ভুল:</b> ${bn(r.sureWrong)}টি${r.back?`<br><b>আগের ভুল প্রশ্ন ফেরত:</b> ${bn(r.back)}টি, এবার নিশ্চিতভাবে ঠিক ${bn(r.backFixed)}টি`:''}</div>
+  V.innerHTML=`<button class="btn ghost" onclick="home()">← ফিরে যান</button><h1 style="margin-top:12px">আপনার রিপোর্ট, ${esc(r.code)}</h1>
+    <div class="card"><b>হাজিরা:</b> ${bn(r.took)} / ${bn(r.total)} ${r.pass?'<span class="lv-strong">, উত্তীর্ণ</span>':'<span class="dim">, উত্তীর্ণ হতে '+bn(ME.pass)+'টি লাগত</span>'}<br>
+    <b>আন্দাজে ঠিক:</b> ${bn(r.guessOk)}টি <span class="dim">(ঠিক ধরা হয়নি)</span><br>
+    <b>নিশ্চিত বলে ভুল:</b> ${bn(r.sureWrong)}টি${r.back?`<br><b>আগের ভুল ফেরত:</b> ${bn(r.back)}টি, এবার নিশ্চিত ঠিক ${bn(r.backFixed)}টি`:''}</div>
     <h2>টপিক ধরে</h2><div class="card"><table><thead><tr><th>টপিক</th><th>ঠিক</th><th>অবস্থা</th></tr></thead><tbody>`+
     r.topics.map(t=>`<tr><td>${esc(t.name)}</td><td>${pct(t.pct)}</td><td class="lv-${t.level||''}">${t.level?LV[t.level]:'—'}</td></tr>`).join('')+
     `</tbody></table><p class="sub" style="margin:8px 0 0">দুই দিনের পরীক্ষা মিলিয়ে, শুধু নিশ্চিতভাবে ঠিক উত্তর গোনা। ৬০%-এর কম দুর্বল, ৬০-৮০% মাঝারি, ৮০%-এর বেশি শক্ত।</p></div>
