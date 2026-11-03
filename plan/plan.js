@@ -166,6 +166,11 @@ function timer(){
     t.classList.toggle('last',s<=60);if(!s){clearInterval(tick);finish()}};
   f();tick=setInterval(f,1000);
 }
+// নতুন প্রশ্নে আগের দাগের ছাপ নয়: হোভার বন্ধ, আসল মাউস নড়লে আবার চালু
+function fresh(){const h=document.documentElement;h.classList.add('nohov');
+  if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
+  const mv=e=>{if(e.pointerType==='mouse'&&(e.movementX||e.movementY)){h.classList.remove('nohov');removeEventListener('pointermove',mv)}};
+  removeEventListener('pointermove',fresh.mv||mv);fresh.mv=mv;addEventListener('pointermove',mv,{passive:true})}
 function show(){
   const L=local(EX.part),id=EX.queue[0],q=EX.qs.find(x=>x.id===id),answered=Object.values(L.a).filter(x=>x[0]>=0).length;
   const again=L.skip.includes(id);let t0=Date.now(),busy=false;
@@ -187,7 +192,7 @@ function show(){
   };
   V.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{b.classList.add('sel');go(+b.dataset.o)});
   $('sk').onclick=()=>go(-1);
-  if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
+  fresh();
   scrollTo(0,0);
 }
 async function finish(){

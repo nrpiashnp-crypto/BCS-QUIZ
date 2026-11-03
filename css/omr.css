@@ -59,9 +59,11 @@ a{color:#13294b}
 .opt{border-radius:3px!important;background:#fffdf7;align-items:center}
 .opt .k{width:26px;height:26px;min-width:26px!important;border:1.4px solid #c8326a;border-radius:50%;display:inline-grid;place-items:center;color:#c8326a!important;font:13px/1 'Noto Sans Bengali',sans-serif!important;flex:none;transition:background .2s}
 @media (hover:hover) and (pointer:fine){
-.opt:hover:not(:disabled){border-color:#c8326a!important}
-.opt:hover:not(:disabled) .k{background:rgba(29,29,31,.1)}
+html:not(.nohov) .opt:hover:not(:disabled){border-color:#c8326a!important}
+html:not(.nohov) .opt:hover:not(:disabled) .k{background:rgba(29,29,31,.1)}
 }
+/* নতুন প্রশ্ন এলে (html.nohov) মাউস/কলম না নড়া পর্যন্ত হোভার নয়: আগের প্রশ্নের দাগের জায়গায় ছাপ যেন না দেখায়। কিছু ফোন (Samsung ইত্যাদি) নিজেকে "মাউস" বলে, তাই শুধু মিডিয়া কোয়েরিতে ভরসা নয় */
+.opt:focus:not(:focus-visible){outline:none}
 .opt.sel{background:#fffdf7!important;border-color:#1d1d1f!important}
 .opt.sel .k{background:#1d1d1f;border-color:#1d1d1f;color:#fffdf7!important}
 .opt.right .k{background:#1e7a46;border-color:#1e7a46;color:#fff!important}
