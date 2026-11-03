@@ -1,13 +1,23 @@
 /* নিজের পরিকল্পনা: অবস্থা-যাচাইয়ের পাতা (/plan/bcs/ ইত্যাদি)। সার্ভার /api/diag/* (functions-এর "নিজের পরিকল্পনা" অংশ)।
-   পাতায় <main id="view" data-set="bcs-start" data-name="বিসিএস">। লগইন বাধ্যতামূলক। নকশা: Lyanna_data/pilot/custom-plan/PLAN.md §৯।
+   পাতায় <main id="view" data-set="bcs-start" data-name="বিসিএস"> (পেট্রোবাংলা: /plan/pb/, সেট pb-start, data-mk)। লগইন বাধ্যতামূলক। নকশা: Lyanna_data/pilot/custom-plan/PLAN.md §৯।
    - এক প্রশ্ন এক পর্দায়, অপশনে প্রথম চাপেই লক; "বাদ দিন" চাপলে শেষে আবার আসে (সময় থাকলে)।
    - উত্তর এই ফোনে জমে ('lb:diag:<সেট>:<ভাগ>'), ৫টা করে সার্ভারে যায়; সময় সার্ভারের।
    - ফল: ঠিক / ভুল / বাদ আলাদা, নেট নম্বর বা −০.৫ নয়। কার্ডের ছবি ফোনেই আঁকা (canvas), সার্ভারে কিছু যায় না। */
 (function(){
 const V=document.getElementById('view'),S=V.dataset.set,NAME=V.dataset.name||'';
+// বিষয়ের ওজনের লেখা: বিসিএসে সিলেবাসের নম্বর, পেট্রোবাংলায় আগের পরীক্ষায় প্রশ্নের ভাগ (data-mk-এ {n})
+const MK=V.dataset.mk||'সিলেবাসে {n} নম্বর';
 const $=id=>document.getElementById(id);
 const bn=x=>String(x).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]),K='কখগঘঙচ';
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+// ব্যাখ্যার ছোট মার্কডাউন: "- " তালিকা, | সারণি |, **মোটা**; বাকিটা অনুচ্ছেদ
+const md=t=>{const L=String(t||'').split('\n'),o=[],B=x=>esc(x).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>'),C=r=>r.trim().replace(/^\||\|$/g,'').split('|').map(x=>x.trim());
+  for(let i=0;i<L.length;){const l=L[i];
+    if(/^\s*\|/.test(l)){const R=[];while(i<L.length&&/^\s*\|/.test(L[i]))R.push(L[i++]);const rows=R.filter(r=>!/^\s*\|[\s:|-]+\|\s*$/.test(r)).map(C);
+      o.push('<table>'+rows.map((r,k)=>'<tr>'+r.map(c=>k?`<td>${B(c)}</td>`:`<th>${B(c)}</th>`).join('')+'</tr>').join('')+'</table>');continue}
+    if(/^\s*[-•]\s/.test(l)){const R=[];while(i<L.length&&/^\s*[-•]\s/.test(L[i]))R.push(L[i++].replace(/^\s*[-•]\s/,''));o.push('<ul>'+R.map(x=>`<li>${B(x)}</li>`).join('')+'</ul>');continue}
+    if(l.trim())o.push(`<p>${B(l)}</p>`);i++}
+  return o.join('')};
 const get=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}};
 const set=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 const del=k=>{try{localStorage.removeItem(k)}catch(e){}};
@@ -203,7 +213,7 @@ async function review(no){
   let r;try{r=await api('review?s='+encodeURIComponent(S)+'&part='+no)}catch(e){$('rvb').innerHTML='<p class="dim">খোলা যায়নি।</p>';return}
   $('rv').dataset.ok=1;
   const wrong=r.qs.filter(q=>q.pick!==q.a),ok=r.qs.filter(q=>q.pick===q.a);
-  const card=q=>`<div class="card rv"><div class="qh"><span>${esc(SUB(q.s))}</span><span>${q.pick<0?'বাদ':q.pick===q.a?'ঠিক':'ভুল'}</span></div><div class="qt">${esc(q.q)}</div>${q.o.map((o,k)=>`<div class="opt${k===q.a?' right':k===q.pick?' wrong':''}"><span class="k">${K[k]}</span><span>${esc(o)}</span></div>`).join('')}${q.e?`<div class="exp">${esc(q.e)}</div>`:''}</div>`;
+  const card=q=>`<div class="card rv"><div class="qh"><span>${esc(SUB(q.s))}</span><span>${q.pick<0?'বাদ':q.pick===q.a?'ঠিক':'ভুল'}</span></div><div class="qt">${esc(q.q)}</div>${q.o.map((o,k)=>`<div class="opt${k===q.a?' right':k===q.pick?' wrong':''}"><span class="k">${K[k]}</span><span>${esc(o)}</span></div>`).join('')}${q.e?`<div class="exp">${md(q.e)}</div>`:''}</div>`;
   $('rvb').innerHTML=(wrong.length?wrong.map(card).join(''):'<p>এই ভাগে কোনো ভুল নেই।</p>')+(ok.length?`<details><summary>ঠিকগুলোও দেখুন (${bn(ok.length)})</summary>${ok.map(card).join('')}</details>`:'');
   if(window.LBMath)try{LBMath(V)}catch(e){}
 }
@@ -226,8 +236,8 @@ function status(fresh){
     `<tr><td>${esc(x.name)}</td><td>${bn(x.n)}-এ ${bn(x.ok)}</td><td class="bd-${x.band}">${BL[x.band]}${x.edge?'<small> · সীমানায়</small>':''}</td></tr>`).join('')+'</tbody></table>';
   if(subs.some(x=>x.small))h+='<p class="sub" style="margin:8px 0 0">২০টির কম প্রশ্নের বিষয়ে ফল ছোট পরীক্ষার, তাই শুধু ধারণা।</p>';
   h+='</div>';
-  h+=`<h2>আপনার পরিকল্পনা: এই ক্রমে</h2><p class="sub">যে বিষয়ে সিলেবাসের নম্বর বেশি আর এখনো বেশি বাকি, সেটা আগে।</p><div class="card"><ol class="plan">`+
-    plan.map(x=>`<li>${x.link?`<a href="${esc(x.link)}">${esc(x.name)}</a>`:esc(x.name)} <span class="dim">· সিলেবাসে ${bn(x.marks)} নম্বর</span></li>`).join('')+
+  h+=`<h2>আপনার পরিকল্পনা: এই ক্রমে</h2><p class="sub">যে বিষয়ে নম্বর বেশি আর এখনো বেশি বাকি, সেটা আগে।</p><div class="card"><ol class="plan">`+
+    plan.map(x=>`<li>${x.link?`<a href="${esc(x.link)}">${esc(x.name)}</a>`:esc(x.name)} <span class="dim">· ${esc(MK.replace('{n}',bn(x.marks)))}</span></li>`).join('')+
     '</ol><p class="sub" style="margin:8px 0 0">বিষয়ে চাপলে সেই বিষয়ের প্রশ্ন আর পরীক্ষা। প্রতিদিনের অনুশীলন আর অগ্রগতি শিগগির এখানেই যোগ হবে।</p></div>';
   if(fresh)h+=`<p><button class="btn ghost" data-home>সব ভাগ দেখুন</button></p>`;
   V.innerHTML=h;wire();scrollTo(0,0);

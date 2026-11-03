@@ -182,6 +182,17 @@ async function setsum(){
   catch(e){$('setsum').textContent=e.message==='no set'?'সেট এখনো তোলা হয়নি।':''}
 }
 let SET=null;
+// LY Quiz & Sheets-এর ফাইল দুই ধাঁচে আসে: subjects তালিকা বা {id:{name,weight}}; ভাগে qs বা প্রশ্নে part। এক ছাঁচে আনা।
+function norm(c){
+  if(!c||typeof c!=='object')return c;
+  if(c.subjects&&!Array.isArray(c.subjects))c.subjects=Object.entries(c.subjects).map(([id,v])=>({id,name:v.name||id,marks:Number.isInteger(v.marks)?v.marks:v.weight}));
+  const Q=c.questions||{},order=Array.isArray(c.qs)?c.qs:Object.keys(Q);
+  for(const p of c.parts||[]){if(!p.title&&p.name)p.title=p.name;if(!Array.isArray(p.qs))p.qs=order.filter(id=>Q[id]&&Q[id].part===p.no)}
+  const L={easy:'easy',medium:'mid',mid:'mid',hard:'hard'};
+  const D=x=>typeof x==='string'?x.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&amp;/g,'&'):x;
+  for(const q of Object.values(Q)){if(!q.lvl&&q.level)q.lvl=L[q.level]||'';q.q=D(q.q);if(Array.isArray(q.o))q.o=q.o.map(D)}
+  return c;
+}
 function check(c){
   const err=[],warn=[];
   if(!c||!c.id||!Array.isArray(c.subjects)||!Array.isArray(c.parts)||!c.questions)return {err:['ফাইলে id, subjects, parts, questions লাগবে'],warn};
@@ -196,21 +207,21 @@ function check(c){
       if(!q.e)warn.push(id+': ব্যাখ্যা নেই');
       cnt[q.a]=(cnt[q.a]||0)+1;run=q.a===prev?run+1:1;best=Math.max(best,run);prev=q.a}
     if(best>4)warn.push('ভাগ '+p.no+': একই সঠিক অপশন পরপর '+best+'বার (৪-এর বেশি নয়)');
-    for(const [k,v] of Object.entries(cnt)){const r=v/qs.length;if(qs.length>=20&&(r<.2||r>.3))warn.push('ভাগ '+p.no+': সঠিক অপশন '+'কখগঘ'[k]+' '+Math.round(r*100)+'% (২০-৩০% ভালো)')}
+    for(const [k,v] of Object.entries(cnt)){const r=v/qs.length;if(qs.length>=20&&(r<.2||r>.3))warn.push('ভাগ '+p.no+': সঠিক অপশন '+('কখগঘঙ'[k]||k)+' '+Math.round(r*100)+'% (২০-৩০% ভালো)')}
   }
   return {err,warn};
 }
 $('f').onchange=async()=>{
   SET=null;$('upb').disabled=true;const t=await $('f').files[0].text();
-  let c;try{c=JSON.parse(t)}catch(e){$('chk').innerHTML='<p class="bad">JSON পড়া যায়নি।</p>';return}
+  let c;try{c=norm(JSON.parse(t))}catch(e){$('chk').innerHTML='<p class="bad">JSON পড়া যায়নি।</p>';return}
   const {err,warn}=check(c),n=c.parts?c.parts.reduce((a,p)=>a+(p.qs||[]).length,0):0;
   $('chk').innerHTML=`<p>${esc(c.title||c.id)} · ${bn(n)} প্রশ্ন · ${bn((c.parts||[]).length)} ভাগ</p>`+(err.length?'<p class="bad">ভুল:</p><pre>'+esc(err.slice(0,40).join('\n'))+'</pre>':'<p class="ok">ছাঁচ ঠিক আছে।</p>')+(warn.length?'<p class="dim">খেয়াল করুন (অপশনের ক্রম প্রতিজনের জন্য এলোমেলো হয়, তাই এগুলো আটকায় না):</p><pre>'+esc(warn.slice(0,40).join('\n'))+'</pre>':'');
-  if(!err.length){SET=c;$('upb').disabled=false;$('sid').value=c.id}
+  if(!err.length){SET=c;$('upb').disabled=false;$('sid').value=c.exam==='petrobangla'&&c.id==='bcs-start'?'pb-start':c.id}
 };
 $('upb').onclick=async()=>{
   if(!SET)return;$('upb').disabled=true;const log=$('log');log.hidden=false;log.textContent='সেট তোলা হচ্ছে…\n';
   try{
-    await api('diag/set',{cfg:{id:SET.id,title:SET.title,subjects:SET.subjects,parts:SET.parts}});
+    SET.id=S();await api('diag/set',{cfg:{id:SET.id,title:SET.title,subjects:SET.subjects,parts:SET.parts}});
     const all=SET.parts.flatMap(p=>p.qs).map(id=>({id,...SET.questions[id]}));
     for(let i=0;i<all.length;i+=40){const r=await api('diag/q',{s:SET.id,qs:all.slice(i,i+40)});log.textContent+=bn(Math.min(i+40,all.length))+' / '+bn(all.length)+(r.bad.length?' · বাদ: '+r.bad.join(', '):'')+'\n'}
     log.textContent+='শেষ।';load();
