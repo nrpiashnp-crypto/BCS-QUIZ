@@ -22,9 +22,9 @@ const RULES=`<ul class="rules">
   <li>অপশনে চাপলেই উত্তর লক হয়ে যায়, আর বদলানো যায় না। তাই ভেবে চাপুন।</li>
   <li>না জানলে আন্দাজে না দাগিয়ে "বাদ দিন" চাপুন। বাদ দেওয়া প্রশ্ন ভাগের শেষে আরেকবার আসবে।</li>
   <li>বই বা অন্য কারও সাহায্য নেবেন না। আপনি এখন কোথায় আছেন, সেটা জানাই উদ্দেশ্য। ঠিক মাপ এলেই পরিকল্পনা ঠিক হবে।</li>
-  <li>নেট চলে গেলেও উত্তর ফোনে থেকে যায়, নেট এলে নিজে থেকেই জমা হয়।</li>
+  <li>শুরুর আগে নেট বা ডেটা আছে কি না দেখে নিন। ভাগের সব প্রশ্ন শুরুতেই ফোনে চলে আসে, তাই মাঝপথে নেট গেলেও পরীক্ষা চলবে। উত্তর ফোনে জমে, নেট এলে নিজে থেকেই জমা হয়। তবে ঘড়ি থামে না।</li>
 </ul>`;
-const SUB=id=>(ME.subjects.find(s=>s.id===id)||{}).name||id;
+const SUB=id=>(((ME&&ME.subjects)||(EX&&EX.subs)||[]).find(s=>s.id===id)||{}).name||id;
 const back='<button class="btn ghost" data-home>← সব ভাগ</button>';
 const wire=()=>V.querySelectorAll('[data-home]').forEach(b=>b.onclick=home);
 
@@ -32,7 +32,10 @@ const wire=()=>V.querySelectorAll('[data-home]').forEach(b=>b.onclick=home);
 async function home(){
   clearInterval(tick);$('timer').hidden=true;
   V.innerHTML='<p class="dim">লোড হচ্ছে…</p>';
-  try{ME=await api('me?s='+encodeURIComponent(S))}catch(e){V.innerHTML='<div class="card">পাতাটা খোলা যায়নি। নেট দেখে আবার চেষ্টা করুন।</div>';return}
+  try{ME=await api('me?s='+encodeURIComponent(S))}catch(e){
+    const go=offlineParts();
+    V.innerHTML='<div class="card">নেট নেই বলে পাতাটা পুরো খোলা যায়নি। নেট এলে আবার খুলুন।</div>'+go.map(x=>`<div class="card ex"><div><b>ভাগ ${bn(x.part)} চলছে</b><small>প্রশ্ন ফোনে আছে, নেট ছাড়াই চালিয়ে যেতে পারেন</small></div><button class="btn" data-off="${x.part}">চালিয়ে যান</button></div>`).join('');
+    V.querySelectorAll('[data-off]').forEach(b=>b.onclick=()=>part(+b.dataset.off));return}
   if(!ME.user)return intro(true);
   if(!ME.ready)return intro(false);
   // সময় শেষ হয়ে গেছে কিন্তু ফল গোনা হয়নি: জমে থাকা উত্তরসহ বন্ধ করা
@@ -73,6 +76,9 @@ function loginBtn(){
 function dash(){
   const t=total(),left=ME.parts.filter(p=>p.st!=='done').reduce((a,p)=>a+p.n,0),done=ME.parts.filter(p=>p.st==='done').length;
   let h=`<h1>${esc(NAME)} · নিজের পরিকল্পনা</h1>`;
+  const msgs=(ME.msgs||[]).filter(x=>!x.seen||Date.now()-x.seen<3*864e5);
+  if(msgs.length)h+=msgs.map(x=>`<div class="card msg"><b>লিয়ানা বুকস থেকে আপনার জন্য</b><p>${esc(x.text).replace(/\n/g,'<br>')}</p></div>`).join('');
+  const unseen=(ME.msgs||[]).filter(x=>!x.seen).map(x=>x.id);if(unseen.length)api('seen',{ids:unseen}).catch(()=>{});
   if(ME.all)h+=`<div class="card ex"><div><b>আপনার কার্ড তৈরি</b><small>কোন বিষয়ে শক্ত, কোথায় এখন ফোকাস, কোথা থেকে শুরু</small></div><button class="btn" id="st">দেখুন</button></div>`;
   else h+=`<div class="card"><b>অবস্থা-যাচাই:</b> ${bn(t.n)}-এর মধ্যে ${bn(left)}টি প্রশ্ন বাকি<div class="prog"><i style="width:${Math.round((t.n-left)/t.n*100)}%"></i></div><span class="dim">${bn(ME.parts.length)} ভাগের ${bn(done)}টি শেষ। একেক ভাগ একেক দিনে দেওয়া যায়।</span></div>`;
   h+='<h2>ভাগগুলো</h2>'+ME.parts.map(p=>{
@@ -90,7 +96,9 @@ function dash(){
 }
 
 // ---------- একটা ভাগ ----------
-const LK=no=>'lb:diag:'+S+':'+no;
+const LK=no=>'lb:diag:'+S+':'+no,XK=no=>'lb:diag:'+S+':'+no+':ex';
+// শুরু করা ভাগের প্রশ্ন (উত্তর ছাড়া) আর শেষ সময় ফোনে থাকে, যাতে নেট গেলে বা পাতা আবার খুললেও চলে
+function offlineParts(){const out=[];try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith('lb:diag:'+S+':')&&k.endsWith(':ex')){const x=get(k,null);if(x&&x.end>Date.now())out.push(x)}}}catch(e){}return out}
 let hidAt=0;
 function local(no){return get(LK(no),{a:{},sent:[],hid:0,hn:0,skip:[]})}
 // জমে থাকা উত্তর সার্ভারে; fin হলে ভাগ বন্ধ আর ফল ফেরত
@@ -99,9 +107,11 @@ async function sendPart(no,fin){
   if(!list.length&&!fin)return null;
   const r=await api('save',{part:no,ans:list,hid:Math.round(L.hid),hn:L.hn,fin:!!fin});
   const L2=local(no);L2.sent=[...new Set([...L2.sent,...list.map(x=>x[0])])];set(LK(no),L2);
-  if(r.res)del(LK(no));
+  if(r.res){del(LK(no));del(XK(no))}
   return r;
 }
+addEventListener('offline',()=>{const n=$('net');if(n)n.textContent='নেট নেই। পরীক্ষা চলছে, উত্তর ফোনে জমছে।'});
+addEventListener('online',()=>{const n=$('net');if(n)n.textContent='';if(EX)sendPart(EX.part,false).catch(()=>{})});
 document.addEventListener('visibilitychange',()=>{
   if(!EX)return;const L=local(EX.part);
   if(document.hidden){hidAt=Date.now();L.hn++;set(LK(EX.part),L);sendPart(EX.part,false).catch(()=>{})}
@@ -116,8 +126,9 @@ function ready(p){
 async function part(no){
   V.innerHTML='<p class="dim">প্রশ্ন আসছে…</p>';
   let app=0;try{app=localStorage.getItem('lb:inapp')?1:0}catch(e){}
-  try{EX=await api('start',{part:no,w:innerWidth,app})}catch(e){V.innerHTML=`<div class="card">${e.message==='done'?'এই ভাগ আগেই শেষ হয়েছে।':'খোলা যায়নি। নেট দেখে আবার চেষ্টা করুন।'}</div>${back}`;wire();return}
-  EX.end=Date.now()+EX.left;
+  try{EX=await api('start',{part:no,w:innerWidth,app});EX.end=Date.now()+EX.left;set(XK(no),{part:EX.part,title:EX.title,mins:EX.mins,qs:EX.qs,end:EX.end,done:[],subs:ME?ME.subjects:[]})}catch(e){
+    const off=get(XK(no),null);
+    if(!e.s&&off&&off.end>Date.now()){EX=off}else{if(e.message==='done')del(XK(no));V.innerHTML=`<div class="card">${e.message==='done'?'এই ভাগ আগেই শেষ হয়েছে।':'খোলা যায়নি। নেট দেখে আবার চেষ্টা করুন।'}</div>${back}`;wire();return}}
   const L=local(no);for(const [id,p] of EX.done){if(!L.a[id])L.a[id]=[p,0];if(!L.sent.includes(id))L.sent.push(id)}set(LK(no),L);
   // প্রথমে যেগুলো একবারও দেখানো হয়নি, তারপর বাদ দেওয়াগুলো (একবার)
   EX.queue=EX.qs.filter(q=>!L.a[q.id]&&!L.skip.includes(q.id)).map(q=>q.id).concat(L.skip.filter(id=>!L.a[id]));
@@ -136,6 +147,7 @@ function show(){
   V.innerHTML=`<div class="qh"><span>ভাগ ${bn(EX.part)} · ${esc(SUB(q.s))}</span><span>${bn(answered)} / ${bn(EX.qs.length)} উত্তর</span></div>
     ${again?'<p class="tag">আগে বাদ দিয়েছিলেন</p>':''}<div class="qt">${esc(q.q)}</div>
     ${q.o.map((o,k)=>`<button class="opt" data-o="${k}"><span class="k">${K[k]}</span><span>${esc(o)}</span></button>`).join('')}
+    <p class="net" id="net">${navigator.onLine?'':'নেট নেই। পরীক্ষা চলছে, উত্তর ফোনে জমছে।'}</p>
     <div class="skip"><button class="btn ghost" id="sk">${again?'জানি না, ছেড়ে দিন':'বাদ দিন, পরে দেখব'}</button></div>`;
   const go=pick=>{
     if(busy)return;busy=true;
@@ -160,7 +172,8 @@ async function finish(){
   let r=null;
   for(let i=0;i<4&&!r;i++){try{r=await sendPart(no,true)}catch(e){await new Promise(z=>setTimeout(z,2500))}}
   EX=null;
-  if(!r||!r.res){V.innerHTML=`<div class="card"><b>উত্তরগুলো এই ফোনে রাখা আছে।</b><br>নেট এলে এই পাতা আবার খুলুন, নিজে থেকেই জমা হবে।</div>${back}`;wire();return}
+  if(!r||!r.res){V.innerHTML=`<div class="card"><b>আপনার সব উত্তর এই ফোনে রাখা আছে।</b><br>নেট এলে এক ঘণ্টার মধ্যে এই পাতা আবার খুলুন, নিজে থেকেই জমা হবে আর ফল দেখাবে।</div><button class="btn" id="rt">আবার চেষ্টা করুন</button>`;
+    $('rt').onclick=async()=>{$('rt').disabled=true;const r2=await sendPart(no,true).catch(()=>null);if(r2&&r2.res){ME=await api('me?s='+encodeURIComponent(S)).catch(()=>ME);result(r2.res)}else $('rt').disabled=false};return}
   ME=await api('me?s='+encodeURIComponent(S)).catch(()=>ME);
   result(r.res);
 }

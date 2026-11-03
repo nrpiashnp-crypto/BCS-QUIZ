@@ -38,6 +38,9 @@ tr.click{cursor:pointer}tr.click:hover{background:var(--soft)}
 .qok{color:#1e7a46}.qno{color:#b3261e}.qsk{color:var(--muted)}
 .bar2{display:inline-block;height:8px;background:var(--navy);vertical-align:middle;border-radius:2px}
 small.dim{font-size:12.5px}
+.tagx{display:inline-block;font-size:12px;padding:0 6px;border-radius:3px;margin:2px 4px 0 0;background:#fbe9e7;color:#b3261e}
+.compose{background:#fff;border:1.4px solid var(--navy);border-radius:3px;padding:12px;margin:10px 0}.compose textarea{width:100%;min-height:110px;font:inherit;font-size:15px;padding:8px;border:1px solid var(--rule);border-radius:3px}
+.care{font-weight:700}.care.hi{color:#b3261e}.care.mid{color:#8a5a00}.care.lo{color:#1e7a46}
 </style>
 <link rel="stylesheet" href="/css/omr.css">
 </head>
@@ -70,6 +73,27 @@ const tm=s=>s==null?'—':s>=60?bn(Math.floor(s/60))+' মি. '+bn(s%60)+' স�
 const when=ts=>{if(!ts)return '—';const d=new Date(ts+6*36e5);return bn(d.getUTCDate())+'/'+bn(d.getUTCMonth()+1)+' '+bn(String(d.getUTCHours()).padStart(2,'0'))+':'+bn(String(d.getUTCMinutes()).padStart(2,'0'))};
 const pc=(a,b)=>b?bn(Math.round(a/b*100))+'%':'—';
 let P=null,IT=null;
+const TPL=[['বেখেয়ালি, আবার দিন','আপনার অবস্থা-যাচাইয়ের কয়েকটা উত্তর খুব তাড়াতাড়ি দেওয়া হয়েছে, প্রশ্ন আর অপশন পুরো পড়ার আগেই। এতে আপনার পরিকল্পনা ঠিক আসবে না। ভাগটা আবার দেওয়ার সুযোগ খুলে দিয়েছি। এবার সময় নিয়ে, প্রতিটা অপশন পড়ে দিন।'],
+  ['সহজ প্রশ্নে ভুল','আপনি কঠিন প্রশ্নও পেরেছেন, কিন্তু কয়েকটা সহজ প্রশ্নে ভুল হয়েছে। পরীক্ষায় তাড়াহুড়া না করে প্রতিটা অপশন পড়ে উত্তর দিন। শুধু এতেই কয়েক নম্বর বাড়বে।'],
+  ['বাকি ভাগ শেষ করুন','ভালো শুরু করেছেন! বাকি ভাগগুলোও শেষ করুন, তাহলেই আপনার পুরো পরিকল্পনা আর কার্ড তৈরি হবে।'],
+  ['অভিনন্দন','সব ভাগ শেষ করার জন্য অভিনন্দন! এখন পরিকল্পনার প্রথম বিষয় দিয়ে প্রতিদিন একটু করে শুরু করুন। আমরা পাশে আছি।']];
+const careCls=v=>v>=40?'hi':v>=20?'mid':'lo';
+// বার্তা লেখার বাক্স: uids = কাকে কাকে; reset = [{uid,part}] সঙ্গে আবার দিতে দেওয়া
+function compose(box,uids,emails,resetParts,after){
+  box.innerHTML=`<div class="compose"><b>বার্তা পাঠান</b> <span class="dim">(${bn(uids.length)} জনকে)</span>
+    <p class="sub" style="margin:4px 0 6px">শিক্ষার্থী এটা দেখবেন তাঁর পরিকল্পনার পাতায় (/plan/bcs/), সবার ওপরে।</p>
+    <div class="row" style="margin-bottom:6px">${TPL.map((t,i)=>`<button class="btn ghost" data-tp="${i}">${t[0]}</button>`).join('')}</div>
+    <textarea id="mt" maxlength="1000" placeholder="বার্তা লিখুন"></textarea>
+    ${resetParts&&resetParts.length?`<div style="margin-top:6px;color:var(--ink)">সঙ্গে যে ভাগ আবার দিতে দেবেন (আগের উত্তর মুছে যাবে): ${resetParts.map((x,i)=>`<label style="display:inline-flex;gap:4px;margin-right:10px;color:var(--ink)"><input type="checkbox" data-mr="${i}"> ভাগ ${bn(x.part)}</label>`).join('')}</div>`:''}
+    <div class="row" style="margin-top:8px"><button class="btn" id="ms">পাঠান</button>${emails.length?`<a class="btn ghost" id="me">ইমেইলেও লিখুন</a>`:''}<span id="mo" class="dim"></span></div></div>`;
+  box.querySelectorAll('[data-tp]').forEach(b=>b.onclick=()=>{box.querySelector('#mt').value=TPL[+b.dataset.tp][1]});
+  const me=box.querySelector('#me');if(me)me.onclick=()=>{location.href='mailto:'+emails.join(',')+'?subject='+encodeURIComponent('লিয়ানা বুকস · নিজের পরিকল্পনা')+'&body='+encodeURIComponent(box.querySelector('#mt').value)};
+  box.querySelector('#ms').onclick=async()=>{const t=box.querySelector('#mt').value.trim();if(t.length<2){box.querySelector('#mo').textContent='বার্তা লিখুন।';return}
+    box.querySelector('#ms').disabled=true;
+    try{for(const c of box.querySelectorAll('[data-mr]:checked')){const x=resetParts[+c.dataset.mr];await api('diag/reset',{s:S(),uid:x.uid,part:x.part})}
+      const r=await api('diag/msg',{s:S(),uids,text:t});box.querySelector('#mo').textContent=bn(r.n)+' জনকে পাঠানো হয়েছে।';if(after)setTimeout(after,900)}
+    catch(e){box.querySelector('#mo').textContent='পাঠানো যায়নি: '+e.message;box.querySelector('#ms').disabled=false}};
+}
 function tab(t){document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t?'true':'false'));
   ['sum','ppl','one','items','up'].forEach(x=>$(x).hidden=x!==t);if(t==='items'&&!IT)items();scrollTo(0,0)}
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.t));
@@ -87,36 +111,52 @@ function summary(){
   const tot=pp.reduce((a,x)=>a+x.ok+x.no+x.skip,0),ok=pp.reduce((a,x)=>a+x.ok,0),sk=pp.reduce((a,x)=>a+x.skip,0);
   let h=`<div class="kp"><div><b>${bn(pp.length)}</b><span>জন শুরু করেছেন</span></div><div><b>${bn(all)}</b><span>জন সব ভাগ শেষ</span></div>
     <div><b>${bn(sus)}</b><span>জনের অন্তত এক ভাগ সন্দেহজনক</span></div><div><b>${pc(ok,tot)}</b><span>সব উত্তরে ঠিক</span></div><div><b>${pc(sk,tot)}</b><span>প্রশ্ন বাদ</span></div>
-    <div><b>${bn(pp.filter(x=>x.going).length)}</b><span>জনের ভাগ এখন চলছে</span></div></div>`;
+    <div><b>${bn(pp.filter(x=>x.going).length)}</b><span>জনের ভাগ এখন চলছে</span></div>
+    <div><b>${bn(pp.filter(x=>x.care.care>=40).length)}</b><span>জন বেশ বেখেয়ালি (সূচক ৪০+)</span></div>
+    <div><b>${pp.length?bn(Math.round(pp.reduce((a,x)=>a+x.care.noreadPct,0)/pp.length))+'%':'—'}</b><span>গড়ে উত্তর না পড়ে দাগ</span></div></div>`;
   h+='<h2>ভাগ ধরে</h2><div class="card scroll"><table><thead><tr><th>ভাগ</th><th>শুরু</th><th>শেষ</th><th>গড় ঠিক</th><th>গড় সময়</th><th>সন্দেহজনক</th></tr></thead><tbody>'+parts.map(p=>{
     const L=pp.flatMap(x=>x.parts.filter(y=>y.part===p.no)),D=L.filter(y=>y.done);
     const avg=D.length?D.reduce((a,y)=>a+y.ok,0)/D.length:0,sec=D.length?Math.round(D.reduce((a,y)=>a+(y.sec||0),0)/D.length):null;
     return `<tr><td>${bn(p.no)} · ${esc(p.title)}</td><td>${bn(L.length)}</td><td>${bn(D.length)}</td><td>${D.length?bn(avg.toFixed(1))+' / '+bn(p.n):'—'}</td><td>${tm(sec)} <small class="dim">/ ${bn(p.mins)} মি.</small></td><td>${bn(D.filter(y=>y.unsure).length)}</td></tr>`}).join('')+'</tbody></table></div>';
-  h+='<h2>কোন চিহ্ন কতবার</h2><div class="card"><ul class="list" style="list-style:none;padding:0;margin:0">'+Object.keys(FL).map(f=>`<li>${FL[f]}: ${bn(pp.reduce((a,x)=>a+(x.flags[f]||0),0))}টি ভাগে</li>`).join('')+'</ul><p class="sub" style="margin:8px 0 0">"সন্দেহজনক" মানে খুব দ্রুত, একই অপশন বারবার, বা আন্দাজের চেয়েও কম ঠিক। এই ভাগের বিষয়গুলো পরিকল্পনার ক্রমে চুপচাপ সিলেবাসের নম্বর ধরে বসে।</p></div>';
+  h+='<h2>কোন চিহ্ন কতবার</h2><div class="card"><ul class="list" style="list-style:none;padding:0;margin:0">'+Object.keys(FL).map(f=>`<li>${FL[f]}: ${bn(pp.reduce((a,x)=>a+(x.flags[f]||0),0))}টি ভাগে</li>`).join('')+'</ul><p class="sub" style="margin:8px 0 0"><b>বেখেয়ালি সূচক</b> (০-১০০) = না পড়ে দাগ ৪০% + সহজ প্রশ্নে ভুল ৪০% + ৬ সেকেন্ডের কম সময়ে ভুল ২০%। "না পড়ে" মানে প্রশ্ন আর অপশন পড়তে যত সময় লাগার কথা (অক্ষরপ্রতি ০.০৩ সেকেন্ড), তার চেয়ে কম। "সহজ" মানে অন্তত ৮ জনের ৭৫%+ যে প্রশ্ন পেরেছেন, বা সেট-ফাইলে lvl "easy"। ২০-এর নিচে ঠিক আছে, ২০-৪০ খেয়াল রাখার মতো, ৪০+ বেশ বেখেয়ালি।</p><p class="sub" style="margin:8px 0 0">"সন্দেহজনক" মানে খুব দ্রুত, একই অপশন বারবার, বা আন্দাজের চেয়েও কম ঠিক। এই ভাগের বিষয়গুলো পরিকল্পনার ক্রমে চুপচাপ সিলেবাসের নম্বর ধরে বসে।</p></div>';
   $('sum').innerHTML=h;
 }
 // ---- মানুষ: প্রতিজন এক সারি; চাপলে খুঁটিনাটি ----
 function people(){
   const pp=P.people,n=P.set.parts.length;
-  $('ppl').innerHTML=pp.length?'<div class="card scroll"><table><thead><tr><th>কে</th><th>ভাগ</th><th>ঠিক / ভুল / বাদ</th><th>মোট সময়</th><th>প্রশ্নে মধ্যমা</th><th>অন্য অ্যাপে</th><th>চিহ্ন</th><th>শেষ দেখা</th></tr></thead><tbody>'+pp.map(x=>
-    `<tr class="click" data-u="${x.uid}"><td>${esc(x.name)}<br><small class="dim">${esc(x.email)} · ${esc(x.dev)}</small></td><td>${bn(x.done)}/${bn(n)}${x.going?' <small class="dim">+চলছে</small>':''}</td>
-    <td>${bn(x.ok)} / ${bn(x.no)} / ${bn(x.skip)}</td><td>${tm(x.sec)}</td><td>${x.med==null?'—':bn(x.med)+' সে.'}</td><td>${x.hn?bn(x.hn)+' বার, '+tm(x.hid):'—'}</td>
-    <td>${x.unsure?'<span class="flag">সন্দেহজনক '+bn(x.unsure)+'</span><br>':''}<small class="dim">${Object.keys(x.flags).filter(f=>f!=='fast'&&f!=='same'&&f!=='low').map(f=>FL[f].split(' (')[0]).join(', ')}</small></td><td>${when(x.last)}</td></tr>`).join('')+'</tbody></table></div><p class="sub">সারিতে চাপলে সেই মানুষের প্রতিটা ভাগ আর প্রতিটা উত্তর।</p>':'<p class="dim">এখনো কেউ দেননি।</p>';
-  $('ppl').querySelectorAll('[data-u]').forEach(r=>r.onclick=()=>person(+r.dataset.u));
+  if(!pp.length){$('ppl').innerHTML='<p class="dim">এখনো কেউ দেননি।</p>';return}
+  $('ppl').innerHTML=`<div class="row" style="margin-bottom:8px"><button class="btn ghost" id="pk1">বেখেয়ালি (৪০+) বাছুন</button><button class="btn ghost" id="pk2">সন্দেহজনক বাছুন</button><button class="btn ghost" id="pk3">শেষ করেননি বাছুন</button><button class="btn ghost" id="pk0">বাছাই মুছুন</button><button class="btn" id="pkm">বাছাইদের বার্তা</button></div><div id="pbox"></div>
+  <div class="card scroll"><table><thead><tr><th></th><th>কে</th><th>ভাগ</th><th>ঠিক / ভুল / বাদ</th><th>বেখেয়ালি</th><th>না পড়ে</th><th>সহজে ভুল</th><th>মোট সময়</th><th>প্রশ্নে মধ্যমা</th><th>অন্য অ্যাপে</th><th>চিহ্ন</th><th>শেষ দেখা</th></tr></thead><tbody>`+pp.map(x=>
+    `<tr class="click" data-u="${x.uid}"><td><input type="checkbox" data-pick="${x.uid}"></td><td>${esc(x.name)}${x.unread?' <span class="tag" title="না-দেখা বার্তা">✉ '+bn(x.unread)+'</span>':''}<br><small class="dim">${esc(x.email)} · ${esc(x.dev)}</small></td><td>${bn(x.done)}/${bn(n)}${x.going?' <small class="dim">+চলছে</small>':''}</td>
+    <td>${bn(x.ok)} / ${bn(x.no)} / ${bn(x.skip)}</td><td class="care ${careCls(x.care.care)}">${bn(x.care.care)}</td><td>${bn(x.care.noreadPct)}%</td><td>${x.care.easy?bn(x.care.easyWrong)+'/'+bn(x.care.easy):'—'}</td><td>${tm(x.sec)}</td><td>${x.med==null?'—':bn(x.med)+' সে.'}</td><td>${x.hn?bn(x.hn)+' বার, '+tm(x.hid):'—'}</td>
+    <td>${x.unsure?'<span class="flag">সন্দেহজনক '+bn(x.unsure)+'</span><br>':''}<small class="dim">${Object.keys(x.flags).filter(f=>f!=='fast'&&f!=='same'&&f!=='low').map(f=>FL[f].split(' (')[0]).join(', ')}${x.late?' · নেট-কাটা '+bn(x.late):''}</small></td><td>${when(x.last)}</td></tr>`).join('')+'</tbody></table></div><p class="sub">সারিতে চাপলে সেই মানুষের প্রতিটা ভাগ আর প্রতিটা উত্তর। বাঁয়ের ঘরে টিক দিয়ে কয়েকজনকে একসঙ্গে বার্তা।</p>';
+  const box=$('ppl');
+  box.querySelectorAll('[data-pick]').forEach(c=>c.onclick=e=>e.stopPropagation());
+  box.querySelectorAll('tr[data-u]').forEach(r=>r.onclick=()=>person(+r.dataset.u));
+  const pick=f=>box.querySelectorAll('[data-pick]').forEach(c=>{const x=pp.find(y=>y.uid===+c.dataset.pick);c.checked=f(x)});
+  $('pk1').onclick=()=>pick(x=>x.care.care>=40);$('pk2').onclick=()=>pick(x=>x.unsure>0);$('pk3').onclick=()=>pick(x=>x.done<n);$('pk0').onclick=()=>pick(()=>false);
+  $('pkm').onclick=()=>{const ids=[...box.querySelectorAll('[data-pick]:checked')].map(c=>+c.dataset.pick);
+    if(!ids.length){$('pbox').innerHTML='<p class="dim">আগে কাউকে বাছুন।</p>';return}
+    compose($('pbox'),ids,pp.filter(x=>ids.includes(x.uid)&&x.email).map(x=>x.email),null,load)};
 }
 async function person(uid){
   ['sum','ppl','items','up'].forEach(x=>$(x).hidden=true);$('one').hidden=false;$('one').innerHTML='<p class="dim">লোড হচ্ছে…</p>';scrollTo(0,0);
   let r;try{r=await api('diag/person?s='+encodeURIComponent(S())+'&uid='+uid)}catch(e){$('one').innerHTML='খোলা যায়নি।';return}
-  let h=`<button class="btn ghost" id="bk">← সবাই</button><h2>${esc(r.user&&r.user.name)} <small class="dim">${esc(r.user&&r.user.email)} · uid ${bn(uid)}</small></h2>`;
+  let h=`<button class="btn ghost" id="bk">← সবাই</button><h2>${esc(r.user&&r.user.name)} <small class="dim">${esc(r.user&&r.user.email)} · uid ${bn(uid)}</small></h2>
+    <div class="row"><button class="btn" id="pm">বার্তা পাঠান</button></div><div id="mbox"></div>`;
+  if(r.msgs&&r.msgs.length)h+='<details class="card"><summary>আগে পাঠানো বার্তা ('+bn(r.msgs.length)+')</summary>'+r.msgs.map(x=>`<div style="border-top:1px dashed var(--rule);padding:6px 0"><small class="dim">${when(x.ts)} · ${x.seen?'দেখেছেন '+when(x.seen):'এখনো দেখেননি'}</small> <button class="btn ghost" data-md="${x.id}" style="padding:2px 8px;font-size:13px">মুছুন</button><br>${esc(x.text)}</div>`).join('')+'</details>';
   if(r.status)h+='<div class="card scroll"><b>বিষয় ধরে</b><table><thead><tr><th>বিষয়</th><th>ঠিক</th><th>ভুল</th><th>বাদ</th><th>দেখানো ব্যান্ড</th><th>ভেতরের চিহ্ন</th></tr></thead><tbody>'+r.status.subjects.filter(x=>x.taken).map(x=>
     `<tr><td>${esc(x.name)}</td><td>${bn(x.ok)}/${bn(x.n)}</td><td>${bn(x.no)}</td><td>${bn(x.skip)}</td><td>${({strong:'শক্ত',mid:'মাঝামাঝি',focus:'এখন ফোকাস'})[x.band]||'—'}</td><td>${x.unsure?'<span class="flag">সন্দেহজনক</span> ':''}${x.few?'কম উত্তর':''}</td></tr>`).join('')+'</tbody></table><p class="sub" style="margin:6px 0 0">পরিকল্পনার ক্রম: '+r.status.order.map(id=>SUBN[id]||id).join(' → ')+'</p></div>';
   h+=r.parts.sort((a,b)=>a.part-b.part).map(p=>{const x=p.res;
     return `<div class="card"><div class="row" style="justify-content:space-between"><b>ভাগ ${bn(p.part)} · ${esc(p.title)}</b><button class="btn ghost" data-reset="${p.part}">আবার দিতে দিন</button></div>
     <p class="sub" style="margin:4px 0">শুরু ${when(p.ts)} · ${p.done?'শেষ '+when(p.done)+' · সময় লেগেছে '+tm(p.sec)+' / '+bn(p.mins)+' মি.':'চলছে বা শেষ হয়নি'} · ${esc(p.meta.dev||'')}${p.meta.w?' '+bn(p.meta.w)+'px':''}${p.meta.app?' · অ্যাপ':''}${p.meta.opens>1?' · '+bn(p.meta.opens)+' বার খোলা':''}${p.hn?' · অন্য অ্যাপে '+bn(p.hn)+' বার, '+tm(p.hid):''}</p>
+    ${p.care&&p.care.answered?`<p style="margin:4px 0">বেখেয়ালি সূচক <span class="care ${careCls(p.care.care)}">${bn(p.care.care)}</span> · না পড়ে দাগ ${bn(p.care.noread)}টি (${bn(p.care.noreadPct)}%) · সহজ প্রশ্নে ভুল ${bn(p.care.easyWrong)}/${bn(p.care.easy)} · ৬ সেকেন্ডের কমে ভুল ${bn(p.care.fastWrong)}টি${p.care.tired!=null?' · প্রথম অর্ধেকের চেয়ে শেষ অর্ধেকে ঠিক '+(p.care.tired>0?bn(p.care.tired)+'% কম':p.care.tired<0?bn(-p.care.tired)+'% বেশি':'সমান'):''}${p.meta.late?' · নেট-কাটায় দেরিতে এসেছে '+bn(p.meta.late)+'টি':''}</p>`:''}
     ${x?`<p style="margin:4px 0">${bn(x.ok)} ঠিক, ${bn(x.no)} ভুল, ${bn(x.skip)} বাদ · প্রশ্নে মধ্যমা ${x.med==null?'—':bn(x.med)+' সে.'} ${x.unsure?'· <span class="flag">সন্দেহজনক</span>':''}</p>${x.flags.length?'<p class="warnc" style="margin:0 0 4px">'+x.flags.map(f=>FL[f]).join(' · ')+'</p>':''}`:''}
     <details><summary>প্রতিটা উত্তর (${bn(p.qs.length)})</summary><div class="scroll"><table><thead><tr><th>#</th><th>প্রশ্ন</th><th>দাগ</th><th>সঠিক</th><th>সময়</th></tr></thead><tbody>${p.qs.map((q,i)=>
-      `<tr><td>${bn(i+1)}</td><td>${esc(q.q)}<br><small class="dim">${SUBN[q.s]||q.s} · ${q.id}</small></td><td class="${!q.seen||q.pick==null?'qsk':q.ok?'qok':'qno'}">${q.pick==null?(q.seen?'বাদ':'দেখেননি'):esc(q.pick)}</td><td>${esc(q.right)}</td><td>${q.ms?bn((q.ms/1000).toFixed(1))+' সে.':'—'}</td></tr>`).join('')}</tbody></table></div></details></div>`}).join('');
+      `<tr><td>${bn(i+1)}</td><td>${esc(q.q)}<br><small class="dim">${SUBN[q.s]||q.s} · ${q.id}${q.pop!=null?' · সবার '+bn(q.pop)+'% পারেন':''} · পড়তে লাগে ~${bn((q.read/1000).toFixed(1))} সে.</small><br>${q.tags.map(t=>`<span class="tagx">${({noread:'না পড়ে',easywrong:'সহজে ভুল',fastwrong:'দ্রুত ভুল'})[t]}</span>`).join('')}</td><td class="${!q.seen||q.pick==null?'qsk':q.ok?'qok':'qno'}">${q.pick==null?(q.seen?'বাদ':'দেখেননি'):esc(q.pick)}</td><td>${esc(q.right)}</td><td>${q.ms?bn((q.ms/1000).toFixed(1))+' সে.':'—'}</td></tr>`).join('')}</tbody></table></div></details></div>`}).join('');
   $('one').innerHTML=h;$('bk').onclick=()=>tab('ppl');
+  $('pm').onclick=()=>compose($('mbox'),[uid],r.user&&r.user.email?[r.user.email]:[],r.parts.filter(p=>p.res).map(p=>({uid,part:p.part})),()=>person(uid));
+  $('one').querySelectorAll('[data-md]').forEach(b=>b.onclick=async()=>{if(!confirm('বার্তাটা মুছবেন?'))return;await api('diag/msgdel',{s:S(),id:+b.dataset.md}).catch(()=>{});person(uid)});
   $('one').querySelectorAll('[data-reset]').forEach(b=>b.onclick=async()=>{if(!confirm('এই ভাগের সব উত্তর মুছে যাবে, মানুষটা একই প্রশ্নে আবার দিতে পারবেন। মুছবেন?'))return;
     await api('diag/reset',{s:S(),uid,part:+b.dataset.reset}).catch(e=>alert(e.message));await load();person(uid)});
 }
