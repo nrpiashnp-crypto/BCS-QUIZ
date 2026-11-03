@@ -54,11 +54,14 @@ a{color:#13294b}
 .ch2[aria-expanded="true"]{box-shadow:0 0 0 3px rgba(200,50,106,.3)!important}
 .hero .fact,.card.big .fact{background:#f8f5ee}
 
-/* answer options as OMR bubbles */
+/* answer options as OMR bubbles; ফোনে ছোঁয়ার ধূসর ঝলক আর ডাবল-ট্যাপ জুম নয়. হোভার শুধু মাউসে (ফোনে আইফোন হোভার আটকে রাখে, পরের প্রশ্নের একই জায়গার অপশন দাগানো দেখায়) */
+.opt{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .opt{border-radius:3px!important;background:#fffdf7;align-items:center}
 .opt .k{width:26px;height:26px;min-width:26px!important;border:1.4px solid #c8326a;border-radius:50%;display:inline-grid;place-items:center;color:#c8326a!important;font:13px/1 'Noto Sans Bengali',sans-serif!important;flex:none;transition:background .2s}
+@media (hover:hover) and (pointer:fine){
 .opt:hover:not(:disabled){border-color:#c8326a!important}
 .opt:hover:not(:disabled) .k{background:rgba(29,29,31,.1)}
+}
 .opt.sel{background:#fffdf7!important;border-color:#1d1d1f!important}
 .opt.sel .k{background:#1d1d1f;border-color:#1d1d1f;color:#fffdf7!important}
 .opt.right .k{background:#1e7a46;border-color:#1e7a46;color:#fff!important}
@@ -115,21 +118,32 @@ a{color:#13294b}
 .chx-b.wa{background:#1e7a46;border-color:#1e7a46;color:#fff!important}
 .chx-b.fb{background:#1b4ea0;border-color:#1b4ea0;color:#fff!important}
 
-/* হোভার: মাউস নিলে বোঝা যাবে কোনটা চাপা যায় (হাতের কার্সর + রং/উঁচু হওয়া); ফোনে ছোঁয়ার পর .btn একটু ডুবে যায় */
+/* হোভার (শুধু মাউস/ট্র্যাকপ্যাডে): মাউস নিলে বোঝা যাবে কোনটা চাপা যায় (হাতের কার্সর + রং/উঁচু হওয়া); ফোনে ছোঁয়ার পর .btn একটু ডুবে যায় */
 a,button,summary,[role=button],.chip,.tile,.oc,.tl,.ch2,.opt:not(:disabled){cursor:pointer}
 button:disabled{cursor:default}
 .btn,.chip,.tile,.oc,.tl,.ch2,.more,.cta,.chx-b,.sitebar nav a{transition:background-color .15s,border-color .15s,color .15s,box-shadow .15s,transform .15s}
+@media (hover:hover) and (pointer:fine){
 .btn.ghost:hover{background:#fff1f5!important;border-color:#c8326a!important}
 .btn:hover,.cta:hover,.more:hover,.chx-b:hover{box-shadow:0 2px 0 rgba(19,41,75,.25);transform:translateY(-1px)}
+}
 .btn:active,.cta:active,.more:active,.chx-b:active{transform:translateY(1px);box-shadow:none}
+@media (hover:hover) and (pointer:fine){
 .chip:hover:not([aria-pressed="true"]){border-color:#c8326a!important;background:#fff1f5!important}
 .tile:hover,.oc:hover,.tl:hover,.ch2:hover{border-color:#c8326a!important;box-shadow:0 3px 12px rgba(19,41,75,.1);transform:translateY(-1px)}
 .more:hover{border-color:#c8326a!important;background:#fff1f5!important}
+}
 .exp .bl:hover,.sub a:hover,.crumb a:hover,.lh a:hover,p a:hover{text-decoration:underline}
 
 /* সব লিংক-বোতামে একটাই সাধারণ হোভার (শ্রেণি যা-ই হোক): গোলাপি আভা + এক পিক্সেল উঁচু; লেখার ভেতরের সাধারণ লিংকে শুধু রং আর আন্ডারলাইন */
 a,button,summary,[role=button]{transition:box-shadow .15s,transform .15s,color .15s,background-color .15s,border-color .15s}
+@media (hover:hover) and (pointer:fine){
 a:hover,button:hover:not(:disabled),summary:hover,[role=button]:hover{box-shadow:0 0 0 3px rgba(200,50,106,.22)!important;transform:translateY(-1px)}
 a:not([class]):hover,p a:hover,li a:hover,.exp a:hover,.sub a:hover,.crumb a:hover,.sitebar a:hover,.sitebar nav a:hover,footer a:hover{box-shadow:none!important;transform:none;color:#c8326a!important;text-decoration:underline;text-underline-offset:3px}
 .sitebar nav a:hover,.sitebar a:hover{text-decoration:none;color:#fff!important}
 .opt:hover:not(:disabled){transform:none}
+}
+
+/* পরীক্ষার মাঝে উৎসাহের এক লাইন (plan.js) */
+.cheer{margin:26px 0 0;padding:10px 0 0;border-top:1px dashed var(--rule,#d9d3c7);color:#5b5f66;font-family:'Tiro Bangla',serif;font-size:16px;line-height:1.6}
+.cheer span{display:block;font-family:'Noto Sans Bengali',sans-serif;font-size:13px;margin-top:2px}
+.cheer span::before{content:'— '}
