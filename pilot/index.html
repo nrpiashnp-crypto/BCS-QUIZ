@@ -101,7 +101,7 @@ async function home(){
   if(!ME.member)return nameView('join');
   if(!ME.member.nick)return nameView('name');
   if(ME.member.st!=='ok')return V.innerHTML=head()+'<div class="card"><b>'+esc(ME.member.nick)+', আপনার অনুরোধ পৌঁছেছে।</b><br>অনুমোদন হলে এই পাতায় আপনার কোড আর পরীক্ষা দেখাবে।</div>';
-  if(!ME.start||!ME.ready)return V.innerHTML=head()+'<div class="card"><b>আপনি ব্যাচে আছেন।</b><br>প্রশ্ন আর শুরুর তারিখ শিগগির এই পাতায় আসবে। শুরুর আগে আপনাকে জানানো হবে।</div>';
+  if(!ME.start||!ME.ready)return V.innerHTML=head()+'<div class="card"><b>আপনি ব্যাচে আছেন।</b><br>রোজের রুটিন আর পরীক্ষা শিগগির এই পাতায় আসবে। ততক্ষণ ওপরের অবস্থা-যাচাই পরীক্ষাটা দিয়ে রাখুন।</div>';
   dash();flush();
 }
 // নাম বাধ্যতামূলক: এই নামেই শিক্ষক কথা বলবেন
@@ -116,7 +116,10 @@ function nameView(kind){
     $('join').disabled=true;
     try{await api(kind,{nick:n});home()}catch(e){$('join').disabled=false;$('nh').textContent=e.message==='nick'?'নামটা ঠিক নয়; শুধু অক্ষরে নাম লিখুন।':'রাখা যায়নি, নেট দেখে আবার চেষ্টা করুন।'}};
 }
-const head=()=>`<h1>${esc(ME.title)}</h1><p class="sub">${bn(ME.days)} দিন, প্রতিদিন ${bn(4)}টি পরীক্ষা। প্রতিটিতে ${bn(ME.n)} প্রশ্ন, ${bn(ME.mins)} মিনিট, একবারই দেওয়া যাবে।</p>`;
+// সেট ওঠার আগে: অবস্থা-যাচাই (৬ ভাগ, /plan/pb/, সেট pb-start) এই পাতা থেকেই
+const DIAG=[['ইংরেজি',50,30],['গাণিতিক যুক্তি',40,35],['বাংলা ভাষা ও ব্যাকরণ',35,21],['বাংলা সাহিত্য',27,16],['বাংলাদেশ বিষয়াবলি',43,26],['আন্তর্জাতিক বিষয়াবলি ও কম্পিউটার',55,33]];
+const diagCard=()=>`<div class="card"><b>প্রথম কাজ: অবস্থা-যাচাই পরীক্ষা</b><p class="sub" style="margin:2px 0 8px">${bn(250)} প্রশ্ন, ${bn(6)} ভাগে। প্রতিটা ভাগ আলাদা সময়ে দেওয়া যায়। সব ভাগ শেষে দেখবেন কোন বিষয়ে আপনি কোথায় আছেন।</p><ol style="margin:0 0 10px;padding-left:22px">${DIAG.map(d=>`<li>${d[0]} <span class="dim">· ${bn(d[1])} প্রশ্ন, ${bn(d[2])} মিনিট</span></li>`).join('')}</ol><a class="btn" href="/plan/pb/">পরীক্ষা দিন →</a></div>`;
+const head=()=>ME.ready?`<h1>${esc(ME.title)}</h1><p class="sub">${bn(ME.days)} দিন, প্রতিদিন ${bn(4)}টি পরীক্ষা। প্রতিটিতে ${bn(ME.n)} প্রশ্ন, ${bn(ME.mins)} মিনিট, একবারই দেওয়া যাবে।</p>`:`<h1>${esc(ME.title)}</h1>`+diagCard();
 
 function loginView(){
   V.innerHTML=head()+'<div class="card"><p>পরীক্ষা দিতে আগে Google দিয়ে লগইন করুন। পাসওয়ার্ড লাগে না।</p><div id="g"></div></div>';
