@@ -1207,6 +1207,8 @@ async function pilotAdmin(path, url, req, db) {
 const DIAG_SCHEMA = [
   'CREATE TABLE IF NOT EXISTS diag_set(id TEXT PRIMARY KEY, cfg TEXT NOT NULL, updated INTEGER)',
   'CREATE TABLE IF NOT EXISTS diag_q(sid TEXT NOT NULL, qid TEXT NOT NULL, part INTEGER NOT NULL, s TEXT NOT NULL, d TEXT NOT NULL, PRIMARY KEY(sid, qid))',
+  'CREATE TABLE IF NOT EXISTS msg(id INTEGER PRIMARY KEY, uid INTEGER NOT NULL, ts INTEGER NOT NULL, src TEXT, text TEXT NOT NULL, seen INTEGER)',
+  'CREATE INDEX IF NOT EXISTS msg_uid ON msg(uid, ts)',
   'CREATE TABLE IF NOT EXISTS diag_att(sid TEXT NOT NULL, uid INTEGER NOT NULL, part INTEGER NOT NULL, ts INTEGER NOT NULL, dl INTEGER NOT NULL, ans TEXT NOT NULL, done INTEGER, res TEXT, hid INTEGER, hn INTEGER, PRIMARY KEY(sid, uid, part))'
 ];
 let diagReady = false;
@@ -1283,7 +1285,7 @@ function dOrder(n, seed) {
   return a;
 }
 const dSeed = (sid, uid, qid) => sid + ':' + uid + ':' + qid;
-const DIAG_LATE = 10 * 60e3; // ফোনে জমে থাকা উত্তর সময় শেষের পরে এতক্ষণ পর্যন্ত নেওয়া হয়
+const DIAG_LATE = 60 * 60e3; // নেট কেটে গেলে ফোনে জমা উত্তর সময় শেষের পরে এক ঘণ্টা পর্যন্ত নেওয়া হয় (ঘড়ি থামে না, শুধু পৌঁছাতে দেরি)
 const median = a => { if (!a.length) return null; const b = [...a].sort((x, y) => x - y), m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
 
 // একটা ভাগের ফল: বিষয় ধরে ঠিক/ভুল/বাদ, আর তাড়াহুড়ার চিহ্ন (PLAN.md §৯)
@@ -1370,9 +1372,16 @@ async function diag(path, req, url, env, db, u) {
     });
     out.status = finished.length ? statusPub(diagStatus(c, finished)) : null;
     out.all = !!c.parts.length && finished.length === c.parts.length;
+    // অ্যাডমিনের বার্তা: না-দেখাগুলো আর শেষ কয়েকটা
+    out.msgs = (await db.prepare('SELECT id, ts, text, seen FROM msg WHERE uid = ? ORDER BY ts DESC LIMIT 5').bind(u.id).all()).results;
     return json(out);
   }
   if (!u) return json({error: 'login'}, 401);
+  if (path === 'diag/seen' && m === 'POST') {
+    const ids = (Array.isArray(body.ids) ? body.ids : []).filter(Number.isInteger).slice(0, 20);
+    if (ids.length) await db.prepare(`UPDATE msg SET seen = ? WHERE uid = ? AND seen IS NULL AND id IN (${ids.map(() => '?').join(',')})`).bind(now, u.id, ...ids).run();
+    return json({ok: true});
+  }
   if (!c.parts.length) return json({error: 'soon'}, 403);
   const no = parseInt(url.searchParams.get('part') || body.part, 10), p = c.P.get(no);
   if (!p) return json({error: 'bad'}, 400);
@@ -1402,6 +1411,7 @@ async function diag(path, req, url, env, db, u) {
     if (!att) return json({error: 'nosit'}, 403);
     if (att.done) return json({ok: true, res: att.res ? resPub(JSON.parse(att.res)) : null});
     const late = now > att.dl + GRACE + DIAG_LATE;
+    let lateN = 0;
     const ans = JSON.parse(att.ans), inPart = new Set(p.qs), list = (Array.isArray(body.ans) ? body.ans : []).slice(0, 80);
     let Q = null;
     if (!late && list.length) {
@@ -1414,19 +1424,23 @@ async function diag(path, req, url, env, db, u) {
         const ms = Math.max(0, Math.min(Math.round(num(x[2]) || 0), 3600e3));
         const ok = pick >= 0 && dOrder(q.o.length, dSeed(sid, u.id, x[0]))[pick] === q.a ? 1 : 0;
         ans[x[0]] = [pick, ok, ms];
+        if (now > att.dl + GRACE) lateN++;
       }
     }
     const hid = Math.max(att.hid || 0, Math.min(Math.round(num(body.hid) || 0), 7200)), hn = Math.max(att.hn || 0, Math.min(Math.round(num(body.hn) || 0), 500));
-    const close = body.fin === true || now >= att.dl + GRACE;
+    // সময় শেষ হলেও নেট-কাটা ফোনের উত্তর আসার সুযোগ: fin না এলে সময়-শেষের পরে এক ঘণ্টা খোলা, তারপর যা আছে তাতেই বন্ধ
+    const close = body.fin === true || now >= att.dl + GRACE + DIAG_LATE;
+    let metaS = att.meta;
+    if (lateN) { const mt = (() => { try { return JSON.parse(att.meta || '{}') || {}; } catch (e) { return {}; } })(); mt.late = (mt.late || 0) + lateN; metaS = JSON.stringify(mt); }
     let res = null;
     if (close) {
       Q = Q || await diagQs(db, sid, p.qs);
       res = diagScore(c, p, Q, ans, hid, hn);
-      await db.prepare('UPDATE diag_att SET ans = ?, done = ?, res = ?, hid = ?, hn = ? WHERE sid = ? AND uid = ? AND part = ? AND done IS NULL')
-        .bind(JSON.stringify(ans), Math.min(now, att.dl + GRACE), JSON.stringify(res), hid, hn, sid, u.id, no).run();
+      await db.prepare('UPDATE diag_att SET ans = ?, done = ?, res = ?, hid = ?, hn = ?, meta = ? WHERE sid = ? AND uid = ? AND part = ? AND done IS NULL')
+        .bind(JSON.stringify(ans), Math.min(now, att.dl + GRACE), JSON.stringify(res), hid, hn, metaS, sid, u.id, no).run();
     } else {
-      await db.prepare('UPDATE diag_att SET ans = ?, hid = ?, hn = ? WHERE sid = ? AND uid = ? AND part = ? AND done IS NULL')
-        .bind(JSON.stringify(ans), hid, hn, sid, u.id, no).run();
+      await db.prepare('UPDATE diag_att SET ans = ?, hid = ?, hn = ?, meta = ? WHERE sid = ? AND uid = ? AND part = ? AND done IS NULL')
+        .bind(JSON.stringify(ans), hid, hn, metaS, sid, u.id, no).run();
     }
     return json({ok: true, n: Object.keys(ans).length, res: resPub(res), left: att.dl - now});
   }
@@ -1439,6 +1453,42 @@ async function diag(path, req, url, env, db, u) {
     })}, 200, {'Cache-Control': 'no-store'});
   }
   return json({error: 'not found'}, 404);
+}
+
+// ---- বেখেয়ালি দাগানোর মাপ (শুধু অ্যাডমিন) ----
+// না পড়ে দাগ: প্রশ্ন আর অপশনের মোট অক্ষর পড়তে যত সময় লাগার কথা (অক্ষরপ্রতি ৩০ ms, অন্তত ২.৫ সেকেন্ড), তার চেয়ে কম
+// সহজে ভুল: যে প্রশ্ন বেশির ভাগ মানুষ পারেন (অন্তত ৮ জন দেখেছেন, ৭৫%+ ঠিক), বা সেট-ফাইলে lvl "easy", সেখানে ভুল
+// দ্রুত ভুল: ৬ সেকেন্ডের কম সময়ে ভুল; ক্লান্তি: ভাগের প্রথম অর্ধেক আর শেষ অর্ধেকের ঠিকের হারের পার্থক্য
+const readMs = q => Math.max(2500, ((q.q || '').length + (q.o || []).reduce((a, o) => a + String(o).length, 0)) * 30);
+function diagItemP(c, all) {
+  const P = new Map();
+  for (const r of all) if (r.res) for (const id of (c.P.get(r.part) || {qs: []}).qs) {
+    const x = P.get(id) || [0, 0], a = r.ans[id]; x[1]++; if (a && a[1]) x[0]++; P.set(id, x);
+  }
+  return P;
+}
+const isEasy = (q, p) => q.lvl === 'easy' || (p && p[1] >= 8 && p[0] / p[1] >= 0.75);
+function diagCare(c, r, Q, P) {
+  const qs = (c.P.get(r.part) || {qs: []}).qs, m = {answered: 0, noread: 0, easy: 0, easyWrong: 0, fastWrong: 0, wrong: 0, h1: [0, 0], h2: [0, 0]}, tags = {};
+  const seen = qs.filter(id => r.ans[id] && r.ans[id][0] >= 0);
+  seen.forEach((id, i) => {
+    const q = Q.get(id), a = r.ans[id]; if (!q) return;
+    const t = [];
+    m.answered++;
+    if (a[2] > 0 && a[2] < readMs(q)) { m.noread++; t.push('noread'); }
+    if (isEasy(q, P.get(id))) { m.easy++; if (!a[1]) { m.easyWrong++; t.push('easywrong'); } }
+    if (!a[1]) { m.wrong++; if (a[2] > 0 && a[2] < 6000) { m.fastWrong++; t.push('fastwrong'); } }
+    const h = i < seen.length / 2 ? m.h1 : m.h2; h[1]++; if (a[1]) h[0]++;
+    if (t.length) tags[id] = t;
+  });
+  const rate = (a, b) => b ? Math.round(a / b * 100) : 0;
+  m.noreadPct = rate(m.noread, m.answered);
+  m.easyWrongPct = rate(m.easyWrong, m.easy);
+  m.fastWrongPct = rate(m.fastWrong, m.wrong);
+  m.tired = m.h1[1] >= 8 && m.h2[1] >= 8 ? rate(m.h1[0], m.h1[1]) - rate(m.h2[0], m.h2[1]) : null;
+  // বেখেয়ালি সূচক ০-১০০: না পড়ে দাগ ৪০%, সহজে ভুল ৪০%, দ্রুত ভুল ২০%
+  m.care = Math.min(100, Math.round(0.4 * m.noreadPct + 0.4 * m.easyWrongPct + 0.2 * m.fastWrongPct));
+  return {m, tags};
 }
 
 async function diagAdmin(path, url, req, db) {
@@ -1462,10 +1512,25 @@ async function diagAdmin(path, url, req, db) {
     for (const q of list) {
       const o = Array.isArray(q && q.o) ? q.o.map(x => nfc(String(x)).slice(0, 600)) : [];
       if (!q || !where.has(q.id) || !c.S.has(q.s) || !nfc(q.q) || o.length < 2 || o.length > 6 || !Number.isInteger(q.a) || q.a < 0 || q.a >= o.length) { bad.push(q && q.id); continue; }
-      rows.push(st.bind(sid, q.id, where.get(q.id), q.s, JSON.stringify({q: nfc(q.q).slice(0, 2000), o, a: q.a, e: nfc(q.e || '').slice(0, 6000), t: str(q.t, 80) || ''})));
+      const lvl = ['easy', 'mid', 'hard'].includes(q.lvl) ? q.lvl : '';
+      rows.push(st.bind(sid, q.id, where.get(q.id), q.s, JSON.stringify({q: nfc(q.q).slice(0, 2000), o, a: q.a, e: nfc(q.e || '').slice(0, 6000), t: str(q.t, 80) || '', lvl})));
     }
     if (rows.length) await db.batch(rows);
     return json({ok: true, n: rows.length, bad});
+  }
+  if (path === 'admin/diag/msg' && m === 'POST') {
+    const uids = [...new Set((Array.isArray(body.uids) ? body.uids : []).filter(Number.isInteger))].slice(0, 300);
+    const text = nfc(String(body.text || '')).slice(0, 1000);
+    if (!uids.length || text.length < 2) return json({error: 'bad'}, 400);
+    const now = Date.now(), st = db.prepare('INSERT INTO msg(uid, ts, src, text, seen) VALUES(?,?,?,?,NULL)');
+    for (let i = 0; i < uids.length; i += 50) await db.batch(uids.slice(i, i + 50).map(u => st.bind(u, now, sid, text)));
+    return json({ok: true, n: uids.length});
+  }
+  if (path === 'admin/diag/msgdel' && m === 'POST') {
+    const id = parseInt(body.id, 10);
+    if (!id) return json({error: 'bad'}, 400);
+    await db.prepare('DELETE FROM msg WHERE id = ?').bind(id).run();
+    return json({ok: true});
   }
   if (path === 'admin/diag/reset' && m === 'POST') {
     const uid = parseInt(body.uid, 10), no = parseInt(body.part, 10);
@@ -1479,13 +1544,16 @@ async function diagAdmin(path, url, req, db) {
       res: r.res ? JSON.parse(r.res) : null, ans: JSON.parse(r.ans || '{}'), meta: (() => { try { return JSON.parse(r.meta || '{}') || {}; } catch (e) { return {}; } })()}));
   const used = r => r.done ? Math.round((r.done - r.ts) / 1000) : null;
   if (path === 'admin/diag/people' && m === 'GET') {
-    const by = new Map();
-    for (const r of await rows()) {
+    const by = new Map(), all = await rows(), Q = await diagQs(db, sid, c.parts.flatMap(p => p.qs)), P = diagItemP(c, all);
+    const unread = new Map((await db.prepare('SELECT uid, COUNT(*) n, MAX(ts) last FROM msg WHERE seen IS NULL GROUP BY uid').all()).results.map(r => [r.uid, r]));
+    for (const r of all) {
       let x = by.get(r.uid);
       if (!x) by.set(r.uid, x = {uid: r.uid, name: r.name || '', email: r.email || '', first: r.ts, last: r.ts, done: 0, going: 0, ok: 0, no: 0, skip: 0,
-        sec: 0, hid: 0, hn: 0, opens: 0, unsure: 0, flags: {}, dev: r.meta.dev || '', ms: [], parts: []});
+        sec: 0, hid: 0, hn: 0, opens: 0, late: 0, unsure: 0, flags: {}, dev: r.meta.dev || '', ms: [], parts: [], cm: {answered: 0, noread: 0, easy: 0, easyWrong: 0, fastWrong: 0, wrong: 0}});
       x.last = Math.max(x.last, r.done || r.ts);
-      x.hid += r.hid || 0; x.hn += r.hn || 0; x.opens += Math.max(0, (r.meta.opens || 1) - 1);
+      x.hid += r.hid || 0; x.hn += r.hn || 0; x.opens += Math.max(0, (r.meta.opens || 1) - 1); x.late += r.meta.late || 0;
+      const cr = diagCare(c, r, Q, P).m;
+      for (const k of Object.keys(x.cm)) x.cm[k] += cr[k];
       for (const a of Object.values(r.ans)) if (a[0] >= 0 && a[2] > 0) x.ms.push(a[2]);
       if (r.res) {
         x.done++; x.ok += r.res.ok; x.no += r.res.no; x.skip += r.res.skip; x.sec += used(r) || 0;
@@ -1493,25 +1561,33 @@ async function diagAdmin(path, url, req, db) {
         for (const f of r.res.flags) x.flags[f] = (x.flags[f] || 0) + 1;
       } else x.going++;
       x.parts.push({part: r.part, done: !!r.res, ok: r.res ? r.res.ok : null, n: r.res ? r.res.n : null, sec: used(r), unsure: r.res ? r.res.unsure : false,
-        flags: r.res ? r.res.flags : [], med: r.res ? r.res.med : null});
+        flags: r.res ? r.res.flags : [], med: r.res ? r.res.med : null, care: cr.care, tired: cr.tired});
     }
-    const people = [...by.values()].map(x => { const med = median(x.ms); delete x.ms; return {...x, med: med == null ? null : Math.round(med / 100) / 10}; })
+    const rate = (a, b) => b ? Math.round(a / b * 100) : 0;
+    const people = [...by.values()].map(x => { const med = median(x.ms); delete x.ms; const k = x.cm;
+      const care = {noreadPct: rate(k.noread, k.answered), easyWrongPct: rate(k.easyWrong, k.easy), fastWrongPct: rate(k.fastWrong, k.wrong), easy: k.easy, easyWrong: k.easyWrong};
+      care.care = Math.min(100, Math.round(0.4 * care.noreadPct + 0.4 * care.easyWrongPct + 0.2 * care.fastWrongPct));
+      const un = unread.get(x.uid);
+      return {...x, cm: undefined, care, unread: un ? un.n : 0, med: med == null ? null : Math.round(med / 100) / 10}; })
       .sort((a, b) => b.last - a.last);
     return json({set: {id: c.id, title: c.title, parts: c.parts.map(p => ({no: p.no, title: p.title, n: p.qs.length, mins: p.mins}))}, people}, 200, {'Cache-Control': 'no-store'});
   }
   if (path === 'admin/diag/person' && m === 'GET') {
     const uid = parseInt(url.searchParams.get('uid') || '', 10);
     if (!uid) return json({error: 'bad'}, 400);
-    const mine = (await rows()).filter(r => r.uid === uid);
+    const all = await rows(), mine = all.filter(r => r.uid === uid), P = diagItemP(c, all);
     const Q = await diagQs(db, sid, [...new Set(mine.flatMap(r => (c.P.get(r.part) || {qs: []}).qs))]);
+    const msgs = (await db.prepare('SELECT id, ts, src, text, seen FROM msg WHERE uid = ? ORDER BY ts DESC LIMIT 50').bind(uid).all()).results;
     const who = await db.prepare('SELECT id, name, email, created, seen FROM users WHERE id = ?').bind(uid).first();
     const done = mine.filter(r => r.res).map(r => r.res);
-    return json({user: who, status: done.length ? diagStatus(c, done) : null, parts: mine.map(r => {
-      const p = c.P.get(r.part) || {qs: []};
-      return {part: r.part, title: p.title, mins: p.mins, ts: r.ts, dl: r.dl, done: r.done, sec: used(r), hid: r.hid, hn: r.hn, meta: r.meta, res: r.res,
+    return json({user: who, msgs, status: done.length ? diagStatus(c, done) : null, parts: mine.map(r => {
+      const p = c.P.get(r.part) || {qs: []}, cr = diagCare(c, r, Q, P);
+      return {part: r.part, title: p.title, mins: p.mins, ts: r.ts, dl: r.dl, done: r.done, sec: used(r), hid: r.hid, hn: r.hn, meta: r.meta, res: r.res, care: cr.m,
         qs: p.qs.filter(id => Q.has(id)).map(id => {
           const q = Q.get(id), a = r.ans[id], ord = dOrder(q.o.length, dSeed(sid, uid, id));
-          return {id, s: q.s, q: q.q.slice(0, 160), pick: a && a[0] >= 0 ? q.o[ord[a[0]]] : null, right: q.o[q.a], ok: a ? a[1] : 0, ms: a ? a[2] : null, seen: !!a};
+          const pp = P.get(id);
+          return {id, s: q.s, q: q.q.slice(0, 160), pick: a && a[0] >= 0 ? q.o[ord[a[0]]] : null, right: q.o[q.a], ok: a ? a[1] : 0, ms: a ? a[2] : null, seen: !!a,
+            read: readMs(q), pop: pp && pp[1] ? Math.round(pp[0] / pp[1] * 100) : null, tags: cr.tags[id] || []};
         })};
     })}, 200, {'Cache-Control': 'no-store'});
   }
