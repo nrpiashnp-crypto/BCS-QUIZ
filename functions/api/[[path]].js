@@ -656,6 +656,7 @@ async function stt(req, env, db) {
 async function admin(path, url, env, db, u, req) {
   if (!isAdmin(u, env)) return json({error: 'admin'}, 403);
   if (path === 'admin/pilot' || path.startsWith('admin/pilot/')) return pilotAdmin(path, url, req, db);
+  if (path === 'admin/upkey') return upkeyAdmin(req, db);
   if (path === 'admin/diag' || path.startsWith('admin/diag/')) return diagAdmin(path, url, req, db);
   await attqTable(db);
   if (path === 'admin/learners') {
@@ -1492,6 +1493,29 @@ function diagCare(c, r, Q, P) {
   return {m, tags};
 }
 
+/* তোলার চাবি: একটাই চাবি, D1-এ শুধু তার SHA-256 ছাপ। চাবি দেখা যায় একবারই, বানানোর সময়।
+   নতুন বানালে পুরোনোটা বাতিল। GET admin/upkey → আছে কি না, কবে বানানো; POST admin/upkey → নতুন চাবি। */
+const UPKEY_SQL = 'CREATE TABLE IF NOT EXISTS upkey(id INTEGER PRIMARY KEY CHECK(id = 1), hash TEXT NOT NULL, created INTEGER)';
+async function upkeyOk(req, db) {
+  const k = (req.headers.get('Authorization') || '').slice(7).trim();
+  if (k.length < 30 || k.length > 100) return false;
+  await db.prepare(UPKEY_SQL).run();
+  const r = await db.prepare('SELECT hash FROM upkey WHERE id = 1').first();
+  return !!r && r.hash === await sha(k);
+}
+async function upkeyAdmin(req, db) {
+  await db.prepare(UPKEY_SQL).run();
+  if (req.method === 'POST') {
+    const raw = new Uint8Array(32); crypto.getRandomValues(raw);
+    const key = 'ly_' + btoa(String.fromCharCode(...raw)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const now = Date.now();
+    await db.prepare('INSERT INTO upkey(id, hash, created) VALUES(1, ?, ?) ON CONFLICT(id) DO UPDATE SET hash = excluded.hash, created = excluded.created')
+      .bind(await sha(key), now).run();
+    return json({ok: true, key, created: now}, 200, {'Cache-Control': 'no-store'});
+  }
+  const r = await db.prepare('SELECT created FROM upkey WHERE id = 1').first();
+  return json({has: !!r, created: r ? r.created : null}, 200, {'Cache-Control': 'no-store'});
+}
 async function diagAdmin(path, url, req, db) {
   await diagSetup(db);
   const m = req.method, body = m === 'POST' ? await req.json().catch(() => ({})) : {};
@@ -1668,6 +1692,11 @@ export async function onRequest({request: req, env}) {
     if (path === 'stt' && m === 'POST') return await stt(req, env, db);
     if (path.startsWith('pilot/')) return await pilot(path, req, url, env, db, u);
     if (path.startsWith('diag/')) return await diag(path, req, url, env, db, u);
+    // তোলার চাবি (Lyanna_data-র GitHub Actions): শুধু সেট আর প্রশ্ন তোলা, আর কিছু নয়
+    if ((path === 'admin/diag/set' || path === 'admin/diag/q') && m === 'POST' && /^Bearer /.test(req.headers.get('Authorization') || '')) {
+      if (!(await upkeyOk(req, db))) return json({error: 'key'}, 403);
+      return await diagAdmin(path, url, req, db);
+    }
     if (!u) return json({error: 'login'}, 401);
 
     if (path.startsWith('admin/')) return await admin(path, url, env, db, u, req);
