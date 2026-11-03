@@ -1,0 +1,51 @@
+name: upload-sets
+# নিজের পরিকল্পনার সেট (Lyanna_data: pilot/custom-plan/sets/*.json) lyannabooks.com-এ তোলা।
+# পাবলিক রিপোতে চলে বলে GitHub-এর মিনিট লাগে না। প্রশ্ন রিপোতে বা লগে আসে না (শুধু সংখ্যা আর আইডি)।
+# - প্রতি ৩০ মিনিটে দেখে: আগের সফল চালানোর পরে sets/-এ যা বদলেছে, সেটাই তোলে।
+# - হাতে: Actions → upload-sets → Run workflow (file খালি = গত ১ দিনে বদলানো সব; বা একটা ফাইলের পথ)।
+# গোপন ঘরে লাগে: LYANNA_DATA_TOKEN (Lyanna_data শুধু-পড়া), LY_UPLOAD_KEY (/admin/diag/ থেকে)।
+on:
+  schedule:
+    - cron: '7,37 * * * *'
+  workflow_dispatch:
+    inputs:
+      file:
+        description: 'সেট-ফাইলের পথ, যেমন pilot/custom-plan/sets/bcs.json (খালি = সাম্প্রতিক বদল)'
+        required: false
+concurrency: upload-sets
+permissions:
+  actions: read
+  contents: read
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: শেষ সফল চালানোর সময়
+        id: last
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          t=$(gh api "repos/${{ github.repository }}/actions/workflows/upload-sets.yml/runs?status=success&per_page=1" --jq '.workflow_runs[0].run_started_at // empty')
+          echo "since=${t:-$(date -u -d '1 day ago' +%Y-%m-%dT%H:%M:%SZ)}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          repository: nrpiashnp-crypto/Lyanna_data
+          token: ${{ secrets.LYANNA_DATA_TOKEN }}
+          path: data
+          fetch-depth: 200
+          sparse-checkout: |
+            pilot/custom-plan/sets
+            tools/upload_set.py
+          sparse-checkout-cone-mode: false
+      - name: সাইটে তোলা
+        env:
+          LY_UPLOAD_KEY: ${{ secrets.LY_UPLOAD_KEY }}
+          FILE: ${{ inputs.file }}
+          SINCE: ${{ steps.last.outputs.since }}
+        working-directory: data
+        run: |
+          if [ -n "$FILE" ]; then list="$FILE"
+          else list=$(git log --since="$SINCE" --name-only --diff-filter=AM --format= -- 'pilot/custom-plan/sets/*.json' | sort -u | while read f; do [ -f "$f" ] && echo "$f"; done)
+          fi
+          echo "যা তোলা হবে: ${list:-কিছু নয়}"
+          [ -z "$list" ] || python3 tools/upload_set.py $list
