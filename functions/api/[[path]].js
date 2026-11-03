@@ -1228,7 +1228,7 @@ const diagMeta = (req, b) => {
 // পাতার ঠিকানা → সেট (চেনা সেট সেট তোলার আগেই পাতা খোলে, "শিগগির" দেখায়)
 const DIAG_KNOWN = {'bcs-start': 'বিসিএস · অবস্থা-যাচাই'};
 // বিষয় → সাইটের বিদ্যমান বিষয়ের পাতা (পরিকল্পনার প্রথম সংস্করণে এগুলোই পথ)
-const DIAG_LINK = {bn: '/subject/bangla/', en: '/subject/english/', bd: '/subject/bangladesh/', intl: '/subject/international/', geo: '/subject/geography/',
+const DIAG_LINK = {bn: '/subject/bangla/', en: '/subject/english/', bd: '/subject/bangladesh/', bda: '/subject/bangladesh/', eng: '/subject/english/', intl: '/subject/international/', geo: '/subject/geography/',
   sci: '/subject/science/', ict: '/subject/ict/', math: '/subject/math/', mental: '/subject/mental/', ethics: '/subject/ethics/'};
 
 function diagCheck(c) {
@@ -1335,9 +1335,10 @@ function diagStatus(c, done) {
     x.band = pct < 40 ? 'focus' : pct < 70 ? 'mid' : 'strong';
     x.few = (x.ok + x.no) / x.n < 0.6;
     x.edge = Math.abs(pct - 40) < 5 || Math.abs(pct - 70) < 5;
-    // নম্বর বাড়ানোর সুযোগ: সিলেবাসের নম্বর × যতটা এখনো বাকি; অনিশ্চিত বা কম উত্তরের বিষয়ে চুপচাপ অর্ধেক ধরা
+    // নম্বর বাড়ানোর সুযোগ G = সিলেবাসের নম্বর × (০.৮০ − মান), ০.৮০-র ওপরে শূন্য (SUBJECT-PLAN.md §৩.২);
+    // অনিশ্চিত বা কম উত্তরের বিষয়ে চুপচাপ মান অর্ধেক ধরা
     const known = x.unsure || x.few ? 0.5 : pct / 100;
-    x.gain = Math.round(x.marks * (1 - known) * 10) / 10;
+    x.gain = Math.round(x.marks * Math.max(0, 0.8 - known) * 10) / 10;
   }
   const order = S.filter(x => x.band).sort((a, b) => b.gain - a.gain || a.name.localeCompare(b.name)).map(x => x.id);
   return {subjects: S, order, parts: c.parts.length, doneParts: done.length};
