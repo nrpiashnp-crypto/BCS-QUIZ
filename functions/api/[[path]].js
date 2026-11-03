@@ -35,6 +35,8 @@
    প্রশ্নে ভুল জানানো (লগইন লাগে না; বোতাম js/report.js):
    POST /api/report {qid?, page, q, kind: ans|exp|q|other, note?} → {ok}
    অ্যাডমিন: GET /api/admin/reports?st=new|done|all → তালিকা (পাতা /admin/reports/); POST /api/admin/reports {ids:[…], st}
+            GET /api/admin/repq → ভুল জানানো প্রশ্নের id (পর্যালোচনায় কঠিন/সহজ থেকে বাদ)
+   ব্যাখ্যা বুঝেছি/বুঝিনি: POST /api/fb (নিচে "বুঝেছি / বুঝিনি" অংশ), অ্যাডমিন GET /api/admin/fb
    যাচাইয়ের কাজ LY Quiz & Sheets-এর; Lyanna_data-তে টেনে নেওয়ার জন্য একই GET-এর JSON।
    পাইলট ব্যাচ (/pilot/<id>/, /admin/pilot/): নিচে "পাইলট ব্যাচ" অংশের মাথায় সব পথ।
    নিজের পরিকল্পনা, অবস্থা-যাচাই (/plan/<সেট>/, /admin/diag/): নিচে "নিজের পরিকল্পনা" অংশের মাথায় সব পথ। */
@@ -632,6 +634,8 @@ async function repSetup(db) {
   await db.batch(REP_SCHEMA.map(x => db.prepare(x)));
   // src কলাম: আগের 🎤 ভয়েস মতামতের সারিতে 'voice' (ফিচারটা ২০২৬-১১-০৪-এ তোলা হয়েছে); নতুন সারিতে খালি
   try { await db.prepare('ALTER TABLE rep ADD COLUMN src TEXT').run(); } catch (e) { /* আগেই আছে */ }
+  // h: "বুঝিনি"-র লেখা কোন ব্যাখ্যার জন্য (ব্যাখ্যার লেখার ছোট ছাপ; ব্যাখ্যা বদলালে ছাপ বদলায়)
+  try { await db.prepare('ALTER TABLE rep ADD COLUMN h TEXT').run(); } catch (e) { /* আগেই আছে */ }
   REP_READY = true;
 }
 // এক আইপি থেকে ঘণ্টায় ২০টা, দিনে ৬০টা; সবার মিলিয়ে দিনে ৩০০০টা (D1-এর দৈনিক লেখার সীমা বাঁচাতে)
@@ -644,7 +648,7 @@ async function report(req, db, u) {
   const page = repText(b.page, 200).replace(/^https?:\/\/[^/]+/, '');
   // শুধু এই সাইটের পথ (/...), নইলে অ্যাডমিন পাতার লিংকে javascript: ইত্যাদি ঢুকতে পারে
   const safePage = /^\/(?!\/)[^\s"'<>]*$/.test(page) ? page : '';
-  const q = repText(b.q, 400), note = repText(b.note, 600);
+  const q = repText(b.q, 400), note = repText(b.note, 600), h = /^[0-9a-f]{1,12}$/.test(b.h || '') ? b.h : null;
   if (!qid && !q) return json({error: 'empty'}, 400);
   await repSetup(db);
   const ip = await chIp(req), now = Date.now();
@@ -654,8 +658,39 @@ async function report(req, db, u) {
   if (same) return json({ok: true, dup: 1});
   const c = await db.prepare('SELECT SUM(ts > ?) h, COUNT(*) d FROM rep WHERE ip = ? AND ts > ?').bind(now - 3600e3, ip, now - 86400e3).first();
   if ((c && (c.h >= REP_PER_HOUR || c.d >= REP_PER_DAY_IP)) || !await chDay(db, 'rep', REP_PER_DAY_ALL)) return json({error: 'slow'}, 429);
-  await db.prepare('INSERT INTO rep(ts, qid, page, q, kind, note, uid, ip) VALUES(?,?,?,?,?,?,?,?)')
-    .bind(now, qid, safePage, q, kind, note, u ? u.id : null, ip).run();
+  await db.prepare('INSERT INTO rep(ts, qid, page, q, kind, note, uid, ip, h) VALUES(?,?,?,?,?,?,?,?,?)')
+    .bind(now, qid, safePage, q, kind, note, u ? u.id : null, ip, h).run();
+  return json({ok: true});
+}
+
+// ---------- ব্যাখ্যা "বুঝেছি / বুঝিনি" (এক ট্যাপ, লগইন লাগে না; বোতাম js/report.js) ----------
+/* পাতা ছাড়ার সময় একবার (sendBeacon): POST /api/fb {page, taps:[[চাবি, ব্যাখ্যার ছাপ, 1 বুঝেছি / 0 বুঝিনি, প্রশ্নের লেখা?], …]}
+   → fb_tap-এ এক সারি (এক পাতা-দেখা = এক সারি, D1-এর লেখার সীমা বাঁচাতে)। চাবি = প্রশ্নের id, না থাকলে "t:" + প্রশ্নের শুরু।
+   অ্যাডমিন: GET /api/admin/fb?days=30 → চাবি+ছাপ ধরে কতজন বুঝেছেন/বোঝেননি (পাতা /admin/reports/, "বুঝিনি" ট্যাব)।
+   ব্যাখ্যা নতুন করে লিখলে ছাপ বদলায়, তাই নতুন ব্যাখ্যার হিসাব আলাদা গোনা হয়। Fable-যাচাই 2026-11-02। */
+const FB_SCHEMA = [
+  'CREATE TABLE IF NOT EXISTS fb_tap(id INTEGER PRIMARY KEY, ts INTEGER NOT NULL, page TEXT, uid INTEGER, ip TEXT, taps TEXT NOT NULL)',
+  'CREATE INDEX IF NOT EXISTS fb_ts ON fb_tap(ts)',
+  'CREATE INDEX IF NOT EXISTS fb_ip ON fb_tap(ip, ts)',
+  'CREATE TABLE IF NOT EXISTS ch_day(k TEXT PRIMARY KEY, n INTEGER NOT NULL)'
+];
+let FB_READY = false;
+async function fbSetup(db) { if (!FB_READY) { await db.batch(FB_SCHEMA.map(x => db.prepare(x))); FB_READY = true; } }
+const FB_PER_DAY_IP = 150, FB_PER_DAY_ALL = 20000;
+async function fbTap(req, db, u) {
+  let b = {};
+  try { b = JSON.parse(await req.text()); } catch (e) { /* sendBeacon text/plain-এ পাঠায় */ }
+  const page = repText(b.page, 200).replace(/^https?:\/\/[^/]+/, '');
+  const taps = (Array.isArray(b.taps) ? b.taps : []).slice(0, 200).map(t => Array.isArray(t) ? [
+    repText(t[0], 80), /^[0-9a-f]{1,12}$/.test(t[1] || '') ? t[1] : '', t[2] === 1 ? 1 : 0, t[2] === 1 ? '' : repText(t[3], 160)
+  ] : null).filter(t => t && t[0]);
+  if (!taps.length) return json({error: 'empty'}, 400);
+  await fbSetup(db);
+  const ip = await chIp(req), now = Date.now();
+  const c = await db.prepare('SELECT COUNT(*) d FROM fb_tap WHERE ip = ? AND ts > ?').bind(ip, now - 86400e3).first();
+  if ((c && c.d >= FB_PER_DAY_IP) || !await chDay(db, 'fb', FB_PER_DAY_ALL)) return json({error: 'slow'}, 429);
+  await db.prepare('INSERT INTO fb_tap(ts, page, uid, ip, taps) VALUES(?,?,?,?,?)')
+    .bind(now, /^\/(?!\/)[^\s"'<>]*$/.test(page) ? page : '', u ? u.id : null, ip, JSON.stringify(taps)).run();
   return json({ok: true});
 }
 
@@ -695,6 +730,22 @@ async function admin(path, url, env, db, u, req) {
       att: a.results.map(r => { const x = Q.get(r.k); return {...r, sb: jp(r.sb), qd: x ? splitQd(x.qd) : null, tm: tmOf(x), m: x ? jp(x.m) : null}; }),
       diag: d.results.map(r => ({...r, ans: jp(r.ans) || {}, res: jp(r.res)}))},
       200, {'Cache-Control': 'no-store'});
+  }
+  if (path === 'admin/fb') {
+    await fbSetup(db);
+    const days = Math.min(365, Math.max(1, parseInt(url.searchParams.get('days') || '30', 10) || 30));
+    const {results} = await db.prepare(`SELECT json_extract(j.value, '$[0]') k, json_extract(j.value, '$[1]') h,
+        SUM(json_extract(j.value, '$[2]') = 1) yes, SUM(json_extract(j.value, '$[2]') = 0) no,
+        MAX(json_extract(j.value, '$[3]')) q, MAX(f.page) page, MAX(f.ts) last
+      FROM fb_tap f, json_each(f.taps) j WHERE f.ts > ? GROUP BY k, h ORDER BY no DESC, yes ASC LIMIT 1000`).bind(Date.now() - days * 86400e3).all();
+    const tot = await db.prepare('SELECT COUNT(*) n FROM fb_tap WHERE ts > ?').bind(Date.now() - days * 86400e3).first();
+    return json({ts: Date.now(), days, visits: tot ? tot.n : 0, rows: results}, 200, {'Cache-Control': 'no-store'});
+  }
+  // ভুল জানানো প্রশ্ন (উত্তর বা প্রশ্নে ভুল), অ্যাডমিন "ভুল নয়" (st='no') করেনি এমন: পর্যালোচনায় কঠিন/সহজ থেকে বাদ
+  if (path === 'admin/repq') {
+    await repSetup(db);
+    const {results} = await db.prepare(`SELECT DISTINCT qid FROM rep WHERE qid IS NOT NULL AND kind IN ('ans','q') AND st != 'no'`).all();
+    return json({qids: results.map(r => r.qid)}, 200, {'Cache-Control': 'no-store'});
   }
   if (path === 'admin/reports') {
     await repSetup(db);
@@ -1704,6 +1755,7 @@ export async function onRequest({request: req, env}) {
     if (path.startsWith('lib/')) return await lib(path, req, url, env, db, u);
     if (path === 'qstat' && m === 'GET') return await qstat(req, db);
     if (path === 'report' && m === 'POST') return await report(req, db, u);
+    if (path === 'fb' && m === 'POST') return await fbTap(req, db, u);
     if (path.startsWith('pilot/')) return await pilot(path, req, url, env, db, u);
     if (path.startsWith('diag/')) return await diag(path, req, url, env, db, u);
     // তোলার চাবি (Lyanna_data-র GitHub Actions): শুধু সেট আর প্রশ্ন তোলা, আর কিছু নয়
