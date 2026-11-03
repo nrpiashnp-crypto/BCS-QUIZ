@@ -591,6 +591,13 @@ h1,h2,h3,h4,.bA .t,.price,.bt,.adm b,.smp b,.hw,.hdr .nm{font-weight:600!importa
 .hero1>.top,.qph .qn{display:none!important}
 @media (min-width:1101px){.hero1>.qph{padding-right:32px!important}.hero1>.qph .imp{margin-right:-32px!important}}
 </style>
+<style>/* কম্পিউটারে সব অংশ মাঝখানে: দুই পাশের ফাঁক সমান, প্রতিটা বাক্স মাঝে */
+.hs{margin-left:auto;margin-right:auto}
+.row2{grid-template-columns:minmax(0,1fr)}
+.hero1>.hs{grid-column:1/-1;justify-self:center;width:100%;max-width:560px!important}
+@media (min-width:701px){.pg{padding-right:clamp(50px,9vw,110px)}}
+@media (min-width:641px){.pcard .msg .btns{justify-content:flex-start!important}}
+</style>
 <script src="/js/report.js" defer></script>
 </head>
 <body>
