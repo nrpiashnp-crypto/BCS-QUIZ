@@ -10,8 +10,22 @@ const MK=V.dataset.mk||'সিলেবাসে {n} নম্বর';
 const $=id=>document.getElementById(id);
 const bn=x=>String(x).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]),K='কখগঘঙচ';
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+// প্রশ্ন/অপশনের লেখায় ছাপার ঘরের কয়েকটা নিরীহ ট্যাগ (মোটা, বাঁকা, নিচে দাগ, সূচক) আসল রূপে; বাকি সব লেখা হিসেবেই
+const rich=s=>esc(s).replace(/&lt;(\/?)(b|i|u|em|strong|sup|sub)&gt;/gi,'<$1$2>').replace(/&lt;br\s*\/?&gt;|&lt;\/?p&gt;/gi,'<br>').replace(/^(<br>)+|(<br>)+$/g,'');
+// উৎসাহের এক লাইন: প্রতি ৮টা উত্তরের পরের প্রশ্নে নিচে চুপচাপ দেখায় (বাধা নয়, চাপার কিছু নয়)
+const CHEER=[
+  'ওঠো, জাগো, লক্ষ্যে না পৌঁছানো পর্যন্ত থেমো না।|স্বামী বিবেকানন্দ',
+  'যদি তোর ডাক শুনে কেউ না আসে তবে একলা চলো রে।|রবীন্দ্রনাথ ঠাকুর',
+  'ভুল হওয়া মানে পিছিয়ে পড়া নয়; কোথায় পড়তে হবে, সেটা জানা।|',
+  'আজ যে প্রশ্নটা পারলেন না, পরীক্ষার হলে সেটা আর অচেনা থাকবে না।|',
+  'রোজ একটু করে, এটাই সবচেয়ে বড় কৌশল।|',
+  'বাদ দেওয়াও একটা দক্ষতা। না জেনে দাগানোর চেয়ে বাদ দেওয়া ভালো।|',
+  'অর্ধেক পথ পেরিয়েছেন। মনোযোগ ধরে রাখুন, শেষটা আপনার।|',
+  'যারা টেকে, তারাই জেতে। আপনি এখনো টিকে আছেন।|'
+];
+const cheer=n=>{const [t,a]=CHEER[(Math.floor(n/8)-1)%CHEER.length].split('|');return `<p class="cheer">${esc(t)}${a?`<span>${esc(a)}</span>`:''}</p>`};
 // ব্যাখ্যার ছোট মার্কডাউন: "- " তালিকা, | সারণি |, **মোটা**; বাকিটা অনুচ্ছেদ
-const md=t=>{const L=String(t||'').split('\n'),o=[],B=x=>esc(x).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>'),C=r=>r.trim().replace(/^\||\|$/g,'').split('|').map(x=>x.trim());
+const md=t=>{const L=String(t||'').split('\n'),o=[],B=x=>rich(x).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>'),C=r=>r.trim().replace(/^\||\|$/g,'').split('|').map(x=>x.trim());
   for(let i=0;i<L.length;){const l=L[i];
     if(/^\s*\|/.test(l)){const R=[];while(i<L.length&&/^\s*\|/.test(L[i]))R.push(L[i++]);const rows=R.filter(r=>!/^\s*\|[\s:|-]+\|\s*$/.test(r)).map(C);
       o.push('<table>'+rows.map((r,k)=>'<tr>'+r.map(c=>k?`<td>${B(c)}</td>`:`<th>${B(c)}</th>`).join('')+'</tr>').join('')+'</table>');continue}
@@ -25,7 +39,7 @@ async function api(p,b){
   const r=await fetch('/api/diag/'+p,b?{method:'POST',credentials:'same-origin',keepalive:true,headers:{'Content-Type':'application/json'},body:JSON.stringify({s:S,...b})}:{credentials:'same-origin',cache:'no-store'});
   const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(j.error||'err');e.j=j;e.s=r.status;throw e}return j}
 const mins=m=>m>=60?bn(Math.floor(m/60))+' ঘণ্টা'+(m%60?' '+bn(m%60)+' মিনিট':''):bn(m)+' মিনিট';
-let ME=null,EX=null,tick=null;
+let ME=null,EX=null,tick=null,CH0=0;
 // পরীক্ষার নিয়ম: ভূমিকায় আর প্রতিটা ভাগ শুরুর আগে একই কথা
 const RULES=`<ul class="rules">
   <li>শান্ত জায়গায় একটানা দিন। শুরু করলে ঘড়ি চলতেই থাকে, পাতা বন্ধ করলেও।</li>
@@ -155,10 +169,11 @@ function show(){
   const L=local(EX.part),id=EX.queue[0],q=EX.qs.find(x=>x.id===id),answered=Object.values(L.a).filter(x=>x[0]>=0).length;
   const again=L.skip.includes(id);let t0=Date.now(),busy=false;
   V.innerHTML=`<div class="qh"><span>ভাগ ${bn(EX.part)} · ${esc(SUB(q.s))}</span><span>${bn(answered)} / ${bn(EX.qs.length)} উত্তর</span></div>
-    ${again?'<p class="tag">আগে বাদ দিয়েছিলেন</p>':''}<div class="qt">${esc(q.q)}</div>
-    ${q.o.map((o,k)=>`<button class="opt" data-o="${k}"><span class="k">${K[k]}</span><span>${esc(o)}</span></button>`).join('')}
+    ${again?'<p class="tag">আগে বাদ দিয়েছিলেন</p>':''}<div class="qt">${rich(q.q)}</div>
+    ${q.o.map((o,k)=>`<button class="opt" data-o="${k}"><span class="k">${K[k]}</span><span>${rich(o)}</span></button>`).join('')}
     <p class="net" id="net">${navigator.onLine?'':'নেট নেই। পরীক্ষা চলছে, উত্তর ফোনে জমছে।'}</p>
-    <div class="skip"><button class="btn ghost" id="sk">${again?'জানি না':'বাদ দিন'}</button></div>`;
+    <div class="skip"><button class="btn ghost" id="sk">${again?'জানি না':'বাদ দিন'}</button></div>
+    ${answered&&answered%8===0&&answered!==CH0&&!again?(CH0=answered,cheer(answered)):''}`;
   const go=pick=>{
     if(busy)return;busy=true;
     const L=local(EX.part);
@@ -170,6 +185,7 @@ function show(){
   };
   V.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{b.classList.add('sel');go(+b.dataset.o)});
   $('sk').onclick=()=>go(-1);
+  if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
   scrollTo(0,0);
 }
 async function finish(){
@@ -213,7 +229,7 @@ async function review(no){
   let r;try{r=await api('review?s='+encodeURIComponent(S)+'&part='+no)}catch(e){$('rvb').innerHTML='<p class="dim">খোলা যায়নি।</p>';return}
   $('rv').dataset.ok=1;
   const wrong=r.qs.filter(q=>q.pick!==q.a),ok=r.qs.filter(q=>q.pick===q.a);
-  const card=q=>`<div class="card rv"><div class="qh"><span>${esc(SUB(q.s))}</span><span>${q.pick<0?'বাদ':q.pick===q.a?'ঠিক':'ভুল'}</span></div><div class="qt">${esc(q.q)}</div>${q.o.map((o,k)=>`<div class="opt${k===q.a?' right':k===q.pick?' wrong':''}"><span class="k">${K[k]}</span><span>${esc(o)}</span></div>`).join('')}${q.e?`<div class="exp">${md(q.e)}</div>`:''}</div>`;
+  const card=q=>`<div class="card rv"><div class="qh"><span>${esc(SUB(q.s))}</span><span>${q.pick<0?'বাদ':q.pick===q.a?'ঠিক':'ভুল'}</span></div><div class="qt">${rich(q.q)}</div>${q.o.map((o,k)=>`<div class="opt${k===q.a?' right':k===q.pick?' wrong':''}"><span class="k">${K[k]}</span><span>${rich(o)}</span></div>`).join('')}${q.e?`<div class="exp">${md(q.e)}</div>`:''}</div>`;
   $('rvb').innerHTML=(wrong.length?wrong.map(card).join(''):'<p>এই ভাগে কোনো ভুল নেই।</p>')+(ok.length?`<details><summary>ঠিকগুলো (${bn(ok.length)})</summary>${ok.map(card).join('')}</details>`:'');
   if(window.LBMath)try{LBMath(V)}catch(e){}
 }
