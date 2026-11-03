@@ -1,11 +1,13 @@
-/* প্রশ্নে ভুল জানান / ব্যাখ্যা বুঝিনি: প্রতিটি ব্যাখ্যার (.exp, হোমের আজকের প্রশ্নে .tqe) নিচে ছোট বোতাম।
-   চাপলে ছোট ফর্ম (কী ভুল + চাইলে দু-লাইন), পাঠায় POST /api/report। লগইন লাগে না।
+/* প্রতিটি ব্যাখ্যার (.exp, হোমের আজকের প্রশ্নে .tqe) নিচে দুটো জিনিস, লগইন লাগে না:
+   ১. "ব্যাখ্যাটা বুঝলেন? বুঝেছি / বুঝিনি" এক ট্যাপ। ট্যাপগুলো জমে, পাতা ছাড়ার সময় একবারে POST /api/fb (sendBeacon)।
+      "বুঝিনি"-র পরে চাইলে এক লাইন লেখা → POST /api/report (kind hard, ব্যাখ্যার ছাপ h সহ)। Fable-যাচাই 2026-11-02।
+   ২. "প্রশ্নে বা উত্তরে ভুল? জানান": ছোট ফর্ম (কী ভুল + চাইলে দু-লাইন), পাঠায় POST /api/report।
    (🎤 কথা বলে মতামত ২০২৬-১১-০৪-এ তুলে দেওয়া হয়েছে; ভালো সমাধান পেলে আবার ভাবা হবে।)
    প্রশ্ন চেনা: কাছের [data-id] থেকে প্রশ্নের id; না পেলে পাতার Q তালিকায় লেখা মিলিয়ে; তাও না পেলে প্রশ্নের লেখা।
    পাতায় একবার: <script src="/js/report.js" defer></script> (account.js নিজে থেকেই এটা লোড করে)। */
 (function(){
   if(window.LBR)return;window.LBR=1;
-  var K=[['hard','ব্যাখ্যা বুঝিনি'],['ans','উত্তর ভুল'],['exp','ব্যাখ্যায় ভুল'],['q','প্রশ্ন বা অপশনে ভুল'],['other','অন্য কিছু']];
+  var K=[['ans','উত্তর ভুল'],['exp','ব্যাখ্যায় ভুল'],['q','প্রশ্ন বা অপশনে ভুল'],['other','অন্য কিছু']];
   var st=document.createElement('style');
   st.textContent='.rq{display:block;margin-top:10px;padding:7px 12px;border:1.3px solid #c8326a;border-radius:3px;background:#fffdf7;font:600 13.5px/1.45 "Noto Sans Bengali",sans-serif;color:#c8326a;cursor:pointer;text-align:left}'+
     '.rq small{display:block;font-weight:400;font-size:12.5px;color:#5f6366;margin-top:1px}'+
@@ -21,7 +23,13 @@
     '.rqf .go{font:600 14px/1 "Noto Sans Bengali",sans-serif;padding:9px 16px;border:0;border-radius:3px;background:#13294b;color:#fff;cursor:pointer}'+
     '.rqf .go:disabled{opacity:.5;cursor:default}'+
     '.rqf .x{font:inherit;font-size:13.5px;border:0;background:none;color:#5f6366;cursor:pointer;text-decoration:underline}'+
-    '.rqd{margin-top:8px;font-size:13px;color:#1f8a4c}';
+    '.rqd{margin-top:8px;font-size:13px;color:#1f8a4c}'+
+    '.ud{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px;padding-top:10px;border-top:1px dashed #c9c4b8;font:400 14px/1.45 "Noto Sans Bengali",sans-serif;color:#1d1f21}'+
+    '.ud>span{margin-right:2px}'+
+    '.ud button{font:600 14px/1 "Noto Sans Bengali",sans-serif;padding:8px 14px;min-height:36px;border:1.3px solid #13294b;border-radius:3px;background:#fff;color:#13294b;cursor:pointer}'+
+    '.ud .ok{color:#1f8a4c;font-size:13.5px}'+
+    '.ud textarea{flex:1 1 100%;box-sizing:border-box;min-height:52px;padding:8px;border:1.2px solid #c9c4b8;border-radius:3px;font:inherit;font-size:14px;resize:vertical;background:#fff;color:#1d1f21}'+
+    '.ud .go{background:#13294b;color:#fff}.ud .x{border:0;background:none;color:#5f6366;font-weight:400;text-decoration:underline;padding:8px 4px}';
   document.head.appendChild(st);
 
   function sent(){try{return JSON.parse(localStorage.getItem('lb:rep')||'{}')}catch(e){return {}}}
@@ -70,11 +78,51 @@
         m.textContent=s===429?'আজ অনেক জানানো হয়েছে, কাল আবার চেষ্টা করুন।':'পাঠানো গেল না, আবার চেষ্টা করুন।'});
     };
   }
-  function make(){var b=document.createElement('button');b.type='button';b.className='rq';b.innerHTML='✎ ভুল পেলেন, বা ব্যাখ্যা বোঝেননি? জানান<small>আপনার দু-লাইনে লাখ লাখ প্রার্থীর পড়া ভালো হবে</small>';b.onclick=function(){open(b)};return b}
+  function make(){var b=document.createElement('button');b.type='button';b.className='rq';b.innerHTML='✎ প্রশ্নে বা উত্তরে ভুল পেলেন? জানান<small>আপনার দু-লাইনে লাখ লাখ প্রার্থীর পড়া ভালো হবে</small>';b.onclick=function(){open(b)};return b}
+
+  // ---- বুঝেছি / বুঝিনি ----
+  // ব্যাখ্যার ছাপ: লেখার ছোট হ্যাশ (FNV-1a), যাতে ব্যাখ্যা নতুন করে লিখলে পুরোনো হিসাবের সঙ্গে না মেশে
+  function hash(t){var h=0x811c9dc5;for(var i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0}return h.toString(16)}
+  function expText(el){var c=el.cloneNode(true);c.querySelectorAll('.ud,.rq,.rqf,.rqd,button').forEach(function(n){n.remove()});return clean(c.textContent)}
+  function udSeen(){try{return JSON.parse(localStorage.getItem('lb:ud')||'{}')}catch(e){return {}}}
+  function udMark(k,v){try{var s=udSeen();s[k]=v;var ks=Object.keys(s);if(ks.length>500)delete s[ks[0]];localStorage.setItem('lb:ud',JSON.stringify(s))}catch(e){}}
+  var TAPS={};   // পাতা ছাড়ার আগে পাঠানো বাকি: চাবি → [চাবি, ছাপ, ১/০, প্রশ্ন]
+  function flush(){
+    var a=Object.keys(TAPS).map(function(k){return TAPS[k]});if(!a.length)return;TAPS={};
+    var body=JSON.stringify({page:location.pathname+location.search,taps:a});
+    try{if(navigator.sendBeacon&&navigator.sendBeacon('/api/fb',body))return}catch(e){}
+    try{fetch('/api/fb',{method:'POST',body:body,keepalive:true,credentials:'same-origin'})}catch(e){}
+  }
+  addEventListener('pagehide',flush);
+  document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')flush()});
+  function ud(el){
+    var box=el.closest('section.q,li.q,.q,.tq')||el.parentNode,text=qText(box,el),id=qId(box,text);
+    var key=id||('t:'+text.slice(0,60)),h=hash(expText(el)),mk=key+'|'+h,was=udSeen()[mk];
+    var d=document.createElement('div');d.className='ud';
+    function done(v){d.innerHTML='<span class="ok">'+(v?'✓ বুঝেছেন':'✓ জানিয়েছেন, ব্যাখ্যা আরও সহজ করা হবে। ধন্যবাদ!')+'</span>'}
+    if(was!=null){done(was);return d}
+    d.innerHTML='<span>ব্যাখ্যাটা বুঝলেন?</span><button type="button" data-v="1">বুঝেছি</button><button type="button" data-v="0">বুঝিনি</button>';
+    d.querySelectorAll('button').forEach(function(b){b.onclick=function(){
+      var v=+b.dataset.v;TAPS[key]=[key,h,v,v?'':text.slice(0,160)];udMark(mk,v);
+      if(v){done(1);return}
+      d.innerHTML='<span>কোন জায়গাটা আটকাল? চাইলে এক লাইন লিখুন।</span><textarea maxlength="600" placeholder="যেমন: দ্বিতীয় লাইনের শব্দটা বুঝিনি / উদাহরণ চাই"></textarea><button type="button" class="go">পাঠান</button><button type="button" class="x">থাক</button>';
+      var ta=d.querySelector('textarea');ta.focus();
+      d.querySelector('.x').onclick=function(){done(0)};
+      d.querySelector('.go').onclick=function(){
+        var note=ta.value.trim();if(!note){done(0);return}
+        var go=d.querySelector('.go');go.disabled=true;go.textContent='পাঠানো হচ্ছে…';
+        fetch('/api/report',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',
+          body:JSON.stringify({qid:id,page:location.pathname+location.search,q:text,kind:'hard',note:note,h:h})})
+        .then(function(){done(0)},function(){done(0)});
+      };
+    }});
+    return d;
+  }
   function add(el){
     if(!el.classList||!(el.classList.contains('exp')||el.classList.contains('tqe')))return;
     if(el.querySelector(':scope>.rq,:scope>.rqf,:scope>.rqd'))return;
     if(el.classList.contains('tqe')&&el.hidden)return;
+    if(!el.querySelector(':scope>.ud')&&expText(el).length>3)el.appendChild(ud(el));
     el.appendChild(make());
   }
   function scan(root){if(root.nodeType!==1)return;add(root);root.querySelectorAll&&root.querySelectorAll('.exp,.tqe').forEach(add)}

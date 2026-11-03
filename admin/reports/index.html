@@ -49,9 +49,10 @@ tr.pick{cursor:pointer}tr.pick:hover{background:var(--soft)}
 <div class="bar"><a href="/" aria-label="লিয়ানা বুকস"><img src="/img/logo/li-mark.svg" alt="" width="34" height="44"><span class="lgn-n">লিয়ানা বুকস</span></a><span>অ্যাডমিন</span></div>
 <main class="wrap">
 <h1>প্রশ্নে ভুলের অভিযোগ</h1>
-<p class="sub">শিক্ষার্থীরা প্রশ্নের নিচের "প্রশ্নে ভুল আছে? জানান" থেকে যা পাঠিয়েছেন। যাচাই করে ঠিক করার কাজ LY Quiz &amp; Sheets-এর; ঠিক হলে "ঠিক করা হয়েছে" চাপুন।</p>
-<div class="tabs"><button class="btn ghost" data-st="new" aria-pressed="true">নতুন</button><button class="btn ghost" data-st="done" aria-pressed="false">ঠিক করা হয়েছে</button><button class="btn ghost" data-st="no" aria-pressed="false">ভুল নয়</button><button class="btn ghost" data-st="all" aria-pressed="false">সব</button> <button class="btn" id="dl">JSON নামান</button></div>
+<p class="sub">শিক্ষার্থীরা ব্যাখ্যার নিচের "প্রশ্নে বা উত্তরে ভুল? জানান" আর "বুঝিনি" থেকে যা পাঠিয়েছেন। যাচাই করে ঠিক করার কাজ LY Quiz &amp; Sheets-এর; ঠিক হলে "ঠিক করা হয়েছে" চাপুন।</p>
+<div class="tabs"><button class="btn ghost" data-st="new" aria-pressed="true">নতুন</button><button class="btn ghost" data-st="done" aria-pressed="false">ঠিক করা হয়েছে</button><button class="btn ghost" data-st="no" aria-pressed="false">ভুল নয়</button><button class="btn ghost" data-st="all" aria-pressed="false">সব</button><button class="btn ghost" data-st="fb" aria-pressed="false">বুঝেছি/বুঝিনি</button> <button class="btn" id="dl">JSON নামান</button></div>
 <div id="msg" class="card dim">লোড হচ্ছে…</div>
+<div class="card scroll" id="fbox" hidden><p class="dim" id="fsum" style="margin:0 0 8px;font-size:14px"></p><table class="rep"><thead><tr><th>প্রশ্ন</th><th>বুঝিনি</th><th>বুঝেছি</th><th>পাতা</th></tr></thead><tbody id="frows"></tbody></table></div>
 <div class="card scroll" id="box" hidden><table class="rep"><thead><tr><th>সময়</th><th>কী ভুল</th><th>প্রশ্ন ও মন্তব্য</th><th>পাতা</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
 </main>
 <script>
@@ -63,7 +64,18 @@ let st='new',cur=null;
 async function api(p,b){const r=await fetch('/api/'+p,b?{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:{credentials:'same-origin',cache:'no-store'});
   if(r.status===401)throw 'login';if(r.status===403)throw 'admin';if(!r.ok)throw 'err';return r.json()}
 function fail(e){$('msg').hidden=false;$('box').hidden=true;$('msg').innerHTML=e==='login'?'আগে <a href="/account/">লগইন করুন</a> (অ্যাডমিন ইমেইল দিয়ে)।':e==='admin'?'এই ইমেইল অ্যাডমিন তালিকায় নেই।':'সার্ভারে সমস্যা, পরে চেষ্টা করুন।'}
+async function loadFb(){
+  const j=await api('admin/fb?days=30');cur=j;$('box').hidden=true;
+  $('msg').hidden=!!j.rows.length;$('msg').textContent='গত ৩০ দিনে কেউ এখনো "বুঝেছি/বুঝিনি" চাপেননি।';$('fbox').hidden=!j.rows.length;
+  $('fsum').textContent=`গত ${bn(j.days)} দিন, ${bn(j.visits)}টি পাতা-দেখা থেকে। যে ব্যাখ্যায় "বুঝিনি" বেশি, সেটা আগে; লেখা মন্তব্য "নতুন" ট্যাবে "বুঝিনি" নামে। ব্যাখ্যা নতুন করে লিখলে হিসাব আবার শূন্য থেকে।`;
+  $('frows').innerHTML=j.rows.map(r=>{const t=r.yes+r.no,pc=t?Math.round(r.no/t*100):0;
+    return `<tr><td class="q">${r.q?esc(r.q):'<span class="dim">(লেখা নেই)</span>'} <span class="dim">(${esc(String(r.k).replace(/^t:/,'লেখা: '))})</span></td>
+    <td><b class="${r.no>=3&&pc>=40?'bad':''}">${bn(r.no)}</b>${t>=5?' <span class="dim">('+bn(pc)+'%)</span>':''}</td><td>${bn(r.yes)}</td>
+    <td>${/^\/(?!\/)/.test(r.page||'')?'<a href="'+esc(r.page)+'" target="_blank" rel="noopener">'+esc(r.page)+'</a>':''}</td></tr>`}).join('');
+}
 async function load(){
+  if(st==='fb')return loadFb();
+  $('fbox').hidden=true;
   const j=await api('admin/reports?st='+st);cur=j;
   $('msg').hidden=!!j.rows.length;$('msg').textContent='কোনো অভিযোগ নেই।';$('box').hidden=!j.rows.length;
   $('rows').innerHTML=j.rows.map(r=>`<tr data-id="${r.id}"><td>${dhaka(r.ts)}</td><td><span class="k">${KN[r.kind]||esc(r.kind)}</span>${r.src==='voice'?' 🎤':''}</td>

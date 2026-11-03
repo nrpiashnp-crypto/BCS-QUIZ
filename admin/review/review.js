@@ -4,14 +4,24 @@
      M  = /admin/data/qmap.json (tools/build_qmap.py) → {S:[[কোড,নাম]], T:[[id,নাম,বিষয়]], Q:{qid:[টপিক|-1, বিষয়, সঠিক]}}
      QS = GET /api/qstat → {rows:[[qid,n,ok,last]]} (সবার মিলিয়ে প্রশ্নের কঠিনতা)
      goal = TARGETS-এর একটা চাবি
+     bad  = GET /api/admin/repq → {qids:[…]}: যেসব প্রশ্নে কেউ "উত্তর ভুল" বা "প্রশ্নে ভুল" জানিয়েছেন (অ্যাডমিন "ঠিক আছে, ভুল নয়" না করা পর্যন্ত)।
+            এগুলোর সবার-মিলিয়ে হার বিশ্বাসযোগ্য নয় (ভুল চাবিতে প্রশ্ন "কঠিন" দেখায়), তাই কঠিন/সহজ আর প্রত্যাশিত মান থেকে বাদ।
    নিয়ম (Fable-যাচাই 2026-11-04): ছোট নমুনায় সিদ্ধান্ত নয়, "অনিশ্চিত" লেখা; একই প্রশ্ন বারবার এলে বিষয়ের মানে প্রথম দেখাটাই গোনা। */
 (function (root) {
   'use strict';
   // লক্ষ্যের পরীক্ষা: বিষয়ের নম্বর আর ভুলে কাটা (বিসিএস: SUBJECT-PLAN.md §১; পেট্রোবাংলা: pilot/custom-plan pb-start-এর weight)
   var TARGETS = {
     bcs: {name: 'বিসিএস প্রিলি', neg: 0.5, marks: {bn: 30, eng: 30, bd: 25, intl: 25, math: 20, sci: 15, ict: 15, mental: 15, ethics: 15, geo: 10}},
-    pb: {name: 'পেট্রোবাংলা (সহকারী ব্যবস্থাপক)', neg: 0.25, marks: {math: 27, eng: 26, bn: 16, bd: 11, intl: 9, ict: 5}}
+    pb: {name: 'পেট্রোবাংলা (সহকারী ব্যবস্থাপক)', neg: 0.25, marks: {math: 27, eng: 26, bn: 16, bd: 11, intl: 9, ict: 5}},
+    // সাব-রেজিস্ট্রার (পিএসসি, ৯ম গ্রেড): বাংলা ২৫, ইংরেজি ২৫, সাধারণ জ্ঞান ২৫, গণিত ও বিজ্ঞান ২৫; ভেতরের ভাগ /running/sub-registrar/-এর নকশা থেকে
+    subreg: {name: 'সাব-রেজিস্ট্রার (পিএসসি)', neg: 0.5, marks: {bn: 25, eng: 25, bd: 15, intl: 10, math: 17, sci: 6, ict: 2},
+      fold: {ca: 'intl', geo: 'bd', econ: 'bd', gk: 'bd'}},
+    // ব্যাংক (ব্যাংকার্স সিলেকশন কমিটি, অফিসার/সিনিয়র অফিসার প্রিলি): বিজ্ঞপ্তি ০৭/২০২৪ (Lyanna_data sources/live-written-syllabus); ভুলে −০.২৫
+    bank: {name: 'ব্যাংক (সমন্বিত অফিসার)', neg: 0.25, marks: {bn: 25, eng: 25, math: 20, gk: 20, ict: 10},
+      names: {math: 'গণিত ও Quantitative Skills', gk: 'সাধারণ জ্ঞান (বাংলাদেশ, আন্তর্জাতিক, অর্থনীতি, সাম্প্রতিক)'},
+      fold: {bd: 'gk', intl: 'gk', ca: 'gk', econ: 'gk', geo: 'gk', mental: 'math'}}
   };
+  // fold = কোন বিষয়ের প্রশ্ন লক্ষ্যের কোন ভাগে গোনা হবে (যেমন ব্যাংকে বাংলাদেশ + আন্তর্জাতিক = সাধারণ জ্ঞান)
   var MIN_N = 15;        // একটা বিষয়/টপিকে এর কম উত্তরে মান "অনিশ্চিত"
   // কঠিন/সহজ: অন্তত QMIN জন দেখেছেন, আর সবার ঠিকের হারের ৯০% সীমাও (উইলসন) কঠিনে ৪০%-এর নিচে / সহজে ৭০%-এর ওপরে (Fable: ৮ জনে শুধু গোলমাল)
   var QMIN = 25, HARD_HI = 0.4, EASY_LO = 0.7, EXP_MIN = 10;   // প্রত্যাশিত মানের জন্য অন্তত EXP_MIN জন
@@ -24,12 +34,13 @@
   function wilsonLow(k, n) { if (!n) return 0; var z = 1.64, p = k / n, d = 1 + z * z / n; return (p + z * z / (2 * n) - z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n))) / d; }
   function wilsonHigh(k, n) { return 1 - wilsonLow(n - k, n); }
 
-  function build(J, M, QS, goal) {
+  function build(J, M, QS, goal, bad) {
     var G = TARGETS[goal] || TARGETS.bcs, Q = M.Q || {}, S = M.S || [], T = M.T || [];
+    var flagged = {}, flaggedSeen = 0; ((bad && bad.qids) || []).forEach(function (id) { flagged[id] = 1; });
     // প্রশ্নের কঠিনতা (সবার মিলিয়ে): p = প্রত্যাশিত ঠিকের সম্ভাবনা ((ok+1)/(n+2), অল্প দেখায় মাঝামাঝি টানে); cls = কঠিন/সহজ
     var diff = {};
     ((QS && QS.rows) || []).forEach(function (r) {
-      if (r[1] < EXP_MIN) return;
+      if (r[1] < EXP_MIN || flagged[r[0]]) return;
       var d = {p: (r[2] + 1) / (r[1] + 2), cls: ''};
       if (r[1] >= QMIN) { if (wilsonHigh(r[2], r[1]) < HARD_HI) d.cls = 'hard'; else if (wilsonLow(r[2], r[1]) > EASY_LO) d.cls = 'easy'; }
       diff[r[0]] = d;
@@ -76,7 +87,7 @@
 
     // প্রথম দেখা (মান গোনার জন্য): একই প্রশ্ন দ্বিতীয়বার এলে উত্তর মনে থাকতে পারে
     var seen = {}, first = [];
-    A.forEach(function (r) { if (!seen[r.qid]) { seen[r.qid] = []; first.push(r); } seen[r.qid].push(r); });
+    A.forEach(function (r) { if (!seen[r.qid]) { seen[r.qid] = []; first.push(r); if (flagged[r.qid]) flaggedSeen++; } seen[r.qid].push(r); });
 
     function tally(list) {
       var o = {n: list.length, ans: 0, ok: 0, no: 0, skip: 0, unk: 0};
@@ -219,11 +230,18 @@
 
     // ---- ৭. লক্ষ্যের সঙ্গে মিল ----
     var totalMarks = 0, practiced = 0; for (var c in G.marks) totalMarks += G.marks[c];
-    var codeRows = {}; subjects.forEach(function (o) { if (o.code) codeRows[o.code] = o; });
+    var codeRows = {}, fold = G.fold || {};
+    subjects.forEach(function (o) {
+      if (!o.code) return;
+      var key = fold[o.code] || o.code, x = codeRows[key];
+      if (!x) { codeRows[key] = {n: o.n, graded: o.graded, ok: o.ok}; return; }
+      x.n += o.n; x.graded += o.graded; x.ok += o.ok;
+    });
+    for (var ck in codeRows) { codeRows[ck].acc = pct(codeRows[ck].ok, codeRows[ck].graded); codeRows[ck].small = codeRows[ck].graded < MIN_N; }
     for (var c2 in G.marks) practiced += codeRows[c2] ? codeRows[c2].n : 0;
     var outside = all.n - practiced;
     var fit = Object.keys(G.marks).map(function (c) {
-      var o = codeRows[c] || {n: 0, graded: 0, ok: 0, acc: null, small: true}, name = (S.filter(function (x) { return x[0] === c; })[0] || [c, c])[1];
+      var o = codeRows[c] || {n: 0, graded: 0, ok: 0, acc: null, small: true}, name = (G.names && G.names[c]) || (S.filter(function (x) { return x[0] === c; })[0] || [c, c])[1];
       var share = pct(o.n, practiced), want = Math.round(G.marks[c] / totalMarks * 100);
       // নম্বর বাড়ানোর সুযোগ = নম্বর × (০.৮০ − মান); অনিশ্চিত হলে মান ০.৫ ধরা (SUBJECT-PLAN §৩.২)
       var known = o.small || o.acc == null ? 0.5 : o.acc / 100;
@@ -237,7 +255,7 @@
     return {user: J.user, goal: goal in TARGETS ? goal : 'bcs', target: G, built: M.built,
       counts: {exams: exams.length, att: exams.filter(function (e) { return e.src === 'att'; }).length, diag: exams.filter(function (e) { return e.src === 'diag'; }).length,
         answers: A.length, unique: first.length, keyBad: keyBad, noTime: noTime, noMap: first.filter(function (r) { return r.subj < 0; }).length,
-        withDiff: first.filter(function (r) { return diff[r.qid]; }).length,
+        withDiff: first.filter(function (r) { return diff[r.qid]; }).length, flagged: flaggedSeen,
         byType: exams.reduce(function (o, e) { o[e.c || '?'] = (o[e.c || '?'] || 0) + 1; return o; }, {})},
       all: all, trend: trend, steps: steps,
       habit: {days: dk.length, span: span, best: best, first: dk[0] || null, last: dk[dk.length - 1] || null, perDay: dk.length ? Math.round(exams.length / dk.length * 10) / 10 : null, hours: hours},
