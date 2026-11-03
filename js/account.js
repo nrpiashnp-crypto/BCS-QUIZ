@@ -8,6 +8,8 @@
      qd = প্রতিটি প্রশ্ন [id, দাগানো বিকল্প (ফাঁকা −1)]; LBA.qa() ডাকলেই নিজে তৈরি হয়, তাই কোনো পাতা বদলাতে হয় না।
           ফলের সঙ্গে ফোনে থাকে (শেষ QD_KEEP টা ফলে) আর লগইন থাকলে সার্ভারে ব্যবহারকারীর নামে যায় (attq), কাস্টম প্ল্যানের জন্য।
           লগইন না করে দেওয়া পরীক্ষাও পরে লগইন করলে উত্তরসহ যায়।
+     tm = qd-র ক্রমে প্রতিটি দাগের সময় (শুরুর পর দশমাংশ-সেকেন্ড, ১২৩ = ১২.৩ সে; ফাঁকায় ''), m = {v, hid: আড়ালে থাকা সেকেন্ড, hn: কতবার, w: পর্দা, app, tmx: সময় না মেলার কারণ};
+          দুটোই নিচের "প্রতিটি উত্তরের সময়" অংশ নিজে বানায়, পাতাকে কিছু দিতে হয় না।
    পাতায় একবার: <script src="/js/account.js" defer></script>। নাম না দিলে অধ্যায়ের নাম book-link.js-এর data-chapter থেকে নেয়।
    লগইনের খবর 'lb:u'-তে রাখা হয়, তাই সাধারণ পাতায় সার্ভারে কোনো অনুরোধ যায় না (শুধু ফল জমা দিতে)। */
 (function(){
@@ -16,7 +18,50 @@
   var dev=get('lb:dev','');
   if(!dev){dev=Math.random().toString(36).slice(2,10);set('lb:dev',dev)}
   var user=function(){return get('lb:u',null)};
-  var QD_KEEP=150,lastQd=null;
+  var QD_KEEP=150,lastQd=null,lastT=null;
+
+  /* প্রতিটি উত্তরের সময় (শিক্ষার্থীর পর্যালোচনার জন্য, শুধু অ্যাডমিন দেখেন), পরীক্ষার পাতা না বদলে:
+     কোনো বিকল্পে চাপ পড়লে পাতার নিজের হ্যান্ডলার আগে চলে আর বোতামে 'sel' বসায়; তারপর এখানে সেই মুহূর্ত লেখা হয়।
+     পরীক্ষা শেষে qa() পাতার সব button.sel পাতার ক্রমে নেয়; সংখ্যা আর প্রতিটির বিকল্প-ক্রম pick-এর সঙ্গে মিললে তবেই সময় রাখা,
+     নইলে সময় বাদ (ভুল সময়ের চেয়ে না-থাকা ভালো)। প্রথম চাপের পর থেকে পাতা কতক্ষণ আড়ালে ছিল (অন্য অ্যাপ/ট্যাব) আর কতবার, সেটাও।
+     সার্ভারে যায় ফলের সঙ্গেই, একই সারিতে (attq.tm, attq.m), তাই বাড়তি লেখা নেই। */
+  var taps=typeof WeakMap=='function'?new WeakMap():null,firstTap=0,lastTap=0,hid=0,hn=0,hidAt=0;
+  if(taps){
+    document.addEventListener('click',function(e){
+      var b=e.target&&e.target.closest?e.target.closest('button'):null;
+      if(!b||taps.has(b)||!b.classList.contains('sel'))return;
+      var t=Date.now();taps.set(b,t);if(!firstTap)firstTap=t;lastTap=t;
+    });
+    document.addEventListener('visibilitychange',function(){
+      if(!firstTap)return;
+      if(document.hidden){if(!hidAt){hidAt=Date.now();hn++}}
+      else if(hidAt){hid+=Date.now()-hidAt;hidAt=0}
+    });
+  }
+  // সময় না মিললে কেন, সেটা m.tmx-এ থাকে (পরে দেখা যায় কোন পাতায় সময় হারাচ্ছে): none = কোনো চাপ ধরা পড়েনি, n = সংখ্যা মেলেনি, order = বিকল্প মেলেনি
+  var tmx='';
+  function times(pick){
+    tmx='';
+    if(!taps){tmx='old';return null}
+    if(!firstTap){tmx='none';return null}
+    var sel=document.querySelectorAll('button.sel'),idx=[],T=[];
+    for(var i=0;i<pick.length;i++)if(pick[i]>=0)idx.push(i);
+    if(!idx.length||sel.length!==idx.length){tmx='n';return null}
+    for(var k=0;k<sel.length;k++){
+      var b=sel[k],t=taps.get(b),pos=b.parentNode?Array.prototype.indexOf.call(b.parentNode.children,b):-1;
+      if(!t||pos!==pick[idx[k]]){tmx='order';return null}
+      T[idx[k]]=t;
+    }
+    return T;
+  }
+  function meta(){
+    var away=hid+(hidAt?Date.now()-hidAt:0);
+    var m={v:1,hid:Math.round(away/1000),hn:hn,w:window.innerWidth||0};
+    if(tmx)m.tmx=tmx;
+    try{if(matchMedia('(display-mode: standalone)').matches)m.app=1}catch(e){}
+    return m;
+  }
+  function reset(){firstTap=0;lastTap=0;hid=0;hn=0;hidAt=0;tmx=''}
 
   var busy=false;
   function flush(){
@@ -113,18 +158,27 @@
   function save(r){
     var a={k:dev+':'+r.k,ts:Date.now(),c:r.c||'ch',t:r.t||chapter()||document.title.split(/\s[·:]\s|:/)[0],p:location.pathname+location.search+location.hash,
       s:r.s,n:r.n,ok:r.ok,no:r.no,sec:r.sec};
-    var qd=r.qd||lastQd;lastQd=null;if(qd&&qd.length)a.qd=qd;
+    var qd=r.qd||lastQd,T=lastT;lastQd=null;lastT=null;if(qd&&qd.length)a.qd=qd;
+    // সময়: পরীক্ষা শুরুর পর কত দশমাংশ-সেকেন্ডে দাগ (শুরু = এখন − sec; sec না থাকলে প্রথম চাপ), qd-র ক্রমে, ফাঁকায় ''
+    if(qd&&qd.length&&T&&!r.qd){
+      var t0=T.reduce(function(x,y){return y&&y<x?y:x},a.ts),st=r.sec>0?Math.min(a.ts-r.sec*1000,t0):t0;
+      a.tm=qd.map(function(x,i){return T[i]?Math.max(0,Math.round((T[i]-st)/100)):''}).join(',');
+    }
+    if(qd&&qd.length)a.m=meta();
+    reset();
     if(r.sb){var sb={};Object.keys(r.sb).forEach(function(k){if(k&&r.sb[k][1])sb[k]=r.sb[k]});if(Object.keys(sb).length)a.sb=sb}
     var all=get('lb:att',[]);all.push(a);all=all.slice(-400);
     // পুরোনো ফলের উত্তর-তালিকা বাদ (ফোনের জায়গা), সার শুধু থাকে
-    for(var i=0;i<all.length-QD_KEEP;i++)if(all[i].qd)delete all[i].qd;
+    for(var i=0;i<all.length-QD_KEEP;i++)if(all[i].qd){delete all[i].qd;delete all[i].tm;delete all[i].m}
     set('lb:att',all);
     if(user()){var q=get('lb:q',[]);q.push(a);set('lb:q',q.slice(-1000));
       if(r.qa&&r.qa.length)set('lb:qa',get('lb:qa',[]).concat(r.qa).slice(-3000));flush()}
     note();
   }
   function qa(qs,pick){
-    lastQd=(qs||[]).map(function(q,i){return [q&&q.id||'',pick[i]>=0?pick[i]:-1]}).filter(function(x){return x[0]});
+    var T=times(pick||[]),keep=[];
+    lastQd=(qs||[]).map(function(q,i){if(q&&q.id)keep.push(T?T[i]||0:0);return [q&&q.id||'',pick[i]>=0?pick[i]:-1]}).filter(function(x){return x[0]});
+    lastT=T?keep:null;
     var o=[];(qs||[]).forEach(function(q,i){if(q&&q.id&&pick[i]>=0)o.push([q.id,pick[i]===q.a?1:0])});return o}
   function chapter(){var b=document.querySelector('script[src*="book-link.js"]');return b&&b.dataset.chapter}
 

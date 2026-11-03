@@ -10,6 +10,7 @@
    POST /api/delete    → নিজের সব তথ্য মুছে যায়
    প্রতিটি উত্তর (ব্যবহারকারী ধরে, কাস্টম প্ল্যানের জন্য): /api/att-এর প্রতিটি ফলে qd = [[প্রশ্ন-id, দাগানো বিকল্প (ফাঁকা −1)], …]
    → attq টেবিল (uid, k, ts, qd "id:বিকল্প,id:বিকল্প"), প্রতি পরীক্ষায় এক সারি (দিনে ১ লাখ সারি-লেখার সীমা মাথায় রেখে)
+   একই সারিতে tm (প্রতিটি দাগের সময়, শুরুর পর দশমাংশ-সেকেন্ড) আর m (পাতা আড়ালে থাকা, পর্দা): শিক্ষার্থীর পর্যালোচনা /admin/review/
    অ্যাডমিন (ADMIN_EMAILS): GET /api/admin/learners → সব ব্যবহারকারী, কয়টা পরীক্ষা, কয়টায় উত্তরের তালিকা আছে
                            GET /api/admin/att?uid=… বা ?email=… → ওই ব্যবহারকারীর সব ফল আর উত্তর (পাতা /admin/learners/)
    প্রশ্ন ধরে উত্তরের হিসাব: POST /api/att-এর সঙ্গে {q:[[প্রশ্ন-id, ঠিক 1 / ভুল 0], …]} (শুধু লগইন করা ব্যবহারকারী) → qstat টেবিল
@@ -70,7 +71,29 @@ async function quota(db, uid, a, q) {
 const ATTQ = 'CREATE TABLE IF NOT EXISTS attq(uid INTEGER NOT NULL, k TEXT NOT NULL, ts INTEGER NOT NULL, qd TEXT NOT NULL, PRIMARY KEY(uid, k))';
 const MAX_QD = 300;
 let attqReady = false;
-async function attqTable(db) { if (!attqReady) { await db.prepare(ATTQ).run(); attqReady = true; } }
+// tm = প্রতিটি দাগের সময় (শুরুর পর দশমাংশ-সেকেন্ড, qd-র ক্রমে, ফাঁকায় খালি), m = {v, hid, hn, w, app, tmx, dev} (js/account.js); পুরোনো সারিতে NULL
+async function attqTable(db) {
+  if (attqReady) return;
+  await db.prepare(ATTQ).run();
+  for (const col of ['tm', 'm']) try { await db.prepare('ALTER TABLE attq ADD COLUMN ' + col + ' TEXT').run(); } catch (e) { /* আগেই আছে */ }
+  attqReady = true;
+}
+// সময়ের তালিকা: qd-র সমান লম্বা, প্রতিটি ০-১০৮০০০ দশমাংশ-সেকেন্ড (৩ ঘণ্টা) বা খালি; না মিললে null (সময় ছাড়া উত্তর তবু জমা হয়)
+function cleanTm(tm, qd) {
+  if (typeof tm !== 'string' || !qd || tm.length > 4000) return null;
+  const a = tm.split(','), n = qd.split(',').length;
+  if (a.length !== n) return null;
+  for (const x of a) if (x !== '' && !(/^\d{1,6}$/.test(x) && +x <= 108000)) return null;
+  return a.some(x => x !== '') ? tm : null;
+}
+function cleanMeta(m, req) {
+  if (!m || typeof m !== 'object') return null;
+  const n = (x, hi) => Number.isFinite(x) && x >= 0 ? Math.min(Math.round(x), hi) : 0;
+  const o = {v: n(m.v, 99), hid: n(m.hid, 36000), hn: n(m.hn, 999), w: n(m.w, 9999), app: m.app === 1 ? 1 : 0, dev: diagMeta(req, {}).dev};
+  if (['old', 'none', 'n', 'order'].includes(m.tmx)) o.tmx = m.tmx;
+  return JSON.stringify(o);
+}
+const splitQd = qd => qd.split(',').map(x => { const i = x.lastIndexOf(':'); return [x.slice(0, i), +x.slice(i + 1)]; });
 
 // একটা পরীক্ষার প্রতিটি প্রশ্ন: "id:বিকল্প" (ফাঁকা −1); id না মিললে বা তালিকা খালি হলে null
 function cleanQd(list) {
@@ -672,13 +695,20 @@ async function admin(path, url, env, db, u, req) {
     const who = em ? await db.prepare('SELECT id, name, email, created, seen FROM users WHERE lower(email) = ?').bind(em).first()
       : id ? await db.prepare('SELECT id, name, email, created, seen FROM users WHERE id = ?').bind(id).first() : null;
     if (!who) return json({error: 'no user'}, 404);
-    const [a, q] = await db.batch([
+    await diagSetup(db);
+    const [a, q, d] = await db.batch([
       db.prepare('SELECT k, ts, c, t, p, s, n, ok, no, sec, sb FROM att WHERE uid = ? ORDER BY ts').bind(who.id),
-      db.prepare('SELECT k, ts, qd FROM attq WHERE uid = ? ORDER BY ts').bind(who.id)
+      db.prepare('SELECT k, ts, qd, tm, m FROM attq WHERE uid = ? ORDER BY ts').bind(who.id),
+      // নিজের পরিকল্পনার (অবস্থা-যাচাই) ভাগগুলো: প্রতিটি উত্তর [দাগ, ঠিক 1/ভুল 0, ms], পর্যালোচনায় একসঙ্গে গোনা হয়
+      db.prepare('SELECT sid, part, ts, done, ans, res, hid, hn FROM diag_att WHERE uid = ? ORDER BY ts').bind(who.id)
     ]);
-    const qd = new Map(q.results.map(r => [r.k, r.qd.split(',').map(x => { const i = x.lastIndexOf(':'); return [x.slice(0, i), +x.slice(i + 1)]; })]));
+    const Q = new Map(q.results.map(r => [r.k, r]));
+    // ফেরত যায় সেকেন্ডে (দশমিকসহ)
+    const tmOf = r => r && r.tm ? r.tm.split(',').map(x => x === '' ? null : +x / 10) : null;
+    const jp = x => { try { return x ? JSON.parse(x) : null; } catch (e) { return null; } };
     return json({ts: Date.now(), user: who,
-      att: a.results.map(r => ({...r, sb: r.sb ? JSON.parse(r.sb) : null, qd: qd.get(r.k) || null}))},
+      att: a.results.map(r => { const x = Q.get(r.k); return {...r, sb: jp(r.sb), qd: x ? splitQd(x.qd) : null, tm: tmOf(x), m: x ? jp(x.m) : null}; }),
+      diag: d.results.map(r => ({...r, ans: jp(r.ans) || {}, res: jp(r.res)}))},
       200, {'Cache-Control': 'no-store'});
   }
   if (path === 'admin/reports') {
@@ -1711,7 +1741,7 @@ export async function onRequest({request: req, env}) {
       ]);
       const r = a.results[0];
       if (!r) return json({error: 'not found'}, 404);
-      const qd = q.results[0] ? q.results[0].qd.split(',').map(x => { const i = x.lastIndexOf(':'); return [x.slice(0, i), +x.slice(i + 1)]; }) : null;
+      const qd = q.results[0] ? splitQd(q.results[0].qd) : null;
       return json({a: {...r, sb: r.sb ? JSON.parse(r.sb) : null, qd}}, 200, {'Cache-Control': 'no-store'});
     }
     if (path === 'att' && m === 'GET') {
@@ -1734,21 +1764,24 @@ export async function onRequest({request: req, env}) {
       // প্রতিটি উত্তর: ফলের k আর ts ধরে, একই k দুবার নয়। শুধু যে ফল এই জমায় গ্রহণ হলো তার উত্তর, তাই দৈনিক সীমার ভেতরেই থাকে
       const keep = new Set(rows.map(r => r[0]));
       const qds = (Array.isArray(body.a) ? body.a : []).slice(0, MAX_BATCH)
-        .map(a => a && typeof a === 'object' && str(a.k, 120) && num(a.ts) ? [str(a.k, 120), Math.round(a.ts), cleanQd(a.qd)] : null)
+        .map(a => { if (!(a && typeof a === 'object' && str(a.k, 120) && num(a.ts))) return null; const qd = cleanQd(a.qd);
+          return [str(a.k, 120), Math.round(a.ts), qd, cleanTm(a.tm, qd), qd ? cleanMeta(a.m, req) : null]; })
         .filter(x => x && x[2] && keep.has(x[0]));
       if (qds.length) {
         await attqTable(db);
-        const sq = db.prepare('INSERT OR IGNORE INTO attq(uid, k, ts, qd) VALUES(?,?,?,?)');
-        await db.batch(qds.map(x => sq.bind(u.id, x[0], x[1], x[2])));
+        const sq = db.prepare('INSERT OR IGNORE INTO attq(uid, k, ts, qd, tm, m) VALUES(?,?,?,?,?,?)');
+        await db.batch(qds.map(x => sq.bind(u.id, ...x)));
       }
       // প্রশ্নের হিসাবের সীমা পার হলে চুপচাপ বাদ (এগুলো শুধু পরিসংখ্যান, ফোনে জমিয়ে রাখার দরকার নেই)
       const qs = can.qa ? await saveQa(db, by) : 0;
       return json({ok: true, saved: rows.length, qs, qd: qds.length});
     }
     if (path === 'delete' && m === 'POST') {
-      await attqTable(db);
+      await attqTable(db); await diagSetup(db);
       await db.batch([
         db.prepare('DELETE FROM attq WHERE uid = ?').bind(u.id),
+        db.prepare('DELETE FROM diag_att WHERE uid = ?').bind(u.id),
+        db.prepare('DELETE FROM msg WHERE uid = ?').bind(u.id),
         db.prepare('DELETE FROM att WHERE uid = ?').bind(u.id),
         db.prepare('DELETE FROM sessions WHERE uid = ?').bind(u.id),
         db.prepare('DELETE FROM users WHERE id = ?').bind(u.id)
