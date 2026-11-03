@@ -8,6 +8,7 @@
    GET  /api/att/one?k= → একটা ফল আর তার প্রতিটি উত্তর (উত্তরপত্র)
    POST /api/att       {a:[ফল…]} → জমা (একই k দুবার এলে একবারই থাকে)
    POST /api/delete    → নিজের সব তথ্য মুছে যায়
+   GET/POST /api/goal  → নিজের লক্ষ্যের পরীক্ষা আর মাস (নিচে goal())
    প্রতিটি উত্তর (ব্যবহারকারী ধরে, কাস্টম প্ল্যানের জন্য): /api/att-এর প্রতিটি ফলে qd = [[প্রশ্ন-id, দাগানো বিকল্প (ফাঁকা −1)], …]
    → attq টেবিল (uid, k, ts, qd "id:বিকল্প,id:বিকল্প"), প্রতি পরীক্ষায় এক সারি (দিনে ১ লাখ সারি-লেখার সীমা মাথায় রেখে)
    একই সারিতে tm (প্রতিটি দাগের সময়, শুরুর পর দশমাংশ-সেকেন্ড) আর m (পাতা আড়ালে থাকা, পর্দা): শিক্ষার্থীর পর্যালোচনা /admin/review/
@@ -200,6 +201,28 @@ async function sessionUser(req, db) {
 }
 
 const pub = u => ({name: u.name || '', email: u.email || '', pic: u.pic || ''});
+
+// শিক্ষার্থীর লক্ষ্যের পরীক্ষা আর আনুমানিক মাস (/account/-এ নিজে বলেন; পর্যালোচনা /admin/review/ এটা দিয়ে শুরু করে)
+// GET /api/goal → {goal, gdate} · POST /api/goal {goal, gdate: "YYYY-MM" | ""}
+const GOALS = ['bcs', 'pb', 'subreg', 'bank', 'primary', 'ntrca', 'other'];
+let goalReady = false;
+async function goalCols(db) {
+  if (goalReady) return;
+  for (const col of ['goal', 'gdate']) try { await db.prepare('ALTER TABLE users ADD COLUMN ' + col + ' TEXT').run(); } catch (e) { /* আগেই আছে */ }
+  goalReady = true;
+}
+async function goal(req, db, u) {
+  await goalCols(db);
+  if (req.method === 'POST') {
+    const b = await req.json().catch(() => ({}));
+    const g = GOALS.includes(b.goal) ? b.goal : null;
+    const d = typeof b.gdate === 'string' && /^20[2-4]\d-(0[1-9]|1[0-2])$/.test(b.gdate) ? b.gdate : null;
+    await db.prepare('UPDATE users SET goal = ?, gdate = ? WHERE id = ?').bind(g, g ? d : null, u.id).run();
+    return json({ok: true, goal: g, gdate: g ? d : null});
+  }
+  const r = await db.prepare('SELECT goal, gdate FROM users WHERE id = ?').bind(u.id).first();
+  return json({goal: r && r.goal || null, gdate: r && r.gdate || null}, 200, {'Cache-Control': 'no-store'});
+}
 const str = (v, n) => typeof v === 'string' ? v.slice(0, n) : null;
 const num = v => typeof v === 'number' && isFinite(v) ? v : null;
 
@@ -653,8 +676,9 @@ async function admin(path, url, env, db, u, req) {
   }
   if (path === 'admin/att') {
     const em = (url.searchParams.get('email') || '').trim().toLowerCase(), id = parseInt(url.searchParams.get('uid') || '', 10);
-    const who = em ? await db.prepare('SELECT id, name, email, created, seen FROM users WHERE lower(email) = ?').bind(em).first()
-      : id ? await db.prepare('SELECT id, name, email, created, seen FROM users WHERE id = ?').bind(id).first() : null;
+    await goalCols(db);
+    const who = em ? await db.prepare('SELECT id, name, email, created, seen, goal, gdate FROM users WHERE lower(email) = ?').bind(em).first()
+      : id ? await db.prepare('SELECT id, name, email, created, seen, goal, gdate FROM users WHERE id = ?').bind(id).first() : null;
     if (!who) return json({error: 'no user'}, 404);
     await diagSetup(db);
     const [a, q, d] = await db.batch([
@@ -1690,6 +1714,7 @@ export async function onRequest({request: req, env}) {
     if (!u) return json({error: 'login'}, 401);
 
     if (path.startsWith('admin/')) return await admin(path, url, env, db, u, req);
+    if (path === 'goal') return await goal(req, db, u);
     // একটা পরীক্ষার ফল আর প্রতিটি উত্তর (নিজের উত্তরপত্র দেখার পাতা /account/script/)
     if (path === 'att/one' && m === 'GET') {
       const k = str(url.searchParams.get('k') || '', 120);

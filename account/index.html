@@ -43,6 +43,10 @@ h2{font-family:var(--display);font-weight:400;font-size:22px;margin:28px 0 10px}
 .me .who{flex:1;min-width:0;line-height:1.35}.me .who b{display:block;font-weight:600}.me .who small{color:var(--muted);font-size:13px;overflow-wrap:anywhere}
 .lnk{background:none;border:0;padding:6px 4px;font:inherit;font-size:14px;color:var(--link);cursor:pointer;text-decoration:underline}
 .imp{margin-top:12px;border-color:var(--gold-hi)}
+.goal{margin-top:12px;padding:12px 16px}.goal p{margin:0 0 8px;font-size:15.5px}.goal .gl{margin:0;font-size:15px}
+.goal form{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.goal select,.goal input{font:inherit;font-size:16px;padding:8px 10px;border:1px solid var(--rule);border-radius:10px;background:var(--card);color:var(--ink);min-height:44px}
+.goal select{flex:1 1 200px;min-width:0}.goal input{flex:0 1 170px;min-width:0}.goal small{display:block;width:100%;color:var(--muted);font-size:13px}
 .imp p{margin:0 0 10px}
 .btn{display:inline-block;background:var(--navy);color:#fff;border:0;border-radius:10px;padding:10px 18px;font:inherit;font-weight:600;font-size:15px;cursor:pointer;text-decoration:none}
 .btn.ghost{background:transparent;color:var(--link);border:1px solid var(--rule)}
@@ -305,7 +309,7 @@ async function onCred(res){
 }
 async function logout(){
   await fetch('/api/logout',{method:'POST',credentials:'same-origin'}).catch(()=>{});
-  set('lb:u',null);if(window.google&&google.accounts)google.accounts.id.disableAutoSelect();main();
+  set('lb:u',null);set('lb:goal',null);if(window.google&&google.accounts)google.accounts.id.disableAutoSelect();main();
 }
 let delArmed=0;
 async function delAll(){
@@ -314,13 +318,32 @@ async function delAll(){
   b.textContent='মুছে ফেলা হচ্ছে…';
   const r=await fetch('/api/delete',{method:'POST',credentials:'same-origin'}).catch(()=>null);
   if(!r||!r.ok){b.textContent='মুছে ফেলা যায়নি, আবার চেষ্টা করুন';delArmed=0;return}
-  set('lb:u',null);set('lb:q',[]);set('lb:noimp',0);main();
+  set('lb:u',null);set('lb:q',[]);set('lb:noimp',0);set('lb:goal',null);main();
 }
 function head(u){
   ME=u;
   $('sub').textContent='আপনার সব পরীক্ষার ফল, সব ফোনে একই।';
-  $('top').innerHTML=`<div class="card me"><span class="av">${u.pic?`<img src="${esc(u.pic)}" alt="" referrerpolicy="no-referrer">`:esc((u.name||'?').slice(0,1))}</span><span class="who"><b>${esc(u.name||'আমার অ্যাকাউন্ট')}</b><small>${esc(u.email)}</small></span><button type="button" class="lnk" id="out">লগআউট</button></div><div id="imp"></div>`;
+  $('top').innerHTML=`<div class="card me"><span class="av">${u.pic?`<img src="${esc(u.pic)}" alt="" referrerpolicy="no-referrer">`:esc((u.name||'?').slice(0,1))}</span><span class="who"><b>${esc(u.name||'আমার অ্যাকাউন্ট')}</b><small>${esc(u.email)}</small></span><button type="button" class="lnk" id="out">লগআউট</button></div><div id="goal"></div><div id="imp"></div>`;
   $('out').onclick=logout;
+  goalCard();
+}
+// লক্ষ্যের পরীক্ষা: একবার বললে পরের প্রস্তুতির হিসাব সেই পরীক্ষার নম্বর-ভাগ ধরে হয় (সার্ভারে /api/goal)
+const GOALS={bcs:'বিসিএস প্রিলি',pb:'পেট্রোবাংলা',subreg:'সাব-রেজিস্ট্রার',bank:'ব্যাংক',primary:'প্রাথমিক শিক্ষক নিয়োগ',ntrca:'শিক্ষক নিবন্ধন (এনটিআরসিএ)',other:'অন্য সরকারি চাকরি'};
+const GMON=['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
+async function goalCard(edit){
+  const box=$('goal');if(!box)return;
+  let g=get('lb:goal',null);
+  if(!edit){const j=await fetch('/api/goal',{credentials:'same-origin',cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null);if(j){g=j;set('lb:goal',j)}}
+  if(g&&g.goal&&!edit){
+    const d=g.gdate?' · '+GMON[+g.gdate.slice(5)-1]+' '+bn(g.gdate.slice(0,4)):'';
+    box.innerHTML=`<div class="card goal"><p class="gl">আমার লক্ষ্য: <b>${esc(GOALS[g.goal]||'')}</b>${d} <button type="button" class="lnk" id="gch">বদলান</button></p></div>`;
+    $('gch').onclick=()=>goalCard(true);return;
+  }
+  box.innerHTML=`<div class="card goal"><p>কোন পরীক্ষার প্রস্তুতি নিচ্ছেন?</p><form id="gf"><select id="gs" required aria-label="পরীক্ষা"><option value="">বেছে নিন</option>${Object.entries(GOALS).map(([k,v])=>`<option value="${k}"${g&&g.goal===k?' selected':''}>${v}</option>`).join('')}</select><input type="month" id="gd" aria-label="পরীক্ষা কবে (আনুমানিক মাস)" value="${g&&g.gdate||''}"><button class="btn">রাখুন</button><small>দ্বিতীয় ঘরে পরীক্ষার আনুমানিক মাস; না জানলে ফাঁকা রাখুন। এতে আপনার প্রস্তুতির হিসাব এই পরীক্ষার নম্বর-ভাগ ধরে হবে।</small></form></div>`;
+  $('gf').onsubmit=async e=>{e.preventDefault();const b=$('gf').querySelector('button');b.disabled=true;
+    const r=await fetch('/api/goal',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({goal:$('gs').value,gdate:$('gd').value||''})}).then(r=>r.ok?r.json():null).catch(()=>null);
+    if(!r){b.disabled=false;b.textContent='আবার চেষ্টা করুন';return}
+    set('lb:goal',r);goalCard()};
 }
 // এই ফোনের যে ফল অ্যাকাউন্টে নেই, এক ট্যাপে যোগ
 function offer(miss,reload){
