@@ -30,6 +30,14 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;p
 .scroll{overflow-x:auto}.dim{color:var(--muted)}.ok{color:#1e7a46;font-weight:600}.bad{color:#b3261e;font-weight:600}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 pre{white-space:pre-wrap;font-size:13px;background:var(--soft);padding:8px;border-radius:3px;margin:6px 0 0}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 14px}.tabs button{font:inherit;font-size:15px;padding:7px 12px;border:1px solid var(--rule);background:#fff;border-radius:3px;cursor:pointer;color:var(--navy)}
+.tabs button[aria-pressed="true"]{background:var(--navy);color:#fff;border-color:var(--navy)}
+.kp{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}.kp div{background:#fff;border:1px solid var(--rule);border-radius:3px;padding:8px 10px}.kp b{display:block;font-size:20px}.kp span{color:var(--muted);font-size:13px}
+.flag{color:#b3261e;font-weight:600}.warnc{color:#8a5a00}
+tr.click{cursor:pointer}tr.click:hover{background:var(--soft)}
+.qok{color:#1e7a46}.qno{color:#b3261e}.qsk{color:var(--muted)}
+.bar2{display:inline-block;height:8px;background:var(--navy);vertical-align:middle;border-radius:2px}
+small.dim{font-size:12.5px}
 </style>
 <link rel="stylesheet" href="/css/omr.css">
 </head>
@@ -37,40 +45,112 @@ pre{white-space:pre-wrap;font-size:13px;background:var(--soft);padding:8px;borde
 <div class="bar"><a href="/" aria-label="লিয়ানা বুকস"><img src="/img/logo/li-mark.svg" alt="" width="34" height="44"><span class="lgn-n">লিয়ানা বুকস</span></a><span>অ্যাডমিন</span></div>
 <main class="wrap">
 <h1>অবস্থা-যাচাই (নিজের পরিকল্পনা)</h1>
-<p class="sub">সেট-ফাইল তোলা আর কে কোন ভাগ দিয়েছেন। যা তুলবেন তার আসল কপি Lyanna_data-র <code>pilot/custom-plan/&lt;সেট&gt;.json</code>-এ রাখুন (D1-এর নিজের ব্যাকআপ নেই)। ছাঁচ: সেখানকার PLAN.md §৯।</p>
-<div class="card"><label for="sid">সেট</label><div class="row"><input type="text" id="sid" value="bcs-start" style="max-width:240px"><button class="btn ghost" id="load">দেখুন</button></div><div id="sum" class="dim" style="margin-top:8px"></div></div>
-<h2>সেট-ফাইল তোলা</h2>
-<div class="card"><input type="file" id="f" accept=".json,application/json"><div id="chk"></div><button class="btn" id="up" disabled style="margin-top:8px">তুলুন</button><pre id="log" hidden></pre></div>
-<h2>কে কী দিয়েছেন</h2>
-<div class="card scroll" id="att"><p class="dim">—</p></div>
+<p class="sub">কে কী দিয়েছেন, কে তাড়াহুড়া করেছেন, কোন প্রশ্ন কেমন গেল। তাড়াহুড়ার চিহ্ন শুধু এখানে দেখা যায়, শিক্ষার্থী দেখেন না।</p>
+<div class="row"><input type="text" id="sid" value="bcs-start" style="max-width:220px"><button class="btn ghost" id="load">আবার লোড</button><a class="btn ghost" id="csv" href="#">সব উত্তরের CSV</a></div>
+<div class="tabs" id="tabs"><button data-t="sum" aria-pressed="true">সার</button><button data-t="ppl">মানুষ</button><button data-t="items">প্রশ্ন</button><button data-t="up">সেট তোলা</button></div>
+<section id="sum"></section>
+<section id="ppl" hidden></section>
+<section id="one" hidden></section>
+<section id="items" hidden></section>
+<section id="up" hidden>
+<div class="card"><p class="sub" style="margin:0 0 8px">যা তুলবেন তার আসল কপি Lyanna_data-র <code>pilot/custom-plan/&lt;সেট&gt;.json</code>-এ রাখুন (D1-এর নিজের ব্যাকআপ নেই)। ছাঁচ: সেখানকার PLAN.md §৯।</p>
+<div id="setsum" class="dim"></div>
+<input type="file" id="f" accept=".json,application/json" style="margin-top:10px"><div id="chk"></div><button class="btn" id="upb" disabled style="margin-top:8px">তুলুন</button><pre id="log" hidden></pre></div>
+</section>
 </main>
 <script>
 const $=id=>document.getElementById(id),esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const bn=x=>String(x).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+const S=()=>$('sid').value.trim();
 async function api(p,b){const r=await fetch('/api/admin/'+p,b?{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:{credentials:'same-origin',cache:'no-store'});
   const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(j.error||r.status);e.j=j;throw e}return j}
-const FL={fast:'খুব দ্রুত',quick:'দ্রুত',same:'একই অপশন',low:'আন্দাজের নিচে',few:'অনেক বাদ',away:'অন্য অ্যাপে'};
+const FL={fast:'খুব দ্রুত (মধ্যমা <৫ সে.)',quick:'দ্রুত (৫-৮ সে.)',same:'একই অপশন বারবার',low:'আন্দাজের চেয়েও কম ঠিক',few:'অর্ধেকের বেশি বাদ',away:'অন্য অ্যাপে গিয়েছিলেন'};
+const SUBN={bn:'বাংলা',en:'ইংরেজি',bd:'বাংলাদেশ',intl:'আন্তর্জাতিক',geo:'ভূগোল',sci:'বিজ্ঞান',ict:'আইসিটি',math:'গণিত',mental:'মানসিক দক্ষতা',ethics:'নৈতিকতা'};
+const tm=s=>s==null?'—':s>=60?bn(Math.floor(s/60))+' মি. '+bn(s%60)+' সে.':bn(s)+' সে.';
+const when=ts=>{if(!ts)return '—';const d=new Date(ts+6*36e5);return bn(d.getUTCDate())+'/'+bn(d.getUTCMonth()+1)+' '+bn(String(d.getUTCHours()).padStart(2,'0'))+':'+bn(String(d.getUTCMinutes()).padStart(2,'0'))};
+const pc=(a,b)=>b?bn(Math.round(a/b*100))+'%':'—';
+let P=null,IT=null;
+function tab(t){document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t?'true':'false'));
+  ['sum','ppl','one','items','up'].forEach(x=>$(x).hidden=x!==t);if(t==='items'&&!IT)items();scrollTo(0,0)}
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.t));
+
 async function load(){
-  const s=$('sid').value.trim();$('sum').textContent='লোড হচ্ছে…';
-  let r;try{r=await api('diag?s='+encodeURIComponent(s))}catch(e){$('sum').textContent=e.message==='admin'?'অ্যাডমিন হিসেবে লগইন করুন (/account/)।':e.message==='no set'?'এই সেট এখনো তোলা হয়নি।':'খোলা যায়নি: '+e.message;$('att').innerHTML='<p class="dim">—</p>';return}
-  const L=new Map(r.loaded.map(x=>[x.part,x.n]));
-  $('sum').innerHTML=r.set.parts.length?r.set.parts.map(p=>`ভাগ ${bn(p.no)} (${esc(p.title)}): ${bn(L.get(p.no)||0)} / ${bn(p.qs.length)} প্রশ্ন তোলা, ${bn(p.mins)} মিনিট`).join('<br>'):'সেট এখনো তোলা হয়নি।';
-  $('att').innerHTML=r.att.length?'<table><thead><tr><th>কে</th><th>ভাগ</th><th>অবস্থা</th><th>ঠিক/ভুল/বাদ</th><th>চিহ্ন</th><th></th></tr></thead><tbody>'+r.att.map(a=>
-    `<tr><td>${esc(a.name||'')}<br><span class="dim">${esc(a.email||'')}</span></td><td>${bn(a.part)}</td><td>${a.res?'শেষ':'চলছে'}</td><td>${a.res?bn(a.res.ok)+' / '+bn(a.res.no)+' / '+bn(a.res.skip):''}</td><td>${a.res?(a.res.unsure?'<span class="bad">অনিশ্চিত</span> ':'')+a.res.flags.map(f=>FL[f]||f).join(', '):''}</td><td><button class="btn ghost" data-u="${a.uid}" data-p="${a.part}">মুছুন</button></td></tr>`).join('')+'</tbody></table>':'<p class="dim">এখনো কেউ দেননি।</p>';
-  $('att').querySelectorAll('[data-u]').forEach(b=>b.onclick=async()=>{if(!confirm('এই ভাগটা মুছে দিলে মানুষটা আবার দিতে পারবেন। মুছবেন?'))return;
-    await api('diag/reset',{s,uid:+b.dataset.u,part:+b.dataset.p}).catch(e=>alert(e.message));load()});
+  $('csv').href='/api/admin/diag/csv?s='+encodeURIComponent(S());IT=null;
+  $('sum').innerHTML='<p class="dim">লোড হচ্ছে…</p>';
+  try{P=await api('diag/people?s='+encodeURIComponent(S()))}catch(e){
+    $('sum').innerHTML='<div class="card">'+(e.message==='admin'?'অ্যাডমিন হিসেবে লগইন করুন (<a href="/account/">/account/</a>)।':e.message==='no set'?'এই সেট এখনো তোলা হয়নি। "সেট তোলা" ট্যাবে যান।':'খোলা যায়নি: '+esc(e.message))+'</div>';$('ppl').innerHTML='';setsum();return}
+  summary();people();setsum();
 }
-// সেট-ফাইল যাচাই: ছাঁচ, ভাগের প্রশ্ন সব আছে কি না, আর উত্তর-চাবির ধারা (Fable-এর নিয়ম ৭)
+// ---- সার: কতজন শুরু, কতজন শেষ, কোন ভাগে থেমে যায়, কতজন সন্দেহজনক ----
+function summary(){
+  const pp=P.people,parts=P.set.parts,all=pp.filter(x=>x.done===parts.length).length,sus=pp.filter(x=>x.unsure).length;
+  const tot=pp.reduce((a,x)=>a+x.ok+x.no+x.skip,0),ok=pp.reduce((a,x)=>a+x.ok,0),sk=pp.reduce((a,x)=>a+x.skip,0);
+  let h=`<div class="kp"><div><b>${bn(pp.length)}</b><span>জন শুরু করেছেন</span></div><div><b>${bn(all)}</b><span>জন সব ভাগ শেষ</span></div>
+    <div><b>${bn(sus)}</b><span>জনের অন্তত এক ভাগ সন্দেহজনক</span></div><div><b>${pc(ok,tot)}</b><span>সব উত্তরে ঠিক</span></div><div><b>${pc(sk,tot)}</b><span>প্রশ্ন বাদ</span></div>
+    <div><b>${bn(pp.filter(x=>x.going).length)}</b><span>জনের ভাগ এখন চলছে</span></div></div>`;
+  h+='<h2>ভাগ ধরে</h2><div class="card scroll"><table><thead><tr><th>ভাগ</th><th>শুরু</th><th>শেষ</th><th>গড় ঠিক</th><th>গড় সময়</th><th>সন্দেহজনক</th></tr></thead><tbody>'+parts.map(p=>{
+    const L=pp.flatMap(x=>x.parts.filter(y=>y.part===p.no)),D=L.filter(y=>y.done);
+    const avg=D.length?D.reduce((a,y)=>a+y.ok,0)/D.length:0,sec=D.length?Math.round(D.reduce((a,y)=>a+(y.sec||0),0)/D.length):null;
+    return `<tr><td>${bn(p.no)} · ${esc(p.title)}</td><td>${bn(L.length)}</td><td>${bn(D.length)}</td><td>${D.length?bn(avg.toFixed(1))+' / '+bn(p.n):'—'}</td><td>${tm(sec)} <small class="dim">/ ${bn(p.mins)} মি.</small></td><td>${bn(D.filter(y=>y.unsure).length)}</td></tr>`}).join('')+'</tbody></table></div>';
+  h+='<h2>কোন চিহ্ন কতবার</h2><div class="card"><ul class="list" style="list-style:none;padding:0;margin:0">'+Object.keys(FL).map(f=>`<li>${FL[f]}: ${bn(pp.reduce((a,x)=>a+(x.flags[f]||0),0))}টি ভাগে</li>`).join('')+'</ul><p class="sub" style="margin:8px 0 0">"সন্দেহজনক" মানে খুব দ্রুত, একই অপশন বারবার, বা আন্দাজের চেয়েও কম ঠিক। এই ভাগের বিষয়গুলো পরিকল্পনার ক্রমে চুপচাপ সিলেবাসের নম্বর ধরে বসে।</p></div>';
+  $('sum').innerHTML=h;
+}
+// ---- মানুষ: প্রতিজন এক সারি; চাপলে খুঁটিনাটি ----
+function people(){
+  const pp=P.people,n=P.set.parts.length;
+  $('ppl').innerHTML=pp.length?'<div class="card scroll"><table><thead><tr><th>কে</th><th>ভাগ</th><th>ঠিক / ভুল / বাদ</th><th>মোট সময়</th><th>প্রশ্নে মধ্যমা</th><th>অন্য অ্যাপে</th><th>চিহ্ন</th><th>শেষ দেখা</th></tr></thead><tbody>'+pp.map(x=>
+    `<tr class="click" data-u="${x.uid}"><td>${esc(x.name)}<br><small class="dim">${esc(x.email)} · ${esc(x.dev)}</small></td><td>${bn(x.done)}/${bn(n)}${x.going?' <small class="dim">+চলছে</small>':''}</td>
+    <td>${bn(x.ok)} / ${bn(x.no)} / ${bn(x.skip)}</td><td>${tm(x.sec)}</td><td>${x.med==null?'—':bn(x.med)+' সে.'}</td><td>${x.hn?bn(x.hn)+' বার, '+tm(x.hid):'—'}</td>
+    <td>${x.unsure?'<span class="flag">সন্দেহজনক '+bn(x.unsure)+'</span><br>':''}<small class="dim">${Object.keys(x.flags).filter(f=>f!=='fast'&&f!=='same'&&f!=='low').map(f=>FL[f].split(' (')[0]).join(', ')}</small></td><td>${when(x.last)}</td></tr>`).join('')+'</tbody></table></div><p class="sub">সারিতে চাপলে সেই মানুষের প্রতিটা ভাগ আর প্রতিটা উত্তর।</p>':'<p class="dim">এখনো কেউ দেননি।</p>';
+  $('ppl').querySelectorAll('[data-u]').forEach(r=>r.onclick=()=>person(+r.dataset.u));
+}
+async function person(uid){
+  ['sum','ppl','items','up'].forEach(x=>$(x).hidden=true);$('one').hidden=false;$('one').innerHTML='<p class="dim">লোড হচ্ছে…</p>';scrollTo(0,0);
+  let r;try{r=await api('diag/person?s='+encodeURIComponent(S())+'&uid='+uid)}catch(e){$('one').innerHTML='খোলা যায়নি।';return}
+  let h=`<button class="btn ghost" id="bk">← সবাই</button><h2>${esc(r.user&&r.user.name)} <small class="dim">${esc(r.user&&r.user.email)} · uid ${bn(uid)}</small></h2>`;
+  if(r.status)h+='<div class="card scroll"><b>বিষয় ধরে</b><table><thead><tr><th>বিষয়</th><th>ঠিক</th><th>ভুল</th><th>বাদ</th><th>দেখানো ব্যান্ড</th><th>ভেতরের চিহ্ন</th></tr></thead><tbody>'+r.status.subjects.filter(x=>x.taken).map(x=>
+    `<tr><td>${esc(x.name)}</td><td>${bn(x.ok)}/${bn(x.n)}</td><td>${bn(x.no)}</td><td>${bn(x.skip)}</td><td>${({strong:'শক্ত',mid:'মাঝামাঝি',focus:'এখন ফোকাস'})[x.band]||'—'}</td><td>${x.unsure?'<span class="flag">সন্দেহজনক</span> ':''}${x.few?'কম উত্তর':''}</td></tr>`).join('')+'</tbody></table><p class="sub" style="margin:6px 0 0">পরিকল্পনার ক্রম: '+r.status.order.map(id=>SUBN[id]||id).join(' → ')+'</p></div>';
+  h+=r.parts.sort((a,b)=>a.part-b.part).map(p=>{const x=p.res;
+    return `<div class="card"><div class="row" style="justify-content:space-between"><b>ভাগ ${bn(p.part)} · ${esc(p.title)}</b><button class="btn ghost" data-reset="${p.part}">আবার দিতে দিন</button></div>
+    <p class="sub" style="margin:4px 0">শুরু ${when(p.ts)} · ${p.done?'শেষ '+when(p.done)+' · সময় লেগেছে '+tm(p.sec)+' / '+bn(p.mins)+' মি.':'চলছে বা শেষ হয়নি'} · ${esc(p.meta.dev||'')}${p.meta.w?' '+bn(p.meta.w)+'px':''}${p.meta.app?' · অ্যাপ':''}${p.meta.opens>1?' · '+bn(p.meta.opens)+' বার খোলা':''}${p.hn?' · অন্য অ্যাপে '+bn(p.hn)+' বার, '+tm(p.hid):''}</p>
+    ${x?`<p style="margin:4px 0">${bn(x.ok)} ঠিক, ${bn(x.no)} ভুল, ${bn(x.skip)} বাদ · প্রশ্নে মধ্যমা ${x.med==null?'—':bn(x.med)+' সে.'} ${x.unsure?'· <span class="flag">সন্দেহজনক</span>':''}</p>${x.flags.length?'<p class="warnc" style="margin:0 0 4px">'+x.flags.map(f=>FL[f]).join(' · ')+'</p>':''}`:''}
+    <details><summary>প্রতিটা উত্তর (${bn(p.qs.length)})</summary><div class="scroll"><table><thead><tr><th>#</th><th>প্রশ্ন</th><th>দাগ</th><th>সঠিক</th><th>সময়</th></tr></thead><tbody>${p.qs.map((q,i)=>
+      `<tr><td>${bn(i+1)}</td><td>${esc(q.q)}<br><small class="dim">${SUBN[q.s]||q.s} · ${q.id}</small></td><td class="${!q.seen||q.pick==null?'qsk':q.ok?'qok':'qno'}">${q.pick==null?(q.seen?'বাদ':'দেখেননি'):esc(q.pick)}</td><td>${esc(q.right)}</td><td>${q.ms?bn((q.ms/1000).toFixed(1))+' সে.':'—'}</td></tr>`).join('')}</tbody></table></div></details></div>`}).join('');
+  $('one').innerHTML=h;$('bk').onclick=()=>tab('ppl');
+  $('one').querySelectorAll('[data-reset]').forEach(b=>b.onclick=async()=>{if(!confirm('এই ভাগের সব উত্তর মুছে যাবে, মানুষটা একই প্রশ্নে আবার দিতে পারবেন। মুছবেন?'))return;
+    await api('diag/reset',{s:S(),uid,part:+b.dataset.reset}).catch(e=>alert(e.message));await load();person(uid)});
+}
+// ---- প্রশ্ন: কোনটা সবাই পারে, কোনটা কেউ পারে না, কোন ভুল অপশন টানে, ভালোরা পারে কিন্তু খারাপরা পারে না কি না ----
+async function items(){
+  $('items').innerHTML='<p class="dim">লোড হচ্ছে…</p>';
+  try{IT=(await api('diag/items?s='+encodeURIComponent(S()))).items}catch(e){$('items').innerHTML='খোলা যায়নি।';return}
+  const f=$('items');let sort='ok';
+  const draw=()=>{
+    const L=[...IT].sort(sort==='ok'?(a,b)=>(a.n?a.ok/a.n:2)-(b.n?b.ok/b.n:2):sort==='disc'?(a,b)=>(a.disc==null?9:a.disc)-(b.disc==null?9:b.disc):sort==='skip'?(a,b)=>(b.n?b.skip/b.n:0)-(a.n?a.skip/a.n:0):(a,b)=>a.part-b.part);
+    f.innerHTML=`<div class="row" style="margin-bottom:8px"><span class="dim">সাজান:</span>${[['ok','কম ঠিক আগে'],['disc','পার্থক্য কম আগে'],['skip','বেশি বাদ আগে'],['part','ভাগ ধরে']].map(([k,t])=>`<button class="btn ghost" data-s="${k}"${sort===k?' style="background:var(--soft)"':''}>${t}</button>`).join('')}</div>
+    <p class="sub">"পার্থক্য" = ভাগে ভালো করা অর্ধেকের ঠিকের হার − খারাপ করা অর্ধেকের। শূন্য বা ঋণাত্মক হলে প্রশ্ন বা উত্তর-চাবি সন্দেহজনক, দেখে নিন।</p>
+    <div class="card scroll"><table><thead><tr><th>প্রশ্ন</th><th>দেখেছেন</th><th>ঠিক</th><th>বাদ</th><th>মধ্যমা সময়</th><th>পার্থক্য</th><th>কোন অপশনে কতজন</th></tr></thead><tbody>${L.map(x=>
+      `<tr><td>${esc(x.q)}<br><small class="dim">ভাগ ${bn(x.part)} · ${SUBN[x.s]||x.s} · ${x.id}</small></td><td>${bn(x.n)}</td><td>${pc(x.ok,x.n)}</td><td>${pc(x.skip,x.n)}</td><td>${x.med==null?'—':bn(x.med)+' সে.'}</td>
+      <td class="${x.disc!=null&&x.disc<=0?'flag':''}">${x.disc==null?'—':bn(x.disc)}</td><td>${x.o.map((o,k)=>`<div${k===x.a?' class="qok"':''}>${'কখগঘঙচ'[k]}. ${bn(x.picks[k])} <small class="dim">${esc(o)}</small></div>`).join('')}</td></tr>`).join('')}</tbody></table></div>`;
+    f.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{sort=b.dataset.s;draw()});
+  };draw();
+}
+// ---- সেট তোলা ----
+async function setsum(){
+  try{const r=await api('diag?s='+encodeURIComponent(S()));const L=new Map(r.loaded.map(x=>[x.part,x.n]));
+    $('setsum').innerHTML=r.set.parts.length?r.set.parts.map(p=>`ভাগ ${bn(p.no)} (${esc(p.title)}): ${bn(L.get(p.no)||0)} / ${bn(p.qs.length)} প্রশ্ন তোলা, ${bn(p.mins)} মিনিট`).join('<br>'):'সেট এখনো তোলা হয়নি।'}
+  catch(e){$('setsum').textContent=e.message==='no set'?'সেট এখনো তোলা হয়নি।':''}
+}
 let SET=null;
 function check(c){
   const err=[],warn=[];
   if(!c||!c.id||!Array.isArray(c.subjects)||!Array.isArray(c.parts)||!c.questions)return {err:['ফাইলে id, subjects, parts, questions লাগবে'],warn};
-  const S=new Set(c.subjects.map(s=>s.id));
+  const Sb=new Set(c.subjects.map(s=>s.id));
   for(const p of c.parts){
     const qs=p.qs||[],cnt={};let run=1,best=0,prev=null;
     for(const id of qs){const q=c.questions[id];
       if(!q){err.push('ভাগ '+p.no+': প্রশ্ন নেই '+id);continue}
-      if(!S.has(q.s))err.push(id+': অচেনা বিষয় '+q.s);
+      if(!Sb.has(q.s))err.push(id+': অচেনা বিষয় '+q.s);
       if(q.part!=null&&q.part!==p.no)err.push(id+': part '+q.part+' কিন্তু আছে ভাগ '+p.no+'-এ');
       if(!Array.isArray(q.o)||q.o.length<2||!Number.isInteger(q.a)||q.a<0||q.a>=q.o.length)err.push(id+': o/a ঠিক নয়');
       if(!q.e)warn.push(id+': ব্যাখ্যা নেই');
@@ -81,21 +161,21 @@ function check(c){
   return {err,warn};
 }
 $('f').onchange=async()=>{
-  SET=null;$('up').disabled=true;const t=await $('f').files[0].text();
+  SET=null;$('upb').disabled=true;const t=await $('f').files[0].text();
   let c;try{c=JSON.parse(t)}catch(e){$('chk').innerHTML='<p class="bad">JSON পড়া যায়নি।</p>';return}
   const {err,warn}=check(c),n=c.parts?c.parts.reduce((a,p)=>a+(p.qs||[]).length,0):0;
-  $('chk').innerHTML=`<p>${esc(c.title||c.id)} · ${bn(n)} প্রশ্ন · ${bn((c.parts||[]).length)} ভাগ</p>`+(err.length?'<p class="bad">ভুল:</p><pre>'+esc(err.slice(0,40).join('\n'))+'</pre>':'<p class="ok">ছাঁচ ঠিক আছে।</p>')+(warn.length?'<p class="dim">খেয়াল করুন:</p><pre>'+esc(warn.slice(0,40).join('\n'))+'</pre>':'');
-  if(!err.length){SET=c;$('up').disabled=false;$('sid').value=c.id}
+  $('chk').innerHTML=`<p>${esc(c.title||c.id)} · ${bn(n)} প্রশ্ন · ${bn((c.parts||[]).length)} ভাগ</p>`+(err.length?'<p class="bad">ভুল:</p><pre>'+esc(err.slice(0,40).join('\n'))+'</pre>':'<p class="ok">ছাঁচ ঠিক আছে।</p>')+(warn.length?'<p class="dim">খেয়াল করুন (অপশনের ক্রম প্রতিজনের জন্য এলোমেলো হয়, তাই এগুলো আটকায় না):</p><pre>'+esc(warn.slice(0,40).join('\n'))+'</pre>':'');
+  if(!err.length){SET=c;$('upb').disabled=false;$('sid').value=c.id}
 };
-$('up').onclick=async()=>{
-  if(!SET)return;$('up').disabled=true;const log=$('log');log.hidden=false;log.textContent='সেট তোলা হচ্ছে…\n';
+$('upb').onclick=async()=>{
+  if(!SET)return;$('upb').disabled=true;const log=$('log');log.hidden=false;log.textContent='সেট তোলা হচ্ছে…\n';
   try{
     await api('diag/set',{cfg:{id:SET.id,title:SET.title,subjects:SET.subjects,parts:SET.parts}});
     const all=SET.parts.flatMap(p=>p.qs).map(id=>({id,...SET.questions[id]}));
     for(let i=0;i<all.length;i+=40){const r=await api('diag/q',{s:SET.id,qs:all.slice(i,i+40)});log.textContent+=bn(Math.min(i+40,all.length))+' / '+bn(all.length)+(r.bad.length?' · বাদ: '+r.bad.join(', '):'')+'\n'}
     log.textContent+='শেষ।';load();
   }catch(e){log.textContent+='থেমে গেছে: '+(e.j&&e.j.list?e.j.list.join('\n'):e.message)}
-  $('up').disabled=false;
+  $('upb').disabled=false;
 };
 $('load').onclick=load;load();
 </script>
