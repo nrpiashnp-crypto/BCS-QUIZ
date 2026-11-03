@@ -65,7 +65,11 @@ const unsure='<span class="tag">অনিশ্চিত (কম প্রশ্
 function draw(){
   R=LYReview.build(J,M,QS,$('goal').value);const c=R.counts,a=R.all,h=R.habit,G=R.target;let o='';
   $('who').textContent=(J.user.name||'শিক্ষার্থী');
-  $('meta').innerHTML=`${esc(J.user.email||'')} · পরীক্ষা ${bn(c.exams)}টি (সাধারণ ${bn(c.att)}, অবস্থা-যাচাইয়ের ভাগ ${bn(c.diag)}) · আলাদা প্রশ্ন ${bn(c.unique)}টি`+
+  const GN={bcs:'বিসিএস প্রিলি',pb:'পেট্রোবাংলা',subreg:'সাব-রেজিস্ট্রার',bank:'ব্যাংক',primary:'প্রাথমিক শিক্ষক',ntrca:'এনটিআরসিএ',other:'অন্য সরকারি চাকরি'};
+  let gl='';if(J.user.goal){gl=`নিজের লক্ষ্য: <b>${esc(GN[J.user.goal]||J.user.goal)}</b>`;
+    if(J.user.gdate){const mo=(+J.user.gdate.slice(0,4)-new Date().getFullYear())*12+(+J.user.gdate.slice(5)-1-new Date().getMonth());gl+=` (${bn(J.user.gdate)}${mo>=0?', আর প্রায় '+bn(mo)+' মাস':''})`}
+    if(!LYReview.TARGETS[J.user.goal])gl+=' <span class="dim">· এই পরীক্ষার নম্বর-ভাগ এখনো নেই, নিচে কাছাকাছিটা বেছে নিন</span>';gl+='<br>'}
+  $('meta').innerHTML=gl+`${esc(J.user.email||'')} · পরীক্ষা ${bn(c.exams)}টি (সাধারণ ${bn(c.att)}, অবস্থা-যাচাইয়ের ভাগ ${bn(c.diag)}) · আলাদা প্রশ্ন ${bn(c.unique)}টি`+
     (c.keyBad?` · <span class="tag">${bn(c.keyBad)}টি পরীক্ষায় উত্তর-চাবি মেলেনি, সেগুলোর ঠিক/ভুল বাদ</span>`:'')+
     (c.noTime?` · <span class="dim">${bn(c.noTime)}টিতে সময়ের তথ্য নেই (পুরোনো বা সময় মেলেনি)</span>`:'')+
     `<br><span class="dim" style="font-size:13px">টপিক-জানা ${P(Math.round((c.unique-c.noMap)/c.unique*100))}, কঠিনতা-জানা ${P(Math.round(c.withDiff/c.unique*100))} প্রশ্ন</span>`;
@@ -150,7 +154,8 @@ $('copy').onclick=()=>{if(!R)return;const t='নিচের সংখ্যা�
   (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>{$('copy').textContent='কপি হয়েছে ✓'},()=>{const p=document.createElement('textarea');p.value=t;document.body.appendChild(p);p.select();document.execCommand('copy');p.remove();$('copy').textContent='কপি হয়েছে ✓'})};
 (async()=>{
   if(!uid){$('meta').innerHTML='কোন শিক্ষার্থী? <a href="/admin/learners/">তালিকা থেকে বাছুন</a>।';return}
-  try{[J,M,QS]=await Promise.all([get('/api/admin/att?uid='+uid),get('/admin/data/qmap.json'),get('/api/qstat').catch(()=>({rows:[]}))]);draw()}
+  try{[J,M,QS]=await Promise.all([get('/api/admin/att?uid='+uid),get('/admin/data/qmap.json'),get('/api/qstat').catch(()=>({rows:[]}))]);
+    if(J.user.goal&&LYReview.TARGETS[J.user.goal])$('goal').value=J.user.goal;draw()}
   catch(e){$('meta').innerHTML=e==='login'?'আগে <a href="/account/">লগইন করুন</a> (অ্যাডমিন ইমেইল দিয়ে)।':e==='admin'?'এই ইমেইল অ্যাডমিন তালিকায় নেই।':'আনা যায়নি, আবার চেষ্টা করুন।'}
 })();
 </script>
