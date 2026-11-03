@@ -16,6 +16,14 @@ async function api(p,b){
   const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(j.error||'err');e.j=j;e.s=r.status;throw e}return j}
 const mins=m=>m>=60?bn(Math.floor(m/60))+' ঘণ্টা'+(m%60?' '+bn(m%60)+' মিনিট':''):bn(m)+' মিনিট';
 let ME=null,EX=null,tick=null;
+// পরীক্ষার নিয়ম: ভূমিকায় আর প্রতিটা ভাগ শুরুর আগে একই কথা
+const RULES=`<ul class="rules">
+  <li>শান্ত জায়গায় বসে, একটানা দিন। শুরু করলে ঘড়ি চলতেই থাকে, পাতা বন্ধ করলেও।</li>
+  <li>অপশনে চাপলেই উত্তর লক হয়ে যায়, আর বদলানো যায় না। তাই ভেবে চাপুন।</li>
+  <li>না জানলে আন্দাজে না দাগিয়ে "বাদ দিন" চাপুন। বাদ দেওয়া প্রশ্ন ভাগের শেষে আরেকবার আসবে।</li>
+  <li>বই বা অন্য কারও সাহায্য নেবেন না। আপনি এখন কোথায় আছেন, সেটা জানাই উদ্দেশ্য। ঠিক মাপ এলেই পরিকল্পনা ঠিক হবে।</li>
+  <li>নেট চলে গেলেও উত্তর ফোনে থেকে যায়, নেট এলে নিজে থেকেই জমা হয়।</li>
+</ul>`;
 const SUB=id=>(ME.subjects.find(s=>s.id===id)||{}).name||id;
 const back='<button class="btn ghost" data-home>← সব ভাগ</button>';
 const wire=()=>V.querySelectorAll('[data-home]').forEach(b=>b.onclick=home);
@@ -43,7 +51,9 @@ function intro(login){
     <li><b>সব ভাগ শেষে</b> আপনার কার্ড: কোন বিষয়ে শক্ত, কোথায় এখন ফোকাস।</li>
     <li><b>বিষয়ভিত্তিক পরিকল্পনা:</b> যেখানে সবচেয়ে বেশি নম্বর বাড়ানো যায়, সেখান থেকে শুরু।</li>
   </ol>
-  <p class="warn">প্রতিটা ভাগ মন দিয়ে, একটানা দিন। তাড়াহুড়া করে দাগালে পরিকল্পনাও ভুল আসবে।</p></div>
+  </div>
+  <h2>কীভাবে দেবেন</h2>
+  <div class="card">${RULES}</div>
   ${login?'<div class="card"><p style="margin:0 0 8px">ফল আর অগ্রগতি জমিয়ে রাখতে আগে Google দিয়ে লগইন করুন। পাসওয়ার্ড লাগে না।</p><div id="g"></div></div>':'<div class="card"><b>প্রশ্ন তোলা হচ্ছে।</b> শিগগির এখান থেকেই শুরু করা যাবে।</div>'}`;
   if(login)loginBtn();
 }
@@ -70,12 +80,12 @@ function dash(){
     let right,info=`${bn(p.n)}টি প্রশ্ন · ${bn(p.mins)} মিনিট`;
     if(p.st==='todo')right=`<button class="btn" data-go="${p.no}">শুরু করুন</button>`;
     else if(p.st==='going'){right=`<button class="btn" data-go="${p.no}">চালিয়ে যান</button>`;info=`চলছে · ${bn(Math.max(0,Math.ceil(p.left/60000)))} মিনিট বাকি`}
-    else{right=`<button class="btn ghost" data-rs="${p.no}">ফল</button>`;info=`${bn(p.res.ok)}টি ঠিক, ${bn(p.res.no)}টি ভুল, ${bn(p.res.skip)}টি বাদ${p.res.unsure?' · অনিশ্চিত':''}`}
+    else{right=`<button class="btn ghost" data-rs="${p.no}">ফল</button>`;info=`${bn(p.res.ok)}টি ঠিক, ${bn(p.res.no)}টি ভুল, ${bn(p.res.skip)}টি বাদ`}
     return `<div class="card ex"><div><b>ভাগ ${bn(p.no)} · ${esc(sub)}</b><small>${info}</small></div>${right}</div>`}).join('');
   V.innerHTML=h;
-  V.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>part(+b.dataset.go));
+  V.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const p=ME.parts.find(x=>x.no===+b.dataset.go);p.st==='going'?part(p.no):ready(p)});
   V.querySelectorAll('[data-rs]').forEach(b=>b.onclick=()=>result((ME.parts.find(p=>p.no===+b.dataset.rs)||{}).res));
-  if($('st'))$('st').onclick=status;
+  if($('st'))$('st').onclick=()=>status(false);
   scrollTo(0,0);
 }
 
@@ -97,9 +107,16 @@ document.addEventListener('visibilitychange',()=>{
   if(document.hidden){hidAt=Date.now();L.hn++;set(LK(EX.part),L);sendPart(EX.part,false).catch(()=>{})}
   else if(hidAt){L.hid+=(Date.now()-hidAt)/1000;hidAt=0;set(LK(EX.part),L)}
 });
+function ready(p){
+  V.innerHTML=`${back}<h1 style="margin-top:12px">ভাগ ${bn(p.no)} · ${esc(p.subjects.map(SUB).join(' + '))}</h1>
+    <p class="sub">${bn(p.n)}টি প্রশ্ন, সময় ${bn(p.mins)} মিনিট।</p><div class="card">${RULES}</div>
+    <button class="btn big" id="go">শুরু করুন</button>`;
+  wire();$('go').onclick=()=>part(p.no);scrollTo(0,0);
+}
 async function part(no){
   V.innerHTML='<p class="dim">প্রশ্ন আসছে…</p>';
-  try{EX=await api('start',{part:no})}catch(e){V.innerHTML=`<div class="card">${e.message==='done'?'এই ভাগ আগেই শেষ হয়েছে।':'খোলা যায়নি। নেট দেখে আবার চেষ্টা করুন।'}</div>${back}`;wire();return}
+  let app=0;try{app=localStorage.getItem('lb:inapp')?1:0}catch(e){}
+  try{EX=await api('start',{part:no,w:innerWidth,app})}catch(e){V.innerHTML=`<div class="card">${e.message==='done'?'এই ভাগ আগেই শেষ হয়েছে।':'খোলা যায়নি। নেট দেখে আবার চেষ্টা করুন।'}</div>${back}`;wire();return}
   EX.end=Date.now()+EX.left;
   const L=local(no);for(const [id,p] of EX.done){if(!L.a[id])L.a[id]=[p,0];if(!L.sent.includes(id))L.sent.push(id)}set(LK(no),L);
   // প্রথমে যেগুলো একবারও দেখানো হয়নি, তারপর বাদ দেওয়াগুলো (একবার)
@@ -153,21 +170,19 @@ async function finish(){
 const LINE={strong:'এই বিষয়ে আপনি শক্ত অবস্থানে। এখানে কম সময় দিয়ে অন্য বিষয়ে বেশি দিন।',
   mid:'ভিত্তি আছে। কয়েকটা টপিক গোছালেই এই বিষয়ে নম্বর উঠবে।',
   focus:'এই বিষয়েই সবচেয়ে বেশি নম্বর বাড়ানোর সুযোগ। আপনার পরিকল্পনা এখান থেকেই শুরু হবে।'};
-const band=x=>{if(!x.n)return null;if((x.ok+x.no)/x.n<0.6)return 'few';const p=x.ok/x.n*100;return p<40?'focus':p<70?'mid':'strong'};
+const band=x=>{if(!x.n)return null;const p=x.ok/x.n*100;return p<40?'focus':p<70?'mid':'strong'};
 function result(res){
   if(!res)return home();
   const left=ME.parts.filter(p=>p.st!=='done'&&p.no!==res.part).length;
+  if(!left&&ME.status)return status(true);
   let h=`${back}<h1 style="margin-top:12px">ভাগ ${bn(res.part)}-এর ফল</h1>`;
-  if(res.unsure)h+=`<div class="card note"><b>এই ভাগের ফল অনিশ্চিত।</b> ${res.flags.includes('fast')?'অনেক প্রশ্ন খুব তাড়াতাড়ি দাগানো হয়েছে।':res.flags.includes('same')?'অনেক উত্তর একই অপশনে।':'ঠিক উত্তর আন্দাজের চেয়েও কম।'} কার্ডে এই বিষয়গুলো "অনিশ্চিত" দেখাবে, পরিকল্পনা সিলেবাসের নম্বর ধরে সাজানো হবে।</div>`;
-  else if(res.flags.includes('few'))h+='<div class="card note">অর্ধেকের বেশি প্রশ্ন বাদ গেছে। তাই এই ভাগ থেকে অবস্থা পুরো বোঝা যায়নি। এতে দোষ নেই, পরিকল্পনা সেভাবেই সাজানো হবে।</div>';
-  h+=Object.entries(res.by).map(([sid,x])=>{const b=res.unsure?null:band(x);
+  h+=Object.entries(res.by).map(([sid,x])=>{const b=band(x);
     return `<div class="card"><b>${esc(SUB(sid))}</b>: ${bn(x.n)}টির মধ্যে ${bn(x.ok)}টি ঠিক<div class="sub" style="margin:2px 0 0">${bn(x.no)}টি ভুল, ${bn(x.skip)}টি বাদ</div>${b&&LINE[b]?`<p style="margin:6px 0 0">${LINE[b]}</p>`:''}</div>`}).join('');
-  if(res.flags.includes('away'))h+='<p class="sub">পরীক্ষার সময় কয়েকবার অন্য অ্যাপে গিয়েছিলেন। ফল বাতিল হয়নি, শুধু জানিয়ে রাখা।</p>';
   h+=left?`<div class="card ex"><div><b>আরও ${bn(left)} ভাগ বাকি</b><small>সব শেষ হলেই আপনার কার্ড</small></div><button class="btn" data-home>পরের ভাগ</button></div>`
     :`<div class="card ex"><div><b>সব ভাগ শেষ!</b><small>আপনার কার্ড তৈরি</small></div><button class="btn" id="st">দেখুন</button></div>`;
   h+=`<details id="rv"><summary>ভুলগুলো দেখুন (ব্যাখ্যাসহ)</summary><div id="rvb"><p class="dim">লোড হচ্ছে…</p></div></details>`;
   V.innerHTML=h;wire();
-  if($('st'))$('st').onclick=status;
+  if($('st'))$('st').onclick=()=>status(false);
   $('rv').addEventListener('toggle',()=>{if($('rv').open&&!$('rv').dataset.ok)review(res.part)});
   scrollTo(0,0);
 }
@@ -181,29 +196,33 @@ async function review(no){
 }
 
 // ---------- সব ভাগ শেষে: বিষয়ের চিত্র আর পরিকল্পনা ----------
-const BL={strong:'শক্ত',mid:'মাঝামাঝি',focus:'এখন ফোকাস',unsure:'অনিশ্চিত',few:'যথেষ্ট উত্তর নেই'};
-function status(){
+const BL={strong:'শক্ত',mid:'মাঝামাঝি',focus:'এখন ফোকাস'};
+const first=()=>((ME.user&&ME.user.name)||'').trim().split(/\s+/)[0]||'';
+function status(fresh){
   const st=ME.status;if(!st)return home();
   const subs=st.subjects.filter(x=>x.band),strong=subs.filter(x=>x.band==='strong'),plan=st.order.map(id=>st.subjects.find(x=>x.id===id));
-  let h=`${back}<h1 style="margin-top:12px">আপনার অবস্থা</h1><p class="sub">${bn(ME.parts.reduce((a,p)=>a+p.n,0))} প্রশ্নের অবস্থা-যাচাই থেকে, বিষয় ধরে।</p>`;
-  h+='<div class="card"><table><thead><tr><th>বিষয়</th><th>ঠিক</th><th>অবস্থা</th></tr></thead><tbody>'+subs.map(x=>
+  const nm=first(),tot=bn(ME.parts.reduce((a,p)=>a+p.n,0));
+  let h=fresh?'':back;
+  // শুভকামনা: শেষ করাটাই প্রথম বড় ধাপ; সামনে পথ আর পাশে থাকা
+  h+=`<div class="hello"><h1>অভিনন্দন${nm?', '+esc(nm):''}!</h1>
+    <p>${tot}টি প্রশ্নের পুরো অবস্থা-যাচাই আপনি শেষ করেছেন। অনেকে শুরু করেও শেষ করেন না, আপনি করেছেন। প্রস্তুতির প্রথম বড় ধাপ এটাই।</p>
+    <p>এখন আপনি জানেন কোথায় আপনি শক্ত, আর কোথা থেকে শুরু করলে সবচেয়ে বেশি নম্বর বাড়বে। পথটা লম্বা, তবে একা হাঁটতে হবে না। প্রতিদিনের অনুশীলনে লিয়ানা বুকস আপনার পাশে আছে।</p>
+    <p class="sig">শুভকামনা রইল।</p></div>`;
+  h+=`<div class="card"><div id="cimg"><p class="dim">আপনার কার্ড তৈরি হচ্ছে…</p></div></div>`;
+  h+=`<h2>বিষয় ধরে আপনার অবস্থা</h2><div class="card"><table><thead><tr><th>বিষয়</th><th>ঠিক</th><th>অবস্থা</th></tr></thead><tbody>`+subs.map(x=>
     `<tr><td>${esc(x.name)}</td><td>${bn(x.n)}-এ ${bn(x.ok)}</td><td class="bd-${x.band}">${BL[x.band]}${x.edge?'<small> · সীমানায়</small>':''}</td></tr>`).join('')+'</tbody></table>';
   if(subs.some(x=>x.small))h+='<p class="sub" style="margin:8px 0 0">২০টির কম প্রশ্নের বিষয়ে ফল ছোট পরীক্ষার, তাই শুধু ধারণা।</p>';
   h+='</div>';
   h+=`<h2>আপনার পরিকল্পনা: এই ক্রমে</h2><p class="sub">যে বিষয়ে সিলেবাসের নম্বর বেশি আর এখনো বেশি বাকি, সেটা আগে।</p><div class="card"><ol class="plan">`+
     plan.map(x=>`<li>${x.link?`<a href="${esc(x.link)}">${esc(x.name)}</a>`:esc(x.name)} <span class="dim">· সিলেবাসে ${bn(x.marks)} নম্বর</span></li>`).join('')+
     '</ol><p class="sub" style="margin:8px 0 0">বিষয়ে চাপলে সেই বিষয়ের প্রশ্ন আর পরীক্ষা। প্রতিদিনের অনুশীলন আর অগ্রগতি শিগগির এখানেই যোগ হবে।</p></div>';
-  h+=`<div class="card"><b>কার্ডটা ছবি হিসেবে নিন</b><p class="sub" style="margin:2px 0 8px">শেয়ার করা যায়। কার্ডে নম্বর বা শতাংশ থাকে না।</p>
-    <label class="nm">কার্ডে নাম (না দিলেও চলে) <input id="cn" maxlength="24" value="${esc(((ME.user&&ME.user.name)||'').split(' ')[0])}"></label>
-    <button class="btn" id="mk">ছবি বানান</button><div id="cimg"></div></div>`;
-  V.innerHTML=h;wire();
-  $('mk').onclick=()=>photo(st,strong,plan);
-  scrollTo(0,0);
+  if(fresh)h+=`<p><button class="btn ghost" data-home>সব ভাগ দেখুন</button></p>`;
+  V.innerHTML=h;wire();scrollTo(0,0);
+  photo(st,strong,plan,nm);
 }
 
 // কার্ডের ছবি ১০৮০×১৩৫০। আপেক্ষিক, পরম নয়: মোট নম্বর, শতাংশ, র‍্যাঙ্ক, "দুর্বল" শব্দ নেই
-async function photo(st,strong,plan){
-  $('mk').disabled=true;$('cimg').innerHTML='<p class="dim">আঁকা হচ্ছে…</p>';
+async function photo(st,strong,plan,nm){
   try{await Promise.all(['600 60px "Tiro Bangla"','400 34px "Noto Sans Bengali"','600 34px "Noto Sans Bengali"'].map(f=>document.fonts.load(f,'অআকখ')))}catch(e){}
   const W=1080,H=1350,c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');
   const NAVY='#13294b',PINK='#c8326a',PAPER='#f8f5ee',INK='#1d1f21',MUTED='#5d5a55',GOLD='#e0b45c';
@@ -212,34 +231,35 @@ async function photo(st,strong,plan){
   g.fillStyle='#fff';g.font='600 58px "Tiro Bangla"';g.fillText(NAME+' অবস্থা-যাচাই',70,110);
   const d=new Date(Date.now()+6*36e5),MON=['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
   g.fillStyle=GOLD;g.font='400 32px "Noto Sans Bengali"';
-  const nm=($('cn').value||'').trim().slice(0,24);
+  nm=(nm||'').slice(0,24);
   g.fillText((nm?nm+' · ':'')+bn(ME.parts.reduce((a,p)=>a+p.n,0))+' প্রশ্ন · '+bn(st.parts)+' ভাগ শেষ · '+bn(d.getUTCDate())+' '+MON[d.getUTCMonth()],70,168);
-  // বিষয়ের বার: তিন রং, সংখ্যা ছাড়া
-  const COL={strong:'#1e7a46',mid:'#c48a1c',focus:PINK,unsure:'#a9a49b',few:'#a9a49b'},LEN={strong:1,mid:.66,focus:.36,unsure:.5,few:.5};
-  const subs=st.subjects.filter(x=>x.band);let y=290;const bw=560,bx=430;
-  g.font='400 34px "Noto Sans Bengali"';
-  for(const x of subs){
-    g.fillStyle=INK;g.fillText(x.name,70,y+30);
-    g.fillStyle='#ece5d8';g.fillRect(bx,y,bw,36);
-    g.fillStyle=COL[x.band];g.fillRect(bx,y,Math.round(bw*LEN[x.band]),36);
-    y+=72;
+  const line=(label,txt,col,size)=>{g.fillStyle=col;g.font='600 '+size+'px "Noto Sans Bengali"';g.fillText(label,70,y);g.fillStyle=INK;g.font='400 '+size+'px "Noto Sans Bengali"';
+    wrap(txt,70+g.measureText(label+' ').width+8,size);};
+  const wrap=(t,x0,size)=>{let x=x0;for(const w of t.split(' ')){const ww=g.measureText(w+' ').width;if(x+ww>W-70){y+=size*1.5;x=70}g.fillText(w,x,y);x+=ww}y+=size*1.95};
+  const focus=plan.slice(0,2).map(x=>x.name).join(', '),subs=st.subjects.filter(x=>x.band);
+  let y;
+  if(strong.length||subs.some(x=>x.band==='mid')){
+    // বিষয়ের বার: তিন রং, সংখ্যা ছাড়া
+    const COL={strong:'#1e7a46',mid:'#c48a1c',focus:PINK},LEN={strong:1,mid:.66,focus:.36};
+    y=290;const bw=560,bx=430;
+    g.font='400 34px "Noto Sans Bengali"';
+    for(const x of subs){g.fillStyle=INK;g.fillText(x.name,70,y+30);g.fillStyle='#ece5d8';g.fillRect(bx,y,bw,36);g.fillStyle=COL[x.band];g.fillRect(bx,y,Math.round(bw*LEN[x.band]),36);y+=72}
+    y+=30;
+    if(strong.length)line('শক্ত:',strong.slice(0,3).map(x=>x.name).join(', '),'#1e7a46',34);
+    line('এখন ফোকাস:',focus,PINK,34);
+  }else{
+    // কোনো বিষয় এখনো শক্ত বা মাঝামাঝি নয়: বার নয়, শুধু শুরু আর সংকল্প (লজ্জা নয়)
+    y=420;g.fillStyle=NAVY;g.font='600 64px "Tiro Bangla"';g.fillText('প্রস্তুতি শুরু হলো',70,y);y+=120;
+    line('এখন ফোকাস:',focus,PINK,44);
+    g.fillStyle=MUTED;g.font='400 38px "Noto Sans Bengali"';wrap('প্রতিদিন একটু করে, এই দুই বিষয় দিয়ে শুরু। নিজের পরিকল্পনা তৈরি।',70,38);
   }
-  y+=30;
-  const line=(label,txt,col)=>{g.fillStyle=col;g.font='600 34px "Noto Sans Bengali"';g.fillText(label,70,y);g.fillStyle=INK;g.font='400 34px "Noto Sans Bengali"';
-    wrap(txt,70+g.measureText(label+' ').width+8);};
-  const wrap=(t,x0)=>{let x=x0;for(const w of t.split(' ')){const ww=g.measureText(w+' ').width;if(x+ww>W-70){y+=50;x=70}g.fillText(w,x,y);x+=ww}y+=66};
-  const focus=plan.slice(0,2).map(x=>x.name).join(', ');
-  if(strong.length)line('শক্ত:',strong.slice(0,3).map(x=>x.name).join(', '),'#1e7a46');
-  line('এখন ফোকাস:',focus,PINK);
-  if(!strong.length){g.fillStyle=MUTED;g.font='400 32px "Noto Sans Bengali"';wrap('পরিকল্পনা তৈরি। প্রতিদিন একটু করে, এই দুই বিষয় দিয়ে শুরু।',70)}
   g.fillStyle=PINK;g.fillRect(70,H-150,W-140,3);
   g.fillStyle=NAVY;g.font='600 40px "Noto Sans Bengali"';g.fillText('আমার পরিকল্পনা শুরু',70,H-80);
   g.fillStyle=MUTED;g.font='400 32px "Noto Sans Bengali"';const u='lyannabooks.com';g.fillText(u,W-70-g.measureText(u).width,H-80);
   const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',.86));
   const url=URL.createObjectURL(blob),file=new File([blob],'lyanna-plan.jpg',{type:'image/jpeg'});
-  $('cimg').innerHTML=`<img src="${url}" alt="আপনার অবস্থার কার্ড" style="width:100%;margin:10px 0;border:1px solid var(--rule)"><div class="row"><a class="btn ghost" href="${url}" download="lyanna-plan.jpg">ছবি রাখুন</a>${navigator.canShare&&navigator.canShare({files:[file]})?'<button class="btn" id="sh">শেয়ার করুন</button>':''}</div>`;
+  $('cimg').innerHTML=`<img src="${url}" alt="আপনার অবস্থার কার্ড" style="width:100%;margin:0 0 10px;border:1px solid var(--rule)"><div class="row"><a class="btn ghost" href="${url}" download="lyanna-plan.jpg">ছবি রাখুন</a>${navigator.canShare&&navigator.canShare({files:[file]})?'<button class="btn" id="sh">শেয়ার করুন</button>':''}</div>`;
   if($('sh'))$('sh').onclick=()=>navigator.share({files:[file],title:NAME+' অবস্থা-যাচাই',text:'আমার প্রস্তুতির পরিকল্পনা · lyannabooks.com'}).catch(()=>{});
-  $('mk').disabled=false;
 }
 home();
 })();

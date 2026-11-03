@@ -1210,7 +1210,19 @@ const DIAG_SCHEMA = [
   'CREATE TABLE IF NOT EXISTS diag_att(sid TEXT NOT NULL, uid INTEGER NOT NULL, part INTEGER NOT NULL, ts INTEGER NOT NULL, dl INTEGER NOT NULL, ans TEXT NOT NULL, done INTEGER, res TEXT, hid INTEGER, hn INTEGER, PRIMARY KEY(sid, uid, part))'
 ];
 let diagReady = false;
-async function diagSetup(db) { if (diagReady) return; await db.batch(DIAG_SCHEMA.map(s => db.prepare(s))); diagReady = true; }
+async function diagSetup(db) {
+  if (diagReady) return;
+  await db.batch(DIAG_SCHEMA.map(s => db.prepare(s)));
+  // meta: ফোন/কম্পিউটার, পর্দার মাপ, কতবার পাতা আবার খোলা (একই সারিতে, বাড়তি লেখা নয়)
+  try { await db.prepare('ALTER TABLE diag_att ADD COLUMN meta TEXT').run(); } catch (e) { /* আগেই আছে */ }
+  diagReady = true;
+}
+const diagMeta = (req, b) => {
+  const ua = req.headers.get('User-Agent') || '';
+  const dev = /Android/i.test(ua) ? 'android' : /iPhone|iPad|iPod/i.test(ua) ? 'ios' : /Mobile/i.test(ua) ? 'mobile' : 'desktop';
+  const w = Number.isInteger(b.w) && b.w > 0 && b.w < 10000 ? b.w : null;
+  return {dev, w, app: b.app === 1 ? 1 : 0};
+};
 // পাতার ঠিকানা → সেট (চেনা সেট সেট তোলার আগেই পাতা খোলে, "শিগগির" দেখায়)
 const DIAG_KNOWN = {'bcs-start': 'বিসিএস · অবস্থা-যাচাই'};
 // বিষয় → সাইটের বিদ্যমান বিষয়ের পাতা (পরিকল্পনার প্রথম সংস্করণে এগুলোই পথ)
@@ -1317,18 +1329,21 @@ function diagStatus(c, done) {
     if (!x.taken || !x.n) { x.band = null; continue; }
     const pct = x.ok / x.n * 100;
     x.small = x.n < 20;
-    if (x.unsure) x.band = 'unsure';
-    else if ((x.ok + x.no) / x.n < 0.6) x.band = 'few';
-    else x.band = pct < 40 ? 'focus' : pct < 70 ? 'mid' : 'strong';
-    x.edge = ['focus', 'mid', 'strong'].includes(x.band) && (Math.abs(pct - 40) < 5 || Math.abs(pct - 70) < 5);
-    // নম্বর বাড়ানোর সুযোগ: সিলেবাসের নম্বর × যতটা এখনো বাকি; অনিশ্চিত/কম উত্তরের বিষয়ে অর্ধেক ধরা
-    const known = x.band === 'unsure' || x.band === 'few' ? 0.5 : pct / 100;
+    // শিক্ষার্থী শুধু নম্বরের ব্যান্ড দেখেন; তাড়াহুড়া/কম উত্তরের চিহ্ন দেখান না (PIASH, ২০২৬-১১-০৩), শুধু অ্যাডমিন পাতায়
+    x.band = pct < 40 ? 'focus' : pct < 70 ? 'mid' : 'strong';
+    x.few = (x.ok + x.no) / x.n < 0.6;
+    x.edge = Math.abs(pct - 40) < 5 || Math.abs(pct - 70) < 5;
+    // নম্বর বাড়ানোর সুযোগ: সিলেবাসের নম্বর × যতটা এখনো বাকি; অনিশ্চিত বা কম উত্তরের বিষয়ে চুপচাপ অর্ধেক ধরা
+    const known = x.unsure || x.few ? 0.5 : pct / 100;
     x.gain = Math.round(x.marks * (1 - known) * 10) / 10;
   }
   const order = S.filter(x => x.band).sort((a, b) => b.gain - a.gain || a.name.localeCompare(b.name)).map(x => x.id);
   return {subjects: S, order, parts: c.parts.length, doneParts: done.length};
 }
 
+// শিক্ষার্থীর কাছে যায় শুধু নম্বর; চিহ্ন (তাড়াহুড়া ইত্যাদি) অ্যাডমিনের
+const resPub = r => r && {part: r.part, n: r.n, ok: r.ok, no: r.no, skip: r.skip, by: r.by};
+const statusPub = st => st && {...st, subjects: st.subjects.map(({unsure, few, gain, ...x}) => x)};
 async function diag(path, req, url, env, db, u) {
   await diagSetup(db);
   const m = req.method, body = m === 'POST' ? await req.json().catch(() => ({})) : {};
@@ -1351,9 +1366,9 @@ async function diag(path, req, url, env, db, u) {
       if (!r.done && now < r.dl + GRACE) return {...p, st: 'going', left: r.dl - now, answered: Object.keys(JSON.parse(r.ans)).length};
       if (!r.res) return {...p, st: 'closing'}; // সময় শেষ, কিন্তু ফল এখনো গোনা হয়নি: পাতা খুললেই save দিয়ে বন্ধ হয়
       const res = JSON.parse(r.res); finished.push(res);
-      return {...p, st: 'done', res};
+      return {...p, st: 'done', res: resPub(res)};
     });
-    out.status = finished.length ? diagStatus(c, finished) : null;
+    out.status = finished.length ? statusPub(diagStatus(c, finished)) : null;
     out.all = !!c.parts.length && finished.length === c.parts.length;
     return json(out);
   }
@@ -1361,16 +1376,21 @@ async function diag(path, req, url, env, db, u) {
   if (!c.parts.length) return json({error: 'soon'}, 403);
   const no = parseInt(url.searchParams.get('part') || body.part, 10), p = c.P.get(no);
   if (!p) return json({error: 'bad'}, 400);
-  let att = await db.prepare('SELECT ts, dl, ans, done, res, hid, hn FROM diag_att WHERE sid = ? AND uid = ? AND part = ?').bind(sid, u.id, no).first();
+  let att = await db.prepare('SELECT ts, dl, ans, done, res, hid, hn, meta FROM diag_att WHERE sid = ? AND uid = ? AND part = ?').bind(sid, u.id, no).first();
 
   if (path === 'diag/start' && m === 'POST') {
     if (!att) {
-      await db.prepare("INSERT OR IGNORE INTO diag_att(sid, uid, part, ts, dl, ans, done, res, hid, hn) VALUES(?,?,?,?,?,'{}',NULL,NULL,0,0)")
-        .bind(sid, u.id, no, now, now + p.mins * 60e3).run();
+      await db.prepare("INSERT OR IGNORE INTO diag_att(sid, uid, part, ts, dl, ans, done, res, hid, hn, meta) VALUES(?,?,?,?,?,'{}',NULL,NULL,0,0,?)")
+        .bind(sid, u.id, no, now, now + p.mins * 60e3, JSON.stringify({...diagMeta(req, body), opens: 1})).run();
       // দুই ফোন একসঙ্গে শুরু করলে যেটা আগে লেখা হয়েছে সেটাই
-      att = await db.prepare('SELECT ts, dl, ans, done, res, hid, hn FROM diag_att WHERE sid = ? AND uid = ? AND part = ?').bind(sid, u.id, no).first();
+      att = await db.prepare('SELECT ts, dl, ans, done, res, hid, hn, meta FROM diag_att WHERE sid = ? AND uid = ? AND part = ?').bind(sid, u.id, no).first();
     }
     if (att.done || now >= att.dl + GRACE) return json({error: 'done'}, 403);
+    if (now - att.ts > 3000) { // চলতি ভাগ আবার খোলা: গোনা থাকে (রিলোড, নেট কাটা, অন্য ফোন)
+      const mt = (() => { try { return JSON.parse(att.meta || '{}') || {}; } catch (e) { return {}; } })();
+      mt.opens = (mt.opens || 1) + 1;
+      await db.prepare('UPDATE diag_att SET meta = ? WHERE sid = ? AND uid = ? AND part = ?').bind(JSON.stringify(mt), sid, u.id, no).run();
+    }
     const Q = await diagQs(db, sid, p.qs), ans = JSON.parse(att.ans);
     const qs = p.qs.filter(id => Q.has(id)).map(id => {
       const q = Q.get(id), ord = dOrder(q.o.length, dSeed(sid, u.id, id));
@@ -1380,7 +1400,7 @@ async function diag(path, req, url, env, db, u) {
   }
   if (path === 'diag/save' && m === 'POST') {
     if (!att) return json({error: 'nosit'}, 403);
-    if (att.done) return json({ok: true, res: att.res ? JSON.parse(att.res) : null});
+    if (att.done) return json({ok: true, res: att.res ? resPub(JSON.parse(att.res)) : null});
     const late = now > att.dl + GRACE + DIAG_LATE;
     const ans = JSON.parse(att.ans), inPart = new Set(p.qs), list = (Array.isArray(body.ans) ? body.ans : []).slice(0, 80);
     let Q = null;
@@ -1408,12 +1428,12 @@ async function diag(path, req, url, env, db, u) {
       await db.prepare('UPDATE diag_att SET ans = ?, hid = ?, hn = ? WHERE sid = ? AND uid = ? AND part = ? AND done IS NULL')
         .bind(JSON.stringify(ans), hid, hn, sid, u.id, no).run();
     }
-    return json({ok: true, n: Object.keys(ans).length, res, left: att.dl - now});
+    return json({ok: true, n: Object.keys(ans).length, res: resPub(res), left: att.dl - now});
   }
   if (path === 'diag/review' && m === 'GET') {
     if (!att || !att.res) return json({error: 'soon'}, 403);
     const Q = await diagQs(db, sid, p.qs), ans = JSON.parse(att.ans);
-    return json({part: no, title: p.title, res: JSON.parse(att.res), qs: p.qs.filter(id => Q.has(id)).map(id => {
+    return json({part: no, title: p.title, res: resPub(JSON.parse(att.res)), qs: p.qs.filter(id => Q.has(id)).map(id => {
       const q = Q.get(id), ord = dOrder(q.o.length, dSeed(sid, u.id, id)), a = ans[id];
       return {id, s: q.s, q: q.q, o: ord.map(i => q.o[i]), a: ord.indexOf(q.a), pick: a ? a[0] : -1, e: q.e || ''};
     })}, 200, {'Cache-Control': 'no-store'});
@@ -1452,6 +1472,84 @@ async function diagAdmin(path, url, req, db) {
     if (!uid || !no) return json({error: 'bad'}, 400);
     await db.prepare('DELETE FROM diag_att WHERE sid = ? AND uid = ? AND part = ?').bind(sid, uid, no).run();
     return json({ok: true});
+  }
+  // ---- বিশ্লেষণ (শুধু অ্যাডমিন): সব উত্তর diag_att-এর ans-এ জমা, এখানে গুনে দেখানো; বাড়তি টেবিল বা লেখা নেই ----
+  const rows = async () => (await db.prepare(`SELECT a.uid, a.part, a.ts, a.dl, a.done, a.res, a.ans, a.hid, a.hn, a.meta, u.name, u.email
+    FROM diag_att a LEFT JOIN users u ON u.id = a.uid WHERE a.sid = ? ORDER BY a.ts LIMIT 20000`).bind(sid).all()).results.map(r => ({...r,
+      res: r.res ? JSON.parse(r.res) : null, ans: JSON.parse(r.ans || '{}'), meta: (() => { try { return JSON.parse(r.meta || '{}') || {}; } catch (e) { return {}; } })()}));
+  const used = r => r.done ? Math.round((r.done - r.ts) / 1000) : null;
+  if (path === 'admin/diag/people' && m === 'GET') {
+    const by = new Map();
+    for (const r of await rows()) {
+      let x = by.get(r.uid);
+      if (!x) by.set(r.uid, x = {uid: r.uid, name: r.name || '', email: r.email || '', first: r.ts, last: r.ts, done: 0, going: 0, ok: 0, no: 0, skip: 0,
+        sec: 0, hid: 0, hn: 0, opens: 0, unsure: 0, flags: {}, dev: r.meta.dev || '', ms: [], parts: []});
+      x.last = Math.max(x.last, r.done || r.ts);
+      x.hid += r.hid || 0; x.hn += r.hn || 0; x.opens += Math.max(0, (r.meta.opens || 1) - 1);
+      for (const a of Object.values(r.ans)) if (a[0] >= 0 && a[2] > 0) x.ms.push(a[2]);
+      if (r.res) {
+        x.done++; x.ok += r.res.ok; x.no += r.res.no; x.skip += r.res.skip; x.sec += used(r) || 0;
+        if (r.res.unsure) x.unsure++;
+        for (const f of r.res.flags) x.flags[f] = (x.flags[f] || 0) + 1;
+      } else x.going++;
+      x.parts.push({part: r.part, done: !!r.res, ok: r.res ? r.res.ok : null, n: r.res ? r.res.n : null, sec: used(r), unsure: r.res ? r.res.unsure : false,
+        flags: r.res ? r.res.flags : [], med: r.res ? r.res.med : null});
+    }
+    const people = [...by.values()].map(x => { const med = median(x.ms); delete x.ms; return {...x, med: med == null ? null : Math.round(med / 100) / 10}; })
+      .sort((a, b) => b.last - a.last);
+    return json({set: {id: c.id, title: c.title, parts: c.parts.map(p => ({no: p.no, title: p.title, n: p.qs.length, mins: p.mins}))}, people}, 200, {'Cache-Control': 'no-store'});
+  }
+  if (path === 'admin/diag/person' && m === 'GET') {
+    const uid = parseInt(url.searchParams.get('uid') || '', 10);
+    if (!uid) return json({error: 'bad'}, 400);
+    const mine = (await rows()).filter(r => r.uid === uid);
+    const Q = await diagQs(db, sid, [...new Set(mine.flatMap(r => (c.P.get(r.part) || {qs: []}).qs))]);
+    const who = await db.prepare('SELECT id, name, email, created, seen FROM users WHERE id = ?').bind(uid).first();
+    const done = mine.filter(r => r.res).map(r => r.res);
+    return json({user: who, status: done.length ? diagStatus(c, done) : null, parts: mine.map(r => {
+      const p = c.P.get(r.part) || {qs: []};
+      return {part: r.part, title: p.title, mins: p.mins, ts: r.ts, dl: r.dl, done: r.done, sec: used(r), hid: r.hid, hn: r.hn, meta: r.meta, res: r.res,
+        qs: p.qs.filter(id => Q.has(id)).map(id => {
+          const q = Q.get(id), a = r.ans[id], ord = dOrder(q.o.length, dSeed(sid, uid, id));
+          return {id, s: q.s, q: q.q.slice(0, 160), pick: a && a[0] >= 0 ? q.o[ord[a[0]]] : null, right: q.o[q.a], ok: a ? a[1] : 0, ms: a ? a[2] : null, seen: !!a};
+        })};
+    })}, 200, {'Cache-Control': 'no-store'});
+  }
+  if (path === 'admin/diag/items' && m === 'GET') {
+    const all = (await rows()).filter(r => r.res), ids = c.parts.flatMap(p => p.qs), Q = await diagQs(db, sid, ids);
+    const I = new Map(ids.filter(id => Q.has(id)).map(id => [id, {id, part: 0, s: Q.get(id).s, q: Q.get(id).q.slice(0, 140), o: Q.get(id).o, a: Q.get(id).a,
+      n: 0, ok: 0, skip: 0, picks: Q.get(id).o.map(() => 0), ms: [], hi: [0, 0], lo: [0, 0]}]));
+    for (const p of c.parts) for (const id of p.qs) if (I.has(id)) I.get(id).part = p.no;
+    // ভালো-খারাপের পার্থক্য: ভাগের মোট ঠিক ধরে ওপরের অর্ধেক আর নিচের অর্ধেকে এই প্রশ্নে ঠিকের হার
+    for (const p of c.parts) {
+      const list = all.filter(r => r.part === p.no).sort((a, b) => b.res.ok - a.res.ok), half = Math.floor(list.length / 2);
+      list.forEach((r, i) => {
+        for (const id of p.qs) {
+          const x = I.get(id); if (!x) continue;
+          const a = r.ans[id]; x.n++;
+          const g = i < half ? x.hi : i >= list.length - half ? x.lo : null;
+          if (g) { g[1]++; if (a && a[1]) g[0]++; }
+          if (!a || a[0] < 0) { x.skip++; continue; }
+          if (a[1]) x.ok++;
+          x.picks[dOrder(x.o.length, dSeed(sid, r.uid, id))[a[0]]]++;
+          if (a[2] > 0) x.ms.push(a[2]);
+        }
+      });
+    }
+    return json({items: [...I.values()].map(({ms, o, ...x}) => ({...x, o: o.map(t => String(t).slice(0, 60)), med: ms.length ? Math.round(median(ms) / 100) / 10 : null,
+      disc: x.hi[1] && x.lo[1] ? Math.round((x.hi[0] / x.hi[1] - x.lo[0] / x.lo[1]) * 100) / 100 : null}))}, 200, {'Cache-Control': 'no-store'});
+  }
+  // প্রতিটি উত্তর এক সারি; নাম/ইমেইল নয়, শুধু uid (Lyanna_data-তে নেওয়ার জন্য)
+  if (path === 'admin/diag/csv' && m === 'GET') {
+    const all = await rows(), Q = await diagQs(db, sid, c.parts.flatMap(p => p.qs));
+    const out = [['uid', 'part', 'qid', 'subject', 'pick', 'answer', 'ok', 'ms', 'started', 'done', 'unsure', 'dev'].join(',')];
+    for (const r of all) for (const id of (c.P.get(r.part) || {qs: []}).qs) {
+      const q = Q.get(id); if (!q) continue;
+      const a = r.ans[id], pick = a && a[0] >= 0 ? dOrder(q.o.length, dSeed(sid, r.uid, id))[a[0]] : -1;
+      out.push([r.uid, r.part, id, q.s, pick, q.a, a ? a[1] : 0, a ? a[2] : '', dhakaIso(r.ts), dhakaIso(r.done), r.res && r.res.unsure ? 1 : 0, r.meta.dev || ''].map(csvCell).join(','));
+    }
+    return new Response(out.join('\n') + '\n', {headers: {'Content-Type': 'text/csv; charset=utf-8', 'Cache-Control': 'no-store',
+      'Content-Disposition': `attachment; filename="${sid}-answers.csv"`}});
   }
   if (path === 'admin/diag' && m === 'GET') {
     const [q, a] = await db.batch([
