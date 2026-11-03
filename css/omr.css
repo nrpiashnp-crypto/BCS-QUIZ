@@ -147,3 +147,6 @@ a:not([class]):hover,p a:hover,li a:hover,.exp a:hover,.sub a:hover,.crumb a:hov
 .cheer{margin:26px 0 0;padding:10px 0 0;border-top:1px dashed var(--rule,#d9d3c7);color:#5b5f66;font-family:'Tiro Bangla',serif;font-size:16px;line-height:1.6}
 .cheer span{display:block;font-family:'Noto Sans Bengali',sans-serif;font-size:13px;margin-top:2px}
 .cheer span::before{content:'— '}
+/* পরীক্ষায় প্রশ্ন বদলের হালকা মিলিয়ে যাওয়া (plan.js) */
+#view{transition:opacity .15s ease}#view.qout{opacity:0}
+@media (prefers-reduced-motion:reduce){#view{transition:none}}
