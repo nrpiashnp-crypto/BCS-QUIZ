@@ -53,7 +53,7 @@ tr.pick{cursor:pointer}tr.pick:hover{background:var(--soft)}
 <section id="one" hidden>
 <h2 id="who"></h2>
 <p class="stats" id="sum"></p>
-<p><button class="btn" id="dl">JSON নামান</button> <button class="btn ghost" id="back">সবার তালিকায় ফিরুন</button></p>
+<p><a class="btn" id="rv" href="/admin/review/">পর্যালোচনা দেখুন</a> <button class="btn ghost" id="dl">JSON নামান</button> <button class="btn ghost" id="back">সবার তালিকায় ফিরুন</button></p>
 <div class="card scroll"><table><thead><tr><th>সময়</th><th>পরীক্ষা</th><th>নম্বর</th><th>সঠিক</th><th>ভুল</th><th>ফাঁকা</th><th>সময় লেগেছে</th><th>উত্তর জমেছে</th></tr></thead><tbody id="rows"></tbody></table></div>
 </section>
 </main>
@@ -75,7 +75,7 @@ async function list(){
   document.querySelectorAll('#users tr.pick').forEach(tr=>tr.onclick=()=>one(tr.dataset.id));
 }
 async function one(id){
-  const j=await api('admin/att?uid='+encodeURIComponent(id));cur=j;$('list').hidden=true;$('one').hidden=false;history.replaceState(null,'','#'+id);
+  const j=await api('admin/att?uid='+encodeURIComponent(id));cur=j;$('rv').href='/admin/review/#'+encodeURIComponent(id);$('list').hidden=true;$('one').hidden=false;history.replaceState(null,'','#'+id);
   $('who').textContent=(j.user.name||'')+' · '+(j.user.email||'');
   let last='',html='',good=0,withq=0;
   j.att.forEach(a=>{const d=dayOf(a.ts),c=check(a);if(a.qd)withq++;if(c.ok)good++;

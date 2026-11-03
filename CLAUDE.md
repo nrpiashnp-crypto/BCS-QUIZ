@@ -7,6 +7,6 @@
 - নকশা আর ইঞ্জিনের নিয়ম `lyanna-site` স্কিলে, প্রশ্ন আর ব্যাখ্যার নিয়ম `lyanna-quiz` স্কিলে।
 - রিপো পাবলিক: কোনো ইমেইল, ফোন, bKash নম্বর, টোকেন বা চাবিওয়ালা লিংক নয়।
 - Cloudflare ফ্রি প্ল্যানে মাসে ৫০০ বিল্ড: ছোট ছোট পুশ নয়, কাজ জমিয়ে এক PR।
-- জেনারেটেড ফাইল হাতে বদলাবেন না: `sitemap.xml` (tools/seo_build.py), `jobs/data/catalog.json` (jobs/tools/build_catalog.py), ১৯টা জেনারেটেড অধ্যায় পাতা (Lyanna_data/tools/site-builders/chapter-quiz/)।
-- প্রশ্ন তোলার পরে `python3 tools/stats.py` আর `python3 tools/seo_build.py`।
+- জেনারেটেড ফাইল হাতে বদলাবেন না: `sitemap.xml` (tools/seo_build.py), `jobs/data/catalog.json` (jobs/tools/build_catalog.py), `admin/data/qmap.json` (tools/build_qmap.py), ১৯টা জেনারেটেড অধ্যায় পাতা (Lyanna_data/tools/site-builders/chapter-quiz/)।
+- প্রশ্ন তোলার পরে `python3 tools/stats.py`, `python3 tools/seo_build.py` আর `python3 tools/build_qmap.py` (শিক্ষার্থীর পর্যালোচনার প্রশ্ন-মানচিত্র)।
 - D1 বা Cloudflare সেটিংসে কিছু করার আগে PIASH-এর অনুমতি।
