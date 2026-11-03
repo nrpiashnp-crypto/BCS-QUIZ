@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="theme-color" content="#13294b">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>বিসিএস · নিজের পরিকল্পনা · লিয়ানা বুকস</title>
+<meta name="description" content="বিসিএস প্রিলির সিলেবাস ধরে ২৫০ প্রশ্নে নিজের অবস্থা যাচাই, তারপর বিষয়ভিত্তিক পরিকল্পনা।">
+<link rel="canonical" href="https://lyannabooks.com/plan/bcs/">
+<meta property="og:title" content="বিসিএস · নিজের পরিকল্পনা">
+<meta property="og:description" content="বিসিএস প্রিলির সিলেবাস ধরে ২৫০ প্রশ্নে নিজের অবস্থা যাচাই, তারপর বিষয়ভিত্তিক পরিকল্পনা।">
+<meta property="og:url" content="https://lyannabooks.com/plan/bcs/">
+<meta property="og:type" content="website">
+<link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+:root{--paper:#f8f5ee;--ink:#1d1f21;--muted:#5d5a55;--rule:#e6d3d9;--card:#fffdf7;--navy:#13294b;--pink:#c8326a;--soft:#f4ede3;--good:#1e7a46;--good-bg:#e5f3ea;--bad:#b3261e;--bad-bg:#fbe9e7;--warn:#8a5a00;
+  --display:'Tiro Bangla',Georgia,serif;--body:'Noto Sans Bengali',system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6}
+a{color:var(--navy)}
+.sitebar{background:var(--navy);display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 16px;padding-top:max(8px,env(safe-area-inset-top,0px))}
+.sitebar a{display:flex;align-items:center;gap:8px;color:#fff;text-decoration:none}.sitebar img{width:26px;height:auto}
+.sitebar .who{color:#e6c97a;font-size:14px}
+.wrap{max-width:640px;margin:0 auto;padding:18px 16px 110px}
+h1{font-family:var(--display);font-weight:400;font-size:25px;line-height:1.3;margin:0 0 4px}
+h2{font-family:var(--display);font-weight:400;font-size:19px;margin:22px 0 8px}
+.sub{color:var(--muted);font-size:14.5px;margin:0 0 12px}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:3px;padding:12px 14px;margin:0 0 10px}
+.btn{display:inline-block;background:var(--navy);color:#fff;border:0;border-radius:3px;padding:10px 18px;font:inherit;font-weight:600;font-size:16px;cursor:pointer;text-decoration:none}
+.btn.ghost{background:transparent;color:var(--navy);border:1px solid var(--rule)}
+.btn:disabled{opacity:.45;cursor:default}
+.ex{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.ex b{font-weight:600}.ex small{display:block;color:var(--muted);font-size:13.5px}
+.st{font-size:13.5px;color:var(--muted);white-space:nowrap}
+.st.ok{color:var(--good)}
+.dim{color:var(--muted)}
+.list{list-style:none;padding:0;margin:0}.list li{padding:6px 0;border-bottom:1px dashed var(--rule)}.list li:last-child{border:0}
+.prog{height:6px;background:var(--soft);border-radius:3px;overflow:hidden;margin:6px 0 2px}.prog i{display:block;height:100%;background:var(--navy)}
+details summary{cursor:pointer;color:var(--navy);padding:6px 0}
+/* পরীক্ষা */
+.qh{display:flex;justify-content:space-between;color:var(--muted);font-size:14px;margin:0 0 8px}
+.qt{font-size:17.5px;margin:0 0 14px}
+.opt{display:flex;gap:12px;align-items:center;width:100%;text-align:left;background:#fffdf7;border:1px solid var(--rule);border-radius:3px;padding:11px 12px;margin:0 0 8px;font:inherit;font-size:16px;color:var(--ink);cursor:pointer}
+.opt .k{width:26px;height:26px;min-width:26px;border:1.4px solid var(--pink);border-radius:50%;display:inline-grid;place-items:center;color:var(--pink);font-size:13px;flex:none}
+.opt.sel{border-color:var(--ink)}.opt.sel .k{background:var(--ink);border-color:var(--ink);color:#fffdf7}
+.opt:disabled{cursor:default}
+.opt.right{background:var(--good-bg)}.opt.right .k{background:var(--good);border-color:var(--good);color:#fff}
+.opt.wrong{background:var(--bad-bg)}.opt.wrong .k{background:var(--bad);border-color:var(--bad);color:#fff}
+.conf{display:flex;gap:8px;margin:14px 0 4px}.conf button{flex:1;padding:12px 6px;font:inherit;font-size:16px;font-weight:600;border:1.4px solid var(--navy);border-radius:3px;background:transparent;color:var(--navy);cursor:pointer}
+.conf button[aria-pressed="true"]{background:var(--navy);color:#fff}
+.conf button:disabled{opacity:.4;cursor:default}
+.hint{font-size:13.5px;color:var(--muted);min-height:22px}
+.timer{position:fixed;left:0;right:0;bottom:0;background:#f8f5ee;border-top:1px solid var(--rule);padding:10px 16px;padding-bottom:max(10px,env(safe-area-inset-bottom,0px));text-align:center;font-size:15px;color:var(--muted)}
+.timer.last{color:var(--warn);font-weight:600}
+.net{font-size:13px;color:var(--warn)}
+/* ফল ও রিপোর্ট */
+.rv .exp{font-size:14.5px;color:var(--ink);background:var(--soft);padding:8px 10px;border-radius:3px;margin-top:6px}
+.tag{display:inline-block;font-size:12.5px;padding:0 7px;border:1px solid var(--rule);border-radius:3px;color:var(--muted);margin-left:4px}
+table{width:100%;border-collapse:collapse;font-size:15px}th,td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--rule)}th{color:var(--muted);font-weight:600;font-size:13.5px}
+.lv-weak{color:var(--bad);font-weight:600}.lv-mid{color:var(--warn);font-weight:600}.lv-strong{color:var(--good);font-weight:600}
+.path{margin:0;padding-left:26px;list-style-type:bengali}.path li{margin:0 0 6px}
+.warn{margin:10px 0 0;color:var(--warn);font-size:14.5px}
+.note{border-color:var(--warn)}
+.skip{margin-top:14px;text-align:right}
+.plan{margin:0;padding-left:30px;list-style-type:bengali}.plan li{padding:4px 0}
+.bd-strong{color:var(--good);font-weight:600}.bd-mid{color:var(--warn);font-weight:600}.bd-focus{color:var(--pink);font-weight:600}.bd-unsure,.bd-few{color:var(--muted)}
+td small{font-weight:400;color:var(--muted)}
+.nm{display:block;font-size:14px;color:var(--muted);margin:0 0 8px}.nm input{display:block;font:inherit;font-size:16px;padding:8px 10px;border:1px solid var(--rule);border-radius:3px;width:100%;max-width:320px;background:#fff;margin-top:2px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.grid{display:grid;gap:10px}
+a.card.big{display:block;text-decoration:none;color:var(--ink);padding:16px}
+a.card.big .t{display:block;font-family:var(--display);font-size:20px;color:var(--navy)}
+a.card.big .m{display:block;color:var(--muted);font-size:14.5px;margin:2px 0 6px}
+a.card.big .go{color:var(--pink);font-weight:600;font-size:15px}
+</style>
+<link rel="stylesheet" href="/css/omr.css">
+</head>
+<body>
+<div class="sitebar"><a href="/" aria-label="লিয়ানা বুকস"><img src="/img/logo/li-mark.svg" alt="" width="34" height="44"><span class="lgn-n">লিয়ানা বুকস</span></a><span class="who" id="who"></span></div>
+<main class="wrap" id="view" data-set="bcs-start" data-name="বিসিএস"><p class="dim">লোড হচ্ছে…</p></main>
+<div class="timer" id="timer" hidden></div>
+<script src="/plan/plan.js?v=1" defer></script>
+<script src="/js/math.js" defer></script>
+</body>
+</html>

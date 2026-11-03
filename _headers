@@ -33,5 +33,7 @@
 /pilot/*
   X-Robots-Tag: noindex, nofollow
   Cache-Control: no-cache
+/plan/*
+  Cache-Control: no-cache
 /c/*
   X-Robots-Tag: noindex
