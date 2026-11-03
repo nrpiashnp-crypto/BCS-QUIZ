@@ -1226,7 +1226,7 @@ const diagMeta = (req, b) => {
   return {dev, w, app: b.app === 1 ? 1 : 0};
 };
 // পাতার ঠিকানা → সেট (চেনা সেট সেট তোলার আগেই পাতা খোলে, "শিগগির" দেখায়)
-const DIAG_KNOWN = {'bcs-start': 'বিসিএস · অবস্থা-যাচাই'};
+const DIAG_KNOWN = {'bcs-start': 'বিসিএস · অবস্থা-যাচাই', 'pb-start': 'পেট্রোবাংলা · অবস্থা-যাচাই'};
 // বিষয় → সাইটের বিদ্যমান বিষয়ের পাতা (পরিকল্পনার প্রথম সংস্করণে এগুলোই পথ)
 const DIAG_LINK = {bn: '/subject/bangla/', en: '/subject/english/', bd: '/subject/bangladesh/', bda: '/subject/bangladesh/', eng: '/subject/english/', intl: '/subject/international/', geo: '/subject/geography/',
   sci: '/subject/science/', ict: '/subject/ict/', math: '/subject/math/', mental: '/subject/mental/', ethics: '/subject/ethics/'};

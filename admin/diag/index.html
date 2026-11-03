@@ -216,12 +216,12 @@ $('f').onchange=async()=>{
   let c;try{c=norm(JSON.parse(t))}catch(e){$('chk').innerHTML='<p class="bad">JSON পড়া যায়নি।</p>';return}
   const {err,warn}=check(c),n=c.parts?c.parts.reduce((a,p)=>a+(p.qs||[]).length,0):0;
   $('chk').innerHTML=`<p>${esc(c.title||c.id)} · ${bn(n)} প্রশ্ন · ${bn((c.parts||[]).length)} ভাগ</p>`+(err.length?'<p class="bad">ভুল:</p><pre>'+esc(err.slice(0,40).join('\n'))+'</pre>':'<p class="ok">ছাঁচ ঠিক আছে।</p>')+(warn.length?'<p class="dim">খেয়াল করুন (অপশনের ক্রম প্রতিজনের জন্য এলোমেলো হয়, তাই এগুলো আটকায় না):</p><pre>'+esc(warn.slice(0,40).join('\n'))+'</pre>':'');
-  if(!err.length){SET=c;$('upb').disabled=false;$('sid').value=c.id}
+  if(!err.length){SET=c;$('upb').disabled=false;$('sid').value=c.exam==='petrobangla'&&c.id==='bcs-start'?'pb-start':c.id}
 };
 $('upb').onclick=async()=>{
   if(!SET)return;$('upb').disabled=true;const log=$('log');log.hidden=false;log.textContent='সেট তোলা হচ্ছে…\n';
   try{
-    await api('diag/set',{cfg:{id:SET.id,title:SET.title,subjects:SET.subjects,parts:SET.parts}});
+    SET.id=S();await api('diag/set',{cfg:{id:SET.id,title:SET.title,subjects:SET.subjects,parts:SET.parts}});
     const all=SET.parts.flatMap(p=>p.qs).map(id=>({id,...SET.questions[id]}));
     for(let i=0;i<all.length;i+=40){const r=await api('diag/q',{s:SET.id,qs:all.slice(i,i+40)});log.textContent+=bn(Math.min(i+40,all.length))+' / '+bn(all.length)+(r.bad.length?' · বাদ: '+r.bad.join(', '):'')+'\n'}
     log.textContent+='শেষ।';load();

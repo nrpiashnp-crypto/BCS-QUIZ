@@ -1,10 +1,12 @@
 /* নিজের পরিকল্পনা: অবস্থা-যাচাইয়ের পাতা (/plan/bcs/ ইত্যাদি)। সার্ভার /api/diag/* (functions-এর "নিজের পরিকল্পনা" অংশ)।
-   পাতায় <main id="view" data-set="bcs-start" data-name="বিসিএস">। লগইন বাধ্যতামূলক। নকশা: Lyanna_data/pilot/custom-plan/PLAN.md §৯।
+   পাতায় <main id="view" data-set="bcs-start" data-name="বিসিএস"> (পেট্রোবাংলা: /plan/pb/, সেট pb-start, data-mk)। লগইন বাধ্যতামূলক। নকশা: Lyanna_data/pilot/custom-plan/PLAN.md §৯।
    - এক প্রশ্ন এক পর্দায়, অপশনে প্রথম চাপেই লক; "বাদ দিন" চাপলে শেষে আবার আসে (সময় থাকলে)।
    - উত্তর এই ফোনে জমে ('lb:diag:<সেট>:<ভাগ>'), ৫টা করে সার্ভারে যায়; সময় সার্ভারের।
    - ফল: ঠিক / ভুল / বাদ আলাদা, নেট নম্বর বা −০.৫ নয়। কার্ডের ছবি ফোনেই আঁকা (canvas), সার্ভারে কিছু যায় না। */
 (function(){
 const V=document.getElementById('view'),S=V.dataset.set,NAME=V.dataset.name||'';
+// বিষয়ের ওজনের লেখা: বিসিএসে সিলেবাসের নম্বর, পেট্রোবাংলায় আগের পরীক্ষায় প্রশ্নের ভাগ (data-mk-এ {n})
+const MK=V.dataset.mk||'সিলেবাসে {n} নম্বর';
 const $=id=>document.getElementById(id);
 const bn=x=>String(x).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]),K='কখগঘঙচ';
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -234,8 +236,8 @@ function status(fresh){
     `<tr><td>${esc(x.name)}</td><td>${bn(x.n)}-এ ${bn(x.ok)}</td><td class="bd-${x.band}">${BL[x.band]}${x.edge?'<small> · সীমানায়</small>':''}</td></tr>`).join('')+'</tbody></table>';
   if(subs.some(x=>x.small))h+='<p class="sub" style="margin:8px 0 0">২০টির কম প্রশ্নের বিষয়ে ফল ছোট পরীক্ষার, তাই শুধু ধারণা।</p>';
   h+='</div>';
-  h+=`<h2>আপনার পরিকল্পনা: এই ক্রমে</h2><p class="sub">যে বিষয়ে সিলেবাসের নম্বর বেশি আর এখনো বেশি বাকি, সেটা আগে।</p><div class="card"><ol class="plan">`+
-    plan.map(x=>`<li>${x.link?`<a href="${esc(x.link)}">${esc(x.name)}</a>`:esc(x.name)} <span class="dim">· সিলেবাসে ${bn(x.marks)} নম্বর</span></li>`).join('')+
+  h+=`<h2>আপনার পরিকল্পনা: এই ক্রমে</h2><p class="sub">যে বিষয়ে নম্বর বেশি আর এখনো বেশি বাকি, সেটা আগে।</p><div class="card"><ol class="plan">`+
+    plan.map(x=>`<li>${x.link?`<a href="${esc(x.link)}">${esc(x.name)}</a>`:esc(x.name)} <span class="dim">· ${esc(MK.replace('{n}',bn(x.marks)))}</span></li>`).join('')+
     '</ol><p class="sub" style="margin:8px 0 0">বিষয়ে চাপলে সেই বিষয়ের প্রশ্ন আর পরীক্ষা। প্রতিদিনের অনুশীলন আর অগ্রগতি শিগগির এখানেই যোগ হবে।</p></div>';
   if(fresh)h+=`<p><button class="btn ghost" data-home>সব ভাগ দেখুন</button></p>`;
   V.innerHTML=h;wire();scrollTo(0,0);
