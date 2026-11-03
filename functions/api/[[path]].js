@@ -37,7 +37,8 @@
    ভয়েস মতামত (লগইন লাগে না; 🎤 বোতাম js/report.js-এর অংশ, ফিচার-ডিটেক্ট করে দেখায়):
    POST /api/stt  (body = অডিও বাইট, যেকোনো Content-Type: audio/*) → {text} (Cloudflare Workers AI Whisper দিয়ে বাংলা লেখা)
    AI বাইন্ডিং না থাকলে {error:'setup'} 503। অডিও কোথাও জমা থাকে না, শুধু ফেরত আসা লেখাটা পরে /api/report-এ src='voice' নিয়ে যেতে পারে।
-   পাইলট ব্যাচ (/pilot/<id>/, /admin/pilot/): নিচে "পাইলট ব্যাচ" অংশের মাথায় সব পথ। */
+   পাইলট ব্যাচ (/pilot/<id>/, /admin/pilot/): নিচে "পাইলট ব্যাচ" অংশের মাথায় সব পথ।
+   নিজের পরিকল্পনা, অবস্থা-যাচাই (/plan/<সেট>/, /admin/diag/): নিচে "নিজের পরিকল্পনা" অংশের মাথায় সব পথ। */
 const COOKIE = 'lb_s', AGE = 180 * 86400;
 const MAX_BATCH = 300, MAX_ROWS = 3000;
 
@@ -655,6 +656,7 @@ async function stt(req, env, db) {
 async function admin(path, url, env, db, u, req) {
   if (!isAdmin(u, env)) return json({error: 'admin'}, 403);
   if (path === 'admin/pilot' || path.startsWith('admin/pilot/')) return pilotAdmin(path, url, req, db);
+  if (path === 'admin/diag' || path.startsWith('admin/diag/')) return diagAdmin(path, url, req, db);
   await attqTable(db);
   if (path === 'admin/learners') {
     const {results} = await db.prepare(`SELECT u.id, u.name, u.email, u.created, u.seen,
@@ -1191,6 +1193,276 @@ async function pilotAdmin(path, url, req, db) {
   return json({error: 'not found'}, 404);
 }
 
+// ---------- নিজের পরিকল্পনা: অবস্থা-যাচাই (যেমন বিসিএস, ২৫০ প্রশ্ন ৬ ভাগে) ----------
+/* পাতা /plan/<সেট>/ (যেমন /plan/bcs/ → সেট bcs-start)। লগইন বাধ্যতামূলক। প্রশ্নের সেট (উত্তরসহ) রিপোতে নয়, অ্যাডমিন পাতা
+   /admin/diag/ থেকে D1-এ ওঠে; আসল কপি Lyanna_data/pilot/custom-plan/<সেট>.json (নকশা: সেখানকার PLAN.md §৯)।
+   প্রতিটা ভাগ আলাদা আসে, উত্তর আর ব্যাখ্যা ছাড়া; অপশনের ক্রম সার্ভারে এলোমেলো (মানুষ আর প্রশ্ন ধরে স্থির), ফোন আসল ক্রম জানে না।
+   সময় সার্ভারে গোনা: ভাগ শুরুর মুহূর্ত D1-এ, রিলোড বা ট্যাব বদলেও ঘড়ি চলে। উত্তর প্রথম চাপেই লক (সার্ভার প্রথম দাগটাই রাখে)।
+   GET  /api/diag/me?s=            → সেট, বিষয়, ভাগের তালিকা আর নিজের অবস্থা; সব ভাগ শেষ হলে বিষয়ভিত্তিক চিত্র (status)
+   POST /api/diag/start {s,part}   → ভাগ শুরু বা চলতিটা আবার খোলা: প্রশ্ন (উত্তর ছাড়া), বাকি সময়, আগে দেওয়া দাগ
+   POST /api/diag/save {s,part,ans:[[qid,দাগ,ms]],hid,hn,fin} → উত্তর জমা (কয়েকটা একসঙ্গে); fin বা সময় শেষ হলে ভাগ বন্ধ, ফল ফেরত
+   GET  /api/diag/review?s=&part=  → বন্ধ ভাগের উত্তর আর ব্যাখ্যা
+   অ্যাডমিন: GET admin/diag?s= · POST admin/diag/set {cfg} · POST admin/diag/q {s,qs:[…]} (এক বারে ৪০) · POST admin/diag/reset {s,uid,part}
+   D1 লেখা কম: একজনের এক ভাগ = এক সারি, উত্তর জমে সেই সারিতেই (৫টা করে), তাই ২৫০ প্রশ্নে ৬০-৭০টা লেখা। */
+const DIAG_SCHEMA = [
+  'CREATE TABLE IF NOT EXISTS diag_set(id TEXT PRIMARY KEY, cfg TEXT NOT NULL, updated INTEGER)',
+  'CREATE TABLE IF NOT EXISTS diag_q(sid TEXT NOT NULL, qid TEXT NOT NULL, part INTEGER NOT NULL, s TEXT NOT NULL, d TEXT NOT NULL, PRIMARY KEY(sid, qid))',
+  'CREATE TABLE IF NOT EXISTS diag_att(sid TEXT NOT NULL, uid INTEGER NOT NULL, part INTEGER NOT NULL, ts INTEGER NOT NULL, dl INTEGER NOT NULL, ans TEXT NOT NULL, done INTEGER, res TEXT, hid INTEGER, hn INTEGER, PRIMARY KEY(sid, uid, part))'
+];
+let diagReady = false;
+async function diagSetup(db) { if (diagReady) return; await db.batch(DIAG_SCHEMA.map(s => db.prepare(s))); diagReady = true; }
+// পাতার ঠিকানা → সেট (চেনা সেট সেট তোলার আগেই পাতা খোলে, "শিগগির" দেখায়)
+const DIAG_KNOWN = {'bcs-start': 'বিসিএস · অবস্থা-যাচাই'};
+// বিষয় → সাইটের বিদ্যমান বিষয়ের পাতা (পরিকল্পনার প্রথম সংস্করণে এগুলোই পথ)
+const DIAG_LINK = {bn: '/subject/bangla/', en: '/subject/english/', bd: '/subject/bangladesh/', intl: '/subject/international/', geo: '/subject/geography/',
+  sci: '/subject/science/', ict: '/subject/ict/', math: '/subject/math/', mental: '/subject/mental/', ethics: '/subject/ethics/'};
+
+function diagCheck(c) {
+  const err = [];
+  if (!c || typeof c !== 'object') return ['cfg নেই'];
+  if (!PID.test(c.id || '')) err.push('id ঠিক নয়');
+  if (!Array.isArray(c.subjects) || !c.subjects.length) err.push('subjects নেই');
+  const sids = new Set();
+  for (const s of c.subjects || []) {
+    if (!TID.test(s.id || '') || sids.has(s.id)) err.push('বিষয়-আইডি ঠিক নয় বা দুবার: ' + s.id);
+    sids.add(s.id);
+    if (!Number.isInteger(s.marks) || s.marks < 1) err.push('বিষয় ' + s.id + ': marks লাগবে');
+  }
+  if (!Array.isArray(c.parts) || !c.parts.length || c.parts.length > 12) err.push('parts নেই (১-১২টি)');
+  const seen = new Set(), nos = new Set();
+  for (const p of c.parts || []) {
+    if (!Number.isInteger(p.no) || p.no < 1 || nos.has(p.no)) err.push('ভাগ-নম্বর ঠিক নয় বা দুবার: ' + p.no);
+    nos.add(p.no);
+    if (!Number.isInteger(p.mins) || p.mins < 1 || p.mins > 120) err.push('ভাগ ' + p.no + ': mins ১-১২০');
+    if (!Array.isArray(p.subjects) || !p.subjects.length || p.subjects.some(x => !sids.has(x))) err.push('ভাগ ' + p.no + ': subjects সেটের বিষয় থেকে');
+    if (!Array.isArray(p.qs) || p.qs.length < 1 || p.qs.length > 80) err.push('ভাগ ' + p.no + ': qs-এ ১-৮০টি প্রশ্ন');
+    for (const q of p.qs || []) { if (!QID.test(q)) err.push('ভাগ ' + p.no + ': প্রশ্ন-আইডি ঠিক নয় ' + q); else if (seen.has(q)) err.push('প্রশ্ন দুবার: ' + q); seen.add(q); }
+  }
+  return err.slice(0, 40);
+}
+const diagSlim = c => ({id: c.id, title: str(c.title, 120) || c.id,
+  subjects: c.subjects.map(s => ({id: s.id, name: str(s.name, 60) || s.id, marks: s.marks})),
+  parts: c.parts.map(p => ({no: p.no, title: str(p.title, 80) || '', subjects: p.subjects, mins: p.mins, qs: p.qs}))});
+
+async function diagCfg(db, sid) {
+  const r = await db.prepare('SELECT cfg, updated FROM diag_set WHERE id = ?').bind(sid).first();
+  if (!r) return DIAG_KNOWN[sid] ? {id: sid, title: DIAG_KNOWN[sid], subjects: [], parts: [], updated: 0, P: new Map(), S: new Map()} : null;
+  const c = JSON.parse(r.cfg);
+  c.updated = r.updated;
+  c.P = new Map(c.parts.map(p => [p.no, p]));
+  c.S = new Map(c.subjects.map(s => [s.id, s]));
+  return c;
+}
+async function diagQs(db, sid, ids) {
+  const out = new Map();
+  for (let i = 0; i < ids.length; i += 40) {
+    const part = ids.slice(i, i + 40);
+    const {results} = await db.prepare(`SELECT qid, s, d FROM diag_q WHERE sid = ? AND qid IN (${part.map(() => '?').join(',')})`).bind(sid, ...part).all();
+    for (const r of results) out.set(r.qid, {s: r.s, ...JSON.parse(r.d)});
+  }
+  return out;
+}
+// অপশনের ক্রম: মানুষ আর প্রশ্ন ধরে স্থির এলোমেলো; ord[দেখানো ক্রম] = আসল ক্রম
+function dOrder(n, seed) {
+  let h = 2166136261;
+  for (const ch of seed) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+  const a = [...Array(n).keys()];
+  for (let i = n - 1; i > 0; i--) { h = Math.imul(h ^ (h >>> 15), 2246822507) >>> 0; const j = h % (i + 1); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+const dSeed = (sid, uid, qid) => sid + ':' + uid + ':' + qid;
+const DIAG_LATE = 10 * 60e3; // ফোনে জমে থাকা উত্তর সময় শেষের পরে এতক্ষণ পর্যন্ত নেওয়া হয়
+const median = a => { if (!a.length) return null; const b = [...a].sort((x, y) => x - y), m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
+
+// একটা ভাগের ফল: বিষয় ধরে ঠিক/ভুল/বাদ, আর তাড়াহুড়ার চিহ্ন (PLAN.md §৯)
+function diagScore(c, p, Q, ans, hid, hn) {
+  const by = {}, picks = [], ms = [];
+  let ok = 0, no = 0, skip = 0;
+  for (const s of p.subjects) by[s] = {n: 0, ok: 0, no: 0, skip: 0};
+  for (const qid of p.qs) {
+    const q = Q.get(qid);
+    if (!q) continue;
+    const x = by[q.s] || (by[q.s] = {n: 0, ok: 0, no: 0, skip: 0}), a = ans[qid];
+    x.n++;
+    if (!a || a[0] < 0) { x.skip++; skip++; continue; }
+    picks.push(a[0]); if (a[2] > 0) ms.push(a[2]);
+    if (a[1]) { x.ok++; ok++; } else { x.no++; no++; }
+  }
+  const n = ok + no + skip, k = picks.length, f = [];
+  const med = median(ms);
+  if (k >= 10 && med != null && med < 5000) f.push('fast');
+  else if (k >= 10 && med != null && med < 8000) f.push('quick');
+  let run = 1, best = k ? 1 : 0;
+  for (let i = 1; i < k; i++) { run = picks[i] === picks[i - 1] ? run + 1 : 1; best = Math.max(best, run); }
+  const cnt = {}; for (const x of picks) cnt[x] = (cnt[x] || 0) + 1;
+  const top = Math.max(0, ...Object.values(cnt));
+  if (best >= 8 || (k >= 20 && top / k > 0.6)) f.push('same');
+  if (k >= 30 && ok / k < 0.2) f.push('low');
+  if (n && skip / n > 0.5) f.push('few');
+  if ((hid || 0) > 60 || (hn || 0) > 3) f.push('away');
+  const unsure = f.some(x => x === 'fast' || x === 'same' || x === 'low');
+  return {part: p.no, n, ok, no, skip, by, flags: f, unsure, med: med == null ? null : Math.round(med / 100) / 10};
+}
+
+// সব ভাগ মিলিয়ে বিষয়ের চিত্র। শতাংশ শুধু ব্যান্ড ঠিক করতে; পাতায় দেখানো হয় "৪০-এ ২২"
+function diagStatus(c, done) {
+  const S = c.subjects.map(s => ({id: s.id, name: s.name, marks: s.marks, link: DIAG_LINK[s.id] || '', n: 0, ok: 0, no: 0, skip: 0, unsure: false, taken: false}));
+  const M = new Map(S.map(x => [x.id, x]));
+  for (const r of done) for (const [sid, v] of Object.entries(r.by || {})) {
+    const x = M.get(sid); if (!x) continue;
+    x.n += v.n; x.ok += v.ok; x.no += v.no; x.skip += v.skip; x.taken = true;
+    if (r.unsure) x.unsure = true;
+  }
+  for (const x of S) {
+    if (!x.taken || !x.n) { x.band = null; continue; }
+    const pct = x.ok / x.n * 100;
+    x.small = x.n < 20;
+    if (x.unsure) x.band = 'unsure';
+    else if ((x.ok + x.no) / x.n < 0.6) x.band = 'few';
+    else x.band = pct < 40 ? 'focus' : pct < 70 ? 'mid' : 'strong';
+    x.edge = ['focus', 'mid', 'strong'].includes(x.band) && (Math.abs(pct - 40) < 5 || Math.abs(pct - 70) < 5);
+    // নম্বর বাড়ানোর সুযোগ: সিলেবাসের নম্বর × যতটা এখনো বাকি; অনিশ্চিত/কম উত্তরের বিষয়ে অর্ধেক ধরা
+    const known = x.band === 'unsure' || x.band === 'few' ? 0.5 : pct / 100;
+    x.gain = Math.round(x.marks * (1 - known) * 10) / 10;
+  }
+  const order = S.filter(x => x.band).sort((a, b) => b.gain - a.gain || a.name.localeCompare(b.name)).map(x => x.id);
+  return {subjects: S, order, parts: c.parts.length, doneParts: done.length};
+}
+
+async function diag(path, req, url, env, db, u) {
+  await diagSetup(db);
+  const m = req.method, body = m === 'POST' ? await req.json().catch(() => ({})) : {};
+  const sid = String(url.searchParams.get('s') || body.s || '');
+  if (!PID.test(sid)) return json({error: 'bad'}, 400);
+  const c = await diagCfg(db, sid);
+  if (!c) return json({error: 'no set'}, 404);
+  const now = Date.now();
+  const partsPub = c.parts.map(p => ({no: p.no, title: p.title, subjects: p.subjects, n: p.qs.length, mins: p.mins}));
+  if (path === 'diag/me' && m === 'GET') {
+    const out = {s: sid, title: c.title, now, subjects: c.subjects.map(s => ({id: s.id, name: s.name, marks: s.marks})), parts: partsPub,
+      ready: !!c.parts.length, user: u ? pub(u) : null};
+    if (!u) return json(out);
+    const {results} = await db.prepare('SELECT part, ts, dl, done, res, ans FROM diag_att WHERE sid = ? AND uid = ?').bind(sid, u.id).all();
+    const A = new Map(results.map(r => [r.part, r]));
+    const finished = [];
+    out.parts = partsPub.map(p => {
+      const r = A.get(p.no);
+      if (!r) return {...p, st: 'todo'};
+      if (!r.done && now < r.dl + GRACE) return {...p, st: 'going', left: r.dl - now, answered: Object.keys(JSON.parse(r.ans)).length};
+      if (!r.res) return {...p, st: 'closing'}; // সময় শেষ, কিন্তু ফল এখনো গোনা হয়নি: পাতা খুললেই save দিয়ে বন্ধ হয়
+      const res = JSON.parse(r.res); finished.push(res);
+      return {...p, st: 'done', res};
+    });
+    out.status = finished.length ? diagStatus(c, finished) : null;
+    out.all = !!c.parts.length && finished.length === c.parts.length;
+    return json(out);
+  }
+  if (!u) return json({error: 'login'}, 401);
+  if (!c.parts.length) return json({error: 'soon'}, 403);
+  const no = parseInt(url.searchParams.get('part') || body.part, 10), p = c.P.get(no);
+  if (!p) return json({error: 'bad'}, 400);
+  let att = await db.prepare('SELECT ts, dl, ans, done, res, hid, hn FROM diag_att WHERE sid = ? AND uid = ? AND part = ?').bind(sid, u.id, no).first();
+
+  if (path === 'diag/start' && m === 'POST') {
+    if (!att) {
+      await db.prepare("INSERT OR IGNORE INTO diag_att(sid, uid, part, ts, dl, ans, done, res, hid, hn) VALUES(?,?,?,?,?,'{}',NULL,NULL,0,0)")
+        .bind(sid, u.id, no, now, now + p.mins * 60e3).run();
+      // দুই ফোন একসঙ্গে শুরু করলে যেটা আগে লেখা হয়েছে সেটাই
+      att = await db.prepare('SELECT ts, dl, ans, done, res, hid, hn FROM diag_att WHERE sid = ? AND uid = ? AND part = ?').bind(sid, u.id, no).first();
+    }
+    if (att.done || now >= att.dl + GRACE) return json({error: 'done'}, 403);
+    const Q = await diagQs(db, sid, p.qs), ans = JSON.parse(att.ans);
+    const qs = p.qs.filter(id => Q.has(id)).map(id => {
+      const q = Q.get(id), ord = dOrder(q.o.length, dSeed(sid, u.id, id));
+      return {id, s: q.s, q: q.q, o: ord.map(i => q.o[i])};
+    });
+    return json({part: no, title: p.title, mins: p.mins, left: att.dl - now, qs, done: Object.entries(ans).map(([id, a]) => [id, a[0]])});
+  }
+  if (path === 'diag/save' && m === 'POST') {
+    if (!att) return json({error: 'nosit'}, 403);
+    if (att.done) return json({ok: true, res: att.res ? JSON.parse(att.res) : null});
+    const late = now > att.dl + GRACE + DIAG_LATE;
+    const ans = JSON.parse(att.ans), inPart = new Set(p.qs), list = (Array.isArray(body.ans) ? body.ans : []).slice(0, 80);
+    let Q = null;
+    if (!late && list.length) {
+      Q = await diagQs(db, sid, p.qs);
+      for (const x of list) {
+        if (!Array.isArray(x) || !inPart.has(x[0]) || ans[x[0]]) continue; // প্রথম দাগটাই থাকে
+        const q = Q.get(x[0]); if (!q) continue;
+        const pick = Number.isInteger(x[1]) && x[1] >= -1 && x[1] < q.o.length ? x[1] : null;
+        if (pick == null) continue;
+        const ms = Math.max(0, Math.min(Math.round(num(x[2]) || 0), 3600e3));
+        const ok = pick >= 0 && dOrder(q.o.length, dSeed(sid, u.id, x[0]))[pick] === q.a ? 1 : 0;
+        ans[x[0]] = [pick, ok, ms];
+      }
+    }
+    const hid = Math.max(att.hid || 0, Math.min(Math.round(num(body.hid) || 0), 7200)), hn = Math.max(att.hn || 0, Math.min(Math.round(num(body.hn) || 0), 500));
+    const close = body.fin === true || now >= att.dl + GRACE;
+    let res = null;
+    if (close) {
+      Q = Q || await diagQs(db, sid, p.qs);
+      res = diagScore(c, p, Q, ans, hid, hn);
+      await db.prepare('UPDATE diag_att SET ans = ?, done = ?, res = ?, hid = ?, hn = ? WHERE sid = ? AND uid = ? AND part = ? AND done IS NULL')
+        .bind(JSON.stringify(ans), Math.min(now, att.dl + GRACE), JSON.stringify(res), hid, hn, sid, u.id, no).run();
+    } else {
+      await db.prepare('UPDATE diag_att SET ans = ?, hid = ?, hn = ? WHERE sid = ? AND uid = ? AND part = ? AND done IS NULL')
+        .bind(JSON.stringify(ans), hid, hn, sid, u.id, no).run();
+    }
+    return json({ok: true, n: Object.keys(ans).length, res, left: att.dl - now});
+  }
+  if (path === 'diag/review' && m === 'GET') {
+    if (!att || !att.res) return json({error: 'soon'}, 403);
+    const Q = await diagQs(db, sid, p.qs), ans = JSON.parse(att.ans);
+    return json({part: no, title: p.title, res: JSON.parse(att.res), qs: p.qs.filter(id => Q.has(id)).map(id => {
+      const q = Q.get(id), ord = dOrder(q.o.length, dSeed(sid, u.id, id)), a = ans[id];
+      return {id, s: q.s, q: q.q, o: ord.map(i => q.o[i]), a: ord.indexOf(q.a), pick: a ? a[0] : -1, e: q.e || ''};
+    })}, 200, {'Cache-Control': 'no-store'});
+  }
+  return json({error: 'not found'}, 404);
+}
+
+async function diagAdmin(path, url, req, db) {
+  await diagSetup(db);
+  const m = req.method, body = m === 'POST' ? await req.json().catch(() => ({})) : {};
+  const sid = String(url.searchParams.get('s') || body.s || (body.cfg && body.cfg.id) || '');
+  if (!PID.test(sid)) return json({error: 'bad'}, 400);
+  if (path === 'admin/diag/set' && m === 'POST') {
+    const err = diagCheck(body.cfg);
+    if (err.length) return json({error: 'check', list: err}, 400);
+    await db.prepare('INSERT INTO diag_set(id, cfg, updated) VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET cfg = excluded.cfg, updated = excluded.updated')
+      .bind(sid, JSON.stringify(diagSlim(body.cfg)), Date.now()).run();
+    return json({ok: true});
+  }
+  const c = await diagCfg(db, sid);
+  if (!c) return json({error: 'no set'}, 404);
+  if (path === 'admin/diag/q' && m === 'POST') {
+    const where = new Map(); for (const p of c.parts) for (const q of p.qs) where.set(q, p.no);
+    const list = (Array.isArray(body.qs) ? body.qs : []).slice(0, 40), bad = [], rows = [];
+    const st = db.prepare('INSERT INTO diag_q(sid, qid, part, s, d) VALUES(?,?,?,?,?) ON CONFLICT(sid, qid) DO UPDATE SET part = excluded.part, s = excluded.s, d = excluded.d');
+    for (const q of list) {
+      const o = Array.isArray(q && q.o) ? q.o.map(x => nfc(String(x)).slice(0, 600)) : [];
+      if (!q || !where.has(q.id) || !c.S.has(q.s) || !nfc(q.q) || o.length < 2 || o.length > 6 || !Number.isInteger(q.a) || q.a < 0 || q.a >= o.length) { bad.push(q && q.id); continue; }
+      rows.push(st.bind(sid, q.id, where.get(q.id), q.s, JSON.stringify({q: nfc(q.q).slice(0, 2000), o, a: q.a, e: nfc(q.e || '').slice(0, 6000), t: str(q.t, 80) || ''})));
+    }
+    if (rows.length) await db.batch(rows);
+    return json({ok: true, n: rows.length, bad});
+  }
+  if (path === 'admin/diag/reset' && m === 'POST') {
+    const uid = parseInt(body.uid, 10), no = parseInt(body.part, 10);
+    if (!uid || !no) return json({error: 'bad'}, 400);
+    await db.prepare('DELETE FROM diag_att WHERE sid = ? AND uid = ? AND part = ?').bind(sid, uid, no).run();
+    return json({ok: true});
+  }
+  if (path === 'admin/diag' && m === 'GET') {
+    const [q, a] = await db.batch([
+      db.prepare('SELECT part, COUNT(*) n FROM diag_q WHERE sid = ? GROUP BY part').bind(sid),
+      db.prepare(`SELECT a.uid, a.part, a.ts, a.done, a.res, u.name, u.email FROM diag_att a LEFT JOIN users u ON u.id = a.uid WHERE a.sid = ? ORDER BY a.ts DESC LIMIT 2000`).bind(sid)
+    ]);
+    return json({set: diagSlim(c), updated: c.updated, loaded: q.results, att: a.results.map(r => ({...r, res: r.res ? JSON.parse(r.res) : null}))}, 200, {'Cache-Control': 'no-store'});
+  }
+  return json({error: 'not found'}, 404);
+}
+
 export async function onRequest({request: req, env}) {
   const url = new URL(req.url), path = url.pathname.replace(/^\/api\/?/, '').replace(/\/+$/, ''), m = req.method;
   if (m === 'POST') {
@@ -1220,6 +1492,7 @@ export async function onRequest({request: req, env}) {
     if (path === 'report' && m === 'POST') return await report(req, db, u);
     if (path === 'stt' && m === 'POST') return await stt(req, env, db);
     if (path.startsWith('pilot/')) return await pilot(path, req, url, env, db, u);
+    if (path.startsWith('diag/')) return await diag(path, req, url, env, db, u);
     if (!u) return json({error: 'login'}, 401);
 
     if (path.startsWith('admin/')) return await admin(path, url, env, db, u, req);

@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="theme-color" content="#13294b">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>অবস্থা-যাচাই · অ্যাডমিন · লিয়ানা বুকস</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+:root{--paper:#fbfaf7;--ink:#1d1f21;--muted:#5f6366;--rule:#d9d6cf;--card:#fff;--navy:#13294b;--soft:#e9edf4;--link:#13294b;
+  --display:'Tiro Bangla',Georgia,serif;--body:'Noto Sans Bengali',system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6}
+a{color:var(--link)}
+.bar{background:var(--navy);display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 16px;padding-top:max(8px,env(safe-area-inset-top,0px))}
+.bar img{width:26px;height:auto;display:block}.bar a{display:flex;gap:8px;align-items:center;color:#fff;text-decoration:none}.bar span{color:#e6c97a;font-size:14px}
+.wrap{max-width:900px;margin:0 auto;padding:20px 16px 120px}
+h1{font-family:var(--display);font-weight:400;font-size:26px;margin:0 0 4px}
+h2{font-family:var(--display);font-weight:400;font-size:20px;margin:24px 0 8px}
+.sub{color:var(--muted);margin:0 0 12px;font-size:14.5px}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:3px;padding:12px 14px;margin:0 0 10px}
+.btn{display:inline-block;background:var(--navy);color:#fff;border:0;border-radius:3px;padding:8px 14px;font:inherit;font-weight:600;font-size:15px;cursor:pointer;text-decoration:none}
+.btn.ghost{background:transparent;color:var(--link);border:1px solid var(--rule)}
+.btn:disabled{opacity:.5;cursor:default}
+input[type=text],input[type=date],input[type=url]{font:inherit;font-size:16px;padding:8px 10px;border:1px solid var(--rule);border-radius:3px;background:#fff;width:100%;max-width:520px}
+label{display:block;font-size:14px;color:var(--muted);margin:8px 0 2px}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--rule);vertical-align:top}th{color:var(--muted);font-weight:600}
+.scroll{overflow-x:auto}.dim{color:var(--muted)}.ok{color:#1e7a46;font-weight:600}.bad{color:#b3261e;font-weight:600}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+pre{white-space:pre-wrap;font-size:13px;background:var(--soft);padding:8px;border-radius:3px;margin:6px 0 0}
+</style>
+<link rel="stylesheet" href="/css/omr.css">
+</head>
+<body>
+<div class="bar"><a href="/" aria-label="লিয়ানা বুকস"><img src="/img/logo/li-mark.svg" alt="" width="34" height="44"><span class="lgn-n">লিয়ানা বুকস</span></a><span>অ্যাডমিন</span></div>
+<main class="wrap">
+<h1>অবস্থা-যাচাই (নিজের পরিকল্পনা)</h1>
+<p class="sub">সেট-ফাইল তোলা আর কে কোন ভাগ দিয়েছেন। যা তুলবেন তার আসল কপি Lyanna_data-র <code>pilot/custom-plan/&lt;সেট&gt;.json</code>-এ রাখুন (D1-এর নিজের ব্যাকআপ নেই)। ছাঁচ: সেখানকার PLAN.md §৯।</p>
+<div class="card"><label for="sid">সেট</label><div class="row"><input type="text" id="sid" value="bcs-start" style="max-width:240px"><button class="btn ghost" id="load">দেখুন</button></div><div id="sum" class="dim" style="margin-top:8px"></div></div>
+<h2>সেট-ফাইল তোলা</h2>
+<div class="card"><input type="file" id="f" accept=".json,application/json"><div id="chk"></div><button class="btn" id="up" disabled style="margin-top:8px">তুলুন</button><pre id="log" hidden></pre></div>
+<h2>কে কী দিয়েছেন</h2>
+<div class="card scroll" id="att"><p class="dim">—</p></div>
+</main>
+<script>
+const $=id=>document.getElementById(id),esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const bn=x=>String(x).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+async function api(p,b){const r=await fetch('/api/admin/'+p,b?{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:{credentials:'same-origin',cache:'no-store'});
+  const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(j.error||r.status);e.j=j;throw e}return j}
+const FL={fast:'খুব দ্রুত',quick:'দ্রুত',same:'একই অপশন',low:'আন্দাজের নিচে',few:'অনেক বাদ',away:'অন্য অ্যাপে'};
+async function load(){
+  const s=$('sid').value.trim();$('sum').textContent='লোড হচ্ছে…';
+  let r;try{r=await api('diag?s='+encodeURIComponent(s))}catch(e){$('sum').textContent=e.message==='admin'?'অ্যাডমিন হিসেবে লগইন করুন (/account/)।':e.message==='no set'?'এই সেট এখনো তোলা হয়নি।':'খোলা যায়নি: '+e.message;$('att').innerHTML='<p class="dim">—</p>';return}
+  const L=new Map(r.loaded.map(x=>[x.part,x.n]));
+  $('sum').innerHTML=r.set.parts.length?r.set.parts.map(p=>`ভাগ ${bn(p.no)} (${esc(p.title)}): ${bn(L.get(p.no)||0)} / ${bn(p.qs.length)} প্রশ্ন তোলা, ${bn(p.mins)} মিনিট`).join('<br>'):'সেট এখনো তোলা হয়নি।';
+  $('att').innerHTML=r.att.length?'<table><thead><tr><th>কে</th><th>ভাগ</th><th>অবস্থা</th><th>ঠিক/ভুল/বাদ</th><th>চিহ্ন</th><th></th></tr></thead><tbody>'+r.att.map(a=>
+    `<tr><td>${esc(a.name||'')}<br><span class="dim">${esc(a.email||'')}</span></td><td>${bn(a.part)}</td><td>${a.res?'শেষ':'চলছে'}</td><td>${a.res?bn(a.res.ok)+' / '+bn(a.res.no)+' / '+bn(a.res.skip):''}</td><td>${a.res?(a.res.unsure?'<span class="bad">অনিশ্চিত</span> ':'')+a.res.flags.map(f=>FL[f]||f).join(', '):''}</td><td><button class="btn ghost" data-u="${a.uid}" data-p="${a.part}">মুছুন</button></td></tr>`).join('')+'</tbody></table>':'<p class="dim">এখনো কেউ দেননি।</p>';
+  $('att').querySelectorAll('[data-u]').forEach(b=>b.onclick=async()=>{if(!confirm('এই ভাগটা মুছে দিলে মানুষটা আবার দিতে পারবেন। মুছবেন?'))return;
+    await api('diag/reset',{s,uid:+b.dataset.u,part:+b.dataset.p}).catch(e=>alert(e.message));load()});
+}
+// সেট-ফাইল যাচাই: ছাঁচ, ভাগের প্রশ্ন সব আছে কি না, আর উত্তর-চাবির ধারা (Fable-এর নিয়ম ৭)
+let SET=null;
+function check(c){
+  const err=[],warn=[];
+  if(!c||!c.id||!Array.isArray(c.subjects)||!Array.isArray(c.parts)||!c.questions)return {err:['ফাইলে id, subjects, parts, questions লাগবে'],warn};
+  const S=new Set(c.subjects.map(s=>s.id));
+  for(const p of c.parts){
+    const qs=p.qs||[],cnt={};let run=1,best=0,prev=null;
+    for(const id of qs){const q=c.questions[id];
+      if(!q){err.push('ভাগ '+p.no+': প্রশ্ন নেই '+id);continue}
+      if(!S.has(q.s))err.push(id+': অচেনা বিষয় '+q.s);
+      if(q.part!=null&&q.part!==p.no)err.push(id+': part '+q.part+' কিন্তু আছে ভাগ '+p.no+'-এ');
+      if(!Array.isArray(q.o)||q.o.length<2||!Number.isInteger(q.a)||q.a<0||q.a>=q.o.length)err.push(id+': o/a ঠিক নয়');
+      if(!q.e)warn.push(id+': ব্যাখ্যা নেই');
+      cnt[q.a]=(cnt[q.a]||0)+1;run=q.a===prev?run+1:1;best=Math.max(best,run);prev=q.a}
+    if(best>4)warn.push('ভাগ '+p.no+': একই সঠিক অপশন পরপর '+best+'বার (৪-এর বেশি নয়)');
+    for(const [k,v] of Object.entries(cnt)){const r=v/qs.length;if(qs.length>=20&&(r<.2||r>.3))warn.push('ভাগ '+p.no+': সঠিক অপশন '+'কখগঘ'[k]+' '+Math.round(r*100)+'% (২০-৩০% ভালো)')}
+  }
+  return {err,warn};
+}
+$('f').onchange=async()=>{
+  SET=null;$('up').disabled=true;const t=await $('f').files[0].text();
+  let c;try{c=JSON.parse(t)}catch(e){$('chk').innerHTML='<p class="bad">JSON পড়া যায়নি।</p>';return}
+  const {err,warn}=check(c),n=c.parts?c.parts.reduce((a,p)=>a+(p.qs||[]).length,0):0;
+  $('chk').innerHTML=`<p>${esc(c.title||c.id)} · ${bn(n)} প্রশ্ন · ${bn((c.parts||[]).length)} ভাগ</p>`+(err.length?'<p class="bad">ভুল:</p><pre>'+esc(err.slice(0,40).join('\n'))+'</pre>':'<p class="ok">ছাঁচ ঠিক আছে।</p>')+(warn.length?'<p class="dim">খেয়াল করুন:</p><pre>'+esc(warn.slice(0,40).join('\n'))+'</pre>':'');
+  if(!err.length){SET=c;$('up').disabled=false;$('sid').value=c.id}
+};
+$('up').onclick=async()=>{
+  if(!SET)return;$('up').disabled=true;const log=$('log');log.hidden=false;log.textContent='সেট তোলা হচ্ছে…\n';
+  try{
+    await api('diag/set',{cfg:{id:SET.id,title:SET.title,subjects:SET.subjects,parts:SET.parts}});
+    const all=SET.parts.flatMap(p=>p.qs).map(id=>({id,...SET.questions[id]}));
+    for(let i=0;i<all.length;i+=40){const r=await api('diag/q',{s:SET.id,qs:all.slice(i,i+40)});log.textContent+=bn(Math.min(i+40,all.length))+' / '+bn(all.length)+(r.bad.length?' · বাদ: '+r.bad.join(', '):'')+'\n'}
+    log.textContent+='শেষ।';load();
+  }catch(e){log.textContent+='থেমে গেছে: '+(e.j&&e.j.list?e.j.list.join('\n'):e.message)}
+  $('up').disabled=false;
+};
+$('load').onclick=load;load();
+</script>
+</body>
+</html>

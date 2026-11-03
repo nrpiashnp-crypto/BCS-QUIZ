@@ -6,3 +6,6 @@
 # /pilot/<ব্যাচ>/ পাইলট ব্যাচের পাতা (যেমন /pilot/petrobangla-1/); সব ব্যাচ একই পাতা, ব্যাচ চেনে ঠিকানা থেকে
 /pilot/:id/  /pilot/  200
 /pilot/:id  /pilot/  200
+# পেট্রোবাংলার ৫০ টাস্কের কোর্স আপাতত বন্ধ (PIASH, ২০২৬-১১-০৩): পুরোনো লিংক ব্যাচের পাতায়। নতুন ব্যাচের রুটিন LY Course বসাবে, তখন এটা বদলাবে
+/running/petrobangla/*  /pilot/petrobangla-1/  302
+/running/petrobangla  /pilot/petrobangla-1/  302
