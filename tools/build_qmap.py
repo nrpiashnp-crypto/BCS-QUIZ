@@ -9,6 +9,7 @@
   python3 tools/build_qmap.py
 """
 import glob, json, os, re, datetime
+import build_qver
 
 R = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(R, 'admin/data/qmap.json')
@@ -46,12 +47,14 @@ def main():
             TI[t['id']] = len(T)
             T.append([t['id'], t.get('name', t['id']), SI[c]])
     Q = {}                                 # qid → [টপিক-ক্রম বা -1, বিষয়-ক্রম, সঠিক, বিকল্পের সংখ্যা]
+    QQ = {}                                # qid → সব কপি, সংস্করণ-চিহ্নের জন্য (tools/build_qver.py)
 
     def put(q, t=-1, s=None):
         i = q.get('id')
         if not i or not isinstance(q.get('a'), int):
             return
         old = Q.get(i)
+        QQ.setdefault(i, []).append(q)
         if old:
             if t >= 0 and old[0] < 0:
                 old[0], old[1] = t, T[t][2]
@@ -101,6 +104,7 @@ def main():
         json.dump(out, fh, ensure_ascii=False, separators=(',', ':'))
     tp = sum(1 for v in Q.values() if v[0] >= 0)
     print(f'{len(Q)} প্রশ্ন, টপিকসহ {tp}, টপিক {len(T)} → {os.path.relpath(OUT, R)} ({os.path.getsize(OUT) // 1024} KB)')
+    build_qver.update(QQ)
 
 
 if __name__ == '__main__':
