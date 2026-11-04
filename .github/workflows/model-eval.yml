@@ -1,0 +1,56 @@
+name: model-eval
+# Gemini Flash বনাম Pro: যাচাই-করা প্রশ্নে কোন মডেল কতটা ভুল করে (LY Quiz & Sheets)।
+# শুধু হাতে চলে: Actions → model-eval → Run workflow। খরচ বন্ধুর Google Cloud-এর Vertex AI-তে (প্রজেক্ট lyanna-ai)।
+# প্রশ্ন tools/model-eval/questions.json (সাইটে আগেই পাবলিক)। লগে শুধু সংখ্যা; প্রশ্ন-ধরে ফল (আইডি + অক্ষর) artifact-এ।
+# গোপন ঘরে লাগে: VERTEX_API_KEY।
+on:
+  workflow_dispatch:
+    inputs:
+      cap:
+        description: 'খরচের ছাদ, ডলার (২-এর বেশি দেওয়া যাবে না)'
+        default: '1.9'
+      limit:
+        description: 'প্রথম কটা প্রশ্ন (০ = সব ২০০; পরীক্ষার জন্য ৫)'
+        default: '0'
+      thinking:
+        description: 'মডেলের ভাবনা'
+        type: choice
+        options: [low, high]
+        default: low
+      flash:
+        description: 'Flash মডেলের নাম (খালি = চালু সবচেয়ে নতুনটা)'
+        default: ''
+      pro:
+        description: 'Pro মডেলের নাম (খালি = চালু সবচেয়ে নতুনটা)'
+        default: ''
+concurrency: model-eval
+permissions:
+  contents: read
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: tools/model-eval
+      - name: দুই মডেলে সমাধান
+        env:
+          VERTEX_API_KEY: ${{ secrets.VERTEX_API_KEY }}
+          VERTEX_PROJECT: lyanna-ai
+          CAP: ${{ inputs.cap }}
+          LIMIT: ${{ inputs.limit }}
+          THINKING: ${{ inputs.thinking }}
+          FLASH: ${{ inputs.flash }}
+          PRO: ${{ inputs.pro }}
+        run: |
+          cap=$(python3 -c "import os; print(min(float(os.environ.get('CAP') or 1.9), 2.0))")
+          python3 tools/model-eval/run.py --cap "$cap" --limit "${LIMIT:-0}" --thinking "${THINKING:-low}" \
+            --flash "$FLASH" --pro "$PRO" --out results.json --summary "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: model-eval-results
+          path: results.json
+          retention-days: 30
+          if-no-files-found: ignore
