@@ -41,6 +41,7 @@
    যাচাইয়ের কাজ LY Quiz & Sheets-এর; Lyanna_data-তে টেনে নেওয়ার জন্য একই GET-এর JSON।
    পাইলট ব্যাচ (/pilot/<id>/, /admin/pilot/): নিচে "পাইলট ব্যাচ" অংশের মাথায় সব পথ।
    নিজের পরিকল্পনা, অবস্থা-যাচাই (/plan/<সেট>/, /admin/diag/): নিচে "নিজের পরিকল্পনা" অংশের মাথায় সব পথ।
+   আমার চাকরি (/myjobs/, /admin/jobs/): নিচে "আমার চাকরি" অংশের মাথায় সব পথ।
    শিক্ষকের সাপ্তাহিক রপ্তানি (GET /api/export/teacher, রপ্তানির চাবি দিয়ে): নিচে "শিক্ষকের সাপ্তাহিক রপ্তানি" অংশে। */
 const COOKIE = 'lb_s', AGE = 180 * 86400;
 const MAX_BATCH = 300, MAX_ROWS = 3000;
@@ -731,10 +732,120 @@ async function fbTap(req, db, u) {
   return json({ok: true});
 }
 
+// আমার চাকরি (/myjobs/, অ্যাডমিন /admin/jobs/): চলমান বিজ্ঞপ্তির প্রতিটা পদ এক সারি, প্রার্থীর বয়স-যোগ্যতা মেলানো হয় ব্রাউজারে।
+// GET  /api/jobs/count            → {n} চলমান পদের সংখ্যা (লগইন ছাড়া; বাকি সব লগইনে)
+// GET  /api/jobs/list             → {jobs:[…]} চলমান (st='live', আবেদনের শেষ তারিখ পার হয়নি) পদ
+// GET/POST /api/jobs/prof         → নিজের তথ্য {dob 'YYYY-MM-DD', types:[…], edu, grp, third 0|1|null}; POST {del:1} মুছে দেয়
+// GET  /api/jobs/mine             → {mine:{<jid>:{ts, done:[1,2]}}}; POST {jid, on:true|false, done?:[…]}
+// অ্যাডমিন: GET /api/admin/jobs → সব পদ (খসড়াসহ); POST /api/admin/jobs {job} (একই id হলে হালনাগাদ); POST /api/admin/jobs/del {id}
+// D1-এর ব্যাকআপ নেই: /admin/jobs/-এর "সব তথ্য কপি" দিয়ে Lyanna_data-তে রাখা হয়।
+const JOB_TYPES = ['g9', 'g10', 'bcs', 'gbank', 'pbank', 'gov'];
+const EDU = ['ssc', 'hsc', 'diploma', 'hons', 'masters'];
+const GRPS = ['sci', 'arts', 'com', 'eng', 'med', 'other'];
+const JOBS_SCHEMA = [
+  "CREATE TABLE IF NOT EXISTS jobs(id TEXT PRIMARY KEY, st TEXT NOT NULL, ae TEXT, data TEXT NOT NULL, upd INTEGER, by TEXT)",
+  'CREATE TABLE IF NOT EXISTS jprof(uid INTEGER PRIMARY KEY, dob TEXT, types TEXT, edu TEXT, grp TEXT, third INTEGER, upd INTEGER)',
+  'CREATE TABLE IF NOT EXISTS myjob(uid INTEGER NOT NULL, jid TEXT NOT NULL, ts INTEGER, done TEXT, PRIMARY KEY(uid, jid))'
+];
+let jobsReady = false;
+async function jobsSetup(db) { if (!jobsReady) { await db.batch(JOBS_SCHEMA.map(x => db.prepare(x))); jobsReady = true; } }
+const isDate = v => typeof v === 'string' && /^20\d\d-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(v);
+const isDob = v => typeof v === 'string' && /^(19[5-9]\d|20[01]\d)-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(v);
+const dhakaToday = () => new Date(Date.now() + 6 * 3600e3).toISOString().slice(0, 10);
+const httpUrl = v => typeof v === 'string' && /^https?:\/\/[^\s"'<>]{3,400}$/.test(v) ? v : '';
+const sOpt = (v, n) => typeof v === 'string' && v.trim() ? v.trim().slice(0, n) : '';
+const nOpt = (v, lo, hi) => { const x = typeof v === 'string' ? parseFloat(v) : v; return typeof x === 'number' && isFinite(x) && x >= lo && x <= hi ? x : null; };
+// একটা পদ: অজানা ঘর ফাঁকা থাকে, আন্দাজ নয়
+function jobClean(j) {
+  if (!j || typeof j !== 'object') return null;
+  const id = typeof j.id === 'string' && /^[a-z0-9-]{3,60}$/.test(j.id) ? j.id : null;
+  const post = sOpt(j.post, 120), org = sOpt(j.org, 160);
+  if (!id || !post || !org || !JOB_TYPES.includes(j.type)) return null;
+  const list = (v, n, m) => Array.isArray(v) ? v.filter(x => typeof x === 'string' && x.trim()).map(x => x.trim().slice(0, m)).slice(0, n) : [];
+  return {
+    id, type: j.type, post, org, grade: nOpt(j.grade, 1, 20), seats: nOpt(j.seats, 1, 100000),
+    nd: isDate(j.nd) ? j.nd : '', as: isDate(j.as) ? j.as : '', ae: isDate(j.ae) ? j.ae : '', at: sOpt(j.at, 40),
+    amin: nOpt(j.amin, 14, 60), amax: nOpt(j.amax, 14, 70), aref: isDate(j.aref) ? j.aref : '',
+    edu: EDU.includes(j.edu) ? j.edu : '', grp: Array.isArray(j.grp) ? j.grp.filter(g => GRPS.includes(g)) : [],
+    third: j.third === 1 || j.third === 0 ? j.third : null, edut: sOpt(j.edut, 300), other: sOpt(j.other, 300),
+    fee: sOpt(j.fee, 120), feet: sOpt(j.feet, 120), admit: sOpt(j.admit, 120),
+    exam: typeof j.exam === 'string' && /^20\d\d-(0[1-9]|1[0-2])(-(0[1-9]|[12]\d|3[01]))?$/.test(j.exam) ? j.exam : '', est: j.est ? 1 : 0,
+    subj: list(j.subj, 12, 40), url: httpUrl(j.url), src: httpUrl(j.src), srcn: sOpt(j.srcn, 120), course: /^\/[a-z0-9\/-]{1,80}$/.test(j.course || '') ? j.course : ''
+  };
+}
+async function jobs(path, req, db, u) {
+  await jobsSetup(db);
+  const m = req.method, today = dhakaToday();
+  if (path === 'jobs/count' && m === 'GET') {
+    const r = await db.prepare("SELECT COUNT(*) n FROM jobs WHERE st = 'live' AND (ae IS NULL OR ae = '' OR ae >= ?)").bind(today).first();
+    return json({n: r ? r.n : 0}, 200, {'Cache-Control': 'public, max-age=600'});
+  }
+  if (!u) return json({error: 'login'}, 401);
+  if (path === 'jobs/list' && m === 'GET') {
+    const {results} = await db.prepare("SELECT data FROM jobs WHERE st = 'live' AND (ae IS NULL OR ae = '' OR ae >= ?) ORDER BY ae LIMIT 500").bind(today).all();
+    return json({today, jobs: results.map(r => JSON.parse(r.data))}, 200, {'Cache-Control': 'no-store'});
+  }
+  if (path === 'jobs/prof') {
+    if (m === 'POST') {
+      const b = await req.json().catch(() => ({}));
+      if (b.del) { await db.batch([db.prepare('DELETE FROM jprof WHERE uid = ?').bind(u.id), db.prepare('DELETE FROM myjob WHERE uid = ?').bind(u.id)]); return json({ok: true}); }
+      if (!isDob(b.dob)) return json({error: 'dob'}, 400);
+      const types = Array.isArray(b.types) ? b.types.filter(t => JOB_TYPES.includes(t)) : [];
+      await db.prepare('INSERT INTO jprof(uid, dob, types, edu, grp, third, upd) VALUES(?,?,?,?,?,?,?) ON CONFLICT(uid) DO UPDATE SET dob=excluded.dob, types=excluded.types, edu=excluded.edu, grp=excluded.grp, third=excluded.third, upd=excluded.upd')
+        .bind(u.id, b.dob, types.join(','), EDU.includes(b.edu) ? b.edu : null, GRPS.includes(b.grp) ? b.grp : null, b.third === 1 || b.third === 0 ? b.third : null, Date.now()).run();
+      return json({ok: true});
+    }
+    const r = await db.prepare('SELECT dob, types, edu, grp, third FROM jprof WHERE uid = ?').bind(u.id).first();
+    return json({prof: r ? {dob: r.dob, types: r.types ? r.types.split(',') : [], edu: r.edu || '', grp: r.grp || '', third: r.third} : null}, 200, {'Cache-Control': 'no-store'});
+  }
+  if (path === 'jobs/mine') {
+    if (m === 'POST') {
+      const b = await req.json().catch(() => ({}));
+      const jid = typeof b.jid === 'string' && /^[a-z0-9-]{3,60}$/.test(b.jid) ? b.jid : null;
+      if (!jid) return json({error: 'bad'}, 400);
+      if (b.on === false) { await db.prepare('DELETE FROM myjob WHERE uid = ? AND jid = ?').bind(u.id, jid).run(); return json({ok: true}); }
+      const n = await db.prepare('SELECT COUNT(*) n FROM myjob WHERE uid = ?').bind(u.id).first();
+      if (n && n.n >= 60) return json({error: 'many'}, 400);
+      const done = Array.isArray(b.done) ? [...new Set(b.done.filter(x => x === 1 || x === 2 || x === 3))].sort().join(',') : '';
+      await db.prepare('INSERT INTO myjob(uid, jid, ts, done) VALUES(?,?,?,?) ON CONFLICT(uid, jid) DO UPDATE SET done=excluded.done').bind(u.id, jid, Date.now(), done).run();
+      return json({ok: true});
+    }
+    const {results} = await db.prepare('SELECT jid, ts, done FROM myjob WHERE uid = ?').bind(u.id).all();
+    const mine = {};
+    for (const r of results) mine[r.jid] = {ts: r.ts, done: r.done ? r.done.split(',').map(Number) : []};
+    return json({mine}, 200, {'Cache-Control': 'no-store'});
+  }
+  return json({error: 'not found'}, 404);
+}
+async function jobsAdmin(path, req, db, u) {
+  await jobsSetup(db);
+  const m = req.method;
+  if (path === 'admin/jobs' && m === 'GET') {
+    const {results} = await db.prepare('SELECT st, upd, data FROM jobs ORDER BY upd DESC LIMIT 1000').all();
+    return json({jobs: results.map(r => ({st: r.st, upd: r.upd, ...JSON.parse(r.data)}))}, 200, {'Cache-Control': 'no-store'});
+  }
+  if (path === 'admin/jobs' && m === 'POST') {
+    const b = await req.json().catch(() => ({}));
+    const j = jobClean(b.job), st = ['draft', 'live', 'off'].includes(b.st) ? b.st : 'draft';
+    if (!j) return json({error: 'bad'}, 400);
+    await db.prepare('INSERT INTO jobs(id, st, ae, data, upd, by) VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET st=excluded.st, ae=excluded.ae, data=excluded.data, upd=excluded.upd, by=excluded.by')
+      .bind(j.id, st, j.ae, JSON.stringify(j), Date.now(), u.email || '').run();
+    return json({ok: true, job: j});
+  }
+  if (path === 'admin/jobs/del' && m === 'POST') {
+    const b = await req.json().catch(() => ({}));
+    if (typeof b.id !== 'string') return json({error: 'bad'}, 400);
+    await db.prepare('DELETE FROM jobs WHERE id = ?').bind(b.id).run();
+    return json({ok: true});
+  }
+  return json({error: 'not found'}, 404);
+}
+
 // অ্যাডমিন: কার কী ফল, প্রতিটি উত্তরসহ (কাস্টম প্ল্যান আর দিন-শেষের ডেটা-যাচাইয়ের জন্য)
 async function admin(path, url, env, db, u, req) {
   if (!isAdmin(u, env)) return json({error: 'admin'}, 403);
   if (path === 'admin/pilot' || path.startsWith('admin/pilot/')) return pilotAdmin(path, url, req, db);
+  if (path === 'admin/jobs' || path.startsWith('admin/jobs/')) return jobsAdmin(path, req, db, u);
   if (path === 'admin/upkey') return upkeyAdmin(req, db);
   if (path === 'admin/exkey') return exkeyAdmin(req, db);
   if (path === 'admin/diag' || path.startsWith('admin/diag/')) return diagAdmin(path, url, req, db);
@@ -2035,6 +2146,7 @@ export async function onRequest({request: req, env}) {
     }
     // শিক্ষকের সাপ্তাহিক রপ্তানি (Lyanna_data-র GitHub Action): রপ্তানির চাবি দিয়ে শুধু পড়া
     if (path.startsWith('export/') && m === 'GET') return await teacherExport(path, url, req, db);
+    if (path.startsWith('jobs/')) return await jobs(path, req, db, u);
     if (!u) return json({error: 'login'}, 401);
 
     if (path.startsWith('admin/')) return await admin(path, url, env, db, u, req);
@@ -2086,8 +2198,10 @@ export async function onRequest({request: req, env}) {
       return json({ok: true, saved: rows.length, qs, qd: qds.length});
     }
     if (path === 'delete' && m === 'POST') {
-      await attqTable(db); await diagSetup(db);
+      await attqTable(db); await diagSetup(db); await jobsSetup(db);
       await db.batch([
+        db.prepare('DELETE FROM jprof WHERE uid = ?').bind(u.id),
+        db.prepare('DELETE FROM myjob WHERE uid = ?').bind(u.id),
         db.prepare('DELETE FROM attq WHERE uid = ?').bind(u.id),
         db.prepare('DELETE FROM diag_att WHERE uid = ?').bind(u.id),
         db.prepare('DELETE FROM msg WHERE uid = ?').bind(u.id),

@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="theme-color" content="#13294b">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>আমার চাকরি · লিয়ানা বুকস</title>
+<meta name="description" content="জন্মতারিখ আর পাস দিলে দেখাবে চলমান কোন সরকারি চাকরির বিজ্ঞপ্তিতে আপনার বয়স আর যোগ্যতা মেলে, শেষ তারিখ কবে, পরীক্ষা কবে।">
+<link rel="canonical" href="https://lyannabooks.com/myjobs/">
+<meta property="og:title" content="আমার চাকরি">
+<meta property="og:description" content="আপনার বয়সে কোন কোন সরকারি চাকরিতে আবেদন করা যায়, শেষ তারিখ কবে, পরীক্ষা কবে।">
+<meta property="og:url" content="https://lyannabooks.com/myjobs/">
+<meta property="og:type" content="website">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
+<link rel="preload" href="/fonts/AnekBangla-bengali.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+:root{--paper:#f8f5ee;--ink:#1d1f21;--muted:#5d5a55;--rule:#e6d3d9;--card:#fffdf7;--navy:#13294b;--pink:#c8326a;--good:#1e7a46;--good-bg:#e5f3ea;--bad:#b3261e;--warn:#8a5a00;
+  --body:'Noto Sans Bengali',system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6}
+a{color:var(--navy)}
+.sitebar .who{color:#5d5a55;font-size:15px}
+.wrap{max-width:640px;margin:0 auto;padding:18px 16px 110px}
+h1,h2{font-size:21px;line-height:1.35;margin:2px 0 8px;font-weight:600}
+h3{font-size:16px;margin:20px 0 8px;font-weight:600}
+p{margin:0 0 10px}
+.mut{color:var(--muted)}.sm{font-size:13.5px}
+.btn{display:block;width:100%;text-align:center;background:var(--navy);color:#fff;border:0;border-radius:3px;padding:12px;font:600 16px/1.3 var(--body);text-decoration:none;cursor:pointer}
+.btn.line{background:var(--card)!important;color:var(--navy)!important;border:1.4px solid var(--pink)}
+.btn:disabled{opacity:.5}
+.lnk{background:none;border:0;padding:4px 0;font:inherit;color:var(--navy);text-decoration:underline;cursor:pointer}
+.box{background:var(--card);border:1.4px solid rgba(200,50,106,.45);border-radius:3px;padding:12px 14px}
+label.f{display:block;font-weight:600;font-size:15px;margin:16px 0 4px}
+label.f small{font-weight:400;color:var(--muted)}
+.in{width:100%;font:16px var(--body);padding:10px 8px;border:1px solid #cfc8bb;border-radius:3px;background:#fff;min-height:44px;color:var(--ink)}
+.dob{display:flex;gap:6px}.dob .in{flex:1}.dob .in.m{flex:1.6}.dob .in.y{flex:1.3}
+.ck{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:15px}
+.ck label{display:flex;align-items:center;gap:7px;min-height:36px;cursor:pointer}
+.ck input{width:18px;height:18px;accent-color:#13294b;margin:0}
+.err{color:var(--bad);font-size:15px;margin:10px 0 0}
+#gbtn{display:flex;justify-content:center;min-height:44px;margin-top:16px}
+.age{border-left:3px solid var(--navy);padding:2px 0 2px 12px;margin:4px 0 14px}
+.age b{font-size:18px;color:var(--navy);font-weight:600}
+.age p{margin:2px 0 0;font-size:13.5px;color:var(--muted)}
+.jl{list-style:none;margin:0;padding:0;border-top:1px solid var(--rule)}
+.jl li{border-bottom:1px solid var(--rule)}
+.jl a{display:flex;gap:10px;align-items:flex-start;padding:11px 0;color:inherit;text-decoration:none}
+.bub{width:22px;height:22px;flex:none;border:1.4px solid var(--pink);border-radius:50%;margin-top:3px}
+.bub.on{background:#1d1d1f;border-color:#1d1d1f}
+.jt{flex:1;min-width:0;line-height:1.35}
+.jt b{display:block;font-weight:600;font-size:16px}
+.jt span{font-size:13.5px;color:var(--muted)}
+.dl{text-align:right;font-size:13.5px;line-height:1.3;white-space:nowrap;color:var(--muted)}
+.dl b{display:block;font-weight:600;font-size:15px;color:var(--ink)}
+.dl.soon b{color:var(--warn)}
+details.more{margin:12px 0 0;font-size:15px}
+details.more summary{color:var(--navy);cursor:pointer;min-height:32px}
+details.more .jl{margin-top:6px}
+.why{display:block;font-size:13.5px;color:var(--bad)}
+.foot{position:fixed;left:0;right:0;bottom:0;background:var(--paper);border-top:1.4px solid rgba(200,50,106,.45);padding:10px max(16px,calc((100% - 608px)/2)) max(12px,env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:12px;z-index:5}
+.foot p{margin:0;font-size:15px;line-height:1.35;flex:1}
+.foot .btn{width:auto;padding:10px 14px;font-size:15px}
+.back{font-size:15px;text-decoration:none;display:inline-block;margin-bottom:6px}
+.kv{width:100%;border-collapse:collapse;font-size:15px}
+.kv td{padding:7px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+.kv td:first-child{color:var(--muted);width:42%;padding-right:10px}
+.kv .y{color:var(--good);font-weight:600}.kv .n{color:var(--bad);font-weight:600}.kv .q{color:var(--warn);font-weight:600}
+.todo{list-style:none;margin:0;padding:0}
+.todo li{display:flex;gap:10px;padding:8px 0;align-items:flex-start;font-size:15px;line-height:1.4}
+.todo li small{display:block;color:var(--muted);font-size:13.5px}
+.num{width:28px;height:28px;flex:none;border:1.4px solid var(--navy);border-radius:3px;display:grid;place-items:center;font:15px/1 var(--body);color:var(--navy);background:#fff;cursor:pointer;padding:0}
+.num.done{background:var(--navy);color:#fff}
+.src{font-size:13.5px;color:var(--muted);margin-top:14px;line-height:1.5}
+dl.split{font-size:15px;margin:0}
+dl.split dt{font-weight:600;color:var(--navy);margin-top:8px}
+dl.split dd{margin:0}
+.wait{color:var(--muted)}
+</style>
+<link rel="stylesheet" href="/css/omr.css">
+</head>
+<body>
+<div class="sitebar"><a href="/" aria-label="লিয়ানা বুকস"><img src="/img/logo/li-mark.svg" alt="" width="34" height="44"><span class="lgn-n">লিয়ানা বুকস</span></a><a class="who" href="/account/" id="who"></a></div>
+<main class="wrap" id="app"><p class="wait">খোলা হচ্ছে…</p></main>
+<div class="foot" id="foot" hidden></div>
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const bn=x=>String(x).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+const MON=['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
+const TYPES={g9:'৯ম গ্রেড',g10:'১০ম গ্রেড',bcs:'বিসিএস',gbank:'সরকারি ব্যাংক',pbank:'বেসরকারি ব্যাংক',gov:'অন্যান্য সরকারি'};
+const EDU={ssc:'এসএসসি',hsc:'এইচএসসি',diploma:'ডিপ্লোমা',hons:'স্নাতক',masters:'স্নাতকোত্তর'};
+const ERANK={ssc:0,hsc:1,diploma:1.5,hons:2,masters:3};
+const GRP={sci:'বিজ্ঞান',arts:'মানবিক',com:'ব্যবসায় শিক্ষা',eng:'প্রকৌশল',med:'চিকিৎসা',other:'অন্যান্য'};
+const ord=n=>bn(n)+({1:'ম',2:'য়',3:'য়',4:'র্থ',5:'ম',6:'ষ্ঠ',7:'ম',8:'ম',9:'ম',10:'ম'}[n]||'তম');
+const api=(p,b)=>fetch('/api/'+p,b?{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:{credentials:'same-origin',cache:'no-store'}).then(r=>r.ok?r.json():r.json().then(j=>Promise.reject(j),()=>Promise.reject({})));
+let S={me:null,cid:'',prof:null,jobs:[],mine:{},today:''};
+
+// তারিখ: 'YYYY-MM-DD' → [y,m,d]; বয়স গোনা ক্যালেন্ডার ধরে
+const P=s=>s.split('-').map(Number);
+function ymd(a,b){ // a থেকে b পর্যন্ত বছর-মাস-দিন (b>=a)
+  let [y1,m1,d1]=P(a),[y2,m2,d2]=P(b),y=y2-y1,m=m2-m1,d=d2-d1;
+  if(d<0){m--;d+=new Date(y2,m2-1,0).getDate()}
+  if(m<0){y--;m+=12}
+  return [y,m,d];
+}
+function addY(s,n){const [y,m,d]=P(s);const t=new Date(Date.UTC(y+n,m-1,d));if(t.getUTCMonth()!==m-1)t.setUTCDate(0);return t.toISOString().slice(0,10)}
+const days=(a,b)=>Math.round((Date.UTC(...P(b).map((v,i)=>i===1?v-1:v))-Date.UTC(...P(a).map((v,i)=>i===1?v-1:v)))/864e5);
+const ageTxt=a=>bn(a[0])+' বছর'+(a[1]?' '+bn(a[1])+' মাস':'');
+function dTxt(s,full){if(!s)return '';const p=P(s);if(p.length===2)return MON[p[1]-1]+' '+bn(p[0]);const cy=+S.today.slice(0,4);return bn(p[2])+' '+MON[p[1]-1]+(full||p[0]!==cy?' '+bn(p[0]):'')}
+function examTxt(j){if(!j.exam)return '';return (j.est?'আনুমানিক ':'')+(j.exam.length===7?dTxt(j.exam):dTxt(j.exam,1))}
+
+// একটা পদে প্রার্থীর মিল: ok = সব মেলে, no = কোনো শর্ত মেলে না, chk = নিজে মিলিয়ে নিতে হবে
+function elig(j,p){
+  const rows=[];let why='';
+  if(j.amax&&j.aref){
+    const lim=addY(j.aref,-j.amax),lo=j.amin?addY(j.aref,-j.amin):null;
+    const t='বয়স '+(j.amin?bn(j.amin)+'-':'')+bn(j.amax)+' বছর ('+dTxt(j.aref,1)+' ধরে)';
+    if(p.dob<lim){const a=ymd(p.dob,j.aref);rows.push({t,v:'মেলে না: সেদিন '+ageTxt(a),c:'n'});why=why||'বয়স বেশি'}
+    else if(lo&&p.dob>lo){rows.push({t,v:'মেলে না: বয়স কম',c:'n'});why=why||'বয়স কম'}
+    else{const a=ymd(p.dob,j.aref),near=days(lim,p.dob)<=31;
+      rows.push({t,v:near?'সীমার একেবারে কাছে: বিজ্ঞপ্তির নিয়ম মিলিয়ে নিন':'মেলে, সেদিন '+ageTxt(a),c:near?'q':'y'})}
+  }else rows.push({t:'বয়সসীমা',v:'তথ্য পাইনি, বিজ্ঞপ্তি দেখুন',c:'q'});
+  if(j.edu){
+    const t=EDU[j.edu]+(j.edut?' ('+j.edut+')':'');let v,c;
+    if(!p.edu){v='আপনার পাস দেওয়া নেই';c='q'}
+    else if(j.edu==='diploma'&&p.edu!=='diploma'){if(ERANK[p.edu]>1.5){v='ডিপ্লোমা চাওয়া; আপনার পাসে চলবে কি না দেখুন';c='q'}else{v='মেলে না';c='n';why=why||'ডিপ্লোমা লাগবে'}}
+    else if(ERANK[p.edu]>=ERANK[j.edu]){v='মেলে';c='y'}else{v='মেলে না';c='n';why=why||EDU[j.edu]+' লাগবে'}
+    rows.push({t,v,c});
+  }else if(j.edut)rows.push({t:j.edut,v:'নিজে মিলিয়ে নিন',c:'q'});
+  if(j.grp&&j.grp.length){
+    const t=j.grp.map(g=>GRP[g]).join(', ')+' বিভাগ';
+    if(!p.grp)rows.push({t,v:'আপনার বিভাগ দেওয়া নেই',c:'q'});
+    else if(j.grp.includes(p.grp))rows.push({t,v:'মেলে',c:'y'});
+    else{rows.push({t,v:'মেলে না',c:'n'});why=why||'বিভাগ মেলে না'}
+  }
+  if(j.third===0){
+    const t='তৃতীয় বিভাগ/শ্রেণি চলবে না';
+    if(p.third===1){rows.push({t,v:'মেলে না',c:'n'});why=why||'তৃতীয় বিভাগ চলবে না'}
+    else if(p.third===0)rows.push({t,v:'মেলে',c:'y'});
+    else rows.push({t,v:'আপনার তথ্য দেওয়া নেই',c:'q'});
+  }
+  if(j.other)rows.push({t:j.other,v:'নিজে মিলিয়ে নিন',c:'q'});
+  const cls=rows.some(r=>r.c==='n')?'no':rows.some(r=>r.c==='q')?'chk':'ok';
+  return {cls,rows,why};
+}
+
+function who(){const w=$('who');if(w)w.textContent=S.me?(S.me.name||'').split(' ')[0]:''}
+function foot(){
+  const f=$('foot'),ids=Object.keys(S.mine).filter(id=>S.jobs.some(j=>j.id===id));
+  if(!S.prof||!ids.length||location.hash==='#exams'){f.hidden=true;return}
+  const ex=ids.map(id=>S.jobs.find(j=>j.id===id)).filter(j=>j.exam).sort((a,b)=>a.exam<b.exam?-1:1)[0];
+  f.innerHTML=`<p><b>প্রস্তুতিতে ${bn(ids.length)}টা চাকরি</b>${ex?`<br><span class="mut sm">পরের পরীক্ষা: ${esc(examTxt(ex))}</span>`:''}</p><a class="btn" href="#exams">প্রস্তুতি দেখুন</a>`;
+  f.hidden=false;
+}
+
+// পর্দা ১: লগইনের আগে
+async function gate(){
+  let n=null;try{n=(await api('jobs/count')).n}catch(e){}
+  $('app').innerHTML=`<h1>আপনার বয়সে কোন কোন সরকারি চাকরিতে আবেদন করা যায়?</h1>
+  <p>${n?'এখন '+bn(n)+'টা পদের বিজ্ঞপ্তি চলছে। ':''}জন্মতারিখ আর পাস দিলে দেখাব কোনগুলোতে আপনার বয়স আর যোগ্যতা মেলে, শেষ তারিখ কবে, পরীক্ষা কবে।</p>
+  <p class="mut sm">প্রতিটা বিজ্ঞপ্তির বয়সসীমা সেই বিজ্ঞপ্তির নিজের তারিখ ধরে গোনা হয়।</p>
+  <div id="gbtn">${S.cid?'':'<p class="mut">লগইন এখন চালু নেই।</p>'}</div>
+  <p class="mut sm" style="margin-top:12px">জন্মতারিখ শুধু বয়স গোনার কাজে লাগে; এই পাতা থেকেই এক চাপে মোছা যায়।</p>`;
+  if(!S.cid)return;
+  const go=()=>{google.accounts.id.initialize({client_id:S.cid,ux_mode:'popup',context:'signin',callback:async res=>{
+      try{await api('login',{credential:res.credential});boot()}catch(e){$('gbtn').insertAdjacentHTML('afterend','<p class="err">লগইন হয়নি, আবার চেষ্টা করুন।</p>')}}});
+    google.accounts.id.renderButton($('gbtn'),{theme:'filled_blue',size:'large',shape:'pill',text:'continue_with',locale:'bn',width:280})};
+  if(window.google&&google.accounts)return go();
+  const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.async=true;s.onload=go;document.head.appendChild(s);
+}
+
+// পর্দা ২: আপনার তথ্য
+function form(){
+  const p=S.prof||{types:[]},d=p.dob?P(p.dob):[0,0,0],cy=+(S.today||'2026').slice(0,4);
+  const opt=(a,sel)=>a.map(([v,t])=>`<option value="${v}"${v===sel?' selected':''}>${t}</option>`).join('');
+  const range=(a,b)=>{const r=[];for(let i=a;i<=b;i++)r.push(i);return r};
+  $('app').innerHTML=`${S.prof?'<a class="back" href="#">← আমার চাকরি</a>':''}<h1>আপনার তথ্য</h1>
+  <form id="pf" novalidate>
+  <label class="f">জন্মতারিখ <small>(এসএসসি সনদে যা আছে)</small></label>
+  <div class="dob"><select class="in" id="dd" aria-label="দিন"><option value="">দিন</option>${opt(range(1,31).map(i=>[i,bn(i)]),d[2])}</select>
+  <select class="in m" id="dm" aria-label="মাস"><option value="">মাস</option>${opt(MON.map((m,i)=>[i+1,m]),d[1])}</select>
+  <select class="in y" id="dy" aria-label="বছর"><option value="">বছর</option>${opt(range(cy-50,cy-15).reverse().map(i=>[i,bn(i)]),d[0])}</select></div>
+  <label class="f">কোন চাকরি চান <small>(একাধিক বাছা যায়)</small></label>
+  <div class="ck">${Object.entries(TYPES).map(([k,t])=>`<label><input type="checkbox" name="ty" value="${k}"${p.types.includes(k)?' checked':''}>${t}</label>`).join('')}</div>
+  <label class="f" for="pe">সর্বোচ্চ পাস</label>
+  <select class="in" id="pe"><option value="">বলতে চাই না</option>${opt(Object.entries(EDU),p.edu)}</select>
+  <label class="f" for="pg">বিভাগ</label>
+  <select class="in" id="pg"><option value="">বলতে চাই না</option>${opt(Object.entries(GRP),p.grp)}</select>
+  <label class="f">কোনো পরীক্ষায় তৃতীয় বিভাগ/শ্রেণি?</label>
+  <div class="ck"><label><input type="radio" name="th" value="1"${p.third===1?' checked':''}>আছে</label><label><input type="radio" name="th" value="0"${p.third===0?' checked':''}>নেই</label></div>
+  <p class="err" id="fe" hidden></p>
+  <div style="margin-top:22px"><button class="btn">${S.prof?'রাখুন':'চাকরিগুলো দেখান'}</button></div>
+  </form>
+  ${S.prof?'<p style="margin-top:22px"><button type="button" class="lnk" id="del">আমার এই তথ্য মুছে দিন</button></p>':''}`;
+  $('pf').onsubmit=async e=>{
+    e.preventDefault();
+    const y=+$('dy').value,m=+$('dm').value,dd=+$('dd').value,fe=$('fe');
+    if(!y||!m||!dd||new Date(y,m-1,dd).getMonth()!==m-1){fe.textContent='জন্মতারিখ ঠিকমতো দিন।';fe.hidden=false;return}
+    const th=document.querySelector('input[name=th]:checked');
+    const b={dob:y+'-'+String(m).padStart(2,'0')+'-'+String(dd).padStart(2,'0'),types:[...document.querySelectorAll('input[name=ty]:checked')].map(x=>x.value),edu:$('pe').value,grp:$('pg').value,third:th?+th.value:null};
+    try{await api('jobs/prof',b);S.prof=b;location.hash='';route()}catch(e){fe.textContent='রাখা যায়নি, নেট দেখে আবার চেষ্টা করুন।';fe.hidden=false}
+  };
+  if($('del'))$('del').onclick=async function(){
+    if(!this.dataset.sure){this.dataset.sure=1;this.textContent='নিশ্চিত? আবার চাপুন: জন্মতারিখ আর প্রস্তুতির তালিকা মুছে যাবে';return}
+    try{await api('jobs/prof',{del:1});S.prof=null;S.mine={};location.hash='';route()}catch(e){}
+  };
+}
+
+// পর্দা ৩: আমার চাকরি
+function row(j,e){
+  const dl=j.ae?days(S.today,j.ae):null;
+  return `<li><a href="#j-${esc(j.id)}"><span class="bub${S.mine[j.id]?' on':''}" aria-label="${S.mine[j.id]?'প্রস্তুতিতে আছে':''}"></span><span class="jt"><b>${esc(j.post)}</b><span>${esc(j.org)}${j.grade?', '+ord(j.grade)+' গ্রেড':''}</span>${e&&e.why?`<span class="why">${esc(e.why)}</span>`:''}</span>${j.ae?`<span class="dl${dl<7?' soon':''}"><b>${dTxt(j.ae)}</b>${dl===0?'আজ শেষ':bn(dl)+' দিন বাকি'}</span>`:''}</a></li>`;
+}
+function list(){
+  const p=S.prof,a=ymd(p.dob,S.today),sel=p.types.length?p.types:Object.keys(TYPES);
+  const js=S.jobs.filter(j=>sel.includes(j.type)).map(j=>({j,e:elig(j,p)}));
+  const ok=js.filter(x=>x.e.cls==='ok'),no=js.filter(x=>x.e.cls==='no'),chk=js.filter(x=>x.e.cls==='chk');
+  const first=6;
+  $('app').innerHTML=`<div class="age"><b>আজ আপনার বয়স ${ageTxt(a)}</b><p>${p.types.length?p.types.map(t=>TYPES[t]).join(', '):'সব ধরনের চাকরি'} <a href="#me">বদলান</a></p></div>
+  <h2 style="font-size:16px">আপনার জন্য: ${bn(ok.length)}টা</h2>
+  ${ok.length?`<ul class="jl">${ok.slice(0,first).map(x=>row(x.j)).join('')}</ul>${ok.length>first?`<details class="more"><summary>বাকি ${bn(ok.length-first)}টা দেখুন</summary><ul class="jl">${ok.slice(first).map(x=>row(x.j)).join('')}</ul></details>`:''}`
+   :`<p class="mut">${S.jobs.length?'এই মুহূর্তে বাছা ধরনের কোনো চলমান বিজ্ঞপ্তিতে সব মেলেনি। নিচের ভাঁজগুলো দেখুন।':'এখন কোনো বিজ্ঞপ্তি তোলা নেই। নতুন বিজ্ঞপ্তি এলে এখানে দেখাবে।'}</p>`}
+  ${chk.length?`<details class="more"><summary>নিজে মিলিয়ে নিতে হবে: ${bn(chk.length)}টা</summary><ul class="jl">${chk.map(x=>row(x.j)).join('')}</ul></details>`:''}
+  ${no.length?`<details class="more"><summary>বয়স বা যোগ্যতা মেলে না: ${bn(no.length)}টা</summary><p class="mut sm" style="margin:6px 0 0">বয়সে বিশেষ ছাড় পেলে বিজ্ঞপ্তি দেখে নিন।</p><ul class="jl">${no.map(x=>row(x.j,x.e)).join('')}</ul></details>`:''}`;
+}
+
+// পর্দা ৪: একটা চাকরি
+function detail(id){
+  const j=S.jobs.find(x=>x.id===id);if(!j){location.hash='';return}
+  const e=elig(j,S.prof),mine=S.mine[id],done=mine?mine.done:[];
+  const steps=[['অনলাইনে আবেদন',(j.ae?'শেষ '+dTxt(j.ae,1)+(j.at?' '+j.at:''):'')+(j.url?`${j.ae?'। ':''}<a href="${esc(j.url)}" rel="noopener" target="_blank">আবেদনের সাইট</a>`:'')],['ফি জমা',esc(j.feet||'')],['প্রবেশপত্র নামানো',esc(j.admit||'তারিখ এলে এখানে দেখাবে')]];
+  $('app').innerHTML=`<a class="back" href="#">← আমার চাকরি</a>
+  <h1 style="margin-bottom:2px">${esc(j.post)}</h1>
+  <p class="mut sm">${esc(j.org)}${j.grade?', '+ord(j.grade)+' গ্রেড':''}${j.seats?', '+bn(j.seats)+'টা পদ':''}</p>
+  <table class="kv">${e.rows.map(r=>`<tr><td>${esc(r.t)}</td><td class="${r.c}">${esc(r.v)}</td></tr>`).join('')}
+  ${j.fee?`<tr><td>ফি</td><td>${esc(j.fee)}</td></tr>`:''}${j.exam?`<tr><td>পরীক্ষা</td><td>${esc(examTxt(j))}</td></tr>`:''}</table>
+  <h3>যা করতে হবে</h3>
+  <ul class="todo">${steps.map((s,i)=>`<li><button type="button" class="num${done.includes(i+1)?' done':''}" data-s="${i+1}" aria-pressed="${done.includes(i+1)}" aria-label="${s[0]}: হয়ে গেছে">${bn(i+1)}</button><span>${s[0]}${s[1]?`<small>${s[1]}</small>`:''}</span></li>`).join('')}</ul>
+  <p class="mut sm">ধাপ শেষ হলে নম্বরে চাপ দিন।</p>
+  <div style="margin-top:14px"><button type="button" class="btn${mine?' line':''}" id="tg">${mine?'প্রস্তুতি থেকে বাদ দিন':'প্রস্তুতিতে যোগ করুন'}</button></div>
+  <div class="box" style="margin-top:12px;font-size:15px">এই পরীক্ষার কোর্স: ${j.course?`<a href="${esc(j.course)}">খুলুন</a>`:'<span class="mut">শিগগির যোগ হবে</span>'}</div>
+  <p class="src">${j.srcn||j.nd?'তথ্য: '+esc(j.srcn||'বিজ্ঞপ্তি')+(j.nd?', '+dTxt(j.nd,1):'')+'। ':''}${j.src?`<a href="${esc(j.src)}" rel="noopener" target="_blank">মূল বিজ্ঞপ্তি</a>। `:''}আবেদনের আগে মূল বিজ্ঞপ্তি মিলিয়ে নিন।</p>`;
+  $('tg').onclick=async()=>{const on=!S.mine[id];try{await api('jobs/mine',{jid:id,on,done});if(on)S.mine[id]={ts:Date.now(),done};else delete S.mine[id];detail(id);foot()}catch(e){}};
+  document.querySelectorAll('.num').forEach(b=>b.onclick=async()=>{
+    const s=+b.dataset.s,cur=S.mine[id]?S.mine[id].done.slice():[],nd=cur.includes(s)?cur.filter(x=>x!==s):cur.concat(s);
+    try{await api('jobs/mine',{jid:id,on:true,done:nd});S.mine[id]={ts:Date.now(),done:nd};detail(id);foot()}catch(e){}
+  });
+}
+
+// পর্দা ৫: আপনার পরীক্ষাগুলো
+function exams(){
+  const js=Object.keys(S.mine).map(id=>S.jobs.find(j=>j.id===id)).filter(Boolean).sort((a,b)=>(a.exam||'9')<(b.exam||'9')?-1:1);
+  let sp='';const withS=js.filter(j=>j.subj&&j.subj.length);
+  if(withS.length>1){
+    const all=withS[0].subj.filter(s=>withS.every(j=>j.subj.includes(s)));
+    sp=`<h3>যা একসাথে পড়া যায়</h3><dl class="split">${all.length?`<dt>${withS.length===2?'দুটোতেই':'সবগুলোতেই'}</dt><dd>${esc(all.join(', '))}</dd>`:''}${withS.map(j=>{const only=j.subj.filter(s=>!all.includes(s));return only.length?`<dt>শুধু এই পরীক্ষায়: ${esc(j.post)}</dt><dd>${esc(only.join(', '))}</dd>`:''}).join('')}</dl>`;
+  }
+  $('app').innerHTML=`<a class="back" href="#">← আমার চাকরি</a><h1>আপনার পরীক্ষাগুলো</h1>
+  ${js.length?`<table class="kv">${js.map(j=>`<tr><td>${j.exam?esc(examTxt(j)):'তারিখ জানা নেই'}</td><td><a href="#j-${esc(j.id)}">${esc(j.post)}</a><span class="mut sm">, ${esc(j.org)}</span></td></tr>`).join('')}</table>${sp}
+  <div class="box" style="margin-top:16px;font-size:15px">একসাথে প্রস্তুতির কোর্স: <span class="mut">শিগগির যোগ হবে</span></div>`
+  :'<p class="mut">এখনো কোনো চাকরি প্রস্তুতিতে যোগ করেননি। তালিকা থেকে একটা চাকরি খুলে "প্রস্তুতিতে যোগ করুন" চাপুন।</p>'}`;
+}
+
+function route(){
+  const h=location.hash;window.scrollTo(0,0);who();
+  if(!S.me)return gate();
+  if(!S.prof||h==='#me')form();
+  else if(h.startsWith('#j-'))detail(h.slice(3));
+  else if(h==='#exams')exams();
+  else list();
+  foot();
+}
+async function boot(){
+  try{const m=await api('me');S.me=m.user;S.cid=m.cid}catch(e){$('app').innerHTML='<p class="mut">খোলা যায়নি। নেট দেখে পাতাটা আবার খুলুন।</p>';return}
+  if(S.me){
+    try{const [p,l,mi]=await Promise.all([api('jobs/prof'),api('jobs/list'),api('jobs/mine')]);S.prof=p.prof;S.jobs=l.jobs;S.today=l.today;S.mine=mi.mine}
+    catch(e){$('app').innerHTML='<p class="mut">তথ্য আনা যায়নি। একটু পরে আবার খুলুন।</p>';return}
+  }
+  route();
+}
+addEventListener('hashchange',route);
+boot();
+})();
+</script>
+<script src="/js/omr.js" defer></script>
+</body>
+</html>
