@@ -76,10 +76,28 @@ class Feeds(unittest.TestCase):
         a = collect.parse_feed(ATOM.encode())
         self.assertEqual(a[0]["url"], "https://ex.org/a")
 
+    def test_rdf(self):
+        x = ('<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://purl.org/rss/1.0/" '
+             'xmlns:dc="http://purl.org/dc/elements/1.1/"><item><title>DW</title><link>https://dw.com/a</link>'
+             '<dc:date>2026-11-04T05:00:00Z</dc:date></item></rdf:RDF>')
+        r = collect.parse_feed(x.encode())
+        self.assertEqual((r[0]["title"], r[0]["url"]), ("DW", "https://dw.com/a"))
+
     def test_domain(self):
         self.assertEqual(common.domain("https://bangla.thedailystar.net/x"), "thedailystar.net")
         self.assertEqual(common.domain("https://www.prothomalo.com/a"), "prothomalo.com")
         self.assertEqual(common.domain("https://cabinet.gov.bd/a"), "cabinet.gov.bd")
+
+
+class Home(unittest.TestCase):
+    def test_quota(self):
+        mk = lambda sec, sc: {"section": sec, "score": sc, "sources": [1]}
+        items = [mk("intl", 10), mk("intl", 9), mk("intl", 9), mk("intl", 8), mk("bd", 7), mk("bd", 6),
+                 mk("gk", 5), mk("bd", 4), mk("bd", 3)]
+        home = build.pick_home(build.order(items))
+        secs = [x["section"] for x in home]
+        self.assertEqual(len(home), 7)
+        self.assertEqual((secs.count("bd"), secs.count("intl"), secs.count("gk")), (3, 3, 1))   # gk কম → intl দিয়ে পূরণ
 
 
 class EndToEnd(unittest.TestCase):
@@ -107,10 +125,10 @@ class EndToEnd(unittest.TestCase):
         def fake_gemini(prompt, models, **kw):
             if "শিরোনাম (JSON" in prompt:
                 return {"groups": [{"items": [0, 1], "topic": "অক্টোবরের রেমিট্যান্স", "category": "economy",
-                                    "score": 8, "region": "bd"}]}
+                                    "score": 8, "section": "bd"}]}
             return {"title": "অক্টোবরে রেমিট্যান্স ২৮৭ কোটি ডলার", "short": "গত মাসে প্রবাসী আয় ২৮৭ কোটি ডলার।",
                     "detail": "বাংলাদেশ ব্যাংকের হিসাবে অক্টোবরে প্রবাসী আয় দাঁড়িয়েছে ২৮৭ কোটি ডলারে।",
-                    "why_exam": "অর্থনীতির সংখ্যা।", "category": "economy", "score": 8, "region": "bd",
+                    "why_exam": "অর্থনীতির সংখ্যা।", "category": "economy", "score": 8, "section": "bd",
                     "facts": [{"label": "রেমিট্যান্স", "value": "২৮৭ কোটি ডলার",
                                "evidence": [{"src": 0, "quote": "$2.87 billion in October"},
                                             {"src": 1, "quote": "প্রবাসীরা ২৮৭ কোটি ডলার পাঠিয়েছেন"}]}]}
@@ -134,6 +152,7 @@ class EndToEnd(unittest.TestCase):
             self.assertEqual(json.loads((tmp / "month/2026-11.json").read_text())["items"][0]["score"], 8)
             self.assertEqual(json.loads((tmp / "index.json").read_text())["latest"], "2026-11-04")
             self.assertIn("প্রকাশ: **1টা**", (tmp / "s.md").read_text())
+            self.assertEqual(day["top"][0]["section_bn"], "বাংলাদেশ")
 
 
 if __name__ == "__main__":

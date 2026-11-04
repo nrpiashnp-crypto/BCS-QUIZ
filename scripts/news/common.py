@@ -36,6 +36,12 @@ CATEGORIES = {
 }
 
 
+# খবরের তিন ভাগ (PIASH, ২০২৬-১১-০৪)
+SECTIONS = {"bd": "বাংলাদেশ", "intl": "আন্তর্জাতিক", "gk": "সাধারণ জ্ঞান"}
+# হোমের ৭টা: প্রতি ভাগ থেকে এতগুলো; কোনো ভাগে কম পড়লে বাকিগুলো চমক-মান ধরে পূরণ
+HOME_QUOTA = {"bd": 3, "intl": 2, "gk": 2}
+
+
 def log(*a):
     print(*a, file=sys.stderr, flush=True)
 
@@ -134,6 +140,7 @@ API = "https://generativelanguage.googleapis.com/v1beta"
 GAP_SECONDS = float(os.environ.get("NEWS_GEMINI_GAP", "5"))   # বিনা খরচের সীমায় মিনিটে ~১০টার বেশি নয়
 _last_call = [0.0]
 CALLS = {"n": 0}
+EXHAUSTED: set[str] = set()
 
 
 def gemini_json(prompt: str, models: list[str], schema: dict | None = None, temperature: float = 0.2):
@@ -146,6 +153,8 @@ def gemini_json(prompt: str, models: list[str], schema: dict | None = None, temp
         gen["responseSchema"] = schema
     last_err = None
     for model in models:
+        if model in EXHAUSTED:
+            continue
         for thinking in ({"thinkingLevel": "low"}, {"thinkingBudget": 0}, None):
             body = {"contents": [{"role": "user", "parts": [{"text": prompt}]}], "generationConfig": dict(gen)}
             if thinking:
@@ -174,6 +183,11 @@ def gemini_json(prompt: str, models: list[str], schema: dict | None = None, temp
                         break                      # এই মডেলে এই thinking চলে না → পরেরটা
                     if e.code == 404:
                         break
+                    if e.code == 429 and ("perday" in msg.lower().replace(" ", "") or "per_day" in msg.lower()
+                                          or "daily" in msg.lower()):
+                        EXHAUSTED.add(model)       # আজকের সীমা শেষ → পরের মডেল (প্রতিটা মডেলের সীমা আলাদা)
+                        log(f"  {model}: আজকের সীমা শেষ, পরের মডেল")
+                        break
                     if e.code in (429, 500, 502, 503, 504):
                         time.sleep(20 * (attempt + 1))
                         continue
@@ -188,6 +202,6 @@ def gemini_json(prompt: str, models: list[str], schema: dict | None = None, temp
                     continue
             else:
                 continue
-            if last_err and ("404" in last_err):
-                break                              # মডেলই নেই → পরের মডেল
+            if model in EXHAUSTED or (last_err and "HTTP 404" in last_err):
+                break                              # মডেল নেই বা সীমা শেষ → পরের মডেল
     raise RuntimeError(f"Gemini কাজ করল না: {last_err}")

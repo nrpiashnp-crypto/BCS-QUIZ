@@ -1,21 +1,167 @@
 {
  "_নোট": "কোন উৎস থেকে শিরোনাম তোলা হবে। নতুন উৎস যোগ করতে এখানে এক সারি। 'ok' প্রথম চালানোর পরে হালনাগাদ হবে (কাজ করে কি না)। ধরন: official = সরকার/সংস্থার নিজের সাইট, agency = সংবাদ সংস্থা, news = সংবাদপত্র।",
  "feeds": [
-  {"name": "প্রথম আলো", "url": "https://www.prothomalo.com/feed/", "lang": "bn", "kind": "news"},
-  {"name": "দ্য ডেইলি স্টার", "url": "https://www.thedailystar.net/frontpage/rss.xml", "lang": "en", "kind": "news"},
-  {"name": "দ্য ডেইলি স্টার বাংলা", "url": "https://bangla.thedailystar.net/frontpage/rss.xml", "lang": "bn", "kind": "news"},
-  {"name": "বিবিসি বাংলা", "url": "https://feeds.bbci.co.uk/bengali/rss.xml", "lang": "bn", "kind": "news"},
-  {"name": "দ্য বিজনেস স্ট্যান্ডার্ড", "url": "https://www.tbsnews.net/top-news/rss.xml", "lang": "en", "kind": "news"},
-  {"name": "ঢাকা ট্রিবিউন", "url": "https://www.dhakatribune.com/feed", "lang": "en", "kind": "news"},
-  {"name": "বাসস", "url": "https://www.bssnews.net/rss", "lang": "en", "kind": "agency"},
-  {"name": "জাগো নিউজ", "url": "https://www.jagonews24.com/rss/rss.xml", "lang": "bn", "kind": "news"},
-  {"name": "কালের কণ্ঠ", "url": "https://www.kalerkantho.com/rss.xml", "lang": "bn", "kind": "news"},
-  {"name": "জাতিসংঘ সংবাদ", "url": "https://news.un.org/feed/subscribe/en/news/all/rss.xml", "lang": "en", "kind": "official"},
-  {"name": "বিবিসি ওয়ার্ল্ড", "url": "https://feeds.bbci.co.uk/news/world/rss.xml", "lang": "en", "kind": "news"},
-  {"name": "আল জাজিরা", "url": "https://www.aljazeera.com/xml/rss/all.xml", "lang": "en", "kind": "news"},
-  {"name": "দ্য গার্ডিয়ান", "url": "https://www.theguardian.com/world/rss", "lang": "en", "kind": "news"},
-  {"name": "নাসা", "url": "https://www.nasa.gov/news-release/feed/", "lang": "en", "kind": "official"},
-  {"name": "সায়েন্স ডেইলি", "url": "https://www.sciencedaily.com/rss/top/science.xml", "lang": "en", "kind": "news"},
-  {"name": "ইএসপিএনক্রিকইনফো", "url": "https://www.espncricinfo.com/rss/content/story/feeds/0.xml", "lang": "en", "kind": "news"}
+  {
+   "name": "প্রথম আলো",
+   "url": "https://www.prothomalo.com/feed/",
+   "lang": "bn",
+   "kind": "news"
+  },
+  {
+   "name": "দ্য ডেইলি স্টার",
+   "url": "https://www.thedailystar.net/frontpage/rss.xml",
+   "lang": "en",
+   "kind": "news"
+  },
+  {
+   "name": "দ্য ডেইলি স্টার বাংলা",
+   "url": "https://bangla.thedailystar.net/frontpage/rss.xml",
+   "lang": "bn",
+   "kind": "news"
+  },
+  {
+   "name": "বিবিসি বাংলা",
+   "url": "https://feeds.bbci.co.uk/bengali/rss.xml",
+   "lang": "bn",
+   "kind": "news"
+  },
+  {
+   "name": "দ্য বিজনেস স্ট্যান্ডার্ড",
+   "url": "https://www.tbsnews.net/top-news/rss.xml",
+   "lang": "en",
+   "kind": "news"
+  },
+  {
+   "name": "ঢাকা ট্রিবিউন",
+   "url": "https://www.dhakatribune.com/feed",
+   "lang": "en",
+   "kind": "news"
+  },
+  {
+   "name": "বাসস",
+   "url": "https://www.bssnews.net/rss",
+   "lang": "en",
+   "kind": "agency"
+  },
+  {
+   "name": "জাগো নিউজ",
+   "url": "https://www.jagonews24.com/rss/rss.xml",
+   "lang": "bn",
+   "kind": "news"
+  },
+  {
+   "name": "কালের কণ্ঠ",
+   "url": "https://www.kalerkantho.com/rss.xml",
+   "lang": "bn",
+   "kind": "news"
+  },
+  {
+   "name": "জাতিসংঘ সংবাদ",
+   "url": "https://news.un.org/feed/subscribe/en/news/all/rss.xml",
+   "lang": "en",
+   "kind": "official"
+  },
+  {
+   "name": "বিবিসি ওয়ার্ল্ড",
+   "url": "https://feeds.bbci.co.uk/news/world/rss.xml",
+   "lang": "en",
+   "kind": "news"
+  },
+  {
+   "name": "আল জাজিরা",
+   "url": "https://www.aljazeera.com/xml/rss/all.xml",
+   "lang": "en",
+   "kind": "news"
+  },
+  {
+   "name": "দ্য গার্ডিয়ান",
+   "url": "https://www.theguardian.com/world/rss",
+   "lang": "en",
+   "kind": "news"
+  },
+  {
+   "name": "নাসা",
+   "url": "https://www.nasa.gov/news-release/feed/",
+   "lang": "en",
+   "kind": "official"
+  },
+  {
+   "name": "সায়েন্স ডেইলি",
+   "url": "https://www.sciencedaily.com/rss/top/science.xml",
+   "lang": "en",
+   "kind": "news"
+  },
+  {
+   "name": "ইএসপিএনক্রিকইনফো",
+   "url": "https://www.espncricinfo.com/rss/content/story/feeds/0.xml",
+   "lang": "en",
+   "kind": "news"
+  },
+  {
+   "name": "আজকের পত্রিকা",
+   "url": "https://www.ajkerpatrika.com/feed",
+   "lang": "bn",
+   "kind": "news"
+  },
+  {
+   "name": "যুগান্তর",
+   "url": "https://www.jugantor.com/feed/rss.xml",
+   "lang": "bn",
+   "kind": "news"
+  },
+  {
+   "name": "সমকাল",
+   "url": "https://samakal.com/feed",
+   "lang": "bn",
+   "kind": "news"
+  },
+  {
+   "name": "ইত্তেফাক",
+   "url": "https://www.ittefaq.com.bd/rss.xml",
+   "lang": "bn",
+   "kind": "news"
+  },
+  {
+   "name": "বাংলা ট্রিবিউন",
+   "url": "https://www.banglatribune.com/feed/",
+   "lang": "bn",
+   "kind": "news"
+  },
+  {
+   "name": "ইউএনবি",
+   "url": "https://unb.com.bd/rss",
+   "lang": "en",
+   "kind": "agency"
+  },
+  {
+   "name": "নিউ এজ",
+   "url": "https://www.newagebd.net/rss",
+   "lang": "en",
+   "kind": "news"
+  },
+  {
+   "name": "ডয়চে ভেলে বাংলা",
+   "url": "https://rss.dw.com/rdf/rss-ben-all",
+   "lang": "bn",
+   "kind": "news"
+  },
+  {
+   "name": "ডয়চে ভেলে ওয়ার্ল্ড",
+   "url": "https://rss.dw.com/rdf/rss-en-world",
+   "lang": "en",
+   "kind": "news"
+  },
+  {
+   "name": "এপি",
+   "url": "https://apnews.com/index.rss",
+   "lang": "en",
+   "kind": "agency"
+  },
+  {
+   "name": "প্রথম আলো ইংরেজি",
+   "url": "https://en.prothomalo.com/feed/",
+   "lang": "en",
+   "kind": "news"
+  }
  ]
 }

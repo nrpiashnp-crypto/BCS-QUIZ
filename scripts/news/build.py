@@ -4,7 +4,7 @@
 """
 from __future__ import annotations
 
-from common import CATEGORIES, NEWS_DIR, now_dhaka, read_json, write_json
+from common import CATEGORIES, HOME_QUOTA, NEWS_DIR, SECTIONS, now_dhaka, read_json, write_json
 
 TOP_N = 7
 MONTH_MIN_SCORE = 8
@@ -19,7 +19,8 @@ def public_item(item: dict, n: int, date: str) -> dict:
         "why_exam": item.get("why_exam", "").strip(),
         "category": item["category"],
         "category_bn": CATEGORIES[item["category"]],
-        "region": item.get("region", ""),
+        "section": item.get("section", "intl"),
+        "section_bn": SECTIONS[item.get("section", "intl")],
         "score": item["score"],
         "facts": [{"label": f["label"], "value": f["value"]} for f in item.get("facts", [])],
         "sources": item["sources"],
@@ -30,16 +31,32 @@ def order(items: list[dict]) -> list[dict]:
     return sorted(items, key=lambda x: (-x["score"], -len(x["sources"])))
 
 
+def pick_home(items: list[dict]) -> list[dict]:
+    """হোমের ৭টা: HOME_QUOTA অনুযায়ী প্রতি ভাগ থেকে, ঘাটতি চমক-মান ধরে পূরণ; ফল চমক-মান ধরে সাজানো।"""
+    chosen = []
+    for sec, k in HOME_QUOTA.items():
+        chosen += [x for x in items if x.get("section", "intl") == sec][:k]
+    for x in items:
+        if len(chosen) >= TOP_N:
+            break
+        if x not in chosen:
+            chosen.append(x)
+    return order(chosen[:TOP_N])
+
+
 def write_day(date: str, items: list[dict], method: str, note: str = "") -> dict:
     items = order(items)
-    pub = [public_item(it, n + 1, date) for n, it in enumerate(items)]
+    home = pick_home(items)
+    rest = [x for x in items if x not in home]
+    pub = [public_item(it, n + 1, date) for n, it in enumerate(home + rest)]
     day = {
         "date": date,
         "generated_at": now_dhaka().isoformat(timespec="minutes"),
         "method": method,
         "note": note,
-        "top": pub[:TOP_N],
-        "more": pub[TOP_N:],
+        "sections": SECTIONS,
+        "top": pub[:len(home)],
+        "more": pub[len(home):],
     }
     write_json(NEWS_DIR / "day" / f"{date}.json", day)
     return day
@@ -53,7 +70,7 @@ def update_month(day: dict) -> dict:
     for it in day["top"] + day["more"]:
         if it["score"] >= MONTH_MIN_SCORE:
             month["items"].append({"date": date, "id": it["id"], "title": it["title"], "short": it["short"],
-                                   "category": it["category"], "score": it["score"]})
+                                   "section": it["section"], "category": it["category"], "score": it["score"]})
     month["items"].sort(key=lambda x: (-x["score"], x["date"]))
     month["updated"] = day["generated_at"]
     write_json(path, month)

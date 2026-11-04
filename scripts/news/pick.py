@@ -10,13 +10,13 @@ from __future__ import annotations
 import json
 import os
 
-from common import CATEGORIES, domain, gemini_json, log, page_text
+from common import CATEGORIES, SECTIONS, domain, gemini_json, log, page_text
 
 PICK_MODELS = [m for m in [os.environ.get("NEWS_PICK_MODEL"), "gemini-3.1-flash-lite", "gemini-flash-lite-latest",
-                           "gemini-2.5-flash-lite"] if m]
+                           "gemini-2.5-flash-lite", "gemini-2.5-flash"] if m]
 WRITE_MODELS = [m for m in [os.environ.get("NEWS_WRITE_MODEL"), "gemini-3.6-flash", "gemini-flash-latest",
-                            "gemini-2.5-flash"] if m]
-MAX_WRITE = int(os.environ.get("NEWS_MAX_WRITE", "22"))     # দিনে সর্বোচ্চ কতটা ঘটনা লেখানো হবে
+                            "gemini-2.5-flash", "gemini-2.5-flash-lite"] if m]
+MAX_WRITE = int(os.environ.get("NEWS_MAX_WRITE", "16"))     # দিনে সর্বোচ্চ কতটা ঘটনা লেখানো হবে
 
 CAT_LIST = ", ".join(f"{k} ({v})" for k, v in CATEGORIES.items())
 
@@ -30,8 +30,11 @@ PICK_PROMPT = """তুমি বাংলাদেশের বিসিএস 
 3. প্রতি দলে "চমক-মান" (score) ১-১০: পরীক্ষায় প্রশ্ন হওয়ার সম্ভাবনা আর গুরুত্ব। নতুন রেকর্ড, প্রথমবার,
    বড় চুক্তি, সংস্থার প্রধান নিয়োগ, সূচকে বাংলাদেশের অবস্থান, বাজেট/রপ্তানি/রেমিট্যান্সের বড় সংখ্যা = বেশি।
 4. topic = ঘটনার ছোট বাংলা নাম (১০ শব্দের মধ্যে)।
+5. section: bd = বাংলাদেশের ঘটনা; intl = অন্য দেশ বা আন্তর্জাতিক রাজনীতি-কূটনীতি-সংস্থা;
+   gk = সাধারণ জ্ঞানের তথ্য, দেশ যা-ই হোক — নতুন রেকর্ড, প্রথমবার, সূচক-র‍্যাংকিং, পুরস্কার, আবিষ্কার,
+   মহাকাশ-বিজ্ঞান, দিবস ও প্রতিপাদ্য, বড় খেলার ফল।
 
-শুধু JSON: {{"groups":[{{"items":[i,...],"topic":"...","category":"<id>","score":n,"region":"bd|intl"}}]}}
+শুধু JSON: {{"groups":[{{"items":[i,...],"topic":"...","category":"<id>","score":n,"section":"bd|intl|gk"}}]}}
 যে দলে মাত্র একটা শিরোনাম, সেটাও দাও (পরে যাচাই হবে)।
 
 শিরোনাম:
@@ -53,9 +56,10 @@ WRITE_PROMPT = """তুমি বাংলাদেশের বিসিএস
   সংখ্যা থাকলে উদ্ধৃতিতে সেই সংখ্যাটা থাকতে হবে। অন্তত দুটো আলাদা src থেকে উদ্ধৃতি দেওয়ার চেষ্টা করো।
 - title/short/detail/why_exam-এ যে সংখ্যা লিখবে, তা অবশ্যই কোনো fact-এর value-তে থাকবে।
 - category: {cats} থেকে একটা id। score: ১-১০।
+- section: bd (বাংলাদেশ) | intl (আন্তর্জাতিক) | gk (সাধারণ জ্ঞান: রেকর্ড, প্রথমবার, সূচক, পুরস্কার, আবিষ্কার, মহাকাশ-বিজ্ঞান, দিবস, বড় খেলার ফল)।
 - লেখাগুলো যদি আসলে একই ঘটনা না হয়, বা পরীক্ষার কাজের না হয়: {{"skip": true}}।
 
-শুধু JSON: {{"title":"","short":"","detail":"","why_exam":"","category":"","score":0,"region":"bd|intl",
+শুধু JSON: {{"title":"","short":"","detail":"","why_exam":"","category":"","score":0,"section":"bd|intl|gk",
  "facts":[{{"label":"","value":"","evidence":[{{"src":0,"quote":""}}]}}]}}
 
 লেখাগুলো:
@@ -72,7 +76,8 @@ def group(items: list[dict]) -> list[dict]:
         if not idx or g.get("category") not in CATEGORIES:
             continue
         groups.append({"members": [items[i] for i in idx], "topic": g.get("topic", ""),
-                       "category": g["category"], "score": int(g.get("score") or 0), "region": g.get("region", "")})
+                       "category": g["category"], "score": int(g.get("score") or 0),
+                       "section": g.get("section") if g.get("section") in SECTIONS else "intl"})
     groups.sort(key=lambda g: (-g["score"], -len({domain(m["url"]) for m in g["members"]})))
     return groups
 
@@ -106,5 +111,6 @@ def write(group_: dict, texts: list[dict]) -> dict | None:
         res["score"] = max(1, min(10, int(res.get("score") or group_["score"])))
     except (TypeError, ValueError):
         res["score"] = group_["score"]
-    res.setdefault("region", group_.get("region", ""))
+    if res.get("section") not in SECTIONS:
+        res["section"] = group_.get("section", "intl")
     return res
