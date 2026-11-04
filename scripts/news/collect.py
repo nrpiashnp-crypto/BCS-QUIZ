@@ -40,7 +40,14 @@ def _txt(el, tag):
 def parse_feed(raw: bytes):
     root = ET.fromstring(raw)
     out = []
-    for it in root.iter("item"):                         # RSS 2.0
+    rss1 = "{http://purl.org/rss/1.0/}"
+    for it in [*root.iter("item"), *root.iter(f"{rss1}item")]:     # RSS 2.0 আর RSS 1.0 (RDF)
+        if it.tag.startswith(rss1):
+            out.append({"title": strip_html(_txt(it, f"{rss1}title")),
+                        "desc": strip_html(_txt(it, f"{rss1}description"))[:400],
+                        "url": (it.findtext(f"{rss1}link") or "").strip(),
+                        "time": _when(it.findtext("{http://purl.org/dc/elements/1.1/}date"))})
+            continue
         out.append({
             "title": strip_html(_txt(it, "title")),
             "desc": strip_html(_txt(it, "description"))[:400],
