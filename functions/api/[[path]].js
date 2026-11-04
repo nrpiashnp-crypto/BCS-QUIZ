@@ -40,7 +40,8 @@
    ব্যাখ্যা বুঝেছি/বুঝিনি: POST /api/fb (নিচে "বুঝেছি / বুঝিনি" অংশ), অ্যাডমিন GET /api/admin/fb
    যাচাইয়ের কাজ LY Quiz & Sheets-এর; Lyanna_data-তে টেনে নেওয়ার জন্য একই GET-এর JSON।
    পাইলট ব্যাচ (/pilot/<id>/, /admin/pilot/): নিচে "পাইলট ব্যাচ" অংশের মাথায় সব পথ।
-   নিজের পরিকল্পনা, অবস্থা-যাচাই (/plan/<সেট>/, /admin/diag/): নিচে "নিজের পরিকল্পনা" অংশের মাথায় সব পথ। */
+   নিজের পরিকল্পনা, অবস্থা-যাচাই (/plan/<সেট>/, /admin/diag/): নিচে "নিজের পরিকল্পনা" অংশের মাথায় সব পথ।
+   শিক্ষকের সাপ্তাহিক রপ্তানি (GET /api/export/teacher, রপ্তানির চাবি দিয়ে): নিচে "শিক্ষকের সাপ্তাহিক রপ্তানি" অংশে। */
 const COOKIE = 'lb_s', AGE = 180 * 86400;
 const MAX_BATCH = 300, MAX_ROWS = 3000;
 
@@ -735,6 +736,7 @@ async function admin(path, url, env, db, u, req) {
   if (!isAdmin(u, env)) return json({error: 'admin'}, 403);
   if (path === 'admin/pilot' || path.startsWith('admin/pilot/')) return pilotAdmin(path, url, req, db);
   if (path === 'admin/upkey') return upkeyAdmin(req, db);
+  if (path === 'admin/exkey') return exkeyAdmin(req, db);
   if (path === 'admin/diag' || path.startsWith('admin/diag/')) return diagAdmin(path, url, req, db);
   await attqTable(db);
   if (path === 'admin/learners') {
@@ -1777,6 +1779,225 @@ async function diagAdmin(path, url, req, db) {
   return json({error: 'not found'}, 404);
 }
 
+// ---------- শিক্ষকের সাপ্তাহিক রপ্তানি (LY Teacher-এর চাহিদা: Lyanna_data teacher/export-spec.md; "ছাত্রের মত তোলা" ধাপ ২) ----------
+/* Lyanna_data-র GitHub Action (weekly-export.yml → tools/weekly_export.py) সপ্তাহে একবার টানে, লেখে Lyanna_data feedback/<সপ্তাহ>/-এ।
+   চাবি: Authorization: Bearer <রপ্তানির চাবি> (D1 export_key-এ শুধু ছাপ, /admin/diag/ থেকে বানানো)। শুধু পড়া, D1-এ কিছু লেখে না
+   (শুধু প্রথমবার লবণ)। Free প্ল্যানে CPU কম, তাই স্ক্রিপ্ট দিনে দিনে আর পাতায় পাতায় টানে (off, more)।
+   GET /api/export/teacher?part=attempts&src=attq|pilot|diag&from=<ms>&to=<ms>&off=  → {rows: দাগ, sessions: বসা, more}
+   GET /api/export/teacher?part=feedback|changes&from=&to=
+   GET /api/export/teacher?part=students&from=&to=     → সব ব্যবহারকারী; active = from-to-র মধ্যে কোনো দাগ
+   GET /api/export/teacher?part=questions&src=pilot|diag&off=  → পাইলট/নির্ণয়ের প্রশ্নের এখনকার চিহ্ন (লেখা নয়);
+       সাধারণ পাতার প্রশ্ন স্ক্রিপ্ট নেয় admin/data/qmap.json আর qver.tsv থেকে
+   নাম, ইমেইল, ছবি, আইপি কোনো ঘরে নয়; মতামতের লেখায় ইমেইল আর ফোন-নম্বর মুছে। student_id = SHA-256(লবণ:uid)-এর প্রথম ১৬ অক্ষর;
+   লবণ D1-এ একবার বানানো, বদলায় না (বদলালে আগের সপ্তাহের সঙ্গে মেলে না)। সময় ঢাকার: তারিখ আর ঘণ্টা, মিনিট নয়। */
+const EXKEY_SQL = 'CREATE TABLE IF NOT EXISTS export_key(name TEXT PRIMARY KEY, hash TEXT NOT NULL, ts INTEGER)';
+async function exSalt(db) {
+  const get = () => db.prepare("SELECT hash FROM export_key WHERE name = 'salt'").first();
+  let r = await get();
+  if (!r) {
+    const raw = new Uint8Array(24); crypto.getRandomValues(raw);
+    await db.prepare("INSERT OR IGNORE INTO export_key(name, hash, ts) VALUES('salt', ?, ?)").bind(hex(raw.buffer), Date.now()).run();
+    r = await get();
+  }
+  return r.hash;
+}
+async function exkeyAdmin(req, db) {
+  await db.prepare(EXKEY_SQL).run();
+  if (req.method === 'POST') {
+    const raw = new Uint8Array(32); crypto.getRandomValues(raw);
+    const key = 'lx_' + btoa(String.fromCharCode(...raw)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''), now = Date.now();
+    await exSalt(db);
+    await db.prepare("INSERT INTO export_key(name, hash, ts) VALUES('teacher', ?, ?) ON CONFLICT(name) DO UPDATE SET hash = excluded.hash, ts = excluded.ts")
+      .bind(await sha(key), now).run();
+    return json({ok: true, key, created: now}, 200, {'Cache-Control': 'no-store'});
+  }
+  const r = await db.prepare("SELECT ts FROM export_key WHERE name = 'teacher'").first();
+  return json({has: !!r, created: r ? r.ts : null}, 200, {'Cache-Control': 'no-store'});
+}
+async function exkeyOk(req, db) {
+  const m = (req.headers.get('Authorization') || '').match(/^Bearer\s+(lx_[A-Za-z0-9_-]{30,100})$/);
+  if (!m) return false;
+  await db.prepare(EXKEY_SQL).run();
+  const r = await db.prepare("SELECT hash FROM export_key WHERE name = 'teacher'").first();
+  return !!r && r.hash === await sha(m[1]);
+}
+// ঢাকার তারিখ আর ঘণ্টা; ISO সপ্তাহ (সোমবার শুরু, ঢাকার দিন ধরে)
+const exAt = ts => { const d = new Date(ts + 6 * H); return [d.toISOString().slice(0, 10), d.getUTCHours()]; };
+function isoWeek(ts) {
+  const d = new Date(ts + 6 * H); d.setUTCHours(0, 0, 0, 0);
+  d.setUTCDate(d.getUTCDate() - (d.getUTCDay() + 6) % 7 + 3); // সেই সপ্তাহের বৃহস্পতিবার
+  const y = d.getUTCFullYear(), j = new Date(Date.UTC(y, 0, 4));
+  j.setUTCDate(j.getUTCDate() - (j.getUTCDay() + 6) % 7);
+  return y + '-W' + String(1 + Math.round((d - j) / (7 * DAY))).padStart(2, '0');
+}
+const exDev = d => !d ? null : d === 'desktop' ? 'desktop' : 'mobile';
+const exVer = v => typeof v === 'string' && QVER_RX.test(v) ? v.split('.') : [null, null];
+const exJp = x => { try { return x ? JSON.parse(x) : null; } catch (e) { return null; } };
+// মতামতের লেখা থেকে ইমেইল আর ফোন-নম্বর (১০+ অঙ্ক) বাদ
+const exScrub = t => String(t || '').replace(/\S+@\S+\.\S+/g, '[ইমেইল]')
+  .replace(/[+\d০-৯][\d০-৯\s()-]{8,}[\d০-৯]/g, s => (s.match(/[\d০-৯]/g) || []).length >= 10 ? '[নম্বর]' : s);
+const exWords = e => { const t = String(e || '').replace(/<[^>]*>/g, ' ').trim(); return t ? t.split(/\s+/).length : 0; };
+function exIds(salt) {
+  const m = new Map();
+  const h = async x => { if (!m.has(x)) m.set(x, await sha(salt + ':' + x)); return m.get(x); };
+  return {stu: async uid => uid == null ? null : (await h('u' + uid)).slice(0, 16), ses: async raw => (await h('s' + raw)).slice(0, 12)};
+}
+const EX_PAGE = 300;
+
+async function teacherExport(path, url, req, db) {
+  if (path !== 'export/teacher') return json({error: 'not found'}, 404);
+  if (!(await exkeyOk(req, db))) return json({error: 'key'}, 401);
+  const q = k => url.searchParams.get(k) || '';
+  const part = q('part'), src = q('src'), from = parseInt(q('from'), 10) || 0, to = parseInt(q('to'), 10) || Date.now();
+  const off = Math.max(0, parseInt(q('off'), 10) || 0);
+  if (to <= from) return json({error: 'bad range'}, 400);
+  const id = exIds(await exSalt(db)), now = Date.now(), H0 = {'Cache-Control': 'no-store'};
+
+  if (part === 'attempts') {
+    const rows = [], sessions = [];
+    let more = false;
+    if (src === 'attq') {
+      await attqTable(db);
+      const {results} = await db.prepare(`SELECT q.uid, q.k, q.ts, q.qd, q.tm, q.m, q.qv, a.c, a.p, a.sec FROM attq q LEFT JOIN att a ON a.uid = q.uid AND a.k = q.k
+        WHERE q.ts >= ? AND q.ts < ? ORDER BY q.ts, q.uid LIMIT ? OFFSET ?`).bind(from, to, EX_PAGE + 1, off).all();
+      more = results.length > EX_PAGE;
+      for (const r of results.slice(0, EX_PAGE)) {
+        const qd = splitQd(r.qd), tm = r.tm ? r.tm.split(',') : [], qv = r.qv ? r.qv.split(',') : [], m = exJp(r.m) || {};
+        // tm = শুরুর পর দাগের মুহূর্ত; এক প্রশ্নের সময় = আগের দাগ (চাপের ক্রমে) থেকে এই দাগ
+        const dur = new Map(), seq = tm.map((x, i) => [x === '' ? null : +x, i]).filter(x => x[0] != null).sort((a, b) => a[0] - b[0]);
+        seq.forEach(([t, i], j) => dur.set(i, t - (j ? seq[j - 1][0] : 0)));
+        const [day, hour] = exAt(r.ts), ref = (r.p || '').replace(/[?#].*$/, '') || null;
+        const base = {student_id: await id.stu(r.uid), session_id: 'a' + await id.ses(r.uid + ':' + r.k),
+          quiz_kind: r.c === 'ch' ? 'chapter' : 'general', quiz_ref: ref, at_day: day, at_hour: hour, device: exDev(m.dev)};
+        qd.forEach(([qid, pick], i) => { const [kv, ev] = exVer(qv[i]);
+          rows.push({attempt_id: base.session_id + ':' + (i + 1), ...base, question_id: qid, chosen_option: pick < 0 ? null : pick, is_blank: pick < 0 ? 1 : 0,
+            correct: null, time_ds: dur.has(i) ? dur.get(i) : null, left_app: null, uncertain: null, position_in_quiz: i + 1, key_version: kv, explanation_version: ev}); });
+        sessions.push({session_id: base.session_id, student_id: base.student_id, quiz_kind: base.quiz_kind, quiz_ref: ref, quiz_c: r.c || null,
+          n: qd.length, answered: qd.filter(x => x[1] >= 0).length, at_day: day, at_hour: hour, sec: r.sec == null ? null : r.sec,
+          hidden_s: m.hid == null ? null : m.hid, hidden_n: m.hn == null ? null : m.hn, device: base.device, screen_w: m.w || null, time_note: m.tmx || null});
+      }
+    } else if (src === 'pilot') {
+      await pilotSetup(db);
+      const {results: sits} = await db.prepare('SELECT pilot, uid, no, ts, dl, qs, done FROM pilot_sit WHERE ts >= ? AND ts < ? ORDER BY ts, uid LIMIT ? OFFSET ?')
+        .bind(from, to, EX_PAGE + 1, off).all();
+      more = sits.length > EX_PAGE;
+      const S = sits.slice(0, EX_PAGE);
+      const {results: ans} = S.length ? await db.prepare(`SELECT a.pilot, a.uid, a.no, a.qid, a.pick, a.ok, a.conf, a.sec, a.ts, a.qv FROM pilot_ans a
+        JOIN pilot_sit s ON s.pilot = a.pilot AND s.uid = a.uid AND s.no = a.no WHERE s.ts >= ? AND s.ts < ?`).bind(from, to).all() : {results: []};
+      const A = new Map(ans.map(a => [a.pilot + '|' + a.uid + '|' + a.no + '|' + a.qid, a]));
+      for (const s of S) {
+        const ids = s.qs.split(','), closed = !!s.done || s.dl + GRACE < now, [day, hour] = exAt(s.ts);
+        const base = {student_id: await id.stu(s.uid), session_id: 'p' + await id.ses(s.pilot + ':' + s.uid + ':' + s.no), quiz_kind: 'batch', quiz_ref: s.pilot + '#' + s.no};
+        let answered = 0;
+        ids.forEach((qid, i) => {
+          const a = A.get(s.pilot + '|' + s.uid + '|' + s.no + '|' + qid);
+          if (!a && !closed) return;
+          if (a) answered++;
+          const [kv, ev] = exVer(a && a.qv), [d2, h2] = a ? exAt(a.ts) : [day, hour];
+          rows.push({attempt_id: base.session_id + ':' + (i + 1), ...base, question_id: qid, chosen_option: a ? a.pick : null, is_blank: a ? 0 : 1,
+            correct: a ? a.ok : 0, time_ds: a && a.sec != null ? a.sec * 10 : null, left_app: null, uncertain: a ? (a.conf === 'g' ? 1 : 0) : null,
+            position_in_quiz: i + 1, at_day: d2, at_hour: h2, device: null, key_version: kv, explanation_version: ev});
+        });
+        sessions.push({...base, quiz_c: null, n: ids.length, answered, at_day: day, at_hour: hour, sec: s.done ? Math.round((s.done - s.ts) / 1000) : null,
+          hidden_s: null, hidden_n: null, device: null, screen_w: null, time_note: closed ? null : 'open'});
+      }
+    } else if (src === 'diag') {
+      await diagSetup(db);
+      const {results} = await db.prepare('SELECT sid, uid, part, ts, dl, ans, done, hid, hn, meta FROM diag_att WHERE ts >= ? AND ts < ? ORDER BY ts, uid LIMIT ? OFFSET ?')
+        .bind(from, to, EX_PAGE + 1, off).all();
+      more = results.length > EX_PAGE;
+      const C = new Map(), Q = new Map();
+      for (const r of results.slice(0, EX_PAGE)) {
+        if (!C.has(r.sid)) C.set(r.sid, await diagCfg(db, r.sid));
+        const c = C.get(r.sid), p = c && c.P.get(r.part);
+        if (!p) continue;
+        const qk = r.sid + '|' + r.part;
+        if (!Q.has(qk)) Q.set(qk, await diagQs(db, r.sid, p.qs));
+        const QQ = Q.get(qk), ans = exJp(r.ans) || {}, mt = exJp(r.meta) || {}, closed = !!r.done || r.dl + GRACE + DIAG_LATE < now, [day, hour] = exAt(r.ts);
+        const base = {student_id: await id.stu(r.uid), session_id: 'd' + await id.ses(r.sid + ':' + r.uid + ':' + r.part), quiz_kind: 'diag', quiz_ref: r.sid + '#' + r.part};
+        let answered = 0;
+        p.qs.forEach((qid, i) => {
+          const a = ans[qid], qq = QQ.get(qid);
+          if (!a && !closed) return;
+          const blank = !a || a[0] < 0;
+          if (!blank) answered++;
+          const [kv, ev] = exVer(a && a[3]);
+          rows.push({attempt_id: base.session_id + ':' + (i + 1), ...base, question_id: qid,
+            chosen_option: blank || !qq ? null : dOrder(qq.o.length, dSeed(r.sid, r.uid, qid))[a[0]], is_blank: blank ? 1 : 0, correct: a ? a[1] : 0,
+            time_ds: a && a[2] > 0 ? Math.round(a[2] / 100) : null, left_app: null, uncertain: null, position_in_quiz: i + 1,
+            at_day: day, at_hour: hour, device: exDev(mt.dev), key_version: kv, explanation_version: ev});
+        });
+        sessions.push({...base, quiz_c: null, n: p.qs.length, answered, at_day: day, at_hour: hour, sec: r.done ? Math.round((r.done - r.ts) / 1000) : null,
+          hidden_s: r.hid == null ? null : r.hid, hidden_n: r.hn == null ? null : r.hn, device: exDev(mt.dev), screen_w: mt.w || null, time_note: closed ? null : 'open'});
+      }
+    } else return json({error: 'src'}, 400);
+    return json({rows, sessions, more, next: more ? off + EX_PAGE : null}, 200, H0);
+  }
+
+  if (part === 'students') {
+    await goalCols(db); await attqTable(db); await pilotSetup(db); await diagSetup(db);
+    const [u, pm, dg, act] = await db.batch([
+      db.prepare('SELECT id, created, goal, gdate FROM users ORDER BY id LIMIT 50000'),
+      db.prepare("SELECT uid, pilot FROM pilot_mem WHERE st = 'ok'"),
+      db.prepare('SELECT DISTINCT uid, sid FROM diag_att'),
+      db.prepare(`SELECT uid FROM attq WHERE ts >= ?1 AND ts < ?2 UNION SELECT uid FROM pilot_ans WHERE ts >= ?1 AND ts < ?2
+        UNION SELECT uid FROM diag_att WHERE ts >= ?1 AND ts < ?2`).bind(from, to)
+    ]);
+    const co = new Map(), add = (uid, v) => { if (!co.has(uid)) co.set(uid, []); co.get(uid).push(v); };
+    pm.results.forEach(r => add(r.uid, r.pilot)); dg.results.forEach(r => add(r.uid, 'diag:' + r.sid));
+    const on = new Set(act.results.map(r => r.uid)), rows = [];
+    for (const r of u.results) rows.push({student_id: await id.stu(r.id), cohort: (co.get(r.id) || ['general']).join(';'), target_exam: r.goal || null,
+      target_month: r.gdate || null, joined_week: r.created ? isoWeek(r.created) : null, active_last_week: on.has(r.id) ? 1 : 0});
+    return json({rows}, 200, H0);
+  }
+
+  if (part === 'feedback') {
+    await repSetup(db); await fbSetup(db);
+    const KIND = {hard: 'not_understood', ans: 'answer_wrong', q: 'question_wrong', exp: 'explanation_wrong', other: 'other'};
+    const [r, f] = await db.batch([
+      db.prepare('SELECT ts, qid, q, kind, note, uid, h, page, st FROM rep WHERE ts >= ? AND ts < ? ORDER BY ts LIMIT 20000').bind(from, to),
+      db.prepare('SELECT ts, uid, page, taps FROM fb_tap WHERE ts >= ? AND ts < ? ORDER BY ts LIMIT 20000').bind(from, to)
+    ]);
+    const rows = [];
+    // exp_shown_hash = পাতায় দেখা ব্যাখ্যার লেখার ছাপ (js/report.js), দাগের explanation_version-এর হিসাব নয়
+    for (const x of r.results) rows.push({question_id: x.qid || null, q_hint: x.qid ? null : (x.q || '').slice(0, 80), student_id: await id.stu(x.uid),
+      kind: KIND[x.kind] || 'other', text: exScrub(x.note), exp_shown_hash: x.h || null, page: x.page || null, status: x.st, at_day: exAt(x.ts)[0], via: 'report'});
+    for (const x of f.results) for (const t of exJp(x.taps) || []) {
+      const k = String(t[0] || ''), anon = k.startsWith('t:');
+      rows.push({question_id: anon ? null : k, q_hint: anon ? k.slice(2, 82) : null, student_id: await id.stu(x.uid), kind: t[2] === 1 ? 'understood' : 'not_understood',
+        text: '', exp_shown_hash: t[1] || null, page: x.page || null, status: null, at_day: exAt(x.ts)[0], via: 'tap'});
+    }
+    return json({rows}, 200, H0);
+  }
+
+  if (part === 'changes') {
+    await db.prepare(QVLOG).run();
+    const {results} = await db.prepare('SELECT ts, src, qid, what, old, new FROM qver_log WHERE ts >= ? AND ts < ? ORDER BY ts LIMIT 20000').bind(from, to).all();
+    return json({rows: results.map(x => ({question_id: x.qid, what: x.what, old_version: x.old, new_version: x.new, at_day: exAt(x.ts)[0], why: null, src: x.src}))}, 200, H0);
+  }
+
+  if (part === 'questions') {
+    const rows = [];
+    let res;
+    if (src === 'pilot') {
+      await pilotSetup(db);
+      res = (await db.prepare('SELECT pilot g, qid, topic, NULL s, d FROM pilot_q ORDER BY pilot, qid LIMIT ? OFFSET ?').bind(EX_PAGE + 1, off).all()).results;
+    } else if (src === 'diag') {
+      await diagSetup(db);
+      res = (await db.prepare('SELECT sid g, qid, NULL topic, s, d FROM diag_q ORDER BY sid, qid LIMIT ? OFFSET ?').bind(EX_PAGE + 1, off).all()).results;
+    } else return json({error: 'src'}, 400);
+    for (const x of res.slice(0, EX_PAGE)) {
+      const d = exJp(x.d) || {}, [kv, ev] = qVer(d).split('.');
+      rows.push({question_id: x.qid, src: src + ':' + x.g, para_id: null, topic_tag: x.topic || d.t || null, subject: x.s || null,
+        difficulty_tag: d.lvl || null, correct_option: Number.isInteger(d.a) ? d.a : null, key_version: kv, explanation_version: ev,
+        explanation_words: exWords(d.e), source_kind: null, last_verified: null});
+    }
+    const more = res.length > EX_PAGE;
+    return json({rows, more, next: more ? off + EX_PAGE : null}, 200, H0);
+  }
+  return json({error: 'part'}, 400);
+}
+
 export async function onRequest({request: req, env}) {
   const url = new URL(req.url), path = url.pathname.replace(/^\/api\/?/, '').replace(/\/+$/, ''), m = req.method;
   if (m === 'POST') {
@@ -1812,6 +2033,8 @@ export async function onRequest({request: req, env}) {
       if (!(await upkeyOk(req, db))) return json({error: 'key'}, 403);
       return await diagAdmin(path, url, req, db);
     }
+    // শিক্ষকের সাপ্তাহিক রপ্তানি (Lyanna_data-র GitHub Action): রপ্তানির চাবি দিয়ে শুধু পড়া
+    if (path.startsWith('export/') && m === 'GET') return await teacherExport(path, url, req, db);
     if (!u) return json({error: 'login'}, 401);
 
     if (path.startsWith('admin/')) return await admin(path, url, env, db, u, req);
