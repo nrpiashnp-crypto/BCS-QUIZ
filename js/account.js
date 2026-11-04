@@ -10,6 +10,8 @@
           লগইন না করে দেওয়া পরীক্ষাও পরে লগইন করলে উত্তরসহ যায়।
      tm = qd-র ক্রমে প্রতিটি দাগের সময় (শুরুর পর দশমাংশ-সেকেন্ড, ১২৩ = ১২.৩ সে; ফাঁকায় ''), m = {v, hid: আড়ালে থাকা সেকেন্ড, hn: কতবার, w: পর্দা, app, tmx: সময় না মেলার কারণ};
           দুটোই নিচের "প্রতিটি উত্তরের সময়" অংশ নিজে বানায়, পাতাকে কিছু দিতে হয় না।
+     qv = qd-র ক্রমে প্রতিটি প্রশ্নের সংস্করণ-চিহ্ন "kv.ev": কোন উত্তর-চাবি আর কোন ব্যাখ্যা দেখানো হয়েছিল (qVer নিচে; একই হিসাব
+          functions/api-র qVer আর tools/build_qver.py-তে, একটায় বদলালে তিনটাতেই)। qa() নিজে বানায়।
    পাতায় একবার: <script src="/js/account.js" defer></script>। নাম না দিলে অধ্যায়ের নাম book-link.js-এর data-chapter থেকে নেয়।
    লগইনের খবর 'lb:u'-তে রাখা হয়, তাই সাধারণ পাতায় সার্ভারে কোনো অনুরোধ যায় না (শুধু ফল জমা দিতে)। */
 (function(){
@@ -18,7 +20,9 @@
   var dev=get('lb:dev','');
   if(!dev){dev=Math.random().toString(36).slice(2,10);set('lb:dev',dev)}
   var user=function(){return get('lb:u',null)};
-  var QD_KEEP=150,lastQd=null,lastT=null;
+  var QD_KEEP=150,lastQd=null,lastT=null,lastQv=null;
+  var fnv=function(t){var h=0x811c9dc5;for(var i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0}return ('0000000'+h.toString(16)).slice(-8)};
+  var qVer=function(q){try{return Number.isInteger(q.a)&&Array.isArray(q.o)?fnv(String(q.a)+'\u0001'+q.o.join('\u0001'))+'.'+fnv(q.e||''):''}catch(e){return ''}};
 
   /* প্রতিটি উত্তরের সময় (শিক্ষার্থীর পর্যালোচনার জন্য, শুধু অ্যাডমিন দেখেন), পরীক্ষার পাতা না বদলে:
      কোনো বিকল্পে চাপ পড়লে পাতার নিজের হ্যান্ডলার আগে চলে আর বোতামে 'sel' বসায়; তারপর এখানে সেই মুহূর্ত লেখা হয়।
@@ -158,7 +162,8 @@
   function save(r){
     var a={k:dev+':'+r.k,ts:Date.now(),c:r.c||'ch',t:r.t||chapter()||document.title.split(/\s[·:]\s|:/)[0],p:location.pathname+location.search+location.hash,
       s:r.s,n:r.n,ok:r.ok,no:r.no,sec:r.sec};
-    var qd=r.qd||lastQd,T=lastT;lastQd=null;lastT=null;if(qd&&qd.length)a.qd=qd;
+    var qd=r.qd||lastQd,T=lastT,qv=r.qd?null:lastQv;lastQd=null;lastT=null;lastQv=null;if(qd&&qd.length)a.qd=qd;
+    if(qd&&qd.length&&qv&&qv.length===qd.length&&qv.some(function(x){return x}))a.qv=qv.join(',');
     // সময়: পরীক্ষা শুরুর পর কত দশমাংশ-সেকেন্ডে দাগ (শুরু = এখন − sec; sec না থাকলে প্রথম চাপ), qd-র ক্রমে, ফাঁকায় ''
     if(qd&&qd.length&&T&&!r.qd){
       var t0=T.reduce(function(x,y){return y&&y<x?y:x},a.ts),st=r.sec>0?Math.min(a.ts-r.sec*1000,t0):t0;
@@ -169,7 +174,7 @@
     if(r.sb){var sb={};Object.keys(r.sb).forEach(function(k){if(k&&r.sb[k][1])sb[k]=r.sb[k]});if(Object.keys(sb).length)a.sb=sb}
     var all=get('lb:att',[]);all.push(a);all=all.slice(-400);
     // পুরোনো ফলের উত্তর-তালিকা বাদ (ফোনের জায়গা), সার শুধু থাকে
-    for(var i=0;i<all.length-QD_KEEP;i++)if(all[i].qd){delete all[i].qd;delete all[i].tm;delete all[i].m}
+    for(var i=0;i<all.length-QD_KEEP;i++)if(all[i].qd){delete all[i].qd;delete all[i].tm;delete all[i].m;delete all[i].qv}
     set('lb:att',all);
     if(user()){var q=get('lb:q',[]);q.push(a);set('lb:q',q.slice(-1000));
       if(r.qa&&r.qa.length)set('lb:qa',get('lb:qa',[]).concat(r.qa).slice(-3000));flush()}
@@ -179,6 +184,7 @@
     var T=times(pick||[]),keep=[];
     lastQd=(qs||[]).map(function(q,i){if(q&&q.id)keep.push(T?T[i]||0:0);return [q&&q.id||'',pick[i]>=0?pick[i]:-1]}).filter(function(x){return x[0]});
     lastT=T?keep:null;
+    lastQv=(qs||[]).filter(function(q){return q&&q.id}).map(qVer);
     var o=[];(qs||[]).forEach(function(q,i){if(q&&q.id&&pick[i]>=0)o.push([q.id,pick[i]===q.a?1:0])});return o}
   function chapter(){var b=document.querySelector('script[src*="book-link.js"]');return b&&b.dataset.chapter}
 

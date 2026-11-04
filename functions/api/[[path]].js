@@ -35,6 +35,7 @@
    প্রশ্নে ভুল জানানো (লগইন লাগে না; বোতাম js/report.js):
    POST /api/report {qid?, page, q, kind: ans|exp|q|other, note?} → {ok}
    অ্যাডমিন: GET /api/admin/reports?st=new|done|all → তালিকা (পাতা /admin/reports/); POST /api/admin/reports {ids:[…], st}
+            GET /api/admin/qver?days= → চাবি/ব্যাখ্যা বদলের খাতা (qver_log; সংস্করণ-চিহ্ন, নিচে qVer)
             GET /api/admin/repq → ভুল জানানো প্রশ্নের id (পর্যালোচনায় কঠিন/সহজ থেকে বাদ)
    ব্যাখ্যা বুঝেছি/বুঝিনি: POST /api/fb (নিচে "বুঝেছি / বুঝিনি" অংশ), অ্যাডমিন GET /api/admin/fb
    যাচাইয়ের কাজ LY Quiz & Sheets-এর; Lyanna_data-তে টেনে নেওয়ার জন্য একই GET-এর JSON।
@@ -68,6 +69,41 @@ async function quota(db, uid, a, q) {
   return {att, qa};
 }
 
+/* সংস্করণ-চিহ্ন (LY Teacher-এর চাহিদা, Lyanna_data teacher/export-spec.md): প্রতিটি দাগের সঙ্গে কোন উত্তর-চাবি আর কোন ব্যাখ্যা
+   দেখানো হয়েছিল। kv = FNV-1a(সঠিক ক্রম + \u0001 + বিকল্পগুলো \u0001 দিয়ে জোড়া), ev = FNV-1a(ব্যাখ্যার লেখা e, যেমন আছে);
+   দুটোই ৮ অক্ষরের hex, একসঙ্গে "kv.ev"। একই হিসাব js/account.js (সাধারণ পাতা) আর tools/build_qver.py (বদলের খাতা)-তে;
+   একটায় বদলালে তিনটাতেই। পাইলট আর নির্ণয়-পরীক্ষার প্রশ্ন আবার তোলা হলে কী বদলাল তা qver_log-এ। */
+const fnv = s => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return h.toString(16).padStart(8, '0'); };
+const qVer = q => fnv(String(q.a) + '\u0001' + (q.o || []).join('\u0001')) + '.' + fnv(q.e || '');
+const QVER_RX = /^[0-9a-f]{8}\.[0-9a-f]{8}$/;
+const QVLOG = 'CREATE TABLE IF NOT EXISTS qver_log(id INTEGER PRIMARY KEY, ts INTEGER NOT NULL, src TEXT NOT NULL, qid TEXT NOT NULL, what TEXT NOT NULL, old TEXT, new TEXT)';
+// আগের আর নতুন প্রশ্ন মিলিয়ে বদলের সারি: key (সঠিক উত্তর), opt (বিকল্প), exp (ব্যাখ্যা), q (প্রশ্নের লেখা); প্রথমবার তোলায় কিছু নয়
+function qverDiff(src, qid, a, b, ts) {
+  if (!a) return [];
+  const out = [], kv = q => qVer(q).slice(0, 8), add = (what, o, n) => { if (o !== n) out.push([ts, src, qid, what, o, n]); };
+  if (a.a !== b.a) add('key', kv(a), kv(b)); else if ((a.o || []).join('\u0001') !== (b.o || []).join('\u0001')) add('opt', kv(a), kv(b));
+  add('exp', fnv(a.e || ''), fnv(b.e || ''));
+  add('q', fnv(a.q || ''), fnv(b.q || ''));
+  return out;
+}
+async function qverLog(db, src, table, key, list) {
+  if (!list.length) return 0;
+  await db.prepare(QVLOG).run();
+  const ids = list.map(x => x[0]), old = new Map();
+  const {results} = await db.prepare(`SELECT qid, d FROM ${table} WHERE ${key} = ? AND qid IN (${ids.map(() => '?').join(',')})`).bind(src.slice(src.indexOf(':') + 1), ...ids).all();
+  for (const r of results) try { old.set(r.qid, JSON.parse(r.d)); } catch (e) { /* ভাঙা সারি */ }
+  const now = Date.now(), rows = list.flatMap(([id, d]) => qverDiff(src, id, old.get(id), d, now));
+  if (rows.length) { const st = db.prepare('INSERT INTO qver_log(ts, src, qid, what, old, new) VALUES(?,?,?,?,?,?)'); await db.batch(rows.map(r => st.bind(...r))); }
+  return rows.length;
+}
+// সাধারণ পাতার চিহ্ন: qd-র সমান লম্বা, প্রতিটি "kv.ev" বা খালি (পুরোনো পাতা); না মিললে null
+function cleanQv(qv, qd) {
+  if (typeof qv !== 'string' || !qd || qv.length > 6000) return null;
+  const a = qv.split(',');
+  if (a.length !== qd.split(',').length || !a.every(x => x === '' || QVER_RX.test(x))) return null;
+  return a.some(x => x) ? qv : null;
+}
+
 const ATTQ = 'CREATE TABLE IF NOT EXISTS attq(uid INTEGER NOT NULL, k TEXT NOT NULL, ts INTEGER NOT NULL, qd TEXT NOT NULL, PRIMARY KEY(uid, k))';
 const MAX_QD = 300;
 let attqReady = false;
@@ -75,7 +111,7 @@ let attqReady = false;
 async function attqTable(db) {
   if (attqReady) return;
   await db.prepare(ATTQ).run();
-  for (const col of ['tm', 'm']) try { await db.prepare('ALTER TABLE attq ADD COLUMN ' + col + ' TEXT').run(); } catch (e) { /* আগেই আছে */ }
+  for (const col of ['tm', 'm', 'qv']) try { await db.prepare('ALTER TABLE attq ADD COLUMN ' + col + ' TEXT').run(); } catch (e) { /* আগেই আছে */ }
   attqReady = true;
 }
 // সময়ের তালিকা: qd-র সমান লম্বা, প্রতিটি ০-১০৮০০০ দশমাংশ-সেকেন্ড (৩ ঘণ্টা) বা খালি; না মিললে null (সময় ছাড়া উত্তর তবু জমা হয়)
@@ -718,7 +754,7 @@ async function admin(path, url, env, db, u, req) {
     await diagSetup(db);
     const [a, q, d] = await db.batch([
       db.prepare('SELECT k, ts, c, t, p, s, n, ok, no, sec, sb FROM att WHERE uid = ? ORDER BY ts').bind(who.id),
-      db.prepare('SELECT k, ts, qd, tm, m FROM attq WHERE uid = ? ORDER BY ts').bind(who.id),
+      db.prepare('SELECT k, ts, qd, tm, m, qv FROM attq WHERE uid = ? ORDER BY ts').bind(who.id),
       // নিজের পরিকল্পনার (অবস্থা-যাচাই) ভাগগুলো: প্রতিটি উত্তর [দাগ, ঠিক 1/ভুল 0, ms], পর্যালোচনায় একসঙ্গে গোনা হয়
       db.prepare('SELECT sid, part, ts, done, ans, res, hid, hn FROM diag_att WHERE uid = ? ORDER BY ts').bind(who.id)
     ]);
@@ -742,6 +778,13 @@ async function admin(path, url, env, db, u, req) {
     return json({ts: Date.now(), days, visits: tot ? tot.n : 0, rows: results}, 200, {'Cache-Control': 'no-store'});
   }
   // ভুল জানানো প্রশ্ন (উত্তর বা প্রশ্নে ভুল), অ্যাডমিন "ভুল নয়" (st='no') করেনি এমন: পর্যালোচনায় কঠিন/সহজ থেকে বাদ
+  // বদলের খাতা (পাইলট/নির্ণয়ের প্রশ্ন আবার তোলায় কী বদলাল); সাধারণ পাতার বদল admin/data/qver-log.jsonl-এ
+  if (path === 'admin/qver') {
+    await db.prepare(QVLOG).run();
+    const days = Math.min(Math.max(parseInt(url.searchParams.get('days') || '30', 10) || 30, 1), 400);
+    const {results} = await db.prepare('SELECT ts, src, qid, what, old, new FROM qver_log WHERE ts > ? ORDER BY ts LIMIT 20000').bind(Date.now() - days * 86400e3).all();
+    return json({rows: results});
+  }
   if (path === 'admin/repq') {
     await repSetup(db);
     const {results} = await db.prepare(`SELECT DISTINCT qid FROM rep WHERE qid IS NOT NULL AND kind IN ('ans','q') AND st != 'no'`).all();
@@ -794,6 +837,8 @@ async function pilotSetup(db) {
   await db.batch(PILOT_SCHEMA.map(s => db.prepare(s)));
   // যে নামে PIASH ডাকবেন (Google-এর নাম প্রায়ই ইংরেজি বা অচেনা); শুধু D1-এ, রপ্তানিতে নয়
   try { await db.prepare('ALTER TABLE pilot_mem ADD COLUMN nick TEXT').run(); } catch (e) { /* আগেই আছে */ }
+  // qv: দাগের সময় কোন চাবি আর ব্যাখ্যা ছিল ("kv.ev", qVer); পুরোনো সারিতে NULL
+  try { await db.prepare('ALTER TABLE pilot_ans ADD COLUMN qv TEXT').run(); } catch (e) { /* আগেই আছে */ }
   pilotReady = true;
 }
 // নাম: ২-৪০ অক্ষর, অক্ষর থাকতে হবে (শুধু সংখ্যা/চিহ্ন নয়)
@@ -1124,8 +1169,8 @@ async function pilot(path, req, url, env, db, u) {
     const Q = (await pilotQs(db, p, [ids[i]])).get(ids[i]);
     if (!Q || !conf || !Number.isInteger(pick) || pick < 0 || pick >= Q.o.length) return json({error: 'bad'}, 400);
     const sec = Math.max(0, Math.min(Math.round(num(body.sec) || 0), c.mins * 60 + 60));
-    await db.prepare('INSERT OR IGNORE INTO pilot_ans(pilot, uid, no, qid, topic, pick, ok, conf, sec, ts, rep, late, cts) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)')
-      .bind(p, u.id, no, ids[i], Q.topic, pick, pick === Q.a ? 1 : 0, conf, sec, now, sit.rep.split(',')[i] === '1' ? 1 : 0, late, cts).run();
+    await db.prepare('INSERT OR IGNORE INTO pilot_ans(pilot, uid, no, qid, topic, pick, ok, conf, sec, ts, rep, late, cts, qv) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
+      .bind(p, u.id, no, ids[i], Q.topic, pick, pick === Q.a ? 1 : 0, conf, sec, now, sit.rep.split(',')[i] === '1' ? 1 : 0, late, cts, qVer(Q)).run();
     return json({ok: true});
   }
   if (path === 'pilot/done' && m === 'POST') {
@@ -1167,16 +1212,18 @@ async function pilotAdmin(path, url, req, db) {
   const c = await pilotCfg(db, p);
   if (!c) return json({error: 'no pilot'}, 404);
   if (path === 'admin/pilot/q' && m === 'POST') {
-    const list = (Array.isArray(body.qs) ? body.qs : []).slice(0, 40), bad = [];
+    const list = (Array.isArray(body.qs) ? body.qs : []).slice(0, 40), bad = [], vl = [];
     const st = db.prepare('INSERT INTO pilot_q(pilot, qid, topic, d) VALUES(?,?,?,?) ON CONFLICT(pilot, qid) DO UPDATE SET topic = excluded.topic, d = excluded.d');
     const rows = [];
     for (const q of list) {
       const o = Array.isArray(q && q.o) ? q.o.map(x => nfc(String(x)).slice(0, 600)) : [];
       if (!q || !QID.test(q.id || '') || !c.T.has(q.t) || !nfc(q.q) || o.length < 2 || o.length > 6 || !Number.isInteger(q.a) || q.a < 0 || q.a >= o.length) { bad.push(q && q.id); continue; }
-      rows.push(st.bind(p, q.id, q.t, JSON.stringify({q: nfc(q.q).slice(0, 2000), o, a: q.a, e: nfc(q.e || '').slice(0, 6000)})));
+      const d = {q: nfc(q.q).slice(0, 2000), o, a: q.a, e: nfc(q.e || '').slice(0, 6000)};
+      rows.push(st.bind(p, q.id, q.t, JSON.stringify(d))); vl.push([q.id, d]);
     }
+    const changed = await qverLog(db, 'pilot:' + p, 'pilot_q', 'pilot', vl);
     if (rows.length) await db.batch(rows);
-    return json({ok: true, n: rows.length, bad});
+    return json({ok: true, n: rows.length, bad, changed});
   }
   if (path === 'admin/pilot/cfg' && m === 'POST') {
     const s = pilotSlim(c);
@@ -1491,7 +1538,7 @@ async function diag(path, req, url, env, db, u) {
         if (pick == null) continue;
         const ms = Math.max(0, Math.min(Math.round(num(x[2]) || 0), 3600e3));
         const ok = pick >= 0 && dOrder(q.o.length, dSeed(sid, u.id, x[0]))[pick] === q.a ? 1 : 0;
-        ans[x[0]] = [pick, ok, ms];
+        ans[x[0]] = [pick, ok, ms, qVer(q)]; // ৪র্থ ঘর: দাগের সময়ের চাবি ও ব্যাখ্যা (পুরোনো দাগে নেই)
         if (now > att.dl + GRACE) lateN++;
       }
     }
@@ -1598,16 +1645,18 @@ async function diagAdmin(path, url, req, db) {
   if (!c) return json({error: 'no set'}, 404);
   if (path === 'admin/diag/q' && m === 'POST') {
     const where = new Map(); for (const p of c.parts) for (const q of p.qs) where.set(q, p.no);
-    const list = (Array.isArray(body.qs) ? body.qs : []).slice(0, 40), bad = [], rows = [];
+    const list = (Array.isArray(body.qs) ? body.qs : []).slice(0, 40), bad = [], rows = [], vl = [];
     const st = db.prepare('INSERT INTO diag_q(sid, qid, part, s, d) VALUES(?,?,?,?,?) ON CONFLICT(sid, qid) DO UPDATE SET part = excluded.part, s = excluded.s, d = excluded.d');
     for (const q of list) {
       const o = Array.isArray(q && q.o) ? q.o.map(x => nfc(String(x)).slice(0, 600)) : [];
       if (!q || !where.has(q.id) || !c.S.has(q.s) || !nfc(q.q) || o.length < 2 || o.length > 6 || !Number.isInteger(q.a) || q.a < 0 || q.a >= o.length) { bad.push(q && q.id); continue; }
       const lvl = ['easy', 'mid', 'hard'].includes(q.lvl) ? q.lvl : '';
-      rows.push(st.bind(sid, q.id, where.get(q.id), q.s, JSON.stringify({q: nfc(q.q).slice(0, 2000), o, a: q.a, e: nfc(q.e || '').slice(0, 6000), t: str(q.t, 80) || '', lvl})));
+      const d = {q: nfc(q.q).slice(0, 2000), o, a: q.a, e: nfc(q.e || '').slice(0, 6000), t: str(q.t, 80) || '', lvl};
+      rows.push(st.bind(sid, q.id, where.get(q.id), q.s, JSON.stringify(d))); vl.push([q.id, d]);
     }
+    const changed = await qverLog(db, 'diag:' + sid, 'diag_q', 'sid', vl);
     if (rows.length) await db.batch(rows);
-    return json({ok: true, n: rows.length, bad});
+    return json({ok: true, n: rows.length, bad, changed});
   }
   if (path === 'admin/diag/msg' && m === 'POST') {
     const uids = [...new Set((Array.isArray(body.uids) ? body.uids : []).filter(Number.isInteger))].slice(0, 300);
@@ -1802,11 +1851,11 @@ export async function onRequest({request: req, env}) {
       const keep = new Set(rows.map(r => r[0]));
       const qds = (Array.isArray(body.a) ? body.a : []).slice(0, MAX_BATCH)
         .map(a => { if (!(a && typeof a === 'object' && str(a.k, 120) && num(a.ts))) return null; const qd = cleanQd(a.qd);
-          return [str(a.k, 120), Math.round(a.ts), qd, cleanTm(a.tm, qd), qd ? cleanMeta(a.m, req) : null]; })
+          return [str(a.k, 120), Math.round(a.ts), qd, cleanTm(a.tm, qd), qd ? cleanMeta(a.m, req) : null, cleanQv(a.qv, qd)]; })
         .filter(x => x && x[2] && keep.has(x[0]));
       if (qds.length) {
         await attqTable(db);
-        const sq = db.prepare('INSERT OR IGNORE INTO attq(uid, k, ts, qd, tm, m) VALUES(?,?,?,?,?,?)');
+        const sq = db.prepare('INSERT OR IGNORE INTO attq(uid, k, ts, qd, tm, m, qv) VALUES(?,?,?,?,?,?,?)');
         await db.batch(qds.map(x => sq.bind(u.id, ...x)));
       }
       // প্রশ্নের হিসাবের সীমা পার হলে চুপচাপ বাদ (এগুলো শুধু পরিসংখ্যান, ফোনে জমিয়ে রাখার দরকার নেই)
