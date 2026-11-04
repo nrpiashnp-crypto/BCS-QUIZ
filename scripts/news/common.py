@@ -137,7 +137,9 @@ def strip_html(s: str) -> str:
 # ---------- Gemini ----------
 
 API = "https://generativelanguage.googleapis.com/v1beta"
-GAP_SECONDS = float(os.environ.get("NEWS_GEMINI_GAP", "5"))   # বিনা খরচের সীমায় মিনিটে ~১০টার বেশি নয়
+# বিনা খরচের সীমা (PIASH-এর AI Studio, ২০২৬-১১-০৪): প্রতি মডেলে মিনিটে ৫-১০টা, দিনে ২০টা অনুরোধ।
+GAP_SECONDS = float(os.environ.get("NEWS_GEMINI_GAP", "13"))   # মিনিটে ৫টার কম
+MAX_CALLS = int(os.environ.get("NEWS_MAX_CALLS", "12"))        # এক চালানোয় সর্বোচ্চ; আবার চালানোর জায়গা রেখে
 _last_call = [0.0]
 CALLS = {"n": 0}
 EXHAUSTED: set[str] = set()
@@ -145,6 +147,8 @@ EXHAUSTED: set[str] = set()
 
 def gemini_json(prompt: str, models: list[str], schema: dict | None = None, temperature: float = 0.2):
     """Gemini-কে ডেকে JSON ফেরত। মডেল না পেলে তালিকার পরেরটা; 429/5xx হলে অপেক্ষা করে আবার।"""
+    if CALLS["n"] >= MAX_CALLS:
+        raise RuntimeError(f"আজকের অনুরোধের সীমা ({MAX_CALLS}) শেষ")
     key = os.environ.get("GEMINI_API_KEY")
     if not key:
         raise RuntimeError("GEMINI_API_KEY নেই")
