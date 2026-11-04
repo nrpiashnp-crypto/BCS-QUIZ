@@ -12,10 +12,12 @@ import os
 
 from common import CATEGORIES, SECTIONS, domain, gemini_json, log, page_text
 
-PICK_MODELS = [m for m in [os.environ.get("NEWS_PICK_MODEL"), "gemini-3.1-flash-lite", "gemini-flash-lite-latest",
-                           "gemini-2.5-flash-lite", "gemini-2.5-flash"] if m]
-WRITE_MODELS = [m for m in [os.environ.get("NEWS_WRITE_MODEL"), "gemini-3.6-flash", "gemini-flash-latest",
-                            "gemini-2.5-flash", "gemini-2.5-flash-lite"] if m]
+# বাছাই: অনেক শিরোনাম, সহজ কাজ → ৫০০/দিনের মডেল আগে, তারপর Gemma (১৪,৪০০/দিন)।
+PICK_MODELS = [m for m in [os.environ.get("NEWS_PICK_MODEL"), "gemini-3.1-flash-lite", "gemma-4-31b*", "gemma-4-26b*",
+                           "gemini-2.5-flash-lite"] if m]
+# লেখা: বাংলা ভাষার মান দরকার → ফ্ল্যাশ আগে (দিনে ২০টা করে), না পেলে 3.1-flash-lite, শেষে Gemma।
+WRITE_MODELS = [m for m in [os.environ.get("NEWS_WRITE_MODEL"), "gemini-3.6-flash", "gemini-3.8-flash",
+                            "gemini-2.5-flash", "gemini-3.1-flash-lite", "gemma-4-31b*", "gemma-4-26b*"] if m]
 MAX_WRITE = int(os.environ.get("NEWS_MAX_WRITE", "16"))     # দিনে সর্বোচ্চ কতটা ঘটনা লেখানো হবে
 BATCH = int(os.environ.get("NEWS_BATCH", "4"))              # এক অনুরোধে কতটা ঘটনা (দিনে ২০টা অনুরোধের সীমা)
 

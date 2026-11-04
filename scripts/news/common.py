@@ -137,16 +137,74 @@ def strip_html(s: str) -> str:
 # ---------- Gemini ----------
 
 API = "https://generativelanguage.googleapis.com/v1beta"
-# বিনা খরচের সীমা (PIASH-এর AI Studio, ২০২৬-১১-০৪): প্রতি মডেলে মিনিটে ৫-১০টা, দিনে ২০টা অনুরোধ।
+# বিনা খরচের সীমা (PIASH-এর AI Studio, ২০২৬-১১-০৪), দিনে কতটা অনুরোধ:
+#   gemini-3.1-flash-lite ৫০০ · gemini-2.5-flash-lite ২০ (মিনিটে ১০) · gemini-2.5-flash ২০ · gemini-3.6-flash ২০
+#   gemini-3.8-flash ২০ · Gemma 4 26B ১৪,৪০০ · Gemma 4 31B ১৪,৪০০।  ফ্ল্যাশগুলো মিনিটে ৫টা।
 GAP_SECONDS = float(os.environ.get("NEWS_GEMINI_GAP", "13"))   # মিনিটে ৫টার কম
 MAX_CALLS = int(os.environ.get("NEWS_MAX_CALLS", "12"))        # এক চালানোয় সর্বোচ্চ; আবার চালানোর জায়গা রেখে
 _last_call = [0.0]
 CALLS = {"n": 0}
 EXHAUSTED: set[str] = set()
+_MODEL_NAMES: list[str] | None = None
+
+
+def _available(key: str) -> list[str]:
+    """চাবিতে কোন কোন মডেল চলে (একবার জেনে রাখা)। না জানা গেলে খালি তালিকা।"""
+    global _MODEL_NAMES
+    if _MODEL_NAMES is None:
+        _MODEL_NAMES = []
+        try:
+            req = urllib.request.Request(f"{API}/models?pageSize=1000", headers={"x-goog-api-key": key})
+            with urllib.request.urlopen(req, timeout=30) as r:
+                for m in json.loads(r.read()).get("models", []):
+                    if "generateContent" in m.get("supportedGenerationMethods", []):
+                        _MODEL_NAMES.append(m["name"].removeprefix("models/"))
+        except Exception as e:  # noqa: BLE001
+            log(f"  মডেলের তালিকা পাওয়া গেল না ({e.__class__.__name__})")
+    return _MODEL_NAMES
+
+
+def resolve(models: list[str], key: str) -> list[str]:
+    """'gemma-4-31b*' ধাঁচের নাম (শেষে *) চাবির আসল মডেল-নামে বদলানো; বাকিগুলো যেমন আছে।"""
+    out = []
+    for m in models:
+        if m.endswith("*"):
+            pre = m[:-1]
+            out += sorted(n for n in _available(key) if n.startswith(pre))
+        else:
+            out.append(m)
+    return list(dict.fromkeys(out))
+
+
+def _parse_json(text: str):
+    t = text.strip()
+    if t.startswith("```"):
+        t = t.split("\n", 1)[1] if "\n" in t else t[3:]
+        t = t.rsplit("```", 1)[0]
+    try:
+        return json.loads(t)
+    except json.JSONDecodeError:
+        a, b = t.find("{"), t.rfind("}")
+        if a >= 0 and b > a:
+            return json.loads(t[a:b + 1])
+        raise
+
+
+def _configs(model: str, gen: dict):
+    """এই মডেলে কোন কোন সাজে চেষ্টা হবে। Gemma-তে JSON-ছাঁচ আর thinking চলে না।"""
+    if model.startswith("gemma"):
+        yield {"temperature": gen["temperature"]}
+        return
+    for th in ({"thinkingLevel": "low"}, {"thinkingBudget": 0}, None):
+        g = dict(gen)
+        if th:
+            g["thinkingConfig"] = th
+        yield g
+    yield {"temperature": gen["temperature"]}                    # শেষ চেষ্টা: কোনো বাড়তি সাজ ছাড়া
 
 
 def gemini_json(prompt: str, models: list[str], schema: dict | None = None, temperature: float = 0.2):
-    """Gemini-কে ডেকে JSON ফেরত। মডেল না পেলে তালিকার পরেরটা; 429/5xx হলে অপেক্ষা করে আবার।"""
+    """Gemini/Gemma-কে ডেকে JSON ফেরত। মডেল না পেলে বা দিনের সীমা শেষ হলে তালিকার পরেরটা।"""
     if CALLS["n"] >= MAX_CALLS:
         raise RuntimeError(f"আজকের অনুরোধের সীমা ({MAX_CALLS}) শেষ")
     key = os.environ.get("GEMINI_API_KEY")
@@ -156,14 +214,15 @@ def gemini_json(prompt: str, models: list[str], schema: dict | None = None, temp
     if schema:
         gen["responseSchema"] = schema
     last_err = None
-    for model in models:
+    for model in resolve(models, key):
         if model in EXHAUSTED:
             continue
-        for thinking in ({"thinkingLevel": "low"}, {"thinkingBudget": 0}, None):
-            body = {"contents": [{"role": "user", "parts": [{"text": prompt}]}], "generationConfig": dict(gen)}
-            if thinking:
-                body["generationConfig"]["thinkingConfig"] = thinking
-            for attempt in range(4):
+        gone = False
+        for cfg in _configs(model, gen):
+            if gone:
+                break
+            body = {"contents": [{"role": "user", "parts": [{"text": prompt}]}], "generationConfig": cfg}
+            for attempt in range(3):
                 wait = GAP_SECONDS - (time.time() - _last_call[0])
                 if wait > 0:
                     time.sleep(wait)
@@ -174,23 +233,27 @@ def gemini_json(prompt: str, models: list[str], schema: dict | None = None, temp
                     headers={"x-goog-api-key": key, "Content-Type": "application/json"},
                 )
                 try:
-                    with urllib.request.urlopen(req, timeout=120) as r:
+                    with urllib.request.urlopen(req, timeout=180) as r:
                         res = json.loads(r.read())
                     CALLS["n"] += 1
                     parts = res["candidates"][0]["content"]["parts"]
                     text = "".join(p.get("text", "") for p in parts if not p.get("thought"))
-                    return json.loads(text)
+                    out = _parse_json(text)
+                    log(f"  Gemini: {model}")
+                    return out
                 except urllib.error.HTTPError as e:
                     msg = e.read().decode("utf-8", "replace")[:300]
+                    low = msg.lower().replace(" ", "")
                     last_err = f"{model}: HTTP {e.code} {msg}"
-                    if e.code == 400 and thinking and "thinking" in msg.lower():
-                        break                      # এই মডেলে এই thinking চলে না → পরেরটা
                     if e.code == 404:
+                        gone = True                # মডেলই নেই → পরের মডেল
                         break
-                    if e.code == 429 and ("perday" in msg.lower().replace(" ", "") or "per_day" in msg.lower()
-                                          or "daily" in msg.lower()):
-                        EXHAUSTED.add(model)       # আজকের সীমা শেষ → পরের মডেল (প্রতিটা মডেলের সীমা আলাদা)
+                    if e.code == 400:
+                        break                      # এই সাজ চলে না → পরের সাজ
+                    if e.code == 429 and ("perday" in low or "per_day" in low or "daily" in low):
+                        EXHAUSTED.add(model)       # আজকের সীমা শেষ → পরের মডেল (প্রতিটার সীমা আলাদা)
                         log(f"  {model}: আজকের সীমা শেষ, পরের মডেল")
+                        gone = True
                         break
                     if e.code in (429, 500, 502, 503, 504):
                         time.sleep(20 * (attempt + 1))
@@ -204,8 +267,4 @@ def gemini_json(prompt: str, models: list[str], schema: dict | None = None, temp
                     last_err = f"{model}: {e}"
                     time.sleep(10)
                     continue
-            else:
-                continue
-            if model in EXHAUSTED or (last_err and "HTTP 404" in last_err):
-                break                              # মডেল নেই বা সীমা শেষ → পরের মডেল
     raise RuntimeError(f"Gemini কাজ করল না: {last_err}")

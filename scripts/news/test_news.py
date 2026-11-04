@@ -106,6 +106,18 @@ class Batch(unittest.TestCase):
         self.assertEqual((out[1]["title"], out[1]["section"]), ("খ", "bd"))
 
 
+class Models(unittest.TestCase):
+    def test_resolve_and_parse(self):
+        common._MODEL_NAMES = ["gemma-4-31b-it", "gemma-4-26b-a4b-it", "gemini-3.6-flash"]
+        self.assertEqual(common.resolve(["gemini-3.6-flash", "gemma-4-31b*", "gemma-9*"], "k"),
+                         ["gemini-3.6-flash", "gemma-4-31b-it"])
+        common._MODEL_NAMES = None
+        self.assertEqual(common._parse_json('```json\n{"a": 1}\n```'), {"a": 1})
+        self.assertEqual(common._parse_json('এই নিন: {"a": 2} শেষ'), {"a": 2})
+        self.assertNotIn("responseMimeType", list(common._configs("gemma-4-31b-it", {"temperature": 0.2,
+                                                                                     "responseMimeType": "x"}))[0])
+
+
 class Home(unittest.TestCase):
     def test_quota(self):
         mk = lambda sec, sc: {"section": sec, "score": sc, "sources": [1]}
