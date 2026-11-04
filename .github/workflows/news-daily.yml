@@ -1,0 +1,67 @@
+name: news-daily
+# আজকের ঘটনা (LY News): উৎস থেকে শিরোনাম → Gemini বাছাই ও সারাংশ → দুই-উৎস যাচাই → news/day/, news/month/।
+# নিয়ম আর ব্যাখ্যা: scripts/news/README.md।
+# - রোজ রাত ১০:৪১ (ঢাকা) = 16:41 UTC। দিনে একটাই কমিট।
+# - হাতে: Actions → news-daily → Run workflow (তারিখ খালি = আজ; "dry_run" = ফাইল না লিখে শুধু ফল দেখা)।
+# - ফলাফল আর "অ্যাডমিনের কাছে" তালিকা: এই চালানোর পাতার Summary অংশে।
+# গোপন ঘরে লাগে: GEMINI_API_KEY (বিনা খরচের চাবি)।
+# রিপোর Variables-এ NEWS_LIVE = true না থাকলে কমিটে [skip ci] থাকে (Cloudflare বিল্ড হয় না) —
+# দিনের পাতা তৈরি হওয়া পর্যন্ত মাসের ৫০০ বিল্ড বাঁচাতে।
+on:
+  schedule:
+    - cron: '41 16 * * *'
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'তারিখ YYYY-MM-DD (খালি = আজ)'
+        required: false
+      dry_run:
+        description: 'শুধু দেখা, রিপোতে কিছু লেখা নয়'
+        type: boolean
+        default: false
+concurrency: news-daily
+permissions:
+  contents: write
+jobs:
+  news:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: |
+            scripts/news
+            news
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: পরীক্ষা (ইন্টারনেট ছাড়া)
+        run: python3 scripts/news/test_news.py
+      - name: আজকের ঘটনা তৈরি
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          DATE: ${{ inputs.date }}
+          DRY: ${{ inputs.dry_run && '--dry-run' || '' }}
+        run: |
+          python3 scripts/news/run_daily.py ${DATE:+--date "$DATE"} $DRY --summary "$RUNNER_TEMP/news.md"
+      - name: ফলাফল দেখানো
+        if: always()
+        run: cat "$RUNNER_TEMP/news.md" >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || echo "ফলাফল তৈরি হয়নি" >> "$GITHUB_STEP_SUMMARY"
+      - name: রিপোতে রাখা (দিনে একটা কমিট)
+        if: ${{ !inputs.dry_run }}
+        env:
+          LIVE: ${{ vars.NEWS_LIVE }}
+        run: |
+          git config user.name "lyanna-news-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add --sparse news
+          if git diff --cached --quiet; then echo "নতুন কিছু নেই"; exit 0; fi
+          d=$(git diff --cached --name-only -- news/day | head -1 | xargs -r basename | cut -d. -f1)
+          skip=" [skip ci]"; [ "$LIVE" = "true" ] && skip=""
+          git commit -q -m "news: আজকের ঘটনা $d$skip"
+          for i in 1 2 3; do
+            git pull -q --rebase origin main && git push -q origin HEAD:main && { echo "রাখা হলো"; exit 0; }
+            sleep 5
+          done
+          echo "push হলো না"; exit 1
