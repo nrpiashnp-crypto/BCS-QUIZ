@@ -1,6 +1,6 @@
 /* প্রতিটি ব্যাখ্যার (.exp, হোমের আজকের প্রশ্নে .tqe) নিচে দুটো জিনিস, লগইন লাগে না:
    ১. "ব্যাখ্যাটা বুঝলেন? বুঝেছি / বুঝিনি" এক ট্যাপ। ট্যাপগুলো জমে, পাতা ছাড়ার সময় একবারে POST /api/fb (sendBeacon)।
-      "বুঝিনি"-র পরে চাইলে এক লাইন লেখা → POST /api/report (kind hard, ব্যাখ্যার ছাপ h সহ)। Fable-যাচাই 2026-11-02।
+      "বুঝিনি"-র পরে চাইলে এক লাইন লেখা → POST /api/report (kind hard, ব্যাখ্যার ছাপ h সহ; h = দাগের ev, নিচে expSig)। Fable-যাচাই 2026-11-02।
    ২. "প্রশ্নে বা উত্তরে ভুল? জানান": ছোট ফর্ম (কী ভুল + চাইলে দু-লাইন), পাঠায় POST /api/report।
    (🎤 কথা বলে মতামত ২০২৬-১১-০৪-এ তুলে দেওয়া হয়েছে; ভালো সমাধান পেলে আবার ভাবা হবে।)
    প্রশ্ন চেনা: কাছের [data-id] থেকে প্রশ্নের id; না পেলে পাতার Q তালিকায় লেখা মিলিয়ে; তাও না পেলে প্রশ্নের লেখা।
@@ -81,8 +81,24 @@
   function make(){var b=document.createElement('button');b.type='button';b.className='rq';b.innerHTML='✎ প্রশ্নে বা উত্তরে ভুল পেলেন? জানান<small>আপনার দু-লাইনে লাখ লাখ প্রার্থীর পড়া ভালো হবে</small>';b.onclick=function(){open(b)};return b}
 
   // ---- বুঝেছি / বুঝিনি ----
-  // ব্যাখ্যার ছাপ: লেখার ছোট হ্যাশ (FNV-1a), যাতে ব্যাখ্যা নতুন করে লিখলে পুরোনো হিসাবের সঙ্গে না মেশে
-  function hash(t){var h=0x811c9dc5;for(var i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0}return h.toString(16)}
+  /* ব্যাখ্যার ছাপ h (মতামতের সারিতে যায়, রপ্তানিতে exp_shown_hash):
+     ৮ অক্ষর = দাগের সংস্করণ-চিহ্নের ev-এর হুবহু হিসাব, FNV-1a(প্রশ্নের e, যেমন আছে) (js/account.js-এর qVer, functions/api, tools/build_qver.py);
+       তাই "এই ব্যাখ্যা দেখে বুঝিনি" সরাসরি দাগের explanation_version আর বদলের খাতার সঙ্গে মেলে।
+     ৯ অক্ষর ('0' + ৮) = প্রশ্নের e পাওয়া যায়নি, পাতায় দেখা লেখার ছাপ (আগের নিয়ম); শুধু একই প্রশ্নে ব্যাখ্যা বদলেছে কি না বোঝায়।
+     প্রশ্নের e খোঁজা: ব্যাখ্যার ঘর বা তার ওপরের কোনো ঘরে .lbq (পাতা বসায়) → [data-id] ধরে window.LBQ[id] বা পাতার Q/paper/qs তালিকা
+     → Q-তে প্রশ্নের লেখা মিলিয়ে। */
+  function fnv(t){var h=0x811c9dc5;for(var i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0}return ('0000000'+h.toString(16)).slice(-8)}
+  function lists(){var a=[];try{if(typeof Q!=='undefined'&&Q&&Q.length)a.push(Q)}catch(e){}try{if(typeof paper!=='undefined'&&paper&&paper.length&&typeof paper[0]==='object')a.push(paper)}catch(e){}
+    try{if(typeof qs!=='undefined'&&qs&&qs.length&&typeof qs[0]==='object')a.push(qs)}catch(e){}return a}
+  function qObj(el,id,text){
+    for(var n=el;n&&n!==document;n=n.parentNode)if(n.lbq&&typeof n.lbq==='object')return n.lbq;
+    if(id){try{if(window.LBQ&&window.LBQ[id])return window.LBQ[id]}catch(e){}
+      var L=lists();for(var j=0;j<L.length;j++)for(var i=0;i<L[j].length;i++)if(L[j][i]&&L[j][i].id===id)return L[j][i]}
+    try{if(text&&typeof Q!=='undefined'&&Q&&Q.length){var t=clean(text).replace(/^[০-৯0-9]+[.।]\s*/,'');
+      for(var k=0;k<Q.length;k++){var qq=clean(String(Q[k].q||'').replace(/<[^>]+>/g,''));if(qq&&(t.indexOf(qq.slice(0,60))===0||qq.indexOf(t.slice(0,60))===0))return Q[k]}}}catch(e){}
+    return null;
+  }
+  function expSig(el,id,text){var q=qObj(el,id,text);return q&&typeof q.e==='string'?fnv(q.e):'0'+fnv(expText(el))}
   function expText(el){var c=el.cloneNode(true);c.querySelectorAll('.ud,.rq,.rqf,.rqd,button').forEach(function(n){n.remove()});return clean(c.textContent)}
   function udSeen(){try{return JSON.parse(localStorage.getItem('lb:ud')||'{}')}catch(e){return {}}}
   function udMark(k,v){try{var s=udSeen();s[k]=v;var ks=Object.keys(s);if(ks.length>500)delete s[ks[0]];localStorage.setItem('lb:ud',JSON.stringify(s))}catch(e){}}
@@ -97,7 +113,7 @@
   document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')flush()});
   function ud(el){
     var box=el.closest('section.q,li.q,.q,.tq')||el.parentNode,text=qText(box,el),id=qId(box,text);
-    var key=id||('t:'+text.slice(0,60)),h=hash(expText(el)),mk=key+'|'+h,was=udSeen()[mk];
+    var key=id||('t:'+text.slice(0,60)),h=expSig(el,id,text),mk=key+'|'+h,was=udSeen()[mk];
     var d=document.createElement('div');d.className='ud';
     function done(v){d.innerHTML='<span class="ok">'+(v?'✓ বুঝেছেন':'✓ জানিয়েছেন, ব্যাখ্যা আরও সহজ করা হবে। ধন্যবাদ!')+'</span>'}
     if(was!=null){done(was);return d}

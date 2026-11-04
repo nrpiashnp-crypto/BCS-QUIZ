@@ -236,7 +236,8 @@ async function review(no){
   let r;try{r=await api('review?s='+encodeURIComponent(S)+'&part='+no)}catch(e){$('rvb').innerHTML='<p class="dim">খোলা যায়নি।</p>';return}
   $('rv').dataset.ok=1;
   const wrong=r.qs.filter(q=>q.pick!==q.a),ok=r.qs.filter(q=>q.pick===q.a);
-  const card=q=>`<div class="card rv"><div class="qh"><span>${esc(SUB(q.s))}</span><span>${q.pick<0?'বাদ':q.pick===q.a?'ঠিক':'ভুল'}</span></div><div class="qt">${rich(q.q)}</div>${q.o.map((o,k)=>`<div class="opt${k===q.a?' right':k===q.pick?' wrong':''}"><span class="k">${K[k]}</span><span>${rich(o)}</span></div>`).join('')}${q.e?`<div class="exp">${md(q.e)}</div>`:''}</div>`;
+  window.LBQ=window.LBQ||{};for(const q of r.qs)if(q.id)LBQ[q.id]=q; // js/report.js এখান থেকে ব্যাখ্যার ছাপ (ev) নেয়
+  const card=q=>`<div class="card rv"${q.id?` data-id="${esc(q.id)}"`:''}><div class="qh"><span>${esc(SUB(q.s))}</span><span>${q.pick<0?'বাদ':q.pick===q.a?'ঠিক':'ভুল'}</span></div><div class="qt">${rich(q.q)}</div>${q.o.map((o,k)=>`<div class="opt${k===q.a?' right':k===q.pick?' wrong':''}"><span class="k">${K[k]}</span><span>${rich(o)}</span></div>`).join('')}${q.e?`<div class="exp">${md(q.e)}</div>`:''}</div>`;
   $('rvb').innerHTML=(wrong.length?wrong.map(card).join(''):'<p>এই ভাগে কোনো ভুল নেই।</p>')+(ok.length?`<details><summary>ঠিকগুলো (${bn(ok.length)})</summary>${ok.map(card).join('')}</details>`:'');
   if(window.LBMath)try{LBMath(V)}catch(e){}
 }

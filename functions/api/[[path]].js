@@ -1959,7 +1959,7 @@ async function teacherExport(path, url, req, db) {
       db.prepare('SELECT ts, uid, page, taps FROM fb_tap WHERE ts >= ? AND ts < ? ORDER BY ts LIMIT 20000').bind(from, to)
     ]);
     const rows = [];
-    // exp_shown_hash = পাতায় দেখা ব্যাখ্যার লেখার ছাপ (js/report.js), দাগের explanation_version-এর হিসাব নয়
+    // exp_shown_hash = js/report.js-এর ছাপ: ৮ অক্ষর = দাগের ev-এর হিসাব (প্রশ্নের e), ৯ অক্ষর = পাতায় দেখা লেখার ছাপ (e পাওয়া যায়নি)
     for (const x of r.results) rows.push({question_id: x.qid || null, q_hint: x.qid ? null : (x.q || '').slice(0, 80), student_id: await id.stu(x.uid),
       kind: KIND[x.kind] || 'other', text: exScrub(x.note), exp_shown_hash: x.h || null, page: x.page || null, status: x.st, at_day: exAt(x.ts)[0], via: 'report'});
     for (const x of f.results) for (const t of exJp(x.taps) || []) {
