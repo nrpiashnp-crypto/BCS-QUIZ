@@ -231,9 +231,10 @@ async function review(no){
   V.innerHTML='<p class="dim">লোড হচ্ছে…</p>';
   let r;try{r=await api('review?p='+encodeURIComponent(P)+'&no='+no)}catch(e){V.innerHTML=`<div class="card">${e.message==='soon'?'উত্তর খুলবে '+when(e.j.at)+'-এর পরে।':'খোলা যায়নি।'}</div><button class="btn ghost" onclick="home()">ফিরে যান</button>`;return}
   const ok=r.qs.filter(q=>q.pick===q.a).length;
+  window.LBQ=window.LBQ||{};for(const q of r.qs)if(q.id)LBQ[q.id]=q; // js/report.js এখান থেকে ব্যাখ্যার ছাপ (ev) নেয়
   V.innerHTML=`<button class="btn ghost" onclick="home()">← ফিরে যান</button><h1 style="margin-top:12px">${esc(r.name)}</h1>
     <p class="sub">${r.took?`${bn(r.qs.length)}টির মধ্যে ${bn(ok)}টি ঠিক`:'এই পরীক্ষা দেননি; প্রশ্ন আর উত্তর দেখে নিন।'}</p>`+
-    r.qs.map((q,i)=>`<div class="card rv"><div class="qh"><span>প্রশ্ন ${bn(i+1)}${q.r?' <span class="tag">আগের ভুল</span>':''}</span><span>${q.pick<0?'ফাঁকা':q.conf==='g'?'আন্দাজ':'নিশ্চিত'}</span></div>
+    r.qs.map((q,i)=>`<div class="card rv"${q.id?` data-id="${esc(q.id)}"`:''}><div class="qh"><span>প্রশ্ন ${bn(i+1)}${q.r?' <span class="tag">আগের ভুল</span>':''}</span><span>${q.pick<0?'ফাঁকা':q.conf==='g'?'আন্দাজ':'নিশ্চিত'}</span></div>
       <div class="qt">${esc(q.q)}</div>${q.o.map((o,k)=>`<div class="opt${k===q.a?' right':k===q.pick?' wrong':''}"><span class="k">${K[k]}</span><span>${esc(o)}</span></div>`).join('')}
       ${q.e?`<div class="exp">${esc(q.e)}</div>`:''}</div>`).join('');
   scrollTo(0,0);
@@ -260,5 +261,6 @@ async function report(){
 home();
 </script>
 <script src="/js/math.js" defer></script>
+<script src="/js/report.js" defer></script>
 </body>
 </html>
