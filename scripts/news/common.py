@@ -1,0 +1,193 @@
+"""LY News-এর সাধারণ যন্ত্র: সময়, ইন্টারনেট থেকে আনা, Gemini ডাকা, লেখা থেকে লেখা বের করা।
+
+শুধু Python-এর নিজস্ব লাইব্রেরি; GitHub Actions-এ কিছু install লাগে না।
+"""
+from __future__ import annotations
+
+import datetime as dt
+import html
+import json
+import os
+import re
+import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+from html.parser import HTMLParser
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]          # BCS-QUIZ রিপোর মূল
+NEWS_DIR = ROOT / "news"
+DHAKA = dt.timezone(dt.timedelta(hours=6))
+UA = "LyannaNewsBot/1.0 (+https://lyannabooks.com)"
+
+# বিভাগ: id → বাংলা নাম। ছাঁকনির তালিকা current-affairs-plan.md থেকে।
+CATEGORIES = {
+    "agreement": "চুক্তি ও সমঝোতা",
+    "organization": "আন্তর্জাতিক সংস্থা ও সম্মেলন",
+    "election": "নিয়োগ ও নির্বাচন",
+    "award": "পুরস্কার",
+    "index": "সূচক ও র‍্যাংকিং",
+    "law": "নতুন আইন ও নীতি",
+    "sports": "খেলা",
+    "scitech": "বিজ্ঞান ও প্রযুক্তি",
+    "economy": "অর্থনীতি",
+}
+
+
+def log(*a):
+    print(*a, file=sys.stderr, flush=True)
+
+
+def now_dhaka() -> dt.datetime:
+    return dt.datetime.now(DHAKA)
+
+
+def read_json(path: Path, default=None):
+    try:
+        return json.loads(Path(path).read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return default
+
+
+def write_json(path: Path, data) -> None:
+    """ছোট রাখতে ফাঁকা জায়গা ছাড়া (ফোনে হালকা); প্রতিটা ঘটনা আলাদা লাইনে, যাতে git-এর বদল পড়া যায়।"""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    text = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
+    text = text.replace('},{"id":', '},\n{"id":').replace('},{"date":', '},\n{"date":')
+    path.write_text(text + "\n", encoding="utf-8")
+
+
+# ---------- ইন্টারনেট ----------
+
+def http_get(url: str, timeout: int = 25, max_bytes: int = 3_000_000) -> bytes:
+    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return r.read(max_bytes)
+
+
+def domain(url: str) -> str:
+    """উৎসের মূল ডোমেইন (bangla.thedailystar.net → thedailystar.net), দুই-উৎস গোনার জন্য।"""
+    host = urllib.parse.urlparse(url).hostname or ""
+    host = host.lower().removeprefix("www.")
+    parts = host.split(".")
+    if len(parts) >= 3 and parts[-2] in {"com", "co", "org", "gov", "net", "ac", "edu"} and len(parts[-1]) == 2:
+        return ".".join(parts[-3:])          # prothomalo.com.bd ধাঁচ
+    return ".".join(parts[-2:])
+
+
+class _TextGrab(HTMLParser):
+    """খবরের পাতা থেকে শুধু <p>, <h1>, <h2> আর <li>-এর লেখা।"""
+    KEEP = {"p", "h1", "h2", "li"}
+    SKIP = {"script", "style", "nav", "footer", "header", "aside", "form", "noscript"}
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.out, self._buf, self._keep, self._skip = [], [], 0, 0
+
+    def handle_starttag(self, tag, attrs):
+        if tag in self.SKIP:
+            self._skip += 1
+        elif tag in self.KEEP:
+            self._keep += 1
+
+    def handle_endtag(self, tag):
+        if tag in self.SKIP and self._skip:
+            self._skip -= 1
+        elif tag in self.KEEP and self._keep:
+            self._keep -= 1
+            t = " ".join("".join(self._buf).split())
+            if len(t) > 40:
+                self.out.append(t)
+            self._buf = []
+
+    def handle_data(self, data):
+        if self._keep and not self._skip:
+            self._buf.append(data)
+
+
+def page_text(url: str, limit: int = 7000) -> str:
+    try:
+        raw = http_get(url, timeout=20)
+    except Exception as e:  # noqa: BLE001 — কোনো পাতা না খুললে শুধু বাদ
+        log(f"  পাতা খুলল না: {url} ({e.__class__.__name__})")
+        return ""
+    text = raw.decode("utf-8", "replace")
+    g = _TextGrab()
+    try:
+        g.feed(text)
+    except Exception:  # noqa: BLE001
+        pass
+    body = "\n".join(dict.fromkeys(g.out))           # একই অনুচ্ছেদ দুবার নয়
+    return body[:limit]
+
+
+def strip_html(s: str) -> str:
+    return " ".join(html.unescape(re.sub(r"<[^>]+>", " ", s or "")).split())
+
+
+# ---------- Gemini ----------
+
+API = "https://generativelanguage.googleapis.com/v1beta"
+GAP_SECONDS = float(os.environ.get("NEWS_GEMINI_GAP", "5"))   # বিনা খরচের সীমায় মিনিটে ~১০টার বেশি নয়
+_last_call = [0.0]
+CALLS = {"n": 0}
+
+
+def gemini_json(prompt: str, models: list[str], schema: dict | None = None, temperature: float = 0.2):
+    """Gemini-কে ডেকে JSON ফেরত। মডেল না পেলে তালিকার পরেরটা; 429/5xx হলে অপেক্ষা করে আবার।"""
+    key = os.environ.get("GEMINI_API_KEY")
+    if not key:
+        raise RuntimeError("GEMINI_API_KEY নেই")
+    gen = {"temperature": temperature, "responseMimeType": "application/json"}
+    if schema:
+        gen["responseSchema"] = schema
+    last_err = None
+    for model in models:
+        for thinking in ({"thinkingLevel": "low"}, {"thinkingBudget": 0}, None):
+            body = {"contents": [{"role": "user", "parts": [{"text": prompt}]}], "generationConfig": dict(gen)}
+            if thinking:
+                body["generationConfig"]["thinkingConfig"] = thinking
+            for attempt in range(4):
+                wait = GAP_SECONDS - (time.time() - _last_call[0])
+                if wait > 0:
+                    time.sleep(wait)
+                _last_call[0] = time.time()
+                req = urllib.request.Request(
+                    f"{API}/models/{model}:generateContent",
+                    data=json.dumps(body).encode(),
+                    headers={"x-goog-api-key": key, "Content-Type": "application/json"},
+                )
+                try:
+                    with urllib.request.urlopen(req, timeout=120) as r:
+                        res = json.loads(r.read())
+                    CALLS["n"] += 1
+                    parts = res["candidates"][0]["content"]["parts"]
+                    text = "".join(p.get("text", "") for p in parts if not p.get("thought"))
+                    return json.loads(text)
+                except urllib.error.HTTPError as e:
+                    msg = e.read().decode("utf-8", "replace")[:300]
+                    last_err = f"{model}: HTTP {e.code} {msg}"
+                    if e.code == 400 and thinking and "thinking" in msg.lower():
+                        break                      # এই মডেলে এই thinking চলে না → পরেরটা
+                    if e.code == 404:
+                        break
+                    if e.code in (429, 500, 502, 503, 504):
+                        time.sleep(20 * (attempt + 1))
+                        continue
+                    raise RuntimeError(last_err) from None
+                except (KeyError, IndexError, json.JSONDecodeError) as e:
+                    last_err = f"{model}: উত্তর বোঝা গেল না ({e.__class__.__name__})"
+                    time.sleep(3)
+                    continue
+                except (urllib.error.URLError, TimeoutError) as e:
+                    last_err = f"{model}: {e}"
+                    time.sleep(10)
+                    continue
+            else:
+                continue
+            if last_err and ("404" in last_err):
+                break                              # মডেলই নেই → পরের মডেল
+    raise RuntimeError(f"Gemini কাজ করল না: {last_err}")

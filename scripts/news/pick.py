@@ -1,0 +1,110 @@
+"""ধাপ ২-৩: Gemini দিয়ে বাছাই আর সারাংশ, তারপর স্ক্রিপ্টে যাচাই।
+
+ক) সব শিরোনাম একসঙ্গে → Gemini (সস্তা মডেল): একই ঘটনার শিরোনাম জোড়া, ছাঁকনি, চমক-মান।
+খ) ভালো ঘটনাগুলোর মূল পাতা খুলে লেখা আনা (একই প্রতিষ্ঠানের দুটো নয়)।
+গ) প্রতিটা ঘটনা → Gemini: নিজের ভাষায় শিরোনাম, ১-২ লাইন, ৪-৬ লাইন, পরীক্ষায় কেন, তথ্য + উদ্ধৃতি।
+ঘ) verify.py: দুই-উৎস আর হুবহু-না পরীক্ষা। না মিললে অ্যাডমিনের তালিকায়।
+"""
+from __future__ import annotations
+
+import json
+import os
+
+from common import CATEGORIES, domain, gemini_json, log, page_text
+
+PICK_MODELS = [m for m in [os.environ.get("NEWS_PICK_MODEL"), "gemini-3.1-flash-lite", "gemini-flash-lite-latest",
+                           "gemini-2.5-flash-lite"] if m]
+WRITE_MODELS = [m for m in [os.environ.get("NEWS_WRITE_MODEL"), "gemini-3.6-flash", "gemini-flash-latest",
+                            "gemini-2.5-flash"] if m]
+MAX_WRITE = int(os.environ.get("NEWS_MAX_WRITE", "22"))     # দিনে সর্বোচ্চ কতটা ঘটনা লেখানো হবে
+
+CAT_LIST = ", ".join(f"{k} ({v})" for k, v in CATEGORIES.items())
+
+PICK_PROMPT = """তুমি বাংলাদেশের বিসিএস ও সরকারি চাকরির পরীক্ষার "সাম্প্রতিক বিষয়" সম্পাদক।
+নিচে আজকের খবরের শিরোনাম (JSON তালিকা; i = ক্রমিক, s = উৎস)।
+
+কাজ:
+1. একই ঘটনার শিরোনামগুলো এক দলে জোড়ো (ভিন্ন ভাষা/উৎস হলেও)।
+2. শুধু রাখো যা পরীক্ষায় আসতে পারে — বিভাগ: {cats}।
+   বাদ: অপরাধ, দুর্ঘটনা, গুজব, তারকা/বিনোদন, দলীয় বক্তৃতা-পাল্টা বক্তৃতা, মতামত-কলাম, আবহাওয়ার রোজকার খবর।
+3. প্রতি দলে "চমক-মান" (score) ১-১০: পরীক্ষায় প্রশ্ন হওয়ার সম্ভাবনা আর গুরুত্ব। নতুন রেকর্ড, প্রথমবার,
+   বড় চুক্তি, সংস্থার প্রধান নিয়োগ, সূচকে বাংলাদেশের অবস্থান, বাজেট/রপ্তানি/রেমিট্যান্সের বড় সংখ্যা = বেশি।
+4. topic = ঘটনার ছোট বাংলা নাম (১০ শব্দের মধ্যে)।
+
+শুধু JSON: {{"groups":[{{"items":[i,...],"topic":"...","category":"<id>","score":n,"region":"bd|intl"}}]}}
+যে দলে মাত্র একটা শিরোনাম, সেটাও দাও (পরে যাচাই হবে)।
+
+শিরোনাম:
+{items}
+"""
+
+WRITE_PROMPT = """তুমি বাংলাদেশের বিসিএস ও সরকারি চাকরিপ্রার্থীদের জন্য "আজকের ঘটনা" লিখছ।
+ঘটনা: {topic}
+নিচে একই ঘটনার কয়েকটা মূল খবরের লেখা (src = ক্রমিক)।
+
+নিয়ম (খুব জরুরি):
+- শুধু এই লেখাগুলোতে যা আছে, তা-ই। নিজের জানা কোনো তথ্য, সংখ্যা বা নাম যোগ করবে না।
+- সম্পূর্ণ নিজের ভাষায়, সহজ প্রমিত বাংলায়। মূল লেখার কোনো বাক্য বা টানা ৬ শব্দ হুবহু নয়।
+- ফাঁপানো শব্দ নয় ("ঐতিহাসিক", "উল্লেখযোগ্য যে", "বহুল আলোচিত")। মতামত নয়, পক্ষ নেওয়া নয়।
+- সংখ্যা বাংলা অঙ্কে। পদবিসহ নাম। বিদেশি নাম বাংলায়, প্রথমবার বন্ধনীতে ইংরেজি।
+- title: ১২ শব্দের মধ্যে। short: ১-২ বাক্য (হোম পাতা)। detail: ৪-৬ বাক্য। why_exam: ১ বাক্য — পরীক্ষায় কোন ধাঁচে আসতে পারে।
+- facts: পরীক্ষার কাজের প্রতিটা নাম, সংখ্যা, তারিখ, স্থান আলাদা সারিতে: label (কী), value (বাংলায় ছোট করে),
+  evidence = যে যে src-এ তথ্যটা আছে, সেখান থেকে হুবহু ছোট উদ্ধৃতি (৩-১৫ শব্দ, মূল ভাষায়, এক অক্ষরও না বদলে)।
+  সংখ্যা থাকলে উদ্ধৃতিতে সেই সংখ্যাটা থাকতে হবে। অন্তত দুটো আলাদা src থেকে উদ্ধৃতি দেওয়ার চেষ্টা করো।
+- title/short/detail/why_exam-এ যে সংখ্যা লিখবে, তা অবশ্যই কোনো fact-এর value-তে থাকবে।
+- category: {cats} থেকে একটা id। score: ১-১০।
+- লেখাগুলো যদি আসলে একই ঘটনা না হয়, বা পরীক্ষার কাজের না হয়: {{"skip": true}}।
+
+শুধু JSON: {{"title":"","short":"","detail":"","why_exam":"","category":"","score":0,"region":"bd|intl",
+ "facts":[{{"label":"","value":"","evidence":[{{"src":0,"quote":""}}]}}]}}
+
+লেখাগুলো:
+{texts}
+"""
+
+
+def group(items: list[dict]) -> list[dict]:
+    rows = [{"i": n, "s": it["src"], "t": it["title"], "d": it["desc"][:160]} for n, it in enumerate(items)]
+    res = gemini_json(PICK_PROMPT.format(cats=CAT_LIST, items=json.dumps(rows, ensure_ascii=False)), PICK_MODELS)
+    groups = []
+    for g in res.get("groups", []):
+        idx = [i for i in g.get("items", []) if isinstance(i, int) and 0 <= i < len(items)]
+        if not idx or g.get("category") not in CATEGORIES:
+            continue
+        groups.append({"members": [items[i] for i in idx], "topic": g.get("topic", ""),
+                       "category": g["category"], "score": int(g.get("score") or 0), "region": g.get("region", "")})
+    groups.sort(key=lambda g: (-g["score"], -len({domain(m["url"]) for m in g["members"]})))
+    return groups
+
+
+def gather_texts(members: list[dict], max_src: int = 4) -> list[dict]:
+    """প্রতিটা প্রতিষ্ঠানের একটা করে পাতা; পাতা না খুললে RSS-এর বিবরণ।"""
+    out, used = [], set()
+    for m in members:
+        d = domain(m["url"])
+        if d in used:
+            continue
+        body = page_text(m["url"]) or ""
+        text = (m["title"] + "\n" + (m["desc"] or "") + "\n" + body).strip()
+        if len(text) < 60:
+            continue
+        used.add(d)
+        out.append({"domain": d, "name": m["src"], "url": m["url"], "title": m["title"], "text": text})
+        if len(out) >= max_src:
+            break
+    return out
+
+
+def write(group_: dict, texts: list[dict]) -> dict | None:
+    block = "\n\n".join(f"[src {n}] {t['name']} — {t['title']}\n{t['text'][:6000]}" for n, t in enumerate(texts))
+    res = gemini_json(WRITE_PROMPT.format(topic=group_["topic"], cats=CAT_LIST, texts=block), WRITE_MODELS)
+    if not isinstance(res, dict) or res.get("skip"):
+        return None
+    if res.get("category") not in CATEGORIES:
+        res["category"] = group_["category"]
+    try:
+        res["score"] = max(1, min(10, int(res.get("score") or group_["score"])))
+    except (TypeError, ValueError):
+        res["score"] = group_["score"]
+    res.setdefault("region", group_.get("region", ""))
+    return res
