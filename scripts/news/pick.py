@@ -17,6 +17,7 @@ PICK_MODELS = [m for m in [os.environ.get("NEWS_PICK_MODEL"), "gemini-3.1-flash-
 WRITE_MODELS = [m for m in [os.environ.get("NEWS_WRITE_MODEL"), "gemini-3.6-flash", "gemini-flash-latest",
                             "gemini-2.5-flash", "gemini-2.5-flash-lite"] if m]
 MAX_WRITE = int(os.environ.get("NEWS_MAX_WRITE", "16"))     # দিনে সর্বোচ্চ কতটা ঘটনা লেখানো হবে
+BATCH = int(os.environ.get("NEWS_BATCH", "4"))              # এক অনুরোধে কতটা ঘটনা (দিনে ২০টা অনুরোধের সীমা)
 
 CAT_LIST = ", ".join(f"{k} ({v})" for k, v in CATEGORIES.items())
 
@@ -42,8 +43,8 @@ PICK_PROMPT = """তুমি বাংলাদেশের বিসিএস 
 """
 
 WRITE_PROMPT = """তুমি বাংলাদেশের বিসিএস ও সরকারি চাকরিপ্রার্থীদের জন্য "আজকের ঘটনা" লিখছ।
-ঘটনা: {topic}
-নিচে একই ঘটনার কয়েকটা মূল খবরের লেখা (src = ক্রমিক)।
+নিচে কয়েকটা ঘটনা ([ঘটনা k]); প্রতিটার নিচে সেই ঘটনার কয়েকটা মূল খবরের লেখা (src = ঘটনার ভেতরের ক্রমিক)।
+প্রতিটা ঘটনা আলাদা করে লেখো; এক ঘটনার তথ্য অন্য ঘটনায় নয়, আর src শুধু সেই ঘটনার ভেতরের।
 
 নিয়ম (খুব জরুরি):
 - শুধু এই লেখাগুলোতে যা আছে, তা-ই। নিজের জানা কোনো তথ্য, সংখ্যা বা নাম যোগ করবে না।
@@ -57,12 +58,12 @@ WRITE_PROMPT = """তুমি বাংলাদেশের বিসিএস
 - title/short/detail/why_exam-এ যে সংখ্যা লিখবে, তা অবশ্যই কোনো fact-এর value-তে থাকবে।
 - category: {cats} থেকে একটা id। score: ১-১০।
 - section: bd (বাংলাদেশ) | intl (আন্তর্জাতিক) | gk (সাধারণ জ্ঞান: রেকর্ড, প্রথমবার, সূচক, পুরস্কার, আবিষ্কার, মহাকাশ-বিজ্ঞান, দিবস, বড় খেলার ফল)।
-- লেখাগুলো যদি আসলে একই ঘটনা না হয়, বা পরীক্ষার কাজের না হয়: {{"skip": true}}।
+- কোনো ঘটনার লেখাগুলো আসলে একই ঘটনা না হলে, বা পরীক্ষার কাজের না হলে: {{"event":k,"skip":true}}।
 
-শুধু JSON: {{"title":"","short":"","detail":"","why_exam":"","category":"","score":0,"section":"bd|intl|gk",
- "facts":[{{"label":"","value":"","evidence":[{{"src":0,"quote":""}}]}}]}}
+শুধু JSON: {{"items":[{{"event":1,"title":"","short":"","detail":"","why_exam":"","category":"","score":0,
+ "section":"bd|intl|gk","facts":[{{"label":"","value":"","evidence":[{{"src":0,"quote":""}}]}}]}}]}}
 
-লেখাগুলো:
+ঘটনাগুলো:
 {texts}
 """
 
@@ -100,11 +101,7 @@ def gather_texts(members: list[dict], max_src: int = 4) -> list[dict]:
     return out
 
 
-def write(group_: dict, texts: list[dict]) -> dict | None:
-    block = "\n\n".join(f"[src {n}] {t['name']} — {t['title']}\n{t['text'][:6000]}" for n, t in enumerate(texts))
-    res = gemini_json(WRITE_PROMPT.format(topic=group_["topic"], cats=CAT_LIST, texts=block), WRITE_MODELS)
-    if not isinstance(res, dict) or res.get("skip"):
-        return None
+def _fix(res: dict, group_: dict) -> dict:
     if res.get("category") not in CATEGORIES:
         res["category"] = group_["category"]
     try:
@@ -114,3 +111,25 @@ def write(group_: dict, texts: list[dict]) -> dict | None:
     if res.get("section") not in SECTIONS:
         res["section"] = group_.get("section", "intl")
     return res
+
+
+def write_batch(jobs: list[tuple[dict, list[dict]]]) -> list[dict | None]:
+    """কয়েকটা ঘটনা এক অনুরোধে। ফেরত: jobs-এর ক্রমে লেখা (বা None = বাদ/পাওয়া যায়নি)।"""
+    blocks = []
+    for k, (g, texts) in enumerate(jobs, 1):
+        srcs = "\n\n".join(f"[src {n}] {t['name']} — {t['title']}\n{t['text'][:3500]}" for n, t in enumerate(texts))
+        blocks.append(f"===== [ঘটনা {k}] {g['topic']} =====\n{srcs}")
+    res = gemini_json(WRITE_PROMPT.format(cats=CAT_LIST, texts="\n\n".join(blocks)), WRITE_MODELS)
+    out: list[dict | None] = [None] * len(jobs)
+    for r in (res.get("items") if isinstance(res, dict) else None) or []:
+        try:
+            k = int(r.get("event")) - 1
+        except (TypeError, ValueError):
+            continue
+        if 0 <= k < len(jobs) and not r.get("skip") and r.get("title"):
+            out[k] = _fix(r, jobs[k][0])
+    return out
+
+
+def write(group_: dict, texts: list[dict]) -> dict | None:
+    return write_batch([(group_, texts)])[0]

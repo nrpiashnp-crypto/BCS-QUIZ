@@ -89,6 +89,23 @@ class Feeds(unittest.TestCase):
         self.assertEqual(common.domain("https://cabinet.gov.bd/a"), "cabinet.gov.bd")
 
 
+class Batch(unittest.TestCase):
+    def test_two_events_one_call(self):
+        calls = []
+
+        def fake(prompt, models, **kw):
+            calls.append(prompt)
+            return {"items": [{"event": 2, "title": "খ", "category": "economy", "score": 7, "section": "bd"},
+                              {"event": 1, "skip": True}]}
+        g = lambda t: {"topic": t, "category": "law", "score": 5, "section": "intl"}
+        txt = [{"name": "ক", "title": "t", "text": "x"}]
+        with mock.patch.object(pick, "gemini_json", side_effect=fake):
+            out = pick.write_batch([(g("এক"), txt), (g("দুই"), txt)])
+        self.assertEqual(len(calls), 1)
+        self.assertIsNone(out[0])
+        self.assertEqual((out[1]["title"], out[1]["section"]), ("খ", "bd"))
+
+
 class Home(unittest.TestCase):
     def test_quota(self):
         mk = lambda sec, sc: {"section": sec, "score": sc, "sources": [1]}
@@ -126,12 +143,13 @@ class EndToEnd(unittest.TestCase):
             if "শিরোনাম (JSON" in prompt:
                 return {"groups": [{"items": [0, 1], "topic": "অক্টোবরের রেমিট্যান্স", "category": "economy",
                                     "score": 8, "section": "bd"}]}
-            return {"title": "অক্টোবরে রেমিট্যান্স ২৮৭ কোটি ডলার", "short": "গত মাসে প্রবাসী আয় ২৮৭ কোটি ডলার।",
+            assert "[ঘটনা 1]" in prompt
+            return {"items": [{"event": 1, "title": "অক্টোবরে রেমিট্যান্স ২৮৭ কোটি ডলার", "short": "গত মাসে প্রবাসী আয় ২৮৭ কোটি ডলার।",
                     "detail": "বাংলাদেশ ব্যাংকের হিসাবে অক্টোবরে প্রবাসী আয় দাঁড়িয়েছে ২৮৭ কোটি ডলারে।",
                     "why_exam": "অর্থনীতির সংখ্যা।", "category": "economy", "score": 8, "section": "bd",
                     "facts": [{"label": "রেমিট্যান্স", "value": "২৮৭ কোটি ডলার",
                                "evidence": [{"src": 0, "quote": "$2.87 billion in October"},
-                                            {"src": 1, "quote": "প্রবাসীরা ২৮৭ কোটি ডলার পাঠিয়েছেন"}]}]}
+                                            {"src": 1, "quote": "প্রবাসীরা ২৮৭ কোটি ডলার পাঠিয়েছেন"}]}]}]}
 
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)

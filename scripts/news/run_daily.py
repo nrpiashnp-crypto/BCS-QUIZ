@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from build import TOP_N, update_index, update_month, write_day  # noqa: E402
 from collect import collect  # noqa: E402
 from common import CALLS, DHAKA, NEWS_DIR, domain, log, now_dhaka, read_json  # noqa: E402
-from pick import MAX_WRITE, gather_texts, group, write  # noqa: E402
+from pick import BATCH, MAX_WRITE, gather_texts, group, write_batch  # noqa: E402
 from verify import check_item  # noqa: E402
 
 MAX_HEADLINES = 350
@@ -59,6 +59,7 @@ def main() -> int:
     for g in single[:10]:
         review.append({"title": g["topic"], "score": g["score"], "why": ["মাত্র একটা উৎসে পাওয়া গেছে"],
                        "links": [m["url"] for m in g["members"]][:3]})
+    ready = []
     for g in multi[:MAX_WRITE]:
         texts = gather_texts(g["members"])
         links = [t["url"] for t in texts] or [m["url"] for m in g["members"]][:3]
@@ -66,25 +67,32 @@ def main() -> int:
             review.append({"title": g["topic"], "score": g["score"], "why": ["দুটো উৎসের পাতা খোলা গেল না"],
                            "links": links})
             continue
+        ready.append((g, texts, links))
+
+    for i in range(0, len(ready), BATCH):
+        chunk = ready[i:i + BATCH]
         try:
-            res = write(g, texts)
+            results = write_batch([(g, t) for g, t, _ in chunk])
         except RuntimeError as e:
             log(f"  লেখা গেল না: {e}")
-            review.append({"title": g["topic"], "score": g["score"], "why": [str(e)[:200]], "links": links})
+            for g, _, links in chunk:
+                review.append({"title": g["topic"], "score": g["score"], "why": [str(e)[:200]], "links": links})
             continue
-        if not res:
-            continue
-        ok, why = check_item(res, texts, allow)
-        used = {texts[ev["src"]]["domain"] for f in res.get("facts", []) for ev in f.get("evidence", [])
-                if isinstance(ev.get("src"), int) and 0 <= ev["src"] < len(texts)}
-        res["sources"] = [{"name": t["name"], "url": t["url"]} for t in texts if t["domain"] in used] or \
-                         [{"name": t["name"], "url": t["url"]} for t in texts]
-        if ok:
-            published.append(res)
-            log(f"  ✓ {res['title']}")
-        else:
-            review.append({"title": res.get("title") or g["topic"], "score": res["score"], "why": why, "links": links})
-            log(f"  → অ্যাডমিন: {res.get('title')} ({why[0]})")
+        for (g, texts, links), res in zip(chunk, results):
+            if not res:
+                continue
+            ok, why = check_item(res, texts, allow)
+            used = {texts[ev["src"]]["domain"] for f in res.get("facts", []) for ev in f.get("evidence", [])
+                    if isinstance(ev.get("src"), int) and 0 <= ev["src"] < len(texts)}
+            res["sources"] = [{"name": t["name"], "url": t["url"]} for t in texts if t["domain"] in used] or \
+                             [{"name": t["name"], "url": t["url"]} for t in texts]
+            if ok:
+                published.append(res)
+                log(f"  ✓ {res['title']}")
+            else:
+                review.append({"title": res.get("title") or g["topic"], "score": res["score"], "why": why,
+                               "links": links})
+                log(f"  → অ্যাডমিন: {res.get('title')} ({why[0]})")
 
     note = "" if len(published) >= TOP_N else f"আজ যাচাই পেরিয়েছে মাত্র {len(published)}টা ঘটনা।"
     if not args.dry_run and published:
