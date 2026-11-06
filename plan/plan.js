@@ -6,8 +6,11 @@
    - পাইলট-ধাঁচের সেট (pb-start, সার্ভারের DIAG_DEF): ভাগ নিজের দিনে খোলে, ভুলে কাটা (নেট নম্বর দেখায়), প্রতিটি উত্তরের পরে
      "নিশ্চিত / আন্দাজ", সব ভাগ শেষে বা report-তারিখে "সমস্যার তালিকা" (ME.rep)। */
 (function(){
-const V=document.getElementById('view'),S=V.dataset.set,NAME=V.dataset.name||'';
-const AS=(/^\d+$/.exec(new URLSearchParams(location.search).get('as')||'')||[''])[0];
+const V=document.getElementById('view'),Q0=new URLSearchParams(location.search),NAME=V.dataset.name||'';
+// রোজকার পরীক্ষা (site-needs.md §৫): ?w=<সপ্তাহ> হলে সেই সপ্তাহের সেট (data-week + সপ্তাহ, যেমন pb-w1), নইলে অবস্থা-যাচাই
+const W=V.dataset.week?(/^([1-9]|1[0-2])$/.exec(Q0.get('w')||'')||[''])[0]:'';
+const S=W?V.dataset.week+W:V.dataset.set,HOME=location.pathname;
+const AS=(/^\d+$/.exec(Q0.get('as')||'')||[''])[0];
 // বিষয়ের ওজনের লেখা: বিসিএসে সিলেবাসের নম্বর, পেট্রোবাংলায় আগের পরীক্ষায় প্রশ্নের ভাগ (data-mk-এ {n})
 const MK=V.dataset.mk||'সিলেবাসে {n} নম্বর';
 const $=id=>document.getElementById(id);
@@ -58,9 +61,9 @@ const rules=()=>`<ul class="rules">
   <li>বই বা কারও সাহায্য নেবেন না। এখন আপনি কোথায় আছেন, সেটা ঠিক জানা গেলেই পড়ার ক্রম ঠিক হবে।</li>
   <li>শুরুতে নেট লাগে, পরে নয়: ভাগের সব প্রশ্ন শুরুতেই ফোনে আসে, মাঝপথে নেট গেলেও পরীক্ষা চলে। উত্তর ফোনে জমে, নেট এলে নিজে থেকেই জমা হয়।</li>
 </ul>`;
-const PL=p=>p.date?'ভাগ '+bn(p.no)+' · '+dday(p.date):'ভাগ '+bn(p.no)+' · '+p.subjects.map(SUB).join(' + ');
+const PL=p=>W&&p.date?dday(p.date)+' · '+(p.title||'পরীক্ষা'):p.date?'ভাগ '+bn(p.no)+' · '+dday(p.date):'ভাগ '+bn(p.no)+' · '+p.subjects.map(SUB).join(' + ');
 const SUB=id=>(((ME&&ME.subjects)||(EX&&EX.subs)||[]).find(s=>s.id===id)||{}).name||id;
-const back='<button class="btn ghost" data-home>← সব ভাগ</button>';
+const back=`<button class="btn ghost" data-home>← ${W?'সপ্তাহের পাতা':'সব ভাগ'}</button>`;
 const wire=()=>V.querySelectorAll('[data-home]').forEach(b=>b.onclick=home);
 
 // ---------- শুরু ----------
@@ -74,7 +77,7 @@ async function home(){
   if(!ME.user)return intro(true);
   // অ্যাডমিন অন্যের রিপোর্ট দেখছেন: শুধু রিপোর্ট, পরীক্ষা নয়
   if(ME.as){if(ME.rep)return problems(true);V.innerHTML='<div class="card">এঁর এখনো কোনো ভাগ শেষ হয়নি।</div>';return}
-  if(!ME.ready)return intro(false);
+  if(!ME.ready)return W?weekSoon():intro(false);
   // সময় শেষ হয়ে গেছে কিন্তু ফল গোনা হয়নি: জমে থাকা উত্তরসহ বন্ধ করা
   const closing=ME.parts.filter(p=>p.st==='closing');
   if(closing.length){for(const p of closing)await sendPart(p.no,true).catch(()=>{});return home()}
@@ -88,7 +91,7 @@ function intro(login){
   <div class="card"><ol class="path">
     <li><b>অবস্থা-যাচাই:</b> ${ME.ready?bn(t.n)+'টি প্রশ্ন, '+bn(ME.parts.length)+' ভাগে, মোট প্রায় '+mins(t.m):'কয়েক ভাগে ভাগ করা পরীক্ষা'}। একেক ভাগ একেক দিনে দেওয়া যায়।</li>
     <li><b>প্রতিটা ভাগের শেষে</b> সেই ভাগের ফল।</li>
-    <li><b>সব ভাগ শেষে</b> বিষয় ধরে আপনার অবস্থা: কোথায় শক্ত, কোথায় ঘাটতি।</li>
+    <li><b>সব ভাগ শেষে</b> বিষয় ধরে আপনার অবস্থা: কোথায় বেশ ভালো, কোথায় ফোকাস করবেন।</li>
     <li><b>পড়ার ক্রম:</b> যেখানে সবচেয়ে বেশি নম্বর বাড়ানো যায়, সেখান থেকে।</li>
   </ol>
   </div>
@@ -96,6 +99,13 @@ function intro(login){
   <div class="card">${rules()}</div>
   ${login?'<div class="card"><p style="margin:0 0 8px">ফল জমা রাখতে Google দিয়ে লগইন করুন। পাসওয়ার্ড লাগে না।</p><div id="g"></div></div>':'<div class="card">এই পরীক্ষার প্রশ্ন এখনো তোলা হয়নি। ততক্ষণ <a href="/exams/">অন্য পরীক্ষা দিন →</a></div>'}`;
   if(login)loginBtn();
+}
+// সপ্তাহের সেট এখনো ওঠেনি: রুটিন থেকে সেই সপ্তাহের দিনগুলো, সঙ্গে "শিগগির"
+async function weekSoon(){
+  const rt=await routine(),L=rt?rt.days.filter(d=>d.week===+W):[];
+  V.innerHTML=`<p><a class="btn ghost" href="${HOME}">← ${esc(NAME)} পাতা</a></p><h1>সপ্তাহ ${bn(W)} · রোজকার পরীক্ষা</h1>
+  <div class="card">এই সপ্তাহের প্রশ্ন এখনো তোলা হয়নি। প্রথম দিনের আগেই খুলবে।</div>
+  ${L.length?'<div class="card">'+L.map(d=>`<div class="day"><div><b>${esc(d.wd)}, ${dday(d.date)}</b> · ${esc(d.title)}<small>${KIND[d.kind]||''}${d.n?' · '+bn(d.n)+' প্রশ্ন, '+bn(d.min)+' মিনিট':''}</small></div></div>`).join('')+'</div>':''}`;
 }
 function loginBtn(){
   fetch('/api/me',{credentials:'same-origin'}).then(r=>r.json()).then(j=>{
@@ -112,15 +122,16 @@ function loginBtn(){
 
 function dash(){
   const t=total(),left=ME.parts.filter(p=>p.st!=='done').reduce((a,p)=>a+p.n,0),done=ME.parts.filter(p=>p.st==='done').length;
-  let h=`<h1>${esc(NAME)} · নিজের পরিকল্পনা</h1>`;
+  let h=W?`<p><a class="btn ghost" href="${HOME}">← ${esc(NAME)} পাতা</a></p><h1>সপ্তাহ ${bn(W)} · রোজকার পরীক্ষা</h1>`:`<h1>${esc(NAME)} · নিজের পরিকল্পনা</h1>`;
+  if(V.dataset.routine)h+='<div id="today"></div>';
   const msgs=(ME.msgs||[]).filter(x=>!x.seen||Date.now()-x.seen<3*864e5);
   if(msgs.length)h+=msgs.map(x=>`<div class="card msg"><b>লিয়ানা বুকস থেকে</b><p>${esc(x.text).replace(/\n/g,'<br>')}</p></div>`).join('');
   const unseen=(ME.msgs||[]).filter(x=>!x.seen).map(x=>x.id);if(unseen.length)api('seen',{ids:unseen}).catch(()=>{});
-  if(V.dataset.routine)h+=`<div class="card ex"><div><b>${bn(62)} দিনের রুটিন</b><small>কোন দিন কী, আপনার কোনটা দেওয়া, কোনটা বাকি</small></div><button class="btn ghost" id="rt">রুটিন</button></div>`;
+  if(V.dataset.routine&&!W)h+=`<div class="card ex"><div><b>${bn(62)} দিনের রুটিন</b><small>কোন দিন কী, আপনার কোনটা দেওয়া, কোনটা বাকি</small></div><button class="btn ghost" id="rt">রুটিন</button></div>`;
   if(ME.rep)h+=`<div class="card ex"><div><b>আপনার সমস্যার তালিকা</b><small>${ME.all?'সব ভাগ থেকে':bn(ME.rep.doneParts)+' ভাগ থেকে'}: কোথায় ঘাটতি, আন্দাজে কত গেল</small></div><button class="btn" id="st">দেখুন</button></div>`;
-  else if(ME.all)h+=`<div class="card ex"><div><b>আপনার কার্ড তৈরি</b><small>বিষয় ধরে অবস্থা আর পড়ার ক্রম</small></div><button class="btn" id="st">দেখুন</button></div>`;
-  if(!ME.all)h+=`<div class="card"><b>${bn(ME.parts.length)} ভাগের ${bn(done)}টি শেষ</b><div class="prog"><i style="width:${Math.round((t.n-left)/t.n*100)}%"></i></div><span class="dim">${bn(t.n)}-এর মধ্যে ${bn(left)}টি প্রশ্ন বাকি</span></div>`;
-  h+='<h2>ভাগগুলো</h2>'+ME.parts.map(p=>{
+  else if(ME.all&&!W)h+=`<div class="card ex"><div><b>আপনার কার্ড তৈরি</b><small>বিষয় ধরে অবস্থা আর পড়ার ক্রম</small></div><button class="btn" id="st">দেখুন</button></div>`;
+  if(!ME.all&&!W)h+=`<div class="card"><b>${bn(ME.parts.length)} ভাগের ${bn(done)}টি শেষ</b><div class="prog"><i style="width:${Math.round((t.n-left)/t.n*100)}%"></i></div><span class="dim">${bn(t.n)}-এর মধ্যে ${bn(left)}টি প্রশ্ন বাকি</span></div>`;
+  h+=(W?'<h2>এই সপ্তাহের পরীক্ষা</h2>':'<h2>ভাগগুলো</h2>')+ME.parts.map(p=>{
     let right,info=`${bn(p.n)}টি প্রশ্ন · ${bn(p.mins)} মিনিট`;
     if(p.st==='locked')right=`<span class="st">${dday(p.date)} খুলবে</span>`;
     else if(p.st==='todo')right=`<button class="btn" data-go="${p.no}">শুরু করুন</button>`;
@@ -132,7 +143,19 @@ function dash(){
   V.querySelectorAll('[data-rs]').forEach(b=>b.onclick=()=>result((ME.parts.find(p=>p.no===+b.dataset.rs)||{}).res));
   if($('st'))$('st').onclick=()=>status(false);
   if($('rt'))$('rt').onclick=routineView;
+  if($('today'))todayCard();
   scrollTo(0,0);
+}
+// আজকের কাজ (§৫): রুটিনের আজকের দিন। পড়া/রিভিশন/মডেলের দিনে শিট আর সেই সপ্তাহের পরীক্ষার পথ; অবস্থা-যাচাইয়ের দিনে কিছু নয় (ভাগ নিচেই)
+async function todayCard(){
+  const rt=await routine(),el=$('today');if(!rt||!el)return;
+  const today=ME.today,d=rt.days.find(x=>x.date===today);if(!d||d.kind==='diag')return;
+  if(d.kind==='rest'){el.innerHTML=`<div class="card"><b>আজ বিশ্রাম</b><small class="dim" style="display:block">কাল থেকে আবার।</small></div>`;return}
+  if(d.kind==='result')return;
+  const wk=d.week&&!(W&&+W===d.week)?`<a class="btn" href="${HOME}?w=${d.week}">আজকের পরীক্ষা</a>`:'';
+  el.innerHTML=`<div class="card today"><small class="dim">আজকের কাজ · ${esc(d.wd)}, ${dday(d.date)}</small><b style="display:block">${esc(d.title)}</b>
+    ${d.sheet?`<p style="margin:4px 0">১. শিট: ${esc(rt.sheets[d.sheet]||d.sheet)} <span class="dim">· শিগগির আসছে</span></p>`:''}
+    ${d.n?`<p style="margin:4px 0">${d.sheet?'২. ':''}পরীক্ষা: ${bn(d.n)} প্রশ্ন, ${bn(d.min)} মিনিট</p>`:''}${wk}</div>`;
 }
 
 // ---------- রুটিন (site-needs.md §৪): plan.json-এর ৬২ দিন, সপ্তাহ ধরে ভাঁজ, আজকের সপ্তাহ খোলা ----------
@@ -148,7 +171,8 @@ async function routineView(){
     if(d.kind==='diag'){const p=PD.get(d.date);if(!p)return '';return p.st==='done'?'<span class="st ok">দেওয়া ✓</span>':p.st==='locked'?'<span class="st">খুলবে</span>':`<button class="btn" data-go="${p.no}">${p.st==='going'?'চালিয়ে যান':'দিন'}</button>`}
     if(d.kind==='result')return ME.rep?'<button class="btn ghost" data-st>দেখুন</button>':'<span class="st">'+(d.date>today?'আসবে':'সব ভাগ শেষে')+'</span>';
     if(d.kind==='rest')return '';
-    return `<span class="st">${d.date<today?'বাকি':d.date===today?'আজ':'শিগগির'}</span>`};
+    if(d.week&&d.date<=today)return `<a class="btn${d.date===today?'':' ghost'}" href="${HOME}?w=${d.week}">${d.date===today?'আজ':'দিন'}</a>`;
+    return `<span class="st">শিগগির</span>`};
   const sheet=d=>d.sheet?`<small>শিট: ${esc(rt.sheets[d.sheet]||d.sheet)}${d.sheet_new?' · নতুন':''} · শিগগির আসছে</small>`:'';
   let h=back+`<h1 style="margin-top:12px">${esc(NAME)} · ${bn(rt.days.length)} দিনের রুটিন</h1><p class="sub">${dday(rt.start)} থেকে ${dday(rt.end)}। শনি-বৃহস্পতি রোজ একটি পড়া ও ${bn(30)} প্রশ্নের পরীক্ষা, শুক্রবার রিভিশন।</p>`;
   for(const [k,L] of G){const open=L.some(d=>d.date===today)||(k==='অবস্থা-যাচাই'&&today<L[0].date);
@@ -262,38 +286,64 @@ async function finish(){
 
 // ---------- ফল ----------
 // PLAN.md §৫: লজ্জা নয়; নম্বর সত্যি, সঙ্গে পরের এক ধাপ
-const LINE={strong:'এই বিষয়ে আপনি শক্ত। এখানে কম সময়, অন্য বিষয়ে বেশি।',
+const LINE={strong:'এই বিষয়ে আপনি বেশ ভালো। এখানে কম সময়, অন্য বিষয়ে বেশি।',
   mid:'ভিত্তি আছে। কয়েকটা টপিক গোছালেই নম্বর উঠবে।',
   focus:'এখানেই সবচেয়ে বেশি নম্বর বাড়ানোর সুযোগ। পড়া শুরু এখান থেকে।'};
 const band=x=>{if(!x.n)return null;const p=x.ok/x.n*100;return p<40?'focus':p<70?'mid':'strong'};
 function result(res){
   if(!res)return home();
   const left=ME.parts.filter(p=>p.st!=='done'&&p.no!==res.part).length;
-  if(!left&&ME.status)return status(true);
-  let h=`${back}<h1 style="margin-top:12px">ভাগ ${bn(res.part)}-এর ফল</h1>`;
+  if(!left&&ME.status&&!W)return status(true);
+  const rp=ME.parts.find(p=>p.no===res.part)||{};
+  let h=`${back}<h1 style="margin-top:12px">${W&&rp.date?esc(dday(rp.date)+' · '+(rp.title||'পরীক্ষা'))+': ফল':'ভাগ '+bn(res.part)+'-এর ফল'}</h1>`;
   if(res.net!=null)h+=`<div class="card"><b>নম্বর: ${bn(res.n)}-এর মধ্যে ${nb(res.net)}</b><div class="sub" style="margin:2px 0 0">${bn(res.ok)}টি ঠিক, ${bn(res.no)}টি ভুল, ${bn(res.skip)}টি বাদ${res.no?` · ভুলের জন্য কাটা গেছে ${nb(res.no*res.neg)}`:''}</div></div>`;
+  h+='<div id="rk"></div>';
   h+=Object.entries(res.by).map(([sid,x])=>{const b=band(x);
     return `<div class="card"><b>${esc(SUB(sid))}</b>: ${bn(x.n)}টির মধ্যে ${bn(x.ok)}টি ঠিক<div class="sub" style="margin:2px 0 0">${bn(x.no)}টি ভুল, ${bn(x.skip)}টি বাদ</div>${b&&LINE[b]?`<p style="margin:6px 0 0">${LINE[b]}</p>`:''}</div>`}).join('');
-  h+=left?`<div class="card ex"><div><b>আরও ${bn(left)} ভাগ বাকি</b><small>সব শেষে আপনার কার্ড</small></div><button class="btn" data-home>পরের ভাগ</button></div>`
+  h+=W?`<div class="card ex"><div><b>${left?'এই সপ্তাহে আরও '+bn(left)+'টি পরীক্ষা':'এই সপ্তাহের সব পরীক্ষা শেষ'}</b><small>${left?'যেদিনেরটা সেদিন খোলে':'শুক্রবারের রিভিশনসহ'}</small></div><button class="btn ghost" data-home>সপ্তাহের পাতা</button></div>`
+    :left?`<div class="card ex"><div><b>আরও ${bn(left)} ভাগ বাকি</b><small>সব শেষে আপনার কার্ড</small></div><button class="btn" data-home>পরের ভাগ</button></div>`
     :`<div class="card ex"><div><b>সব ভাগ শেষ</b><small>আপনার কার্ড তৈরি</small></div><button class="btn" id="st">দেখুন</button></div>`;
   h+=`<details id="rv"><summary>ভুলগুলো, ব্যাখ্যাসহ</summary><div id="rvb"><p class="dim">লোড হচ্ছে…</p></div></details>`;
+  // রাতের ছোট মতামত (§৬): দিনের পরীক্ষায় (ভাগে তারিখ), একবার; গুগল ফর্ম নয়, অ্যাকাউন্টের সঙ্গে জোড়া
+  const pp=ME.parts.find(p=>p.no===res.part)||{};
+  if(pp.date&&!(ME.fb||[]).includes(res.part))h+=fbForm();
   V.innerHTML=h;wire();
+  rank(res.part);if($('fbf'))fbWire(res.part);
   if($('st'))$('st').onclick=()=>status(false);
   $('rv').addEventListener('toggle',()=>{if($('rv').open&&!$('rv').dataset.ok)review(res.part)});
   scrollTo(0,0);
+}
+// এই ভাগ যাঁরা শেষ করেছেন তাঁদের মধ্যে অবস্থান (§৭); দুজনের কম হলে দেখানো নয়
+async function rank(no){
+  try{const r=await api('rank?s='+encodeURIComponent(S)+'&part='+no);if(r.n<2||!$('rk'))return;
+    $('rk').innerHTML=`<div class="card"><b>এই পরীক্ষা দিয়েছেন ${bn(r.n)} জন, আপনি ${bn(r.pos)}-তম</b><div class="sub" style="margin:2px 0 0">সবচেয়ে বেশি ${nb(r.top)} · গড় ${nb(r.avg)}</div></div>`}catch(e){}
+}
+const EASE=['সহজ','ঠিকঠাক','কঠিন'],STUDY=['পড়িনি','৩০ মিনিটের কম','৩০-৬০ মিনিট','১-২ ঘণ্টা','২ ঘণ্টার বেশি'];
+const fbForm=()=>`<div class="card fb" id="fbf"><b>আজকের ছোট মতামত</b> <span class="dim">· ৩০ সেকেন্ড</span>
+  <p class="hint" style="margin:10px 0 4px">আজকের পরীক্ষা কেমন লাগল?</p><div class="conf" data-k="ease">${EASE.map((t,i)=>`<button type="button" data-v="${i+1}">${t}</button>`).join('')}</div>
+  <p class="hint" style="margin:10px 0 4px">আজ শিট বা পড়ায় কতক্ষণ দিয়েছেন?</p><div class="conf wrapc" data-k="mins">${STUDY.map((t,i)=>`<button type="button" data-v="${i}">${t}</button>`).join('')}</div>
+  <p class="hint" style="margin:10px 0 4px">কোথাও আটকেছেন বা কিছু বলার? (ইচ্ছে হলে)</p><textarea id="fbt" maxlength="1000" rows="3"></textarea>
+  <div class="row" style="margin-top:8px"><button class="btn" id="fbs">পাঠান</button><span id="fbo" class="dim"></span></div></div>`;
+function fbWire(no){
+  const F={};$('fbf').querySelectorAll('.conf').forEach(g=>g.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    g.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false'));F[g.dataset.k]=+b.dataset.v}));
+  $('fbs').onclick=async()=>{const txt=$('fbt').value.trim();if(F.ease==null&&F.mins==null&&!txt){$('fbo').textContent='একটা কিছু বাছুন বা লিখুন।';return}
+    $('fbs').disabled=true;
+    try{await api('fb',{part:no,ease:F.ease,mins:F.mins,txt});ME.fb=(ME.fb||[]).concat(no);$('fbf').innerHTML='<b>ধন্যবাদ।</b> <span class="dim">কাল আবার দেখা হবে।</span>'}
+    catch(e){$('fbo').textContent='পাঠানো যায়নি, আবার চেষ্টা করুন।';$('fbs').disabled=false}};
 }
 async function review(no){
   let r;try{r=await api('review?s='+encodeURIComponent(S)+'&part='+no)}catch(e){$('rvb').innerHTML='<p class="dim">খোলা যায়নি।</p>';return}
   $('rv').dataset.ok=1;
   const wrong=r.qs.filter(q=>q.pick!==q.a),ok=r.qs.filter(q=>q.pick===q.a);
   window.LBQ=window.LBQ||{};for(const q of r.qs)if(q.id)LBQ[q.id]=q; // js/report.js এখান থেকে ব্যাখ্যার ছাপ (ev) নেয়
-  const card=q=>`<div class="card rv"${q.id?` data-id="${esc(q.id)}"`:''}><div class="qh"><span>${esc(SUB(q.s))}</span><span>${q.pick<0?'বাদ':q.pick===q.a?'ঠিক':'ভুল'}</span></div><div class="qt">${rich(q.q)}</div>${q.o.map((o,k)=>`<div class="opt${k===q.a?' right':k===q.pick?' wrong':''}"><span class="k">${K[k]}</span><span>${rich(o)}</span></div>`).join('')}${q.e?`<div class="exp">${md(q.e)}</div>`:''}</div>`;
+  const card=q=>`<div class="card rv"${q.id?` data-id="${esc(q.id)}"`:''}><div class="qh"><span>${esc(SUB(q.s))}</span><span>${q.pick<0?'বাদ':q.pick===q.a?'ঠিক':'ভুল'}</span></div><div class="qt">${rich(q.q)}</div>${q.o.map((o,k)=>`<div class="opt${k===q.a?' right':k===q.pick?' wrong':''}"><span class="k">${K[k]}</span><span>${rich(o)}</span></div>`).join('')}${q.e?`<div class="exp">${md(q.e)}${q.ref?`<p class="src">তথ্যসূত্র: ${esc(q.ref)}</p>`:''}</div>`:''}</div>`;
   $('rvb').innerHTML=(wrong.length?wrong.map(card).join(''):'<p>এই ভাগে কোনো ভুল নেই।</p>')+(ok.length?`<details><summary>ঠিকগুলো (${bn(ok.length)})</summary>${ok.map(card).join('')}</details>`:'');
   if(window.LBMath)try{LBMath(V)}catch(e){}
 }
 
 // ---------- সব ভাগ শেষে: বিষয়ের চিত্র আর পরিকল্পনা ----------
-const BL={strong:'শক্ত',mid:'মাঝামাঝি',focus:'এখন ফোকাস'};
+const BL={strong:'বেশ ভালো',mid:'মাঝারি',focus:'একটু ভালো করতে হবে!'};
 const first=()=>((ME.user&&ME.user.name)||'').trim().split(/\s+/)[0]||'';
 function status(fresh){
   if(ME.rep)return problems(fresh);
@@ -318,13 +368,13 @@ function status(fresh){
 }
 
 // ---------- সমস্যার তালিকা (পাইলট, site-needs.md §৩): লজ্জা নয়, সত্যি সংখ্যা আর কোথায় পড়তে হবে ----------
-const RB={weak:'এখন ফোকাস',mid:'মাঝারি',strong:'শক্ত'},RC={weak:'focus',mid:'mid',strong:'strong'};
+const RB={weak:'একটু ভালো করতে হবে!',mid:'মাঝারি',strong:'বেশ ভালো'},RC={weak:'focus',mid:'mid',strong:'strong'};
 const WD=['রবি','সোম','মঙ্গল','বুধ','বৃহস্পতি','শুক্র','শনি'];
 const pc=(a,b)=>b?Math.round(a/b*100):0;
 // রুটিন (plan/pb/routine.json, LY Course-এর plan.json থেকে কাটা): শুধু রিপোর্ট বা রুটিন খুললে নামে
 let RT=null;
 const routine=async()=>{if(RT)return RT;try{const r=await fetch(location.pathname.replace(/[^/]*$/,'')+'routine.json',{cache:'no-cache'});if(r.ok)RT=await r.json()}catch(e){}return RT};
-// এখন ফোকাসের টপিক: ঠিকের হার সবচেয়ে কম, অন্তত ৪টি প্রশ্ন থেকে (কম প্রশ্নে এক-দুটো ভুলেই হার নেমে যায়)
+// কোথায় ফোকাস করবেন (টপিক): ঠিকের হার সবচেয়ে কম, অন্তত ৪টি প্রশ্ন থেকে (কম প্রশ্নে এক-দুটো ভুলেই হার নেমে যায়)
 const focusList=R=>R.clusters.filter(x=>x.n>=4&&x.band==='weak').slice(0,5);
 // একটা টপিক রুটিনের কোন কোন দিনে পড়ানো হবে
 const daysOf=id=>RT?RT.days.filter(d=>d.cluster===id&&d.kind==='study'):[];
@@ -351,15 +401,15 @@ function problems(fresh){
   let h=fresh||ME.as?'':back;
   if(ME.as)h+=`<div class="card note no-print"><b>অ্যাডমিন দেখা:</b> ${esc(ME.user&&ME.user.name)}-এর রিপোর্ট, তাঁর চোখে যেমন। ${ME.note&&!ME.note.pub?'পরামর্শ এখনো প্রকাশ হয়নি, শুধু আপনি দেখছেন।':''}</div>`;
   h+=`<div class="hello"><h1>${R.doneParts===R.parts?'অভিনন্দন'+(nm?', '+esc(nm):'')+'।':'আপনার সমস্যার তালিকা'}</h1>
-    <p>${bn(R.doneParts)} ভাগের ${bn(T.n)}টি প্রশ্ন থেকে। নিচে কোথায় ঘাটতি, কোথায় আন্দাজে নম্বর গেল। এই তালিকা ধরেই সামনের পড়া সাজানো হবে।</p>
+    <p>${bn(R.doneParts)} ভাগের ${bn(T.n)}টি প্রশ্ন থেকে। নিচে কোথায় ফোকাস করবেন, কোথায় আন্দাজে নম্বর গেল। এই তালিকা ধরেই সামনের পড়া সাজানো হবে।</p>
     ${R.doneParts<R.parts?`<p class="dim" style="margin:0">বাকি ${bn(R.parts-R.doneParts)} ভাগ দিলে তালিকা পুরো হবে।</p>`:''}</div>`;
   h+=`<div class="card"><div class="row"><button class="btn" id="rcard">রেজাল্ট কার্ড</button><button class="btn ghost" id="rfull">বিস্তারিত রিপোর্ট · PDF</button></div><div id="cimg" style="margin-top:10px"></div></div>`;
   if(ME.note)h+=`<div class="card msg"><b>লিয়ানা বুকস থেকে আপনার জন্য</b><p>${esc(ME.note.txt).replace(/\n/g,'<br>')}</p></div>`;
   h+=`<div class="card"><b>মোট নম্বর: ${bn(T.n)}-এর মধ্যে ${T.net!=null?nb(T.net):bn(T.ok)}</b><div class="sub" style="margin:2px 0 0">${bn(T.ok)}টি ঠিক, ${bn(T.no)}টি ভুল, ${bn(T.skip)}টি বাদ</div></div>`;
   h+=`<h2>বিষয় ধরে</h2><div class="card"><table><thead><tr><th>বিষয়</th><th>ঠিক</th><th>অবস্থা</th></tr></thead><tbody>${R.subjects.map(row).join('')}</tbody></table>
-    <p class="sub" style="margin:8px 0 0">${bn(lo)}%-এর কম: এখন ফোকাস · ${bn(lo)}-${bn(hi)}%: মাঝারি · ${bn(hi)}%-এর বেশি: শক্ত</p></div>`;
+    <p class="sub" style="margin:8px 0 0">${bn(lo)}%-এর কম: একটু ভালো করতে হবে! · ${bn(lo)}-${bn(hi)}%: মাঝারি · ${bn(hi)}%-এর বেশি: বেশ ভালো</p></div>`;
   const cl=R.clusters.filter(x=>x.n),top=focusList(R);
-  if(cl.length){h+=`<h2>যে টপিকে বেশি ঘাটতি</h2><div class="card" id="ftop">${top.length?`<ol class="plan">${top.map(x=>`<li>${esc(x.name)} <span class="dim">· ${bn(x.n)}-এ ${bn(x.ok)}</span><span class="rd" data-c="${esc(x.id)}"></span></li>`).join('')}</ol>`:'<p style="margin:0">কোনো টপিকে বড় ঘাটতি নেই।</p>'}
+  if(cl.length){h+=`<h2>কোথায় ফোকাস করবেন</h2><div class="card" id="ftop">${top.length?`<ol class="plan">${top.map(x=>`<li>${esc(x.name)} <span class="dim">· ${bn(x.n)}-এ ${bn(x.ok)}</span><span class="rd" data-c="${esc(x.id)}"></span></li>`).join('')}</ol>`:'<p style="margin:0">কোনো টপিকে বড় ঘাটতি নেই।</p>'}
     <details><summary>সব টপিক (${bn(cl.length)})</summary><table><tbody>${cl.map(row).join('')}</tbody></table></details></div>`}
   const gi=guessInfo(R),lines=gi?gi.lines.slice():[];
   if(R.none)lines.push(`যেসব প্রশ্নে ঠিক উত্তর ছিল "কোনোটিই নয়", সেখানে ${bn(R.none.n)}টির মধ্যে ${bn(R.none.ok)}টি ঠিক।`);
@@ -394,9 +444,9 @@ async function fullReport(){
     <div><span>ঠিক · ভুল · বাদ</span><b>${bn(T.ok)} · ${bn(T.no)} · ${bn(T.skip)}</b><small>ঠিকের হার ${bn(T.pct)}%</small></div>
     <div><span>আন্দাজ থেকে নিট</span><b>${gi&&gi.n?(gi.net>=0?'+':'−')+nb(Math.abs(gi.net)):'—'}</b><small>${gi&&gi.n?bn(gi.n)+'টি আন্দাজ':''}</small></div>
   </section>
-  <p class="rp-p">${bn(R.doneParts)} দিনের ${bn(T.n)}টি প্রশ্নের উত্তর থেকে এই রিপোর্ট। ${strong.length?'শক্ত দিক: <b>'+strong.map(x=>esc(x.name)).join(', ')+'</b>। ':''}${top.length?'এখন সবচেয়ে বেশি মন দিতে হবে: <b>'+top.slice(0,3).map(x=>esc(x.name)).join('; ')+'</b>।':''}</p>
+  <p class="rp-p">${bn(R.doneParts)} দিনের ${bn(T.n)}টি প্রশ্নের উত্তর থেকে এই রিপোর্ট। ${strong.length?'যেখানে বেশ ভালো: <b>'+strong.map(x=>esc(x.name)).join(', ')+'</b>। ':''}${top.length?'কোথায় ফোকাস করবেন: <b>'+top.slice(0,3).map(x=>esc(x.name)).join('; ')+'</b>।':''}</p>
   <h2>১. বিষয় ধরে</h2><table class="rp-t">${thead('বিষয়')}<tbody>${R.subjects.map(trow).join('')}</tbody></table>
-  <p class="rp-n">${bn(lo(R))}%-এর কম ঠিক: এখন ফোকাস · ${bn(lo(R))}-${bn(R.bands[1])}%: মাঝারি · ${bn(R.bands[1])}%-এর বেশি: শক্ত। নম্বর = ঠিক − ভুল × ${nb(R.neg||0)}।</p>
+  <p class="rp-n">${bn(lo(R))}%-এর কম ঠিক: একটু ভালো করতে হবে! · ${bn(lo(R))}-${bn(R.bands[1])}%: মাঝারি · ${bn(R.bands[1])}%-এর বেশি: বেশ ভালো। নম্বর = ঠিক − ভুল × ${nb(R.neg||0)}।</p>
   <h2>২. টপিক ধরে</h2><table class="rp-t">${thead('টপিক')}<tbody>${R.clusters.filter(x=>x.n).map(trow).join('')}</tbody></table>
   <p class="rp-n">চার-পাঁচটির কম প্রশ্নের টপিকে হার শুধু ধারণা; শেষ যাচাইয়ে আবার মাপা হবে।</p>
   <h2>৩. ভুলের ধরন</h2><ul class="rp-l">${(gi?gi.lines:[]).map(x=>`<li>${x}</li>`).join('')}
@@ -407,10 +457,10 @@ async function fullReport(){
   ${R.days.length>1?`<h2>৪. দিন ধরে</h2><table class="rp-t"><thead><tr><th>দিন</th><th>নম্বর</th><th>ঠিক</th><th>ভুল</th><th>বাদ</th><th>ঠিক %</th></tr></thead><tbody>${R.days.map(x=>`<tr><td>${x.date?dday(x.date):'ভাগ '+bn(x.part)}</td><td>${x.net!=null?nb(x.net):bn(x.ok)} / ${bn(x.n)}</td><td>${bn(x.ok)}</td><td>${bn(x.no)}</td><td>${bn(x.skip)}</td><td>${bn(x.pct)}%</td></tr>`).join('')}</tbody></table>`:''}
   <h2>${R.days.length>1?'৫':'৪'}. সামনের পরিকল্পনা</h2>`;
   if(top.length)h+=`<p class="rp-p">রুটিনে এই টপিকগুলো যেদিন পড়ানো হবে, সেদিন বাদ দেবেন না। আগে শিট, তারপর পরীক্ষা; শুক্রবারের রিভিশনে আবার আসবে।</p>
-    <table class="rp-t"><thead><tr><th>এখন ফোকাস</th><th>এখন</th><th>রুটিনে কবে</th></tr></thead><tbody>${top.map(x=>{const L=daysOf(x.id);
+    <table class="rp-t"><thead><tr><th>কোথায় ফোকাস করবেন</th><th>এখন</th><th>রুটিনে কবে</th></tr></thead><tbody>${top.map(x=>{const L=daysOf(x.id);
       return `<tr><td>${esc(x.name)}</td><td>${bn(x.n)}-এ ${bn(x.ok)}</td><td>${L.length?L.map(d=>dday(d.date)+' ('+esc(d.wd||'')+')').join(', '):'মডেল টেস্টে'}</td></tr>`}).join('')}</tbody></table>`;
   const tips=[];
-  if(mid.length)tips.push(`মাঝারি বিষয় (${mid.map(x=>esc(x.name)).join(', ')}): রোজকার পরীক্ষায় ভুলগুলোর ব্যাখ্যা পড়ে নিলেই দ্রুত শক্ত হবে।`);
+  if(mid.length)tips.push(`মাঝারি বিষয় (${mid.map(x=>esc(x.name)).join(', ')}): রোজকার পরীক্ষায় ভুলগুলোর ব্যাখ্যা পড়ে নিলেই দ্রুত বেশ ভালো হবে।`);
   if(gi&&gi.n>=8&&gi.net<0)tips.push('রোজকার পরীক্ষায় অচেনা প্রশ্ন বাদ দেওয়ার অভ্যাস করুন; এতে কাটা নম্বর কমবে।');
   if(sw.length)tips.push('"নিশ্চিত" বলে ভুল হওয়া টপিকে নিজের নোট মিলিয়ে নিন; ভুল তথ্য মনে থাকলে পরীক্ষায় সবচেয়ে বেশি ক্ষতি।');
   tips.push('৮ জানুয়ারির শেষ যাচাই এই একই ধাঁচে; তখন এই রিপোর্টের সঙ্গে পাশাপাশি মিলিয়ে দেখানো হবে কতটা এগোলেন।');
@@ -423,8 +473,8 @@ async function fullReport(){
 }
 const lo=R=>R.bands[0];
 
-// রেজাল্ট কার্ড ১০৮০×১৩৫০ (ফোনে রাখা/শেয়ারের জন্য)। শেয়ারের কার্ডে আগের সিদ্ধান্ত মেনে নম্বর, শতাংশ, র‍্যাঙ্ক আর "দুর্বল" শব্দ নেই:
-// বিষয়ের বার তিন রঙে, শক্ত দিক, এখন ফোকাসের টপিক। নম্বরসহ পুরো হিসাব রিপোর্টে (PDF)।
+// রেজাল্ট কার্ড ১০৮০×১৩৫০ (ফোনে রাখা/শেয়ারের জন্য): মোট নম্বর (PIASH ৬/১১), বিষয়ের বার তিন রঙে (সংখ্যা ছাড়া),
+// "যেখানে বেশ ভালো", "কোথায় ফোকাস করবেন"। শতাংশ, র‍্যাঙ্ক আর "দুর্বল" শব্দ নেই; পুরো হিসাব রিপোর্টে (PDF)।
 async function resCard(R,nm){
   try{await Promise.all(['600 60px "Tiro Bangla"','400 34px "Noto Sans Bengali"','600 34px "Noto Sans Bengali"'].map(f=>document.fonts.load(f,'অআকখ')))}catch(e){}
   const W=1080,H=1350,c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');
@@ -437,19 +487,24 @@ async function resCard(R,nm){
   const d=new Date(Date.now()+6*36e5);
   g.fillText(((nm||'').slice(0,22)?(nm||'').slice(0,22)+' · ':'')+NAME+' পাইলট ব্যাচ',80,186);
   g.fillText(bn(R.doneParts)+' দিনে '+bn(R.total.n)+' প্রশ্ন · '+bn(d.getUTCDate())+' '+MON[d.getUTCMonth()],80,232);
-  let y=340;
-  g.fillStyle=MUTED;g.font='600 30px "Noto Sans Bengali"';g.fillText('বিষয় ধরে',80,y);y+=40;
+  // মোট নম্বর: বড় করে, ভুলে কাটার পরে
+  let y=350;const T=R.total;
+  g.fillStyle=MUTED;g.font='600 30px "Noto Sans Bengali"';g.fillText('মোট নম্বর',80,y);
+  const tv=T.net!=null?nb(T.net):bn(T.ok);g.fillStyle=NAVY;g.font='600 76px "Tiro Bangla"';g.fillText(tv,330,y+14);const tw=g.measureText(tv).width;
+  g.fillStyle=MUTED;g.font='400 34px "Noto Sans Bengali"';g.fillText('/ '+bn(T.n),330+tw+16,y+14);
+  y+=80;
+  g.fillStyle=MUTED;g.font='600 30px "Noto Sans Bengali"';g.fillText('বিষয় ধরে',80,y);y+=36;
   const bx=440,bw=560;
-  for(const x of R.subjects){g.fillStyle=INK;g.font='400 34px "Noto Sans Bengali"';g.fillText(x.name,80,y+30);
-    g.fillStyle='#ece5d8';g.fillRect(bx,y,bw,34);g.fillStyle=COL[x.band];g.fillRect(bx,y,Math.round(bw*LEN[x.band]),34);y+=64}
-  g.font='400 26px "Noto Sans Bengali"';let lx=80;y+=6;
+  for(const x of R.subjects){g.fillStyle=INK;g.font='400 32px "Noto Sans Bengali"';g.fillText(x.name,80,y+28);
+    g.fillStyle='#ece5d8';g.fillRect(bx,y,bw,30);g.fillStyle=COL[x.band];g.fillRect(bx,y,Math.round(bw*LEN[x.band]),30);y+=54}
+  g.font='400 26px "Noto Sans Bengali"';let lx=80;y+=24;
   for(const k of ['strong','mid','weak']){g.fillStyle=COL[k];g.fillRect(lx,y-20,22,22);g.fillStyle=MUTED;g.fillText(RB[k],lx+32,y);lx+=g.measureText(RB[k]).width+80}
-  y+=70;
+  y+=62;
   const wrap=(t,x0,size,col,font)=>{g.fillStyle=col;g.font=font+' '+size+'px "Noto Sans Bengali"';let x=x0;for(const w of t.split(' ')){const ww=g.measureText(w+' ').width;if(x+ww>W-80){y+=size*1.45;x=80}g.fillText(w,x,y);x+=ww}y+=size*1.8};
   const strong=R.subjects.filter(x=>x.band==='strong').map(x=>x.name),top=focusList(R).slice(0,3).map(x=>x.name);
-  if(strong.length){g.fillStyle='#1e7a46';g.font='600 34px "Noto Sans Bengali"';g.fillText('শক্ত দিক',80,y);y+=50;wrap(strong.join(', '),80,34,INK,'400')}
-  if(top.length&&y<H-330){g.fillStyle=PINK;g.font='600 34px "Noto Sans Bengali"';g.fillText('এখন ফোকাস',80,y);y+=50;
-    for(const t of top){if(y>H-260)break;wrap('• '+t,80,32,INK,'400');y-=14}}
+  if(strong.length){g.fillStyle='#1e7a46';g.font='600 34px "Noto Sans Bengali"';g.fillText('যেখানে বেশ ভালো',80,y);y+=50;wrap(strong.join(', '),80,34,INK,'400')}
+  if(top.length&&y<H-300){g.fillStyle=PINK;g.font='600 34px "Noto Sans Bengali"';g.fillText('কোথায় ফোকাস করবেন',80,y);y+=50;
+    for(const t of top){if(y>H-220)break;wrap('• '+t,80,32,INK,'400');y-=14}}
   g.fillStyle=PINK;g.fillRect(80,H-170,W-160,3);
   g.fillStyle=NAVY;g.font='600 38px "Noto Sans Bengali"';g.fillText('৮ সপ্তাহের প্রস্তুতি শুরু',80,H-100);
   g.fillStyle=MUTED;g.font='400 30px "Noto Sans Bengali"';const u='lyannabooks.com';g.fillText(u,W-80-g.measureText(u).width,H-100);
@@ -483,12 +538,12 @@ async function photo(st,strong,plan,nm){
     g.font='400 34px "Noto Sans Bengali"';
     for(const x of subs){g.fillStyle=INK;g.fillText(x.name,70,y+30);g.fillStyle='#ece5d8';g.fillRect(bx,y,bw,36);g.fillStyle=COL[x.band];g.fillRect(bx,y,Math.round(bw*LEN[x.band]),36);y+=72}
     y+=30;
-    if(strong.length)line('শক্ত:',strong.slice(0,3).map(x=>x.name).join(', '),'#1e7a46',34);
-    line('এখন ফোকাস:',focus,PINK,34);
+    if(strong.length)line('বেশ ভালো:',strong.slice(0,3).map(x=>x.name).join(', '),'#1e7a46',34);
+    line('কোথায় ফোকাস করবেন:',focus,PINK,34);
   }else{
-    // কোনো বিষয় এখনো শক্ত বা মাঝামাঝি নয়: বার নয়, শুধু শুরু আর সংকল্প (লজ্জা নয়)
+    // কোনো বিষয় এখনো বেশ ভালো বা মাঝারি নয়: বার নয়, শুধু শুরু আর সংকল্প (লজ্জা নয়)
     y=420;g.fillStyle=NAVY;g.font='600 64px "Tiro Bangla"';g.fillText('প্রস্তুতি শুরু',70,y);y+=120;
-    line('এখন ফোকাস:',focus,PINK,44);
+    line('কোথায় ফোকাস করবেন:',focus,PINK,44);
     g.fillStyle=MUTED;g.font='400 38px "Noto Sans Bengali"';wrap('প্রথমে এই দুই বিষয়।',70,38);
   }
   g.fillStyle=PINK;g.fillRect(70,H-150,W-140,3);
