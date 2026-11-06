@@ -21,7 +21,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]          # BCS-QUIZ রিপোর মূল
 NEWS_DIR = ROOT / "news"
 DHAKA = dt.timezone(dt.timedelta(hours=6))
-UA = "LyannaNewsBot/1.0 (+https://lyannabooks.com)"
+# অনেক পত্রিকা অচেনা যন্ত্রকে 403 দেয়; তাই সাধারণ ব্রাউজারের পরিচয়, শেষে নিজের নাম
+UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) "
+      "Version/17.0 Safari/605.1.15 LyannaNewsBot/1.0 (+https://lyannabooks.com)")
 
 # Mac-এর কিছু Python-এ সনদের তালিকা থাকে না; certifi থাকলে সেটা দিয়ে HTTPS যাচাই।
 try:
@@ -77,7 +79,8 @@ def write_json(path: Path, data) -> None:
 # ---------- ইন্টারনেট ----------
 
 def http_get(url: str, timeout: int = 25, max_bytes: int = 3_000_000) -> bytes:
-    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
+    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/rss+xml, application/xml, text/xml, text/html;q=0.9, */*;q=0.8",
+                                               "Accept-Language": "bn,en;q=0.8"})
     with urllib.request.urlopen(req, timeout=timeout, context=SSL_CTX) as r:
         return r.read(max_bytes)
 

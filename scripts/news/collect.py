@@ -64,6 +64,16 @@ def parse_feed(raw: bytes):
             "url": (link.get("href") if link is not None else "").strip(),
             "time": _when(it.findtext(f"{ATOM}published") or it.findtext(f"{ATOM}updated")),
         })
+    # পত্রিকার Google-সংবাদ-তালিকা (news sitemap): <url><loc/><news:news><news:title/><news:publication_date/>
+    sm = "{http://www.sitemaps.org/schemas/sitemap/0.9}"
+    gn = "{http://www.google.com/schemas/sitemap-news/0.9}"
+    for u in root.iter(f"{sm}url"):
+        nn = u.find(f"{gn}news")
+        if nn is None:
+            continue
+        out.append({"title": strip_html(_txt(nn, f"{gn}title")), "desc": "",
+                    "url": (u.findtext(f"{sm}loc") or "").strip(),
+                    "time": _when(nn.findtext(f"{gn}publication_date"))})
     return [x for x in out if x["title"] and x["url"].startswith("http")]
 
 
@@ -72,15 +82,25 @@ def collect(until: dt.datetime, hours: int = 30):
     since = until - dt.timedelta(hours=hours)
     items, health, seen = [], [], set()
     for f in cfg["feeds"]:
-        try:
-            entries = parse_feed(http_get(f["url"]))
-        except Exception as e:  # noqa: BLE001
-            health.append({"name": f["name"], "ok": False, "n": 0, "error": e.__class__.__name__})
-            log(f"✗ {f['name']}: {e.__class__.__name__}")
+        entries, err, used = None, None, None
+        for url in [f["url"], *f.get("alt", [])]:          # প্রথম যেটা কাজ করে
+            try:
+                got = parse_feed(http_get(url))
+                if entries is None or (not entries and got):
+                    entries, used = got, url
+                if got:                                       # খবর মিলেছে → আর খোঁজা নয়
+                    break
+            except Exception as e:  # noqa: BLE001
+                code = getattr(e, "code", "")
+                err = f"{e.__class__.__name__}{(' ' + str(code)) if code else ''}"
+        if entries is None:
+            health.append({"name": f["name"], "ok": False, "n": 0, "error": err})
+            log(f"✗ {f['name']}: {err}")
             continue
-        n = 0
+        n = old = 0
         for e in entries:
             if e["time"] and not (since <= e["time"] <= until + dt.timedelta(hours=1)):
+                old += 1
                 continue
             key = hashlib.sha1((e["url"].split("?")[0] + "|" + e["title"]).encode()).hexdigest()[:12]
             if key in seen:
@@ -90,6 +110,7 @@ def collect(until: dt.datetime, hours: int = 30):
                           "desc": e["desc"], "url": e["url"],
                           "time": e["time"].isoformat() if e["time"] else None})
             n += 1
-        health.append({"name": f["name"], "ok": True, "n": n})
-        log(f"✓ {f['name']}: {n}টা")
+        health.append({"name": f["name"], "ok": True, "n": n, "total": len(entries), "old": old,
+                       "url": used if used != f["url"] else None})
+        log(f"✓ {f['name']}: {n}টা (ফিডে মোট {len(entries)}, সময়ের বাইরে {old})")
     return items, health

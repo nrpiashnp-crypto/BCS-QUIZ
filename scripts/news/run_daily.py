@@ -124,7 +124,8 @@ def report(path, ds, published, review, health, note=""):
         lines.append("")
     lines.append("### ফিডের অবস্থা")
     for h in health:
-        lines.append(f"- {'✓' if h['ok'] else '✗'} {h['name']}: {h['n']}টা" + ("" if h["ok"] else f" ({h['error']})"))
+        extra = (f" (ফিডে {h.get('total', '?')}, সময়ের বাইরে {h.get('old', 0)})" if h["ok"] else f" ({h['error']})")
+        lines.append(f"- {'✓' if h['ok'] else '✗'} {h['name']}: {h['n']}টা" + extra)
     text = "\n".join(lines) + "\n"
     if path:
         Path(path).write_text(text, encoding="utf-8")

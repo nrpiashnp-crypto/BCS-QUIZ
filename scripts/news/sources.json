@@ -1,23 +1,44 @@
 {
- "_নোট": "কোন উৎস থেকে শিরোনাম তোলা হবে। নতুন উৎস যোগ করতে এখানে এক সারি। 'ok' প্রথম চালানোর পরে হালনাগাদ হবে (কাজ করে কি না)। ধরন: official = সরকার/সংস্থার নিজের সাইট, agency = সংবাদ সংস্থা, news = সংবাদপত্র।",
+ "_নোট": "কোন উৎস থেকে শিরোনাম তোলা হবে। নতুন উৎস যোগ করতে এখানে এক সারি। 'ok' প্রথম চালানোর পরে হালনাগাদ হবে (কাজ করে কি না)। ধরন: official = সরকার/সংস্থার নিজের সাইট, agency = সংবাদ সংস্থা, news = সংবাদপত্র। 'alt' = মূল ঠিকানা না চললে বা খবর না দিলে পরপর এগুলো চেষ্টা (প্রথম যেটায় খবর মেলে); পত্রিকার news-sitemap-ও পড়া যায়।",
  "feeds": [
   {
    "name": "প্রথম আলো",
    "url": "https://www.prothomalo.com/feed/",
    "lang": "bn",
-   "kind": "news"
+   "kind": "news",
+   "alt": [
+    "https://www.prothomalo.com/stories.rss",
+    "https://www.prothomalo.com/news-sitemap.xml",
+    "https://www.prothomalo.com/sitemap-news.xml",
+    "https://www.prothomalo.com/sitemap/news.xml",
+    "https://www.prothomalo.com/sitemap_news.xml"
+   ]
   },
   {
    "name": "দ্য ডেইলি স্টার",
    "url": "https://www.thedailystar.net/frontpage/rss.xml",
    "lang": "en",
-   "kind": "news"
+   "kind": "news",
+   "alt": [
+    "https://www.thedailystar.net/rss.xml",
+    "https://www.thedailystar.net/news-sitemap.xml",
+    "https://www.thedailystar.net/sitemap-news.xml",
+    "https://www.thedailystar.net/sitemap/news.xml",
+    "https://www.thedailystar.net/sitemap_news.xml"
+   ]
   },
   {
    "name": "দ্য ডেইলি স্টার বাংলা",
    "url": "https://bangla.thedailystar.net/frontpage/rss.xml",
    "lang": "bn",
-   "kind": "news"
+   "kind": "news",
+   "alt": [
+    "https://bangla.thedailystar.net/rss.xml",
+    "https://bangla.thedailystar.net/news-sitemap.xml",
+    "https://bangla.thedailystar.net/sitemap-news.xml",
+    "https://bangla.thedailystar.net/sitemap/news.xml",
+    "https://bangla.thedailystar.net/sitemap_news.xml"
+   ]
   },
   {
    "name": "বিবিসি বাংলা",
@@ -29,31 +50,70 @@
    "name": "দ্য বিজনেস স্ট্যান্ডার্ড",
    "url": "https://www.tbsnews.net/top-news/rss.xml",
    "lang": "en",
-   "kind": "news"
+   "kind": "news",
+   "alt": [
+    "https://www.tbsnews.net/rss.xml",
+    "https://www.tbsnews.net/news-sitemap.xml",
+    "https://www.tbsnews.net/sitemap-news.xml",
+    "https://www.tbsnews.net/sitemap/news.xml",
+    "https://www.tbsnews.net/sitemap_news.xml"
+   ]
   },
   {
    "name": "ঢাকা ট্রিবিউন",
    "url": "https://www.dhakatribune.com/feed",
    "lang": "en",
-   "kind": "news"
+   "kind": "news",
+   "alt": [
+    "https://www.dhakatribune.com/rss.xml",
+    "https://www.dhakatribune.com/feed/",
+    "https://www.dhakatribune.com/news-sitemap.xml",
+    "https://www.dhakatribune.com/sitemap-news.xml",
+    "https://www.dhakatribune.com/sitemap/news.xml",
+    "https://www.dhakatribune.com/sitemap_news.xml"
+   ]
   },
   {
    "name": "বাসস",
    "url": "https://www.bssnews.net/rss",
    "lang": "en",
-   "kind": "agency"
+   "kind": "agency",
+   "alt": [
+    "https://www.bssnews.net/feed",
+    "https://www.bssnews.net/rss.xml",
+    "https://www.bssnews.net/bangla/rss",
+    "https://www.bssnews.net/news-sitemap.xml",
+    "https://www.bssnews.net/sitemap-news.xml",
+    "https://www.bssnews.net/sitemap/news.xml",
+    "https://www.bssnews.net/sitemap_news.xml"
+   ]
   },
   {
    "name": "জাগো নিউজ",
    "url": "https://www.jagonews24.com/rss/rss.xml",
    "lang": "bn",
-   "kind": "news"
+   "kind": "news",
+   "alt": [
+    "https://www.jagonews24.com/rss/rss.xml?v=2",
+    "https://www.jagonews24.com/news-sitemap.xml",
+    "https://www.jagonews24.com/sitemap-news.xml",
+    "https://www.jagonews24.com/sitemap/news.xml",
+    "https://www.jagonews24.com/sitemap_news.xml"
+   ]
   },
   {
    "name": "কালের কণ্ঠ",
    "url": "https://www.kalerkantho.com/rss.xml",
    "lang": "bn",
-   "kind": "news"
+   "kind": "news",
+   "alt": [
+    "https://www.kalerkantho.com/rss/online.xml",
+    "https://www.kalerkantho.com/feed",
+    "https://www.kalerkantho.com/news-sitemap.xml",
+    "https://www.kalerkantho.com/sitemap-news.xml",
+    "https://www.kalerkantho.com/sitemap/news.xml",
+    "https://www.kalerkantho.com/sitemap_news.xml"
+   ]
   },
   {
    "name": "জাতিসংঘ সংবাদ",
@@ -101,49 +161,106 @@
    "name": "আজকের পত্রিকা",
    "url": "https://www.ajkerpatrika.com/feed",
    "lang": "bn",
-   "kind": "news"
+   "kind": "news",
+   "alt": [
+    "https://www.ajkerpatrika.com/rss.xml",
+    "https://www.ajkerpatrika.com/news-sitemap.xml",
+    "https://www.ajkerpatrika.com/sitemap-news.xml",
+    "https://www.ajkerpatrika.com/sitemap/news.xml",
+    "https://www.ajkerpatrika.com/sitemap_news.xml"
+   ]
   },
   {
    "name": "যুগান্তর",
    "url": "https://www.jugantor.com/feed/rss.xml",
    "lang": "bn",
-   "kind": "news"
+   "kind": "news",
+   "alt": [
+    "https://www.jugantor.com/rss.xml",
+    "https://www.jugantor.com/feed",
+    "https://www.jugantor.com/news-sitemap.xml",
+    "https://www.jugantor.com/sitemap-news.xml",
+    "https://www.jugantor.com/sitemap/news.xml",
+    "https://www.jugantor.com/sitemap_news.xml"
+   ]
   },
   {
    "name": "সমকাল",
    "url": "https://samakal.com/feed",
    "lang": "bn",
-   "kind": "news"
+   "kind": "news",
+   "alt": [
+    "https://samakal.com/rss.xml",
+    "https://samakal.com/feed/rss",
+    "https://samakal.com/news-sitemap.xml",
+    "https://samakal.com/sitemap-news.xml",
+    "https://samakal.com/sitemap/news.xml",
+    "https://samakal.com/sitemap_news.xml"
+   ]
   },
   {
    "name": "ইত্তেফাক",
    "url": "https://www.ittefaq.com.bd/rss.xml",
    "lang": "bn",
-   "kind": "news"
+   "kind": "news",
+   "alt": [
+    "https://www.ittefaq.com.bd/feed",
+    "https://www.ittefaq.com.bd/rss",
+    "https://www.ittefaq.com.bd/news-sitemap.xml",
+    "https://www.ittefaq.com.bd/sitemap-news.xml",
+    "https://www.ittefaq.com.bd/sitemap/news.xml",
+    "https://www.ittefaq.com.bd/sitemap_news.xml"
+   ]
   },
   {
    "name": "বাংলা ট্রিবিউন",
    "url": "https://www.banglatribune.com/feed/",
    "lang": "bn",
-   "kind": "news"
+   "kind": "news",
+   "alt": [
+    "https://www.banglatribune.com/rss.xml",
+    "https://www.banglatribune.com/news-sitemap.xml",
+    "https://www.banglatribune.com/sitemap-news.xml",
+    "https://www.banglatribune.com/sitemap/news.xml",
+    "https://www.banglatribune.com/sitemap_news.xml"
+   ]
   },
   {
    "name": "ইউএনবি",
    "url": "https://unb.com.bd/rss",
    "lang": "en",
-   "kind": "agency"
+   "kind": "agency",
+   "alt": [
+    "https://unb.com.bd/feed",
+    "https://unb.com.bd/rss.xml",
+    "https://unb.com.bd/news-sitemap.xml",
+    "https://unb.com.bd/sitemap-news.xml",
+    "https://unb.com.bd/sitemap/news.xml",
+    "https://unb.com.bd/sitemap_news.xml"
+   ]
   },
   {
    "name": "নিউ এজ",
    "url": "https://www.newagebd.net/rss",
    "lang": "en",
-   "kind": "news"
+   "kind": "news",
+   "alt": [
+    "https://www.newagebd.net/rss/rss.xml",
+    "https://www.newagebd.net/feed",
+    "https://www.newagebd.net/news-sitemap.xml",
+    "https://www.newagebd.net/sitemap-news.xml",
+    "https://www.newagebd.net/sitemap/news.xml",
+    "https://www.newagebd.net/sitemap_news.xml"
+   ]
   },
   {
    "name": "ডয়চে ভেলে বাংলা",
    "url": "https://rss.dw.com/rdf/rss-ben-all",
    "lang": "bn",
-   "kind": "news"
+   "kind": "news",
+   "alt": [
+    "https://rss.dw.com/xml/rss-ben-all"
+   ]
   },
   {
    "name": "ডয়চে ভেলে ওয়ার্ল্ড",
@@ -152,16 +269,17 @@
    "kind": "news"
   },
   {
-   "name": "এপি",
-   "url": "https://apnews.com/index.rss",
-   "lang": "en",
-   "kind": "agency"
-  },
-  {
    "name": "প্রথম আলো ইংরেজি",
    "url": "https://en.prothomalo.com/feed/",
    "lang": "en",
-   "kind": "news"
+   "kind": "news",
+   "alt": [
+    "https://en.prothomalo.com/stories.rss",
+    "https://en.prothomalo.com/news-sitemap.xml",
+    "https://en.prothomalo.com/sitemap-news.xml",
+    "https://en.prothomalo.com/sitemap/news.xml",
+    "https://en.prothomalo.com/sitemap_news.xml"
+   ]
   }
  ]
 }
