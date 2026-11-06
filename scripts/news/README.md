@@ -1,6 +1,10 @@
 # আজকের ঘটনা (LY News) — স্ক্রিপ্ট
 
-রোজ রাত ১০:৪১-এ (ঢাকা) GitHub Actions `news-daily` নিজে চলে। খরচ শূন্য: Gemini-এর বিনা খরচের চাবি
+**রোজের চালানো PIASH-এর Mac-এ** (`scripts/news/mac/`, ২০২৬-১১-০৬ থেকে; GitHub Actions-এ নিয়মিত ভারী কাজ নিষেধ)।
+Mac চালু থাকলে প্রতি ঘণ্টায় দেখে কোন দিন বাকি (সন্ধ্যা ৬টার পরে আজ, আগে গতকাল), খসড়া বানায়, ব্রাউজারে পুরো সারাংশ খোলে
+আর জিজ্ঞেস করে "প্রকাশ করুন / পরে / বাদ দিন"। "প্রকাশ করুন" চাপলে তবেই main-এ এক কমিট (মার্জ = লাইভ)।
+চালু করা: `~/Lyanna-Backup/খবরের-বট-চালু.command` (একবার)। ফোল্ডার `~/Lyanna-Backup/news-bot/` (আলাদা রিপো-কপি, খসড়া,
+state.json, news-bot.log)। Gemini চাবি `~/.lyanna/gemini.key`-এ, রিপোর বাইরে; Gemini-তে যায় শুধু পত্রিকার প্রকাশ্য খবর। খরচ শূন্য: Gemini-এর বিনা খরচের চাবি
 (`GEMINI_API_KEY`), GitHub Actions, আর সাইটে শুধু স্থির JSON।
 
 ## ধারা
@@ -25,7 +29,8 @@
 হাতে বানানো দিনের ফাইল (`"method": "manual-…"`) রাতের ধারা বদলায় না (`--force` ছাড়া)।
 
 ## হাতে চালানো
-- GitHub-এ: Actions → news-daily → Run workflow (তারিখ খালি = আজ; dry_run = শুধু দেখা)।
+- Mac-এ এখনই একবার: Terminal-এ `launchctl kickstart gui/$(id -u)/com.lyanna.news`
+- GitHub-এ শুধু পরীক্ষা: Actions → news-daily → Run workflow (dry_run = শুধু দেখা)।
 - পরীক্ষা (ইন্টারনেট ছাড়া): `python3 scripts/news/test_news.py`
 
 ## খুঁটিনাটি
@@ -36,6 +41,5 @@
   থেকে নিজে বের হয় (`gemma-4-31b*`)। বদলাতে `NEWS_PICK_MODEL`, `NEWS_WRITE_MODEL`।
 - এক অনুরোধে ৪টা ঘটনা (`NEWS_BATCH`), অনুরোধের মাঝে ১৩ সেকেন্ড (`NEWS_GEMINI_GAP`), এক চালানোয় সর্বোচ্চ ১২টা
   (`NEWS_MAX_CALLS`)। সাধারণ দিনে ~৫টা অনুরোধ।
-- রিপোর Variables-এ `NEWS_LIVE` = `true` না দেওয়া পর্যন্ত কমিটে `[skip ci]` — Cloudflare বিল্ড হয় না
-  (দিনের পাতা তৈরি না হওয়া পর্যন্ত মাসের ৫০০ বিল্ড বাঁচাতে)।
+- Mac থেকে দিনে একটা কমিট (অনুমোদনের পরে) → মাসে ~৩০টা বিল্ড, ৫০০-র সীমার ভেতরে।
 - নতুন উৎস: `sources.json`-এ এক সারি। ফিড কাজ করছে কি না প্রতিটা চালানোর Summary-তে দেখা যায়।

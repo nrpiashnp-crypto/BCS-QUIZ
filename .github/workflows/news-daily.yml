@@ -1,15 +1,14 @@
 name: news-daily
 # আজকের ঘটনা (LY News): উৎস থেকে শিরোনাম → Gemini বাছাই ও সারাংশ → দুই-উৎস যাচাই → news/day/, news/month/।
 # নিয়ম আর ব্যাখ্যা: scripts/news/README.md।
-# - রোজ রাত ১০:৪১ (ঢাকা) = 16:41 UTC। দিনে একটাই কমিট।
 # - হাতে: Actions → news-daily → Run workflow (তারিখ খালি = আজ; "dry_run" = ফাইল না লিখে শুধু ফল দেখা)।
 # - ফলাফল আর "অ্যাডমিনের কাছে" তালিকা: এই চালানোর পাতার Summary অংশে।
 # গোপন ঘরে লাগে: GEMINI_API_KEY (বিনা খরচের চাবি)।
 # রিপোর Variables-এ NEWS_LIVE = true না থাকলে কমিটে [skip ci] থাকে (Cloudflare বিল্ড হয় না) —
 # দিনের পাতা তৈরি হওয়া পর্যন্ত মাসের ৫০০ বিল্ড বাঁচাতে।
+# ২০২৬-১১-০৬: নিজে-চলা (schedule) বন্ধ — GitHub Actions-এ নিয়মিত ভারী কাজ নিষেধ। রোজের চালানো এখন PIASH-এর Mac-এ
+# (scripts/news/mac/)। এটা শুধু হাতে একবার পরীক্ষার জন্য।
 on:
-  schedule:
-    - cron: '41 16 * * *'
   workflow_dispatch:
     inputs:
       date:

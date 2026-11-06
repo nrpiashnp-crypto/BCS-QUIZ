@@ -9,6 +9,7 @@ import html
 import json
 import os
 import re
+import ssl
 import sys
 import time
 import urllib.error
@@ -21,6 +22,13 @@ ROOT = Path(__file__).resolve().parents[2]          # BCS-QUIZ রিপোর �
 NEWS_DIR = ROOT / "news"
 DHAKA = dt.timezone(dt.timedelta(hours=6))
 UA = "LyannaNewsBot/1.0 (+https://lyannabooks.com)"
+
+# Mac-এর কিছু Python-এ সনদের তালিকা থাকে না; certifi থাকলে সেটা দিয়ে HTTPS যাচাই।
+try:
+    import certifi
+    SSL_CTX = ssl.create_default_context(cafile=certifi.where())
+except Exception:  # noqa: BLE001
+    SSL_CTX = ssl.create_default_context()
 
 # বিভাগ: id → বাংলা নাম। ছাঁকনির তালিকা current-affairs-plan.md থেকে।
 CATEGORIES = {
@@ -70,7 +78,7 @@ def write_json(path: Path, data) -> None:
 
 def http_get(url: str, timeout: int = 25, max_bytes: int = 3_000_000) -> bytes:
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    with urllib.request.urlopen(req, timeout=timeout, context=SSL_CTX) as r:
         return r.read(max_bytes)
 
 
@@ -155,7 +163,7 @@ def _available(key: str) -> list[str]:
         _MODEL_NAMES = []
         try:
             req = urllib.request.Request(f"{API}/models?pageSize=1000", headers={"x-goog-api-key": key})
-            with urllib.request.urlopen(req, timeout=30) as r:
+            with urllib.request.urlopen(req, timeout=30, context=SSL_CTX) as r:
                 for m in json.loads(r.read()).get("models", []):
                     if "generateContent" in m.get("supportedGenerationMethods", []):
                         _MODEL_NAMES.append(m["name"].removeprefix("models/"))
@@ -233,7 +241,7 @@ def gemini_json(prompt: str, models: list[str], schema: dict | None = None, temp
                     headers={"x-goog-api-key": key, "Content-Type": "application/json"},
                 )
                 try:
-                    with urllib.request.urlopen(req, timeout=180) as r:
+                    with urllib.request.urlopen(req, timeout=180, context=SSL_CTX) as r:
                         res = json.loads(r.read())
                     CALLS["n"] += 1
                     parts = res["candidates"][0]["content"]["parts"]
