@@ -4,7 +4,7 @@
    "আরও পড়ুন" লিংক: /news/ লাইভ হলে MORE = true করুন। */
 (function(){
   var box=document.getElementById('news');if(!box)return;
-  var MORE=false;
+  var MORE=true;
   var BN='০১২৩৪৫৬৭৮৯',MON=['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
   function bn(s){return String(s).replace(/\d/g,function(d){return BN[d]})}
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
