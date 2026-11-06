@@ -253,8 +253,10 @@ def gemini_json(prompt: str, models: list[str], schema: dict | None = None, temp
                     msg = e.read().decode("utf-8", "replace")[:300]
                     low = msg.lower().replace(" ", "")
                     last_err = f"{model}: HTTP {e.code} {msg}"
-                    if e.code == 404:
-                        gone = True                # মডেলই নেই → পরের মডেল
+                    if e.code in (401, 403, 404):
+                        # 404: মডেল নেই; 401/403: নতুন ধরনের চাবি (AQ.) কিছু পুরোনো মডেলে চলে না → পরের মডেল
+                        log(f"  {model}: HTTP {e.code}, পরের মডেল")
+                        gone = True
                         break
                     if e.code == 400:
                         break                      # এই সাজ চলে না → পরের সাজ
