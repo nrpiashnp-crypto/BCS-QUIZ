@@ -50,13 +50,21 @@ small.dim{font-size:12.5px}
 <h1>অবস্থা-যাচাই (নিজের পরিকল্পনা)</h1>
 <p class="sub">কে কী দিয়েছেন, কে তাড়াহুড়া করেছেন, কোন প্রশ্ন কেমন গেল। তাড়াহুড়ার চিহ্ন শুধু এখানে দেখা যায়, শিক্ষার্থী দেখেন না।</p>
 <div class="row"><input type="text" id="sid" value="bcs-start" style="max-width:220px"><button class="btn ghost" id="load">আবার লোড</button><a class="btn ghost" id="csv" href="#">সব উত্তরের CSV</a></div>
-<div class="tabs" id="tabs"><button data-t="sum" aria-pressed="true">সার</button><button data-t="ppl">মানুষ</button><button data-t="items">প্রশ্ন</button><button data-t="rep">সমস্যার তালিকা</button><button data-t="att">উপস্থিতি</button><button data-t="up">সেট তোলা</button></div>
+<div class="tabs" id="tabs"><button data-t="sum" aria-pressed="true">সার</button><button data-t="ppl">মানুষ</button><button data-t="items">প্রশ্ন</button><button data-t="rep">সমস্যার তালিকা</button><button data-t="att">উপস্থিতি</button><button data-t="tst">পরীক্ষক</button><button data-t="up">সেট তোলা</button></div>
 <section id="sum"></section>
 <section id="ppl" hidden></section>
 <section id="one" hidden></section>
 <section id="items" hidden></section>
 <section id="rep" hidden></section>
 <section id="att" hidden></section>
+<section id="tst" hidden>
+<div class="card"><p class="sub" style="margin:0 0 8px">পরীক্ষকের জন্য সব ভাগ এখনই খোলা, তারিখ বা আগের পরীক্ষার অপেক্ষা নেই। তাঁদের ফল অবস্থান আর উপস্থিতিতে গোনা হয় না। ইমেইল যোগের আগে মানুষটা একবার সাইটে Google দিয়ে লগইন করবেন।</p>
+<div class="row"><input type="email" id="tsm" placeholder="ইমেইল" style="max-width:260px"><button class="btn" id="tsa">যোগ করুন</button></div>
+<div id="tsl" style="margin-top:10px"></div></div>
+<div class="card" style="margin-top:14px"><p style="margin:0 0 6px;font-weight:600">পরীক্ষা শেষে পরিষ্কার</p>
+<p class="sub" style="margin:0 0 8px">পরীক্ষকদের সব দাগ, রাতের মতামত আর পরামর্শ মুছে যাবে, যাতে তাঁরা আবার শুরু থেকে দিতে পারেন। অন্য কারও কিছু মোছে না।</p>
+<button class="btn ghost" id="tsc1">শুধু ওপরের সেটে মুছুন</button> <button class="btn ghost" id="tsc">সব সেটে মুছুন</button><div id="tsr" class="dim" style="margin-top:6px"></div></div>
+</section>
 <section id="up" hidden>
 <div class="card"><p class="sub" style="margin:0 0 8px">যা তুলবেন তার আসল কপি Lyanna_data-র <code>pilot/custom-plan/&lt;সেট&gt;.json</code>-এ রাখুন (D1-এর নিজের ব্যাকআপ নেই)। ছাঁচ: সেখানকার PLAN.md §৯।</p>
 <div id="setsum" class="dim"></div>
@@ -111,9 +119,21 @@ function compose(box,uids,emails,resetParts,after){
     catch(e){box.querySelector('#mo').textContent='পাঠানো যায়নি: '+e.message;box.querySelector('#ms').disabled=false}};
 }
 function tab(t){document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t?'true':'false'));
-  ['sum','ppl','one','items','up','rep','att'].forEach(x=>$(x).hidden=x!==t);if(t==='items'&&!IT)items();if(t==='rep'&&!RP)report();if(t==='att'&&!AT)attView();scrollTo(0,0)}
+  ['sum','ppl','one','items','up','rep','att','tst'].forEach(x=>$(x).hidden=x!==t);if(t==='tst')testers();if(t==='items'&&!IT)items();if(t==='rep'&&!RP)report();if(t==='att'&&!AT)attView();scrollTo(0,0)}
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.t));
 
+// ---- পরীক্ষক: সব ভাগ খোলা, পরে তাঁদের দাগ মোছা ----
+async function testers(b){
+  $('tsl').innerHTML='<p class="dim">লোড হচ্ছে…</p>';
+  let r;try{r=await api('diag/testers',b)}catch(e){$('tsl').innerHTML='<p class="bad">'+(e.message==='no user'?'এই ইমেইলে কেউ লগইন করেননি। আগে তিনি একবার সাইটে লগইন করবেন।':'হয়নি: '+esc(e.message))+'</p>';return}
+  $('tsl').innerHTML=r.testers.length?'<table><thead><tr><th>কে</th><th>দাগ দেওয়া ভাগ</th><th></th></tr></thead><tbody>'+r.testers.map(x=>
+    `<tr><td>${esc(x.name||'')}<br><small class="dim">${esc(x.email||'uid '+x.uid)}</small></td><td>${bn(x.n)}</td><td><button class="btn ghost" data-tdel="${x.uid}">বাদ দিন</button></td></tr>`).join('')+'</tbody></table>':'<p class="dim">এখনো কোনো পরীক্ষক নেই।</p>';
+  $('tsl').querySelectorAll('[data-tdel]').forEach(x=>x.onclick=()=>testers({del:+x.dataset.tdel}));
+}
+$('tsa').onclick=()=>{const v=$('tsm').value.trim();if(v){$('tsm').value='';testers({add:v})}};
+const tclear=async one=>{if(!confirm(one?'পরীক্ষকদের এই সেটের সব দাগ মুছবেন?':'পরীক্ষকদের সব সেটের সব দাগ মুছবেন?'))return;
+  try{const r=await api('diag/testclear',one?{s:S()}:{});$('tsr').textContent=bn(r.n)+'টি ভাগের দাগ মোছা হলো।';testers()}catch(e){$('tsr').textContent='হয়নি: '+e.message}};
+$('tsc1').onclick=()=>tclear(true);$('tsc').onclick=()=>tclear(false);
 async function load(){
   $('csv').href='/api/admin/diag/csv?s='+encodeURIComponent(S());IT=null;RP=null;AT=null;if(!$('rep').hidden)report();if(!$('att').hidden)attView();
   $('sum').innerHTML='<p class="dim">লোড হচ্ছে…</p>';

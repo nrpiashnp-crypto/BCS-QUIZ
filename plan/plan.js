@@ -53,7 +53,7 @@ let ME=null,EX=null,tick=null,CH0=0;
 // পরীক্ষার নিয়ম: ভূমিকায় আর প্রতিটা ভাগ শুরুর আগে একই কথা
 const rules=()=>`<ul class="rules">
   <li>শান্ত পরিবেশে, ঠান্ডা মাথায় একটানা পরীক্ষা দিন। একবার শুরু করলে টাইমার চলতেই থাকবে; ব্রাউজার বন্ধ হয়ে গেলেও থামবে না।</li>
-  ${ME&&ME.parts&&ME.parts.some(p=>p.date)?'<li>প্রতিদিন একটি ভাগ খুলবে। কোনো দিন না পারলে পরে দেওয়া যাবে।</li>':''}
+  ${ME&&ME.parts&&ME.parts.some(p=>p.date)?'<li>প্রতিদিন একটি করে পরীক্ষা খুলবে: নিজের দিন এলে, আর আগের দিনের পরীক্ষা শেষ হলে। কোনো দিন না পারলে পরে দেওয়া যাবে, তারপর পরেরটা খুলবে।</li>':''}
   <li>একবার দাগালে উত্তর আর বদলানো যাবে না।</li>
   ${ME&&ME.conf?'<li>প্রতিটি উত্তরের পরে চাপুন: <b>নিশ্চিত</b>, না <b>আন্দাজ</b>। এতে বোঝা যাবে কোথায় জানা, কোথায় আন্দাজ।</li>':''}
   ${ME&&ME.neg?'<li>আসল পরীক্ষার মতো প্রতিটি ভুলে '+nb(ME.neg)+' নম্বর কাটা যাবে।</li>':''}
@@ -123,6 +123,7 @@ function loginBtn(){
 function dash(){
   const t=total(),left=ME.parts.filter(p=>p.st!=='done').reduce((a,p)=>a+p.n,0),done=ME.parts.filter(p=>p.st==='done').length;
   let h=W?`<p><a class="btn ghost" href="${HOME}">← ${esc(NAME)} পাতা</a></p><h1>সপ্তাহ ${bn(W)} · রোজকার পরীক্ষা</h1>`:`<h1>${esc(NAME)} · নিজের পরিকল্পনা</h1>`;
+  if(ME.tester)h+='<div class="card"><b>পরীক্ষক হিসেবে দেখছেন</b><small class="dim" style="display:block">সব ভাগ এখনই খোলা। আপনার ফল অবস্থান আর উপস্থিতিতে গোনা হয় না।</small></div>';
   if(V.dataset.routine)h+='<div id="today"></div>';
   const msgs=(ME.msgs||[]).filter(x=>!x.seen||Date.now()-x.seen<3*864e5);
   if(msgs.length)h+=msgs.map(x=>`<div class="card msg"><b>লিয়ানা বুকস থেকে</b><p>${esc(x.text).replace(/\n/g,'<br>')}</p></div>`).join('');
@@ -133,7 +134,7 @@ function dash(){
   if(!ME.all&&!W)h+=`<div class="card"><b>${bn(ME.parts.length)} ভাগের ${bn(done)}টি শেষ</b><div class="prog"><i style="width:${Math.round((t.n-left)/t.n*100)}%"></i></div><span class="dim">${bn(t.n)}-এর মধ্যে ${bn(left)}টি প্রশ্ন বাকি</span></div>`;
   h+=(W?'<h2>এই সপ্তাহের পরীক্ষা</h2>':'<h2>ভাগগুলো</h2>')+ME.parts.map(p=>{
     let right,info=`${bn(p.n)}টি প্রশ্ন · ${bn(p.mins)} মিনিট`;
-    if(p.st==='locked')right=`<span class="st">${dday(p.date)} খুলবে</span>`;
+    if(p.st==='locked'){right=`<span class="st">${p.why==='prev'?'আগেরটা শেষ হলে খুলবে':dday(p.date)+' খুলবে'}</span>`}
     else if(p.st==='todo')right=`<button class="btn" data-go="${p.no}">শুরু করুন</button>`;
     else if(p.st==='going'){right=`<button class="btn" data-go="${p.no}">চালিয়ে যান</button>`;info=`চলছে, ${bn(Math.max(0,Math.ceil(p.left/60000)))} মিনিট বাকি`}
     else{right=`<button class="btn ghost" data-rs="${p.no}">ফল</button>`;info=`${bn(p.res.ok)}টি ঠিক, ${bn(p.res.no)}টি ভুল, ${bn(p.res.skip)}টি বাদ`+(p.res.net!=null?` · নম্বর ${nb(p.res.net)}`:'')}
@@ -216,7 +217,7 @@ async function part(no){
   let app=0;try{app=localStorage.getItem('lb:inapp')?1:0}catch(e){}
   try{EX=await api('start',{part:no,w:innerWidth,app});EX.end=Date.now()+EX.left;set(XK(no),{part:EX.part,title:EX.title,mins:EX.mins,qs:EX.qs,end:EX.end,done:[],subs:ME?ME.subjects:[],conf:EX.conf})}catch(e){
     const off=get(XK(no),null);
-    if(!e.s&&off&&off.end>Date.now()){EX=off}else{if(e.message==='done')del(XK(no));V.innerHTML=`<div class="card">${e.message==='done'?'এই ভাগ আগেই শেষ।':e.message==='locked'?'এই ভাগ '+dday(e.j&&e.j.date)+' খুলবে।':'খোলা যায়নি। নেট দেখে আবার চেষ্টা করুন।'}</div>${back}`;wire();return}}
+    if(!e.s&&off&&off.end>Date.now()){EX=off}else{if(e.message==='done')del(XK(no));V.innerHTML=`<div class="card">${e.message==='done'?'এই ভাগ আগেই শেষ।':e.message==='locked'?(e.j&&e.j.why==='prev'?'আগের দিনের পরীক্ষা শেষ হলে এই ভাগ খুলবে।':'এই ভাগ '+dday(e.j&&e.j.date)+' খুলবে।'):'খোলা যায়নি। নেট দেখে আবার চেষ্টা করুন।'}</div>${back}`;wire();return}}
   const L=local(no);for(const [id,p] of EX.done){if(!L.a[id])L.a[id]=[p,0];if(!L.sent.includes(id))L.sent.push(id)}set(LK(no),L);
   // প্রথমে যেগুলো একবারও দেখানো হয়নি, তারপর বাদ দেওয়াগুলো (একবার)
   EX.queue=EX.qs.filter(q=>!L.a[q.id]&&!L.skip.includes(q.id)).map(q=>q.id).concat(L.skip.filter(id=>!L.a[id]));
