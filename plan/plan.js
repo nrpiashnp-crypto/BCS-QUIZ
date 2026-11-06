@@ -556,4 +556,6 @@ async function photo(st,strong,plan,nm){
   if($('sh'))$('sh').onclick=()=>navigator.share({files:[file],title:NAME+' অবস্থা-যাচাই',text:'আমার প্রস্তুতির পরিকল্পনা, lyannabooks.com'}).catch(()=>{});
 }
 home();
+// সাইটে কাজের সময় ("আছি", লগইন থাকলে): js/here.js
+if(!window.LBH){const h=document.createElement('script');h.src='/js/here.js';h.defer=true;document.head.appendChild(h)}
 })();

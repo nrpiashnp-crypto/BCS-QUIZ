@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="theme-color" content="#13294b">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>আজ · লিয়ানা বুকস</title>
+<meta name="description" content="আজকের পরীক্ষা, শেষ ৭ দিনে কত দিন পড়লেন, আর আপনার চাকরির আবেদনের শেষ তারিখ, এক পাতায়।">
+<link rel="canonical" href="https://lyannabooks.com/today/">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+/* "আজ" পাতা: লগইনের পরের প্রথম স্ক্রিন (claude.ai প্রজেক্ট LY Sites-এর social-review.md চ)। একটাই অনুরোধ /api/today।
+   তিন ভাগ: আজকের পরীক্ষা (বড় বোতাম), শেষ ৭ দিনের গতি (সময় শুধু নিজে দেখেন), আমার চাকরির পরের শেষ তারিখ। */
+:root{--paper:#f8f5ee;--ink:#1d1f21;--muted:#5d5a55;--rule:#e6d3d9;--card:#fffdf7;--navy:#13294b;--pink:#c8326a;--warn:#8a5a00;
+  --body:'Noto Sans Bengali',system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6}
+a{color:var(--navy)}
+.sitebar .who{color:var(--muted);font-size:15px;text-decoration:none}
+.wrap{max-width:560px;margin:0 auto;padding:14px 16px 48px}
+h1{font:600 22px/1.3 'Tiro Bangla',serif;margin:0}
+.date{color:var(--muted);font-size:15px;margin:0 0 14px}
+p{margin:0 0 8px}
+.mut{color:var(--muted)}.sm{font-size:14px}
+.box{background:var(--card);border:1.4px solid rgba(200,50,106,.45);border-radius:3px;padding:14px}
+.lbl{font-size:14px;color:var(--muted);margin:0 0 2px}
+.big{font-size:18px;font-weight:600;line-height:1.4;margin:0 0 4px}
+.btn{display:block;width:100%;text-align:center;background:var(--navy);color:#fff;border:0;border-radius:3px;padding:13px;font:600 17px/1.3 var(--body);text-decoration:none;margin-top:10px}
+.btn.line{background:var(--card);color:var(--navy);border:1.4px solid var(--pink);font-size:16px;padding:11px}
+section.part{border-top:1px solid var(--rule);margin-top:18px;padding-top:14px}
+.days{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin:10px 0 12px;text-align:center}
+.days i{display:block;width:26px;height:26px;margin:0 auto 3px;border:1.4px solid var(--pink);border-radius:50%}
+.days .on i{background:#1d1d1f;border-color:#1d1d1f}
+.days .t i{box-shadow:0 0 0 2px var(--paper),0 0 0 3.5px var(--navy)}
+.days span{font-size:12px;color:var(--muted)}
+.days .t span{color:var(--navy);font-weight:600}
+dl.kv{margin:0;display:grid;grid-template-columns:auto 1fr;gap:2px 14px;font-size:15px}
+dl.kv dt{color:var(--muted)}dl.kv dd{margin:0;font-weight:600}
+.goal{font-size:15px;margin:10px 0 0}
+.job b{display:block;font-weight:600}
+.job .soon{color:var(--warn);font-weight:600}
+.go{display:inline-block;padding:6px 0;font-size:15px}
+.tail{margin-top:22px;border-top:1px solid var(--rule);padding-top:12px;font-size:15px}
+.wait{color:var(--muted)}
+</style>
+<link rel="stylesheet" href="/css/omr.css">
+</head>
+<body>
+<div class="sitebar"><a href="/" aria-label="লিয়ানা বুকস"><img src="/img/logo/li-mark.svg" alt="" width="34" height="44"><span class="lgn-n">লিয়ানা বুকস</span></a><a class="who" href="/account/" id="who"></a></div>
+<main class="wrap" id="app"><p class="wait">খোলা হচ্ছে…</p></main>
+<script src="/js/account.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const bn=x=>String(x).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+const MON=['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
+const WD=['রবিবার','সোমবার','মঙ্গলবার','বুধবার','বৃহস্পতিবার','শুক্রবার','শনিবার'],WS=['রবি','সোম','মঙ্গল','বুধ','বৃহ','শুক্র','শনি'];
+const P=s=>s.split('-').map(Number);
+const utc=s=>{const p=P(s);return Date.UTC(p[0],p[1]-1,p[2])};
+const wd=s=>new Date(utc(s)).getUTCDay();
+const dTxt=s=>{const p=P(s);return bn(p[2])+' '+MON[p[1]-1]};
+const left=(a,b)=>Math.round((utc(b)-utc(a))/864e5);
+function dur(sec){const m=Math.round(sec/60),h=Math.floor(m/60),r=m%60;if(!m)return '০ মিনিট';return (h?bn(h)+' ঘণ্টা'+(r?' ':''):'')+(r?bn(r)+' মিনিট':'')}
+
+function login(){
+  $('app').innerHTML='<h1>আজ</h1><p class="date">আপনার নিজের পাতা</p><div class="box"><p>আজকের পরীক্ষা আর শেষ ৭ দিনে কত দিন পড়লেন, এখানে দেখা যায়। দেখতে লগইন করুন।</p><a class="btn" href="/account/">লগইন করুন</a></div>';
+}
+
+// ১. আজকের পরীক্ষা
+function first(x){
+  const p=x.part,long=x.last&&left(new Date(x.last+6*3600e3).toISOString().slice(0,10),x.today)>=3;
+  if(p&&p.st==='todo')return `<div class="box"><p class="lbl">আজকের পরীক্ষা</p><p class="big">${esc(p.set)}${p.title?', ভাগ '+bn(p.no)+': '+esc(p.title):''}</p>
+    <p class="mut sm">${bn(p.n)}টি প্রশ্ন${p.mins?', '+bn(p.mins)+' মিনিট':''}</p><a class="btn" href="${esc(p.url)}">শুরু করুন</a></div>`;
+  if(p&&p.st==='going')return `<div class="box"><p class="lbl">চলমান পরীক্ষা</p><p class="big">${esc(p.set)}, ভাগ ${bn(p.no)}</p><a class="btn" href="${esc(p.url)}">চালিয়ে যান</a></div>`;
+  if(p&&p.st==='later')return `<div class="box"><p class="lbl">পরের পরীক্ষা</p><p class="big">${esc(p.set)}, ভাগ ${bn(p.no)}</p>
+    <p class="mut sm">${p.date?dTxt(p.date)+' খুলবে।':'আগের ভাগ শেষ হলে খুলবে।'} আজ চাইলে অন্য বিষয়ে একটা পরীক্ষা দিতে পারেন।</p>
+    <a class="btn line" href="${p.date?'/exams/':esc(p.url)}">${p.date?'একটা পরীক্ষা দিন':'আগের ভাগ দিন'}</a></div>`;
+  if(p&&(p.st==='all'||p.wait))return `<div class="box"><p class="lbl">আজকের পরীক্ষা</p><p class="big">এ পর্যন্তের সব ভাগ শেষ করেছেন।</p>
+    <p class="mut sm">পরের সপ্তাহের পরীক্ষা উঠলে এখানেই দেখাবে।</p><a class="btn line" href="/exams/">অন্য একটা পরীক্ষা দিন</a></div>`;
+  if(long)return `<div class="box"><p class="lbl">আবার শুরু</p><p class="big">ছোট একটা পরীক্ষা দিয়ে আজ শুরু করুন।</p><a class="btn" href="/exams/">পরীক্ষা দিন</a></div>`;
+  return `<div class="box"><p class="lbl">আজকের পরীক্ষা</p><p class="big">আজ একটা পরীক্ষা দিন।</p><a class="btn" href="/exams/">পরীক্ষা দিন</a></div>`;
+}
+
+// ২. শেষ ৭ দিনের গতি: টানা দিন নয়, ৭ দিনে কত দিন (লক্ষ্য ৫); শূন্যে ফেরা নেই
+function pace(x){
+  const on=x.days.filter(d=>d.on).length,tests=x.days.reduce((s,d)=>s+d.tests,0),sec=x.days.reduce((s,d)=>s+d.sec,0),t=x.days[x.days.length-1];
+  const cells=x.days.map(d=>`<div class="${d.on?'on':''}${d.d===x.today?' t':''}"><i></i><span>${d.d===x.today?'আজ':WS[wd(d.d)]}</span></div>`).join('');
+  const goal=on>=5?'৭ দিনে ৫ দিনের লক্ষ্য পূরণ হয়েছে।':on?'লক্ষ্য ৭ দিনে ৫ দিন, আর '+bn(5-on)+' দিন বাকি।':'লক্ষ্য ৭ দিনে ৫ দিন। আজ দিয়েই শুরু হোক।';
+  if(!on)return `<section class="part" aria-label="শেষ ৭ দিন"><p class="big">শেষ ৭ দিন</p><div class="days">${cells}</div>
+    <p class="goal">${goal}</p><p class="mut sm">যেদিন পরীক্ষা দেবেন বা সাইটে পড়বেন, সেদিনের ঘর ভরে যাবে। এই হিসাব শুধু আপনি দেখেন।</p></section>`;
+  return `<section class="part" aria-label="শেষ ৭ দিন"><p class="big">শেষ ৭ দিনে ${bn(on)} দিন পড়েছেন</p>
+    <div class="days">${cells}</div>
+    <dl class="kv"><dt>পরীক্ষা</dt><dd>${bn(tests)}টি</dd><dt>সাইটে কাজের সময়</dt><dd>${dur(sec)}</dd>${t.tests||t.sec>=60?`<dt>আজ</dt><dd>${t.tests?bn(t.tests)+'টি পরীক্ষা, ':''}${dur(t.sec)}</dd>`:''}</dl>
+    <p class="goal">${goal}</p><p class="mut sm">এই হিসাব শুধু আপনি দেখেন।</p></section>`;
+}
+
+// ৩. আমার চাকরি: যে পদগুলো "প্রস্তুতিতে রাখা", তার পরের শেষ তারিখ
+function jobs(x){
+  if(!x.jobs.length)return `<section class="part"><a class="go" href="/myjobs/">আপনার বয়সে কোন সরকারি চাকরি চলছে, দেখুন →</a></section>`;
+  const j=x.jobs[0],n=left(x.today,j.ae);
+  return `<section class="part job"><p class="lbl">আমার চাকরি</p><b>${esc(j.post)}, ${esc(j.org)}</b>
+    <p class="sm">আবেদনের শেষ দিন ${dTxt(j.ae)}<span class="${n<=3?'soon':'mut'}"> (${n?'আর '+bn(n)+' দিন':'আজই'})</span></p>
+    <a class="go" href="/myjobs/">${x.jobs.length>1?'আরও '+bn(x.jobs.length-1)+'টি দেখুন →':'আমার চাকরি →'}</a></section>`;
+}
+
+function draw(x){
+  $('app').innerHTML=`<h1>আজ, ${WD[wd(x.today)]}</h1><p class="date">${dTxt(x.today)}</p>${first(x)}${pace(x)}${jobs(x)}
+    <p class="tail"><a href="/account/">রেজাল্ট কার্ড: সব পরীক্ষার ফল →</a></p>`;
+}
+
+async function main(){
+  const u=window.LBA&&LBA.user();
+  if(u)$('who').textContent=u.name||'';
+  if(!u)return login();
+  try{await (window.LBA&&LBA.flush?LBA.flush():null)}catch(e){}
+  const r=await fetch('/api/today',{credentials:'same-origin',cache:'no-store'}).catch(()=>null);
+  if(r&&r.status===401){try{localStorage.removeItem('lb:u')}catch(e){}return login()}
+  if(!r||!r.ok){$('app').innerHTML='<h1>আজ</h1><p class="wait">ইন্টারনেট নেই বা সার্ভার সাড়া দিচ্ছে না। একটু পরে পাতাটা আবার খুলুন।</p><p><a href="/account/">রেজাল্ট কার্ড (এই ফোনের ফল) →</a></p>';return}
+  draw(await r.json());
+}
+main();
+});
+</script>
+</body>
+</html>

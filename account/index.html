@@ -305,7 +305,8 @@ async function onCred(res){
   try{
     const r=await fetch('/api/login',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({credential:res.credential})});
     const j=await r.json();if(!r.ok||!j.user)throw 0;
-    set('lb:u',j.user);main();
+    // লগইনের পরের প্রথম স্ক্রিন "আজ" পাতা (social-review চ); রেজাল্ট কার্ড সেখান থেকে এক চাপে
+    set('lb:u',j.user);location.replace('/today/');
   }catch(e){$('gbtn').innerHTML='<p class="wait">লগইন হয়নি। একটু পরে আবার চেষ্টা করুন।</p>';setTimeout(main,2500)}
 }
 async function logout(){
