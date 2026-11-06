@@ -1,5 +1,5 @@
 {
- "_নোট": "কোন উৎস থেকে শিরোনাম তোলা হবে। নতুন উৎস যোগ করতে এখানে এক সারি। 'ok' প্রথম চালানোর পরে হালনাগাদ হবে (কাজ করে কি না)। ধরন: official = সরকার/সংস্থার নিজের সাইট, agency = সংবাদ সংস্থা, news = সংবাদপত্র। 'alt' = মূল ঠিকানা না চললে বা খবর না দিলে পরপর এগুলো চেষ্টা (প্রথম যেটায় খবর মেলে); পত্রিকার news-sitemap-ও পড়া যায়।",
+ "_নোট": "কোন উৎস থেকে শিরোনাম তোলা হবে। নতুন উৎস যোগ করতে এখানে এক সারি। 'ok' প্রথম চালানোর পরে হালনাগাদ হবে (কাজ করে কি না)। ধরন: official = সরকার/সংস্থার নিজের সাইট, agency = সংবাদ সংস্থা, news = সংবাদপত্র। 'alt' = মূল ঠিকানা না চললে বা খবর না দিলে পরপর এগুলো চেষ্টা (প্রথম যেটায় খবর মেলে); পত্রিকার news-sitemap-ও পড়া যায়। 'home' = সাইটের হোমপাতা: ঠিকানাগুলো না চললে স্ক্রিপ্ট নিজে এখান থেকে RSS-লিংক আর robots.txt-এর sitemap খোঁজে; শুধু name, home, lang, kind দিলেই নতুন উৎস চলে। ফিড কেন বন্ধ: scripts/news/probe_feeds.py।",
  "feeds": [
   {
    "name": "প্রথম আলো",
@@ -76,6 +76,7 @@
   {
    "name": "বাসস",
    "url": "https://www.bssnews.net/rss",
+   "home": "https://www.bssnews.net",
    "lang": "en",
    "kind": "agency",
    "alt": [
@@ -104,6 +105,7 @@
   {
    "name": "কালের কণ্ঠ",
    "url": "https://www.kalerkantho.com/rss.xml",
+   "home": "https://www.kalerkantho.com",
    "lang": "bn",
    "kind": "news",
    "alt": [
@@ -173,6 +175,7 @@
   {
    "name": "যুগান্তর",
    "url": "https://www.jugantor.com/feed/rss.xml",
+   "home": "https://www.jugantor.com",
    "lang": "bn",
    "kind": "news",
    "alt": [
@@ -187,6 +190,7 @@
   {
    "name": "সমকাল",
    "url": "https://samakal.com/feed",
+   "home": "https://samakal.com",
    "lang": "bn",
    "kind": "news",
    "alt": [
@@ -228,6 +232,7 @@
   {
    "name": "ইউএনবি",
    "url": "https://unb.com.bd/rss",
+   "home": "https://unb.com.bd",
    "lang": "en",
    "kind": "agency",
    "alt": [
@@ -242,6 +247,7 @@
   {
    "name": "নিউ এজ",
    "url": "https://www.newagebd.net/rss",
+   "home": "https://www.newagebd.net",
    "lang": "en",
    "kind": "news",
    "alt": [
@@ -280,6 +286,30 @@
     "https://en.prothomalo.com/sitemap/news.xml",
     "https://en.prothomalo.com/sitemap_news.xml"
    ]
+  },
+  {
+   "name": "ঢাকা পোস্ট",
+   "home": "https://www.dhakapost.com",
+   "lang": "bn",
+   "kind": "news"
+  },
+  {
+   "name": "বাংলানিউজ২৪",
+   "home": "https://www.banglanews24.com",
+   "lang": "bn",
+   "kind": "news"
+  },
+  {
+   "name": "বিডিনিউজ২৪",
+   "home": "https://bdnews24.com",
+   "lang": "en",
+   "kind": "news"
+  },
+  {
+   "name": "দ্য ফাইন্যান্সিয়াল এক্সপ্রেস",
+   "home": "https://thefinancialexpress.com.bd",
+   "lang": "en",
+   "kind": "news"
   }
  ]
 }
