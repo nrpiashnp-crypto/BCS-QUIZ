@@ -218,6 +218,60 @@ class Home(unittest.TestCase):
         self.assertEqual((secs.count("bd"), secs.count("intl"), secs.count("gk")), (3, 3, 1))   # gk কম → intl দিয়ে পূরণ
 
 
+class Discovery(unittest.TestCase):
+    """ঠিকানা না চললে সাইটকেই জিজ্ঞেস: হোমপাতার RSS-লিংক, robots.txt, sitemap-index।"""
+    P = "Wed, 04 Nov 2026 10:00:00 +0600"
+    UNTIL = dt.datetime(2026, 11, 4, 22, 30, tzinfo=common.DHAKA)
+
+    def _run(self, site, feed):
+        def fake_get(url, **kw):
+            if url in site:
+                return site[url].encode()
+            err = OSError("no")
+            err.code = 404
+            raise err
+        with mock.patch.object(collect, "read_json", return_value={"feeds": [feed]}), \
+             mock.patch.object(collect, "http_get", side_effect=fake_get):
+            return collect.collect(self.UNTIL)
+
+    def test_homepage_rss_link(self):
+        site = {"https://paper.bd": '<html><head><link rel="alternate" type="application/rss+xml" href="/feeds/all.xml"></head></html>',
+                "https://paper.bd/feeds/all.xml": RSS.format(t="খবর", u="https://paper.bd/n/1", d="d", p=self.P)}
+        items, health = self._run(site, {"name": "পত্রিকা", "url": "https://paper.bd/rss", "lang": "bn", "kind": "news"})
+        self.assertEqual([i["title"] for i in items], ["খবর"])
+        self.assertTrue(health[0]["discovered"])
+        self.assertEqual(health[0]["url"], "https://paper.bd/feeds/all.xml")
+
+    def test_home_only_entry_and_robots_sitemap_index(self):
+        idx = ('<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><sitemap><loc>https://paper.bd/sm-other.xml</loc></sitemap>'
+               '<sitemap><loc>https://paper.bd/sitemap-news.xml</loc></sitemap></sitemapindex>')
+        news = ('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">'
+                '<url><loc>https://paper.bd/n/2</loc><news:news><news:publication_date>2026-11-04T10:00:00+06:00</news:publication_date>'
+                '<news:title>সূচির খবর</news:title></news:news></url></urlset>')
+        site = {"https://paper.bd/": "<html></html>", "https://paper.bd/robots.txt": "User-agent: *\nSitemap: https://paper.bd/sitemap.xml\n",
+                "https://paper.bd/sitemap.xml": idx, "https://paper.bd/sitemap-news.xml": news}
+        items, health = self._run(site, {"name": "পত্রিকা", "home": "https://paper.bd/", "lang": "bn", "kind": "news"})
+        self.assertEqual([i["title"] for i in items], ["সূচির খবর"])
+        self.assertTrue(health[0]["ok"])
+
+    def test_blocked_site_reports_why_and_others_continue(self):
+        blocked = {"name": "আটকানো", "url": "https://blocked.bd/rss", "lang": "bn", "kind": "news"}
+        good = {"name": "ভালো", "url": "https://ok.bd/rss", "lang": "bn", "kind": "news"}
+
+        def fake_get(url, **kw):
+            if url.startswith("https://ok.bd/rss"):
+                return RSS.format(t="ঠিক", u="https://ok.bd/1", d="d", p=self.P).encode()
+            err = OSError("forbidden")
+            err.code = 403
+            raise err
+        with mock.patch.object(collect, "read_json", return_value={"feeds": [blocked, good]}), \
+             mock.patch.object(collect, "http_get", side_effect=fake_get):
+            items, health = collect.collect(self.UNTIL)
+        self.assertEqual([i["src"] for i in items], ["ভালো"])
+        self.assertFalse(health[0]["ok"])
+        self.assertIn("403", health[0]["error"])
+
+
 class EndToEnd(unittest.TestCase):
     """নকল ফিড + নকল Gemini দিয়ে পুরো run_daily: যাচাই-পেরোনো খবর প্রকাশ, বানানো সংখ্যা আটকানো।"""
 
