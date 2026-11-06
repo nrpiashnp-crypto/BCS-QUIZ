@@ -199,7 +199,7 @@ async function localRows(){
 
 // ---------- রেজাল্ট কার্ড ----------
 let shown=20,FLT='all',ME=null;
-const GRP={all:['সব পরীক্ষা',()=>true],bcs:['বিসিএস',x=>x.c==='bcs'],job:['চাকরি',x=>x.c==='job'||x.c==='run'],sci:['বিজ্ঞান',x=>x.c==='ch'||x.c==='jsci'],subj:['বিষয়ভিত্তিক',x=>x.c==='subj']};
+const GRP={all:['সকল পরীক্ষা',()=>true],bcs:['বিসিএস',x=>x.c==='bcs'],job:['চাকরি',x=>x.c==='job'||x.c==='run'],sci:['বিজ্ঞান',x=>x.c==='ch'||x.c==='jsci'],subj:['বিষয়ভিত্তিক',x=>x.c==='subj']};
 const COL=['#c8326a','#13294b','#e0b45c','#6f8fb8','#2f6b3a','#bdb6a6'];
 const ALIAS={English:'ইংরেজি','সাধারণ গণিত':'গণিত'};
 const MONL=['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
@@ -240,7 +240,7 @@ function pieChart(S){
 function advice(S,rows){
   const enough=S.filter(s=>s.n>=10).sort((a,b)=>a.v-b.v);
   let t;
-  if(rows.length<3||!enough.length)t='<p>আরও কয়েকটা পরীক্ষা দিন। তখন এখানে দেখাবে কোন বিষয়ে বেশি সময় দেওয়া দরকার।</p>';
+  if(rows.length<3||!enough.length)t='<p>আরও কয়েকটি পরীক্ষা দিন। তখন এখানে দেখাবে কোন বিষয়ে আপনার আরও প্রস্তুতি দরকার।</p>';
   else{
     const w=enough.slice(0,2).filter(s=>s.v<.75),best=enough[enough.length-1];
     t=w.length?w.map((s,i)=>`<p><b>${i?'তারপর':'আগে'}: ${esc(s.s)}।</b> ${bn(s.n)}টা প্রশ্নের ${bn(s.ok)}টা সঠিক (${bn(pct(s.v))}%)। ${i?'এরপর এই বিষয়ের পুরোনো প্রশ্নগুলো আরেকবার দেখুন।':'এই সপ্তাহে প্রতিদিন এই বিষয়ের একটা টপিক পড়ে ছোট টেস্ট দিন।'}</p>`).join('')+'<p class="go"><a href="/subject/">বিষয় ধরে পড়ুন →</a></p>'
@@ -277,7 +277,7 @@ function draw(all,mine){
    <h3>পরীক্ষার তালিকা</h3><table class="tb"><thead><tr><th>তারিখ</th><th>পরীক্ষা</th><th>নম্বর</th><th></th></tr></thead><tbody>${rows.slice(0,shown).map(x=>`<tr><td>${ago(x.ts)}</td><td><a class="ex" href="${esc(x.p||'/exams/')}">${esc(x.t||KIND[x.c]||'পরীক্ষা')}</a></td><td class="sc">${fmt(x.s)}/${bn(x.n)}</td><td>${mine||x.qd?`<a class="sh" href="/account/script/?k=${encodeURIComponent(x.k)}">উত্তরপত্র →</a>`:''}</td></tr>`).join('')}</tbody></table>
    ${rows.length>shown?`<button type="button" class="btn ghost more" id="more">আরও দেখুন (${bn(rows.length-shown)})</button>`:''}
    ${wish(rows)}
-   <div class="ft"><div><span class="sig">লিয়ানা</span><br><small>${mine?'আপনার অ্যাকাউন্ট থেকে হিসাব, সব ফোনে একই':'এই ফোনে রাখা ফল থেকে হিসাব'}</small></div><div class="seal"><div><img src="/img/logo/li-mark.svg" alt="">লিয়ানা<br>বুকস</div></div></div></div>`;
+   <div class="ft"><div><span class="sig">লিয়ানা</span><br><small>${mine?'আপনার অ্যাকাউন্টের হিসাব; যেকোনো ফোনে লগইন করলে একই':'এই ফোনে রাখা ফল থেকে হিসাব'}</small></div><div class="seal"><div><img src="/img/logo/li-mark.svg" alt="">লিয়ানা<br>বুকস</div></div></div></div>`;
   if(mine)h+='<p style="font-size:13.5px;text-align:center;margin:18px 0 0;color:var(--muted,#5f6366)">লগইন থাকলে আপনার প্রতিটি উত্তর আপনার অ্যাকাউন্টে থাকে, যাতে আপনার দুর্বল জায়গা ধরে প্রস্তুতির পরিকল্পনা বানানো যায়। <a href="/privacy/">বিস্তারিত</a></p><div class="danger"><button type="button" class="lnk" id="del">আমার সব তথ্য মুছে ফেলুন</button></div>';
   else h+='<p class="local">লগইন না করলে এই ফল শুধু এই ফোনে থাকে।</p>';
   D.innerHTML=h;
@@ -323,7 +323,7 @@ async function delAll(){
 }
 function head(u){
   ME=u;
-  $('sub').textContent='আপনার সব পরীক্ষার ফল, সব ফোনে একই।';
+  $('sub').textContent='আপনার সকল পরীক্ষার ফল এখানেই।';
   $('top').innerHTML=`<div class="card me"><span class="av">${u.pic?`<img src="${esc(u.pic)}" alt="" referrerpolicy="no-referrer">`:esc((u.name||'?').slice(0,1))}</span><span class="who"><b>${esc(u.name||'আমার অ্যাকাউন্ট')}</b><small>${esc(u.email)}</small></span><button type="button" class="lnk" id="out">লগআউট</button></div><div id="goal"></div><div id="uxc"></div><div id="imp"></div>`;
   $('out').onclick=logout;
   goalCard();uxCard();
@@ -340,7 +340,7 @@ async function goalCard(edit){
     box.innerHTML=`<div class="card goal"><p class="gl">আমার লক্ষ্য: <b>${esc(GOALS[g.goal]||'')}</b>${d} <button type="button" class="lnk" id="gch">বদলান</button></p></div>`;
     $('gch').onclick=()=>goalCard(true);return;
   }
-  box.innerHTML=`<div class="card goal"><p>কোন পরীক্ষার প্রস্তুতি নিচ্ছেন?</p><form id="gf"><select id="gs" required aria-label="পরীক্ষা"><option value="">বেছে নিন</option>${Object.entries(GOALS).map(([k,v])=>`<option value="${k}"${g&&g.goal===k?' selected':''}>${v}</option>`).join('')}</select><input type="month" id="gd" aria-label="পরীক্ষা কবে (আনুমানিক মাস)" value="${g&&g.gdate||''}"><button class="btn">রাখুন</button><small>দ্বিতীয় ঘরে পরীক্ষার আনুমানিক মাস; না জানলে ফাঁকা রাখুন। এতে আপনার প্রস্তুতির হিসাব এই পরীক্ষার নম্বর-ভাগ ধরে হবে।</small></form></div>`;
+  box.innerHTML=`<div class="card goal"><p>কোন পরীক্ষার প্রস্তুতি নিচ্ছেন?</p><form id="gf"><select id="gs" required aria-label="পরীক্ষা"><option value="">বেছে নিন</option>${Object.entries(GOALS).map(([k,v])=>`<option value="${k}"${g&&g.goal===k?' selected':''}>${v}</option>`).join('')}</select><input type="month" id="gd" aria-label="পরীক্ষা কবে (আনুমানিক মাস)" value="${g&&g.gdate||''}"><button class="btn">রাখুন</button><small>দ্বিতীয় ঘরে লিখুন পরীক্ষা কবে হতে পারে; না জানলে ফাঁকা রাখুন। মাস জানা থাকলে সময়মতো প্রস্তুতি শেষ করা সহজ হবে।</small></form></div>`;
   $('gf').onsubmit=async e=>{e.preventDefault();const b=$('gf').querySelector('button');b.disabled=true;
     const r=await fetch('/api/goal',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({goal:$('gs').value,gdate:$('gd').value||''})}).then(r=>r.ok?r.json():null).catch(()=>null);
     if(!r){b.disabled=false;b.textContent='আবার চেষ্টা করুন';return}

@@ -1462,7 +1462,9 @@ const DIAG_SCHEMA = [
   // PIASH-এর লেখা পরামর্শ (সমস্যার তালিকা আর PDF রিপোর্টে); pub = শিক্ষার্থী দেখবেন কি না
   'CREATE TABLE IF NOT EXISTS diag_note(sid TEXT NOT NULL, uid INTEGER NOT NULL, txt TEXT NOT NULL, pub INTEGER NOT NULL, ts INTEGER NOT NULL, PRIMARY KEY(sid, uid))',
   // রাতের ছোট মতামত (site-needs.md §৬): একটা ভাগ (দিনের পরীক্ষা) শেষে, অ্যাকাউন্টের সঙ্গে জোড়া; d = {ease, mins, txt}
-  'CREATE TABLE IF NOT EXISTS diag_fb(sid TEXT NOT NULL, uid INTEGER NOT NULL, part INTEGER NOT NULL, ts INTEGER NOT NULL, d TEXT NOT NULL, PRIMARY KEY(sid, uid, part))'
+  'CREATE TABLE IF NOT EXISTS diag_fb(sid TEXT NOT NULL, uid INTEGER NOT NULL, part INTEGER NOT NULL, ts INTEGER NOT NULL, d TEXT NOT NULL, PRIMARY KEY(sid, uid, part))',
+  // পরীক্ষক (PIASH আর দু-একজন বন্ধু): সব ভাগ তারিখ বা আগের পরীক্ষার অপেক্ষা ছাড়া খোলা; অবস্থান আর উপস্থিতিতে গোনা হয় না; পরে /admin/diag/ থেকে তাঁদের দাগ মোছা যায়
+  'CREATE TABLE IF NOT EXISTS diag_tester(uid INTEGER PRIMARY KEY, ts INTEGER NOT NULL)'
 ];
 let diagReady = false;
 async function diagSetup(db) {
@@ -1504,6 +1506,20 @@ const diagKnown = id => DIAG_KNOWN[id] || (PB_WEEK.test(id) ? 'পেট্র�
 // সেট → পাইলট ব্যাচ (উপস্থিতি আর CSV-তে কোড P01… দেখাতে; নাম নয়)
 const diagPilot = id => /^pb-/.test(id) ? 'petrobangla-1' : '';
 const DAYRE = /^\d{4}-\d{2}-\d{2}$/;
+/* আগের দিনের পরীক্ষা (PIASH, ২০২৬-১১-০৬): একটা ভাগ খোলে তার তারিখ এলে আর আগের দিনের পরীক্ষা শেষ হলে (সময় শেষে বন্ধ হলেও শেষ ধরা)।
+   সেটের ভেতরে আগের ভাগ; সপ্তাহের প্রথম ভাগের আগেরটা আগের সপ্তাহের শেষ ভাগ (pb-w1-এর আগে pb-start)। আগের সেট না থাকলে শর্ত নেই। */
+const prevSet = id => { const w = PB_WEEK.exec(id); return w ? (w[1] === '1' ? 'pb-start' : 'pb-w' + (+w[1] - 1)) : ''; };
+async function diagPrev(db, c, p, uid) {
+  const L = [...c.parts].sort((a, b) => a.no - b.no), i = L.findIndex(x => x.no === p.no);
+  let sid = c.id, no = i > 0 ? L[i - 1].no : 0;
+  if (!no) {
+    sid = prevSet(c.id); if (!sid) return null;
+    const pc = await diagCfg(db, sid); if (!pc || !pc.parts.length) return null;
+    no = Math.max(...pc.parts.map(x => x.no));
+  }
+  return {sid, no, done: !!(await db.prepare('SELECT 1 FROM diag_att WHERE sid = ? AND uid = ? AND part = ? AND res IS NOT NULL').bind(sid, uid, no).first())};
+}
+const isTester = async (db, u) => !!(u && await db.prepare('SELECT 1 FROM diag_tester WHERE uid = ?').bind(u.id).first());
 const dhakaDay = ts => new Date(ts + 6 * 3600e3).toISOString().slice(0, 10);
 // শেষে থাকার মতো অপশন ("কোনোটিই নয়", "None of these", "সবগুলো"); NONE_ONLY = শুধু "কোনোটিই নয়" ধাঁচ (সমস্যার তালিকার হিসাবে)
 const optTxt = o => String(o == null ? '' : o).replace(/<[^>]*>/g, '').replace(/[.।\s]+$/, '').trim();
@@ -1701,8 +1717,9 @@ async function diag(path, req, url, env, db, u) {
   const c = await diagCfg(db, sid);
   if (!c) return json({error: 'no set'}, 404);
   const now = Date.now(), today = dhakaDay(now);
-  // ভাগে date থাকলে সেই দিনের (ঢাকা) আগে খোলে না; পরে দেওয়া চলে (পিছিয়ে পড়া)
-  const shut = p => !!p.date && p.date > today;
+  // ভাগ খোলে তার দিনে (ঢাকা) আর আগের দিনের পরীক্ষা শেষ হলে; পরে দেওয়া চলে (পিছিয়ে পড়া)। পরীক্ষকের জন্য সব খোলা।
+  const tester = await isTester(db, u);
+  const shutDate = p => !tester && !!p.date && p.date > today;
   const partsPub = c.parts.map(p => ({no: p.no, title: p.title, subjects: p.subjects, n: p.qs.length, mins: p.mins, ...(p.date ? {date: p.date} : {})}));
   if (path === 'diag/me' && m === 'GET') {
     // অ্যাডমিন কারও রিপোর্ট তাঁর চোখে দেখতে/PDF করতে: ?as=<uid> (শুধু দেখা, কিছু লেখা হয় না)
@@ -1718,9 +1735,19 @@ async function diag(path, req, url, env, db, u) {
     const {results} = await db.prepare('SELECT part, ts, dl, done, res, ans FROM diag_att WHERE sid = ? AND uid = ?').bind(sid, u.id).all();
     const A = new Map(results.map(r => [r.part, r]));
     const finished = [];
+    if (tester && !as) out.tester = 1;
+    // আগের দিনের পরীক্ষা: সেটের ভেতরে এই তালিকা থেকে, সপ্তাহের প্রথম ভাগে আগের সেট থেকে
+    const firstNo = Math.min(...partsPub.map(p => p.no)), sorted = [...partsPub].sort((a, b) => a.no - b.no);
+    const pv = tester || !partsPub.length ? null : await diagPrev(db, c, c.P.get(firstNo), u.id);
+    const prevOk = p => {
+      if (tester) return true;
+      const i = sorted.findIndex(x => x.no === p.no);
+      if (i > 0) { const r = A.get(sorted[i - 1].no); return !!(r && r.res); }
+      return !pv || pv.done;
+    };
     out.parts = partsPub.map(p => {
       const r = A.get(p.no);
-      if (!r) return {...p, st: shut(c.P.get(p.no)) ? 'locked' : 'todo'};
+      if (!r) return {...p, ...(shutDate(p) ? {st: 'locked', why: 'date'} : !prevOk(p) ? {st: 'locked', why: 'prev'} : {st: 'todo'})};
       if (!r.done && now < r.dl + GRACE) return {...p, st: 'going', left: r.dl - now, answered: Object.keys(JSON.parse(r.ans)).length};
       if (!r.res) return {...p, st: 'closing'}; // সময় শেষ, কিন্তু ফল এখনো গোনা হয়নি: পাতা খুললেই save দিয়ে বন্ধ হয়
       const res = JSON.parse(r.res); finished.push(res);
@@ -1752,7 +1779,8 @@ async function diag(path, req, url, env, db, u) {
   let att = await db.prepare('SELECT ts, dl, ans, done, res, hid, hn, meta FROM diag_att WHERE sid = ? AND uid = ? AND part = ?').bind(sid, u.id, no).first();
 
   if (path === 'diag/start' && m === 'POST') {
-    if (!att && shut(p)) return json({error: 'locked', date: p.date}, 403);
+    if (!att && shutDate(p)) return json({error: 'locked', why: 'date', date: p.date}, 403);
+    if (!att && !tester) { const pv = await diagPrev(db, c, p, u.id); if (pv && !pv.done) return json({error: 'locked', why: 'prev', date: p.date || null}, 403); }
     if (!att) {
       await db.prepare("INSERT OR IGNORE INTO diag_att(sid, uid, part, ts, dl, ans, done, res, hid, hn, meta) VALUES(?,?,?,?,?,'{}',NULL,NULL,0,0,?)")
         .bind(sid, u.id, no, now, now + p.mins * 60e3, JSON.stringify({...diagMeta(req, body), opens: 1})).run();
@@ -1814,7 +1842,7 @@ async function diag(path, req, url, env, db, u) {
   if (path === 'diag/rank' && m === 'GET') {
     if (!att || !att.res) return json({error: 'soon'}, 403);
     const sc = r => r.net != null ? r.net : r.ok, mine = sc(JSON.parse(att.res));
-    const all = (await db.prepare('SELECT res FROM diag_att WHERE sid = ? AND part = ? AND res IS NOT NULL').bind(sid, no).all()).results.map(r => sc(JSON.parse(r.res)));
+    const all = (await db.prepare('SELECT res FROM diag_att WHERE sid = ? AND part = ? AND res IS NOT NULL AND (uid = ? OR uid NOT IN (SELECT uid FROM diag_tester))').bind(sid, no, u.id).all()).results.map(r => sc(JSON.parse(r.res)));
     return json({n: all.length, pos: 1 + all.filter(x => x > mine).length, top: Math.max(...all), avg: r2(all.reduce((a, b) => a + b, 0) / all.length)}, 200, {'Cache-Control': 'no-store'});
   }
   // রাতের ছোট মতামত (§৬): ease ১-৩ (সহজ/ঠিকঠাক/কঠিন), mins = আজ পড়ার সময়ের ঘর ০-৪, txt = কোথায় আটকেছেন (ঐচ্ছিক)
@@ -1900,6 +1928,23 @@ async function upkeyAdmin(req, db) {
 async function diagAdmin(path, url, req, db) {
   await diagSetup(db);
   const m = req.method, body = m === 'POST' ? await req.json().catch(() => ({})) : {};
+  // পরীক্ষক: GET তালিকা · POST {add: ইমেইল} (আগে একবার সাইটে লগইন করা চাই) · POST {del: uid} · POST admin/diag/testclear {s?} = পরীক্ষকদের দাগ মোছা
+  if (path === 'admin/diag/testers') {
+    if (m === 'POST' && body.add) {
+      const w = await db.prepare('SELECT id FROM users WHERE lower(email) = lower(?)').bind(String(body.add).trim()).first();
+      if (!w) return json({error: 'no user'}, 404);
+      await db.prepare('INSERT OR IGNORE INTO diag_tester(uid, ts) VALUES(?, ?)').bind(w.id, Date.now()).run();
+    } else if (m === 'POST' && body.del) await db.prepare('DELETE FROM diag_tester WHERE uid = ?').bind(parseInt(body.del, 10) || 0).run();
+    const {results} = await db.prepare(`SELECT t.uid, t.ts, u.name, u.email, (SELECT COUNT(*) FROM diag_att a WHERE a.uid = t.uid) n
+      FROM diag_tester t LEFT JOIN users u ON u.id = t.uid ORDER BY t.ts`).all();
+    return json({testers: results}, 200, {'Cache-Control': 'no-store'});
+  }
+  if (path === 'admin/diag/testclear' && m === 'POST') {
+    const one = body.s && PID.test(String(body.s)) ? String(body.s) : '';
+    const w = `uid IN (SELECT uid FROM diag_tester)${one ? ' AND sid = ?' : ''}`, b = q => one ? q.bind(one) : q;
+    const r = await db.batch(['diag_att', 'diag_fb', 'diag_note'].map(t => b(db.prepare(`DELETE FROM ${t} WHERE ${w}`))));
+    return json({ok: true, n: r[0].meta.changes || 0});
+  }
   const sid = String(url.searchParams.get('s') || body.s || (body.cfg && body.cfg.id) || '');
   if (!PID.test(sid)) return json({error: 'bad'}, 400);
   if (path === 'admin/diag/set' && m === 'POST') {
@@ -2092,6 +2137,8 @@ async function diagAdmin(path, url, req, db) {
     if (pl) for (const r of (await db.prepare("SELECT m.uid, m.code, u.name FROM pilot_mem m LEFT JOIN users u ON u.id = m.uid WHERE m.pilot = ? AND m.st = 'ok'").bind(pl).all()).results)
       if (!by.has(r.uid)) by.set(r.uid, {uid: r.uid, name: r.name || '', code: r.code || '', parts: {}});
     const due = c.parts.filter(p => !p.date || p.date <= today);
+    // পরীক্ষকেরা উপস্থিতিতে গোনা হন না
+    for (const r of (await db.prepare('SELECT uid FROM diag_tester').all()).results) by.delete(r.uid);
     const people = [...by.values()].map(x => ({...x, behind: due.filter(p => !(x.parts[p.no] && x.parts[p.no].st === 'done')).length}))
       .sort((a, b) => (a.code || 'zz' + a.name).localeCompare(b.code || 'zz' + b.name));
     const parts = c.parts.map(p => ({no: p.no, date: p.date || null, title: p.title, n: p.qs.length}));
