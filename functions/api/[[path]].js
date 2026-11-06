@@ -1479,6 +1479,26 @@ const DIAG_KNOWN = {'bcs-start': 'বিসিএস · অবস্থা-য�
 // বিষয় → সাইটের বিদ্যমান বিষয়ের পাতা (পরিকল্পনার প্রথম সংস্করণে এগুলোই পথ)
 const DIAG_LINK = {bn: '/subject/bangla/', en: '/subject/english/', bd: '/subject/bangladesh/', bda: '/subject/bangladesh/', eng: '/subject/english/', intl: '/subject/international/', geo: '/subject/geography/',
   sci: '/subject/science/', ict: '/subject/ict/', math: '/subject/math/', mental: '/subject/mental/', ethics: '/subject/ethics/'};
+/* পাইলট-ধাঁচের সেট (পেট্রোবাংলা প্রথম ব্যাচ, Lyanna_data pilot/petrobangla-1/site-needs.md §২-৩, §১০):
+   neg = প্রতি ভুলে কাটা; bands = সমস্যার তালিকার সীমা (%-এর নিচে "এখন ফোকাস", মাঝে "মাঝারি", ওপরে "শক্ত");
+   conf = প্রতিটি উত্তরের পরে "নিশ্চিত/আন্দাজ"; pin = শেষ অপশন "কোনোটিই নয়/None" হলে শেষেই থাকে;
+   report = এই তারিখ থেকে (বা সব ভাগ শেষে) "সমস্যার তালিকা"; clusters = প্রশ্নের t → নাম; ভাগে date = সেই দিনের আগে খোলে না।
+   সেট-ফাইলে না থাকলে তোলার সময় এখান থেকে বসে। আগে তোলা সেট বদলায় না, তাই পুরোনো দাগের হিসাব আর অপশনের ক্রম ঠিক থাকে। */
+const DIAG_DEF = {'pb-start': {neg: 0.25, bands: [60, 80], conf: 1, pin: 1, report: '2026-11-12', clusters: {
+  'pbg-math-1': 'সংখ্যা, ল.সা.গু-গ.সা.গু, ভগ্নাংশ, বর্গমূল', 'pbg-math-2': 'শতকরা, লাভ-ক্ষতি, মুনাফা', 'pbg-math-3': 'অনুপাত, মিশ্রণ, ঐকিক নিয়ম, পরিমাপ',
+  'pbg-math-4': 'গড়, বয়স, সময় ও কাজ', 'pbg-math-5': 'সময়-দূরত্ব-গতি, নৌকা, পাইপ', 'pbg-math-6': 'বীজগণিত, জ্যামিতি, বিন্যাস-সম্ভাবনা',
+  'pbg-eng-1': 'Synonym, Antonym, Analogy', 'pbg-eng-2': 'শূন্যস্থান, ক্রিয়ার রূপ, Tense', 'pbg-eng-3': 'ভুল নির্ণয়, Preposition, Article',
+  'pbg-eng-4': 'Idiom, এক কথায়, বানান, শব্দগঠন', 'pbg-eng-5': 'Passage, বাক্য সাজানো, অনুবাদ, Voice-Narration',
+  'pbg-bn-1': 'শব্দার্থ, বাগধারা, সমার্থক-বিপরীত', 'pbg-bn-2': 'বানান, বাক্যশুদ্ধি, ধ্বনি, কারক', 'pbg-bn-3': 'সন্ধি, সমাস, প্রত্যয়, সাহিত্য',
+  'pbg-gk-1': 'বাংলাদেশ: জ্বালানি, বিদ্যুৎ, খনিজ, অর্থনীতি', 'pbg-gk-2': 'বাংলাদেশ: রাষ্ট্র, প্রতিষ্ঠান, ইতিহাস', 'pbg-gk-3': 'আন্তর্জাতিক: সংস্থা, জোট, চুক্তি',
+  'pbg-gk-4': 'আন্তর্জাতিক: দেশ, ব্যক্তি, পুরস্কার, খেলা', 'pbg-ict-1': 'কম্পিউটার ও তথ্যপ্রযুক্তি', 'pbg-misc-1': 'অর্থনীতি-ব্যাংকিং, বিজ্ঞান, অন্যান্য'}}};
+const DAYRE = /^\d{4}-\d{2}-\d{2}$/;
+const dhakaDay = ts => new Date(ts + 6 * 3600e3).toISOString().slice(0, 10);
+// শেষে থাকার মতো অপশন ("কোনোটিই নয়", "None of these", "সবগুলো"); NONE_ONLY = শুধু "কোনোটিই নয়" ধাঁচ (সমস্যার তালিকার হিসাবে)
+const optTxt = o => String(o == null ? '' : o).replace(/<[^>]*>/g, '').replace(/[.।\s]+$/, '').trim();
+const NONE_ONLY = /^(none( of (these|the above|them|the options))?|no correction( required| needed)?|(উপরের |ওপরের )?(কোনোটিই|কোনটিই|কোনোটি|কোনটি) ?নয়)$/i;
+const PIN_LAST = /^(all of (these|the above)|(উপরের |ওপরের )?সবগুলো(ই)?|সবকটি|সবকয়টি)$/i;
+const isNone = o => NONE_ONLY.test(optTxt(o));
 
 function diagCheck(c) {
   const err = [];
@@ -1500,12 +1520,31 @@ function diagCheck(c) {
     if (!Array.isArray(p.subjects) || !p.subjects.length || p.subjects.some(x => !sids.has(x))) err.push('ভাগ ' + p.no + ': subjects সেটের বিষয় থেকে');
     if (!Array.isArray(p.qs) || p.qs.length < 1 || p.qs.length > 80) err.push('ভাগ ' + p.no + ': qs-এ ১-৮০টি প্রশ্ন');
     for (const q of p.qs || []) { if (!QID.test(q)) err.push('ভাগ ' + p.no + ': প্রশ্ন-আইডি ঠিক নয় ' + q); else if (seen.has(q)) err.push('প্রশ্ন দুবার: ' + q); seen.add(q); }
+    if (p.date != null && !DAYRE.test(String(p.date))) err.push('ভাগ ' + p.no + ': date হবে YYYY-MM-DD');
   }
+  if (c.neg != null && !(typeof c.neg === 'number' && c.neg >= 0 && c.neg <= 1)) err.push('neg ০ থেকে ১');
+  if (c.bands != null && !(Array.isArray(c.bands) && c.bands.length === 2 && c.bands[0] > 0 && c.bands[0] < c.bands[1] && c.bands[1] < 100)) err.push('bands = [নিচের সীমা, ওপরের সীমা]');
+  if (c.report != null && !DAYRE.test(String(c.report))) err.push('report হবে YYYY-MM-DD');
+  if (c.clusters != null && (typeof c.clusters !== 'object' || Array.isArray(c.clusters))) err.push('clusters = {t: নাম}');
   return err.slice(0, 40);
 }
-const diagSlim = c => ({id: c.id, title: str(c.title, 120) || c.id,
-  subjects: c.subjects.map(s => ({id: s.id, name: str(s.name, 60) || s.id, marks: s.marks})),
-  parts: c.parts.map(p => ({no: p.no, title: str(p.title, 80) || '', subjects: p.subjects, mins: p.mins, qs: p.qs}))});
+const diagSlim = c => {
+  const d = DIAG_DEF[c.id] || {}, g = k => c[k] != null ? c[k] : d[k];
+  const o = {id: c.id, title: str(c.title, 120) || c.id,
+    subjects: c.subjects.map(s => ({id: s.id, name: str(s.name, 60) || s.id, marks: s.marks})),
+    parts: c.parts.map(p => ({no: p.no, title: str(p.title, 80) || '', subjects: p.subjects, mins: p.mins, qs: p.qs, ...(DAYRE.test(String(p.date || '')) ? {date: p.date} : {})}))};
+  const neg = num(g('neg'));
+  if (neg > 0 && neg <= 1) o.neg = neg;
+  const b = g('bands');
+  if (Array.isArray(b) && b.length === 2 && b[0] > 0 && b[0] < b[1] && b[1] < 100) o.bands = [b[0], b[1]];
+  if (g('conf')) o.conf = 1;
+  if (g('pin')) o.pin = 1;
+  if (DAYRE.test(String(g('report') || ''))) o.report = g('report');
+  const cl = g('clusters');
+  if (cl && typeof cl === 'object') o.clusters = Object.fromEntries(Object.entries(cl).filter(([k]) => TID.test(k)).slice(0, 120).map(([k, v]) => [k, str(v, 80) || k]));
+  if (c.seed && PID.test(c.seed)) o.seed = c.seed;
+  return o;
+};
 
 async function diagCfg(db, sid) {
   const r = await db.prepare('SELECT cfg, updated FROM diag_set WHERE id = ?').bind(sid).first();
@@ -1534,22 +1573,34 @@ function dOrder(n, seed) {
   return a;
 }
 const dSeed = (sid, uid, qid) => sid + ':' + uid + ':' + qid;
+// সেটের নিয়মে অপশনের ক্রম: pin থাকলে "কোনোটিই নয়/None/সবগুলো" শেষেই; seed = পুরোনো সেট সরানো হলে আগের নাম (ক্রম যেন না বদলায়)
+function qOrd(c, q, uid, qid) {
+  const n = q.o.length, seed = dSeed(c.seed || c.id, uid, qid), last = optTxt(q.o[n - 1]);
+  if (c.pin && n > 2 && (NONE_ONLY.test(last) || PIN_LAST.test(last))) return [...dOrder(n - 1, seed), n - 1];
+  return dOrder(n, seed);
+}
 const DIAG_LATE = 60 * 60e3; // নেট কেটে গেলে ফোনে জমা উত্তর সময় শেষের পরে এক ঘণ্টা পর্যন্ত নেওয়া হয় (ঘড়ি থামে না, শুধু পৌঁছাতে দেরি)
 const median = a => { if (!a.length) return null; const b = [...a].sort((x, y) => x - y), m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
 
 // একটা ভাগের ফল: বিষয় ধরে ঠিক/ভুল/বাদ, আর তাড়াহুড়ার চিহ্ন (PLAN.md §৯)
 function diagScore(c, p, Q, ans, hid, hn) {
-  const by = {}, picks = [], ms = [];
-  let ok = 0, no = 0, skip = 0;
+  const by = {}, picks = [], ms = [], T = {}, g = {n: 0, ok: 0, no: 0}, su = {n: 0, ok: 0, no: 0}, none = {n: 0, ok: 0};
+  let ok = 0, no = 0, skip = 0, blank = 0;
   for (const s of p.subjects) by[s] = {n: 0, ok: 0, no: 0, skip: 0};
   for (const qid of p.qs) {
     const q = Q.get(qid);
     if (!q) continue;
     const x = by[q.s] || (by[q.s] = {n: 0, ok: 0, no: 0, skip: 0}), a = ans[qid];
-    x.n++;
-    if (!a || a[0] < 0) { x.skip++; skip++; continue; }
+    const t = q.t ? (T[q.t] || (T[q.t] = {s: q.s, n: 0, ok: 0, no: 0, skip: 0})) : null;
+    x.n++; if (t) t.n++;
+    // "কোনোটিই নয়" যেখানে ঠিক উত্তর, সেখানে কতটা পারেন (site-needs.md §৩)
+    const isN = q.a === q.o.length - 1 && isNone(q.o[q.a]);
+    if (isN) none.n++;
+    if (!a || a[0] < 0) { x.skip++; skip++; if (t) t.skip++; if (!a || !a[2]) blank++; continue; }
     picks.push(a[0]); if (a[2] > 0) ms.push(a[2]);
-    if (a[1]) { x.ok++; ok++; } else { x.no++; no++; }
+    const cf = a[4] === 0 ? g : a[4] === 1 ? su : null;
+    if (cf) cf.n++;
+    if (a[1]) { x.ok++; ok++; if (t) t.ok++; if (cf) cf.ok++; if (isN) none.ok++; } else { x.no++; no++; if (t) t.no++; if (cf) cf.no++; }
   }
   const n = ok + no + skip, k = picks.length, f = [];
   const med = median(ms);
@@ -1564,7 +1615,40 @@ function diagScore(c, p, Q, ans, hid, hn) {
   if (n && skip / n > 0.5) f.push('few');
   if ((hid || 0) > 60 || (hn || 0) > 3) f.push('away');
   const unsure = f.some(x => x === 'fast' || x === 'same' || x === 'low');
-  return {part: p.no, n, ok, no, skip, by, flags: f, unsure, med: med == null ? null : Math.round(med / 100) / 10};
+  const neg = c.neg || 0, out = {part: p.no, n, ok, no, skip, by, flags: f, unsure, med: med == null ? null : Math.round(med / 100) / 10};
+  if (neg) { out.neg = neg; out.net = r2(ok - no * neg); }
+  if (Object.keys(T).length) out.T = T;
+  if (c.conf) { out.g = g; out.su = su; }
+  if (none.n) out.none = none;
+  out.blank = blank; // সময় শেষে না-দেখা (ইচ্ছে করে "জানি না" নয়)
+  return out;
+}
+const r2 = x => Math.round(x * 100) / 100;
+
+/* সমস্যার তালিকা (পাইলট, ১২ নভেম্বর): বিষয় আর ক্লাস্টার ধরে ঠিকের %, আন্দাজে কত কাটা গেল, "কোনোটিই নয়" প্রশ্নে কতটা পারেন,
+   সময় শেষে কত ফাঁকা, দিন ধরে ওঠানামা। done = বন্ধ ভাগের res (ভাগ-নম্বরসহ)। */
+function diagReport(c, done) {
+  const [lo, hi] = c.bands || [60, 80], neg = c.neg || 0;
+  const band = (ok, n) => !n ? null : ok / n * 100 < lo ? 'weak' : ok / n * 100 < hi ? 'mid' : 'strong';
+  const add = (a, b) => { for (const k of ['n', 'ok', 'no', 'skip']) a[k] = (a[k] || 0) + (b[k] || 0); return a; };
+  const S = new Map(c.subjects.map(s => [s.id, {id: s.id, name: s.name, n: 0, ok: 0, no: 0, skip: 0}])), T = new Map();
+  const g = {n: 0, ok: 0, no: 0}, su = {n: 0, ok: 0, no: 0}, none = {n: 0, ok: 0};
+  let blank = 0, n = 0, ok = 0, no = 0, skip = 0;
+  for (const r of done) {
+    n += r.n; ok += r.ok; no += r.no; skip += r.skip; blank += r.blank || 0;
+    for (const [k, v] of Object.entries(r.by || {})) add(S.get(k) || (S.set(k, {id: k, name: k, n: 0, ok: 0, no: 0, skip: 0}), S.get(k)), v);
+    for (const [k, v] of Object.entries(r.T || {})) { const x = T.get(k) || {id: k, s: v.s, name: (c.clusters || {})[k] || k}; T.set(k, add(x, v)); }
+    for (const [a, b] of [[g, r.g], [su, r.su]]) if (b) add(a, b);
+    if (r.none) { none.n += r.none.n; none.ok += r.none.ok; }
+  }
+  const fin = x => ({...x, pct: x.n ? Math.round(x.ok / x.n * 100) : null, band: band(x.ok, x.n), net: neg ? r2(x.ok - x.no * neg) : null});
+  const P = new Map(c.parts.map(p => [p.no, p]));
+  return {bands: [lo, hi], neg, parts: c.parts.length, doneParts: done.length,
+    total: fin({n, ok, no, skip}), subjects: [...S.values()].filter(x => x.n).map(fin),
+    clusters: [...T.values()].map(fin).sort((a, b) => a.pct - b.pct || b.n - a.n),
+    guess: c.conf ? {...g, lost: r2(g.no * neg)} : null, sure: c.conf ? su : null, none: none.n ? none : null, blank,
+    days: [...done].sort((a, b) => a.part - b.part).map(r => ({part: r.part, date: (P.get(r.part) || {}).date || null, n: r.n, ok: r.ok, no: r.no, skip: r.skip,
+      net: neg ? r2(r.ok - r.no * neg) : null, pct: r.n ? Math.round(r.ok / r.n * 100) : 0}))};
 }
 
 // সব ভাগ মিলিয়ে বিষয়ের চিত্র। শতাংশ শুধু ব্যান্ড ঠিক করতে; পাতায় দেখানো হয় "৪০-এ ২২"
@@ -1594,7 +1678,7 @@ function diagStatus(c, done) {
 }
 
 // শিক্ষার্থীর কাছে যায় শুধু নম্বর; চিহ্ন (তাড়াহুড়া ইত্যাদি) অ্যাডমিনের
-const resPub = r => r && {part: r.part, n: r.n, ok: r.ok, no: r.no, skip: r.skip, by: r.by};
+const resPub = r => r && {part: r.part, n: r.n, ok: r.ok, no: r.no, skip: r.skip, by: r.by, ...(r.neg ? {neg: r.neg, net: r.net} : {})};
 const statusPub = st => st && {...st, subjects: st.subjects.map(({unsure, few, gain, ...x}) => x)};
 async function diag(path, req, url, env, db, u) {
   await diagSetup(db);
@@ -1603,18 +1687,20 @@ async function diag(path, req, url, env, db, u) {
   if (!PID.test(sid)) return json({error: 'bad'}, 400);
   const c = await diagCfg(db, sid);
   if (!c) return json({error: 'no set'}, 404);
-  const now = Date.now();
-  const partsPub = c.parts.map(p => ({no: p.no, title: p.title, subjects: p.subjects, n: p.qs.length, mins: p.mins}));
+  const now = Date.now(), today = dhakaDay(now);
+  // ভাগে date থাকলে সেই দিনের (ঢাকা) আগে খোলে না; পরে দেওয়া চলে (পিছিয়ে পড়া)
+  const shut = p => !!p.date && p.date > today;
+  const partsPub = c.parts.map(p => ({no: p.no, title: p.title, subjects: p.subjects, n: p.qs.length, mins: p.mins, ...(p.date ? {date: p.date} : {})}));
   if (path === 'diag/me' && m === 'GET') {
-    const out = {s: sid, title: c.title, now, subjects: c.subjects.map(s => ({id: s.id, name: s.name, marks: s.marks})), parts: partsPub,
-      ready: !!c.parts.length, user: u ? pub(u) : null};
+    const out = {s: sid, title: c.title, now, today, subjects: c.subjects.map(s => ({id: s.id, name: s.name, marks: s.marks})), parts: partsPub,
+      ready: !!c.parts.length, user: u ? pub(u) : null, neg: c.neg || 0, conf: c.conf ? 1 : 0, report: c.report || null};
     if (!u) return json(out);
     const {results} = await db.prepare('SELECT part, ts, dl, done, res, ans FROM diag_att WHERE sid = ? AND uid = ?').bind(sid, u.id).all();
     const A = new Map(results.map(r => [r.part, r]));
     const finished = [];
     out.parts = partsPub.map(p => {
       const r = A.get(p.no);
-      if (!r) return {...p, st: 'todo'};
+      if (!r) return {...p, st: shut(c.P.get(p.no)) ? 'locked' : 'todo'};
       if (!r.done && now < r.dl + GRACE) return {...p, st: 'going', left: r.dl - now, answered: Object.keys(JSON.parse(r.ans)).length};
       if (!r.res) return {...p, st: 'closing'}; // সময় শেষ, কিন্তু ফল এখনো গোনা হয়নি: পাতা খুললেই save দিয়ে বন্ধ হয়
       const res = JSON.parse(r.res); finished.push(res);
@@ -1622,6 +1708,7 @@ async function diag(path, req, url, env, db, u) {
     });
     out.status = finished.length ? statusPub(diagStatus(c, finished)) : null;
     out.all = !!c.parts.length && finished.length === c.parts.length;
+    if (c.report && finished.length && (out.all || today >= c.report)) out.rep = diagReport(c, finished);
     // অ্যাডমিনের বার্তা: না-দেখাগুলো আর শেষ কয়েকটা
     out.msgs = (await db.prepare('SELECT id, ts, text, seen FROM msg WHERE uid = ? ORDER BY ts DESC LIMIT 5').bind(u.id).all()).results;
     return json(out);
@@ -1638,6 +1725,7 @@ async function diag(path, req, url, env, db, u) {
   let att = await db.prepare('SELECT ts, dl, ans, done, res, hid, hn, meta FROM diag_att WHERE sid = ? AND uid = ? AND part = ?').bind(sid, u.id, no).first();
 
   if (path === 'diag/start' && m === 'POST') {
+    if (!att && shut(p)) return json({error: 'locked', date: p.date}, 403);
     if (!att) {
       await db.prepare("INSERT OR IGNORE INTO diag_att(sid, uid, part, ts, dl, ans, done, res, hid, hn, meta) VALUES(?,?,?,?,?,'{}',NULL,NULL,0,0,?)")
         .bind(sid, u.id, no, now, now + p.mins * 60e3, JSON.stringify({...diagMeta(req, body), opens: 1})).run();
@@ -1652,10 +1740,10 @@ async function diag(path, req, url, env, db, u) {
     }
     const Q = await diagQs(db, sid, p.qs), ans = JSON.parse(att.ans);
     const qs = p.qs.filter(id => Q.has(id)).map(id => {
-      const q = Q.get(id), ord = dOrder(q.o.length, dSeed(sid, u.id, id));
+      const q = Q.get(id), ord = qOrd(c, q, u.id, id);
       return {id, s: q.s, q: q.q, o: ord.map(i => q.o[i])};
     });
-    return json({part: no, title: p.title, mins: p.mins, left: att.dl - now, qs, done: Object.entries(ans).map(([id, a]) => [id, a[0]])});
+    return json({part: no, title: p.title, mins: p.mins, left: att.dl - now, qs, done: Object.entries(ans).map(([id, a]) => [id, a[0]]), conf: c.conf ? 1 : 0, neg: c.neg || 0});
   }
   if (path === 'diag/save' && m === 'POST') {
     if (!att) return json({error: 'nosit'}, 403);
@@ -1672,8 +1760,9 @@ async function diag(path, req, url, env, db, u) {
         const pick = Number.isInteger(x[1]) && x[1] >= -1 && x[1] < q.o.length ? x[1] : null;
         if (pick == null) continue;
         const ms = Math.max(0, Math.min(Math.round(num(x[2]) || 0), 3600e3));
-        const ok = pick >= 0 && dOrder(q.o.length, dSeed(sid, u.id, x[0]))[pick] === q.a ? 1 : 0;
-        ans[x[0]] = [pick, ok, ms, qVer(q)]; // ৪র্থ ঘর: দাগের সময়ের চাবি ও ব্যাখ্যা (পুরোনো দাগে নেই)
+        const ok = pick >= 0 && qOrd(c, q, u.id, x[0])[pick] === q.a ? 1 : 0;
+        // ৪র্থ ঘর: দাগের সময়ের চাবি ও ব্যাখ্যা (পুরোনো দাগে নেই); ৫ম: ১ = নিশ্চিত, ০ = আন্দাজ, null = বলেননি (conf-সেটে)
+        ans[x[0]] = [pick, ok, ms, qVer(q), pick >= 0 && c.conf && (x[3] === 0 || x[3] === 1) ? x[3] : null];
         if (now > att.dl + GRACE) lateN++;
       }
     }
@@ -1698,7 +1787,7 @@ async function diag(path, req, url, env, db, u) {
     if (!att || !att.res) return json({error: 'soon'}, 403);
     const Q = await diagQs(db, sid, p.qs), ans = JSON.parse(att.ans);
     return json({part: no, title: p.title, res: resPub(JSON.parse(att.res)), qs: p.qs.filter(id => Q.has(id)).map(id => {
-      const q = Q.get(id), ord = dOrder(q.o.length, dSeed(sid, u.id, id)), a = ans[id];
+      const q = Q.get(id), ord = qOrd(c, q, u.id, id), a = ans[id];
       return {id, s: q.s, q: q.q, o: ord.map(i => q.o[i]), a: ord.indexOf(q.a), pick: a ? a[0] : -1, e: q.e || ''};
     })}, 200, {'Cache-Control': 'no-store'});
   }
@@ -1772,9 +1861,34 @@ async function diagAdmin(path, url, req, db) {
   if (path === 'admin/diag/set' && m === 'POST') {
     const err = diagCheck(body.cfg);
     if (err.length) return json({error: 'check', list: err}, 400);
+    const nc = diagSlim(body.cfg);
+    /* একই নামে নতুন সেট (যেমন pb-start-এর নতুন ৪×৭০): যে ভাগের প্রশ্ন বদলেছে, তার আগের দাগ মোছা নয়, পুরোনো সেট-সহ
+       "<সেট>-old-<সময়>" নামে সরে যায় (অ্যাডমিনে সেই নাম লিখে দেখা যায়)। প্রশ্নের লেখা ঠিক করা (তালিকা একই) হলে কিছু সরে না। */
+    let moved = 0, arch = null;
+    const old = await db.prepare('SELECT cfg, updated FROM diag_set WHERE id = ?').bind(sid).first();
+    if (old) {
+      const oc = JSON.parse(old.cfg), np = new Map(nc.parts.map(p => [p.no, p.qs.join(',')]));
+      const changed = oc.parts.filter(p => np.get(p.no) !== p.qs.join(',')).map(p => p.no);
+      if (changed.length) {
+        const qm = changed.map(() => '?').join(',');
+        const cnt = await db.prepare(`SELECT COUNT(*) n FROM diag_att WHERE sid = ? AND part IN (${qm})`).bind(sid, ...changed).first();
+        if (cnt && cnt.n) {
+          arch = sid + '-old-' + Number(old.updated || Date.now()).toString(36);
+          const ac = {...oc, id: arch, seed: oc.seed || sid, title: (oc.title || sid) + ' (পুরোনো)'};
+          await db.batch([
+            db.prepare('INSERT OR IGNORE INTO diag_set(id, cfg, updated) VALUES(?,?,?)').bind(arch, JSON.stringify(ac), old.updated || Date.now()),
+            db.prepare('INSERT OR IGNORE INTO diag_q(sid, qid, part, s, d) SELECT ?, qid, part, s, d FROM diag_q WHERE sid = ?').bind(arch, sid),
+            db.prepare(`UPDATE diag_att SET sid = ? WHERE sid = ? AND part IN (${qm})`).bind(arch, sid, ...changed)
+          ]);
+          moved = cnt.n;
+        }
+        // বদলানো ভাগের পুরোনো প্রশ্ন (দরকার হলে ওপরে আলাদা সেটে রাখা হয়েছে); নতুনগুলো এর পরেই admin/diag/q দিয়ে আসে
+        await db.prepare(`DELETE FROM diag_q WHERE sid = ? AND part IN (${qm})`).bind(sid, ...changed).run();
+      }
+    }
     await db.prepare('INSERT INTO diag_set(id, cfg, updated) VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET cfg = excluded.cfg, updated = excluded.updated')
-      .bind(sid, JSON.stringify(diagSlim(body.cfg)), Date.now()).run();
-    return json({ok: true});
+      .bind(sid, JSON.stringify(nc), Date.now()).run();
+    return json({ok: true, moved, arch});
   }
   const c = await diagCfg(db, sid);
   if (!c) return json({error: 'no set'}, 404);
@@ -1859,7 +1973,7 @@ async function diagAdmin(path, url, req, db) {
       const p = c.P.get(r.part) || {qs: []}, cr = diagCare(c, r, Q, P);
       return {part: r.part, title: p.title, mins: p.mins, ts: r.ts, dl: r.dl, done: r.done, sec: used(r), hid: r.hid, hn: r.hn, meta: r.meta, res: r.res, care: cr.m,
         qs: p.qs.filter(id => Q.has(id)).map(id => {
-          const q = Q.get(id), a = r.ans[id], ord = dOrder(q.o.length, dSeed(sid, uid, id));
+          const q = Q.get(id), a = r.ans[id], ord = qOrd(c, q, uid, id);
           const pp = P.get(id);
           return {id, s: q.s, q: q.q.slice(0, 160), pick: a && a[0] >= 0 ? q.o[ord[a[0]]] : null, right: q.o[q.a], ok: a ? a[1] : 0, ms: a ? a[2] : null, seen: !!a,
             read: readMs(q), pop: pp && pp[1] ? Math.round(pp[0] / pp[1] * 100) : null, tags: cr.tags[id] || []};
@@ -1882,7 +1996,7 @@ async function diagAdmin(path, url, req, db) {
           if (g) { g[1]++; if (a && a[1]) g[0]++; }
           if (!a || a[0] < 0) { x.skip++; continue; }
           if (a[1]) x.ok++;
-          x.picks[dOrder(x.o.length, dSeed(sid, r.uid, id))[a[0]]]++;
+          x.picks[qOrd(c, Q.get(id), r.uid, id)[a[0]]]++;
           if (a[2] > 0) x.ms.push(a[2]);
         }
       });
@@ -1890,14 +2004,27 @@ async function diagAdmin(path, url, req, db) {
     return json({items: [...I.values()].map(({ms, o, ...x}) => ({...x, o: o.map(t => String(t).slice(0, 60)), med: ms.length ? Math.round(median(ms) / 100) / 10 : null,
       disc: x.hi[1] && x.lo[1] ? Math.round((x.hi[0] / x.hi[1] - x.lo[0] / x.lo[1]) * 100) / 100 : null}))}, 200, {'Cache-Control': 'no-store'});
   }
+  // সমস্যার তালিকা: সবার এক ছক (PIASH প্রত্যেককে আলাদা করে বলবেন)
+  if (path === 'admin/diag/report' && m === 'GET') {
+    const by = new Map();
+    for (const r of await rows()) {
+      const x = by.get(r.uid) || {uid: r.uid, name: r.name || '', email: r.email || '', res: [], going: 0};
+      by.set(r.uid, x);
+      if (r.res) x.res.push(r.res); else x.going++;
+    }
+    return json({set: {id: c.id, title: c.title, neg: c.neg || 0, bands: c.bands || [60, 80], conf: !!c.conf, report: c.report || null,
+      subjects: c.subjects.map(s => ({id: s.id, name: s.name})), parts: c.parts.map(p => ({no: p.no, date: p.date || null, n: p.qs.length}))},
+      people: [...by.values()].map(x => ({uid: x.uid, name: x.name, email: x.email, going: x.going, rep: x.res.length ? diagReport(c, x.res) : null}))
+        .sort((a, b) => (b.rep ? b.rep.doneParts : -1) - (a.rep ? a.rep.doneParts : -1) || a.name.localeCompare(b.name))}, 200, {'Cache-Control': 'no-store'});
+  }
   // প্রতিটি উত্তর এক সারি; নাম/ইমেইল নয়, শুধু uid (Lyanna_data-তে নেওয়ার জন্য)
   if (path === 'admin/diag/csv' && m === 'GET') {
     const all = await rows(), Q = await diagQs(db, sid, c.parts.flatMap(p => p.qs));
-    const out = [['uid', 'part', 'qid', 'subject', 'pick', 'answer', 'ok', 'ms', 'started', 'done', 'unsure', 'dev'].join(',')];
+    const out = [['uid', 'part', 'qid', 'subject', 'cluster', 'pick', 'answer', 'ok', 'ms', 'sure', 'started', 'done', 'unsure', 'dev'].join(',')];
     for (const r of all) for (const id of (c.P.get(r.part) || {qs: []}).qs) {
       const q = Q.get(id); if (!q) continue;
-      const a = r.ans[id], pick = a && a[0] >= 0 ? dOrder(q.o.length, dSeed(sid, r.uid, id))[a[0]] : -1;
-      out.push([r.uid, r.part, id, q.s, pick, q.a, a ? a[1] : 0, a ? a[2] : '', dhakaIso(r.ts), dhakaIso(r.done), r.res && r.res.unsure ? 1 : 0, r.meta.dev || ''].map(csvCell).join(','));
+      const a = r.ans[id], pick = a && a[0] >= 0 ? qOrd(c, q, r.uid, id)[a[0]] : -1;
+      out.push([r.uid, r.part, id, q.s, q.t || '', pick, q.a, a ? a[1] : 0, a ? a[2] : '', a && a[4] != null ? a[4] : '', dhakaIso(r.ts), dhakaIso(r.done), r.res && r.res.unsure ? 1 : 0, r.meta.dev || ''].map(csvCell).join(','));
     }
     return new Response(out.join('\n') + '\n', {headers: {'Content-Type': 'text/csv; charset=utf-8', 'Cache-Control': 'no-store',
       'Content-Disposition': `attachment; filename="${sid}-answers.csv"`}});
@@ -2056,8 +2183,8 @@ async function teacherExport(path, url, req, db) {
           if (!blank) answered++;
           const [kv, ev] = exVer(a && a[3]);
           rows.push({attempt_id: base.session_id + ':' + (i + 1), ...base, question_id: qid,
-            chosen_option: blank || !qq ? null : dOrder(qq.o.length, dSeed(r.sid, r.uid, qid))[a[0]], is_blank: blank ? 1 : 0, correct: a ? a[1] : 0,
-            time_ds: a && a[2] > 0 ? Math.round(a[2] / 100) : null, left_app: null, uncertain: null, position_in_quiz: i + 1,
+            chosen_option: blank || !qq ? null : qOrd(c, qq, r.uid, qid)[a[0]], is_blank: blank ? 1 : 0, correct: a ? a[1] : 0,
+            time_ds: a && a[2] > 0 ? Math.round(a[2] / 100) : null, left_app: null, uncertain: a && (a[4] === 0 || a[4] === 1) ? 1 - a[4] : null, position_in_quiz: i + 1,
             at_day: day, at_hour: hour, device: exDev(mt.dev), key_version: kv, explanation_version: ev});
         });
         sessions.push({...base, quiz_c: null, n: p.qs.length, answered, at_day: day, at_hour: hour, sec: r.done ? Math.round((r.done - r.ts) / 1000) : null,

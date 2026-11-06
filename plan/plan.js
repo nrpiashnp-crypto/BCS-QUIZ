@@ -2,7 +2,9 @@
    পাতায় <main id="view" data-set="bcs-start" data-name="বিসিএস"> (পেট্রোবাংলা: /plan/pb/, সেট pb-start, data-mk)। লগইন বাধ্যতামূলক। নকশা: Lyanna_data/pilot/custom-plan/PLAN.md §৯।
    - এক প্রশ্ন এক পর্দায়, অপশনে প্রথম চাপেই লক; "বাদ দিন" চাপলে শেষে আবার আসে (সময় থাকলে)।
    - উত্তর এই ফোনে জমে ('lb:diag:<সেট>:<ভাগ>'), ৫টা করে সার্ভারে যায়; সময় সার্ভারের।
-   - ফল: ঠিক / ভুল / বাদ আলাদা, নেট নম্বর বা −০.৫ নয়। কার্ডের ছবি ফোনেই আঁকা (canvas), সার্ভারে কিছু যায় না। */
+   - ফল: ঠিক / ভুল / বাদ আলাদা, নেট নম্বর বা −০.৫ নয়। কার্ডের ছবি ফোনেই আঁকা (canvas), সার্ভারে কিছু যায় না।
+   - পাইলট-ধাঁচের সেট (pb-start, সার্ভারের DIAG_DEF): ভাগ নিজের দিনে খোলে, ভুলে কাটা (নেট নম্বর দেখায়), প্রতিটি উত্তরের পরে
+     "নিশ্চিত / আন্দাজ", সব ভাগ শেষে বা report-তারিখে "সমস্যার তালিকা" (ME.rep)। */
 (function(){
 const V=document.getElementById('view'),S=V.dataset.set,NAME=V.dataset.name||'';
 // বিষয়ের ওজনের লেখা: বিসিএসে সিলেবাসের নম্বর, পেট্রোবাংলায় আগের পরীক্ষায় প্রশ্নের ভাগ (data-mk-এ {n})
@@ -39,16 +41,23 @@ const del=k=>{try{localStorage.removeItem(k)}catch(e){}};
 async function api(p,b){
   const r=await fetch('/api/diag/'+p,b?{method:'POST',credentials:'same-origin',keepalive:true,headers:{'Content-Type':'application/json'},body:JSON.stringify({s:S,...b})}:{credentials:'same-origin',cache:'no-store'});
   const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(j.error||'err');e.j=j;e.s=r.status;throw e}return j}
+const MON=['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
+const dday=d=>{const x=String(d||'').split('-');return x.length===3?bn(+x[2])+' '+MON[+x[1]-1]:''};
+const nb=x=>bn(String(Math.round(x*100)/100));
 const mins=m=>m>=60?bn(Math.floor(m/60))+' ঘণ্টা'+(m%60?' '+bn(m%60)+' মিনিট':''):bn(m)+' মিনিট';
 let ME=null,EX=null,tick=null,CH0=0;
 // পরীক্ষার নিয়ম: ভূমিকায় আর প্রতিটা ভাগ শুরুর আগে একই কথা
-const RULES=`<ul class="rules">
+const rules=()=>`<ul class="rules">
   <li>শান্ত জায়গায় একটানা দিন। শুরু করলে ঘড়ি চলতেই থাকে, পাতা বন্ধ করলেও।</li>
+  ${ME&&ME.parts&&ME.parts.some(p=>p.date)?'<li>প্রতিদিন একটি ভাগ খোলে। কোনো দিন না পারলে পরে দেওয়া যায়।</li>':''}
   <li>একবার দাগালে উত্তর আর বদলানো যায় না।</li>
+  ${ME&&ME.conf?'<li>প্রতিটি উত্তরের পরে চাপুন: <b>নিশ্চিত</b>, না <b>আন্দাজ</b>। এতে বোঝা যাবে কোথায় জানা, কোথায় আন্দাজ।</li>':''}
+  ${ME&&ME.neg?'<li>আসল পরীক্ষার মতো প্রতিটি ভুলে '+nb(ME.neg)+' নম্বর কাটা যায়।</li>':''}
   <li>না জানলে আন্দাজে না দাগিয়ে বাদ দিন। বাদ দেওয়া প্রশ্ন ভাগের শেষে আবার আসবে।</li>
   <li>বই বা কারও সাহায্য নেবেন না। এখন আপনি কোথায় আছেন, সেটা ঠিক জানা গেলেই পড়ার ক্রম ঠিক হবে।</li>
   <li>শুরুতে নেট লাগে, পরে নয়: ভাগের সব প্রশ্ন শুরুতেই ফোনে আসে, মাঝপথে নেট গেলেও পরীক্ষা চলে। উত্তর ফোনে জমে, নেট এলে নিজে থেকেই জমা হয়।</li>
 </ul>`;
+const PL=p=>p.date?'ভাগ '+bn(p.no)+' · '+dday(p.date):'ভাগ '+bn(p.no)+' · '+p.subjects.map(SUB).join(' + ');
 const SUB=id=>(((ME&&ME.subjects)||(EX&&EX.subs)||[]).find(s=>s.id===id)||{}).name||id;
 const back='<button class="btn ghost" data-home>← সব ভাগ</button>';
 const wire=()=>V.querySelectorAll('[data-home]').forEach(b=>b.onclick=home);
@@ -81,7 +90,7 @@ function intro(login){
   </ol>
   </div>
   <h2>কীভাবে দেবেন</h2>
-  <div class="card">${RULES}</div>
+  <div class="card">${rules()}</div>
   ${login?'<div class="card"><p style="margin:0 0 8px">ফল জমা রাখতে Google দিয়ে লগইন করুন। পাসওয়ার্ড লাগে না।</p><div id="g"></div></div>':'<div class="card">এই পরীক্ষার প্রশ্ন এখনো তোলা হয়নি। ততক্ষণ <a href="/exams/">অন্য পরীক্ষা দিন →</a></div>'}`;
   if(login)loginBtn();
 }
@@ -104,15 +113,16 @@ function dash(){
   const msgs=(ME.msgs||[]).filter(x=>!x.seen||Date.now()-x.seen<3*864e5);
   if(msgs.length)h+=msgs.map(x=>`<div class="card msg"><b>লিয়ানা বুকস থেকে</b><p>${esc(x.text).replace(/\n/g,'<br>')}</p></div>`).join('');
   const unseen=(ME.msgs||[]).filter(x=>!x.seen).map(x=>x.id);if(unseen.length)api('seen',{ids:unseen}).catch(()=>{});
-  if(ME.all)h+=`<div class="card ex"><div><b>আপনার কার্ড তৈরি</b><small>বিষয় ধরে অবস্থা আর পড়ার ক্রম</small></div><button class="btn" id="st">দেখুন</button></div>`;
-  else h+=`<div class="card"><b>${bn(ME.parts.length)} ভাগের ${bn(done)}টি শেষ</b><div class="prog"><i style="width:${Math.round((t.n-left)/t.n*100)}%"></i></div><span class="dim">${bn(t.n)}-এর মধ্যে ${bn(left)}টি প্রশ্ন বাকি</span></div>`;
+  if(ME.rep)h+=`<div class="card ex"><div><b>আপনার সমস্যার তালিকা</b><small>${ME.all?'সব ভাগ থেকে':bn(ME.rep.doneParts)+' ভাগ থেকে'}: কোথায় ঘাটতি, আন্দাজে কত গেল</small></div><button class="btn" id="st">দেখুন</button></div>`;
+  else if(ME.all)h+=`<div class="card ex"><div><b>আপনার কার্ড তৈরি</b><small>বিষয় ধরে অবস্থা আর পড়ার ক্রম</small></div><button class="btn" id="st">দেখুন</button></div>`;
+  if(!ME.all)h+=`<div class="card"><b>${bn(ME.parts.length)} ভাগের ${bn(done)}টি শেষ</b><div class="prog"><i style="width:${Math.round((t.n-left)/t.n*100)}%"></i></div><span class="dim">${bn(t.n)}-এর মধ্যে ${bn(left)}টি প্রশ্ন বাকি</span></div>`;
   h+='<h2>ভাগগুলো</h2>'+ME.parts.map(p=>{
-    const sub=p.subjects.map(SUB).join(' + ');
     let right,info=`${bn(p.n)}টি প্রশ্ন · ${bn(p.mins)} মিনিট`;
-    if(p.st==='todo')right=`<button class="btn" data-go="${p.no}">শুরু করুন</button>`;
+    if(p.st==='locked')right=`<span class="st">${dday(p.date)} খুলবে</span>`;
+    else if(p.st==='todo')right=`<button class="btn" data-go="${p.no}">শুরু করুন</button>`;
     else if(p.st==='going'){right=`<button class="btn" data-go="${p.no}">চালিয়ে যান</button>`;info=`চলছে, ${bn(Math.max(0,Math.ceil(p.left/60000)))} মিনিট বাকি`}
-    else{right=`<button class="btn ghost" data-rs="${p.no}">ফল</button>`;info=`${bn(p.res.ok)}টি ঠিক, ${bn(p.res.no)}টি ভুল, ${bn(p.res.skip)}টি বাদ`}
-    return `<div class="card ex"><div><b>ভাগ ${bn(p.no)} · ${esc(sub)}</b><small>${info}</small></div>${right}</div>`}).join('');
+    else{right=`<button class="btn ghost" data-rs="${p.no}">ফল</button>`;info=`${bn(p.res.ok)}টি ঠিক, ${bn(p.res.no)}টি ভুল, ${bn(p.res.skip)}টি বাদ`+(p.res.net!=null?` · নম্বর ${nb(p.res.net)}`:'')}
+    return `<div class="card ex"><div><b>${esc(PL(p))}</b><small>${info}</small></div>${right}</div>`}).join('');
   V.innerHTML=h;
   V.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const p=ME.parts.find(x=>x.no===+b.dataset.go);p.st==='going'?part(p.no):ready(p)});
   V.querySelectorAll('[data-rs]').forEach(b=>b.onclick=()=>result((ME.parts.find(p=>p.no===+b.dataset.rs)||{}).res));
@@ -128,7 +138,7 @@ let hidAt=0;
 function local(no){return get(LK(no),{a:{},sent:[],hid:0,hn:0,skip:[]})}
 // জমে থাকা উত্তর সার্ভারে; fin হলে ভাগ বন্ধ আর ফল ফেরত
 async function sendPart(no,fin){
-  const L=local(no),sent=new Set(L.sent),list=Object.entries(L.a).filter(([id])=>!sent.has(id)).map(([id,x])=>[id,x[0],x[1]]);
+  const L=local(no),sent=new Set(L.sent),list=Object.entries(L.a).filter(([id])=>!sent.has(id)).map(([id,x])=>[id,x[0],x[1],x[2]==null?null:x[2]]);
   if(!list.length&&!fin)return null;
   const r=await api('save',{part:no,ans:list,hid:Math.round(L.hid),hn:L.hn,fin:!!fin});
   const L2=local(no);L2.sent=[...new Set([...L2.sent,...list.map(x=>x[0])])];set(LK(no),L2);
@@ -143,17 +153,17 @@ document.addEventListener('visibilitychange',()=>{
   else if(hidAt){L.hid+=(Date.now()-hidAt)/1000;hidAt=0;set(LK(EX.part),L)}
 });
 function ready(p){
-  V.innerHTML=`${back}<h1 style="margin-top:12px">ভাগ ${bn(p.no)} · ${esc(p.subjects.map(SUB).join(' + '))}</h1>
-    <p class="sub">${bn(p.n)}টি প্রশ্ন, ${bn(p.mins)} মিনিট।</p><div class="card">${RULES}</div>
+  V.innerHTML=`${back}<h1 style="margin-top:12px">${esc(PL(p))}</h1>
+    <p class="sub">${bn(p.n)}টি প্রশ্ন, ${bn(p.mins)} মিনিট।</p><div class="card">${rules()}</div>
     <button class="btn big" id="go">শুরু করুন</button>`;
   wire();$('go').onclick=()=>part(p.no);scrollTo(0,0);
 }
 async function part(no){
   V.innerHTML='<p class="dim">প্রশ্ন আসছে…</p>';
   let app=0;try{app=localStorage.getItem('lb:inapp')?1:0}catch(e){}
-  try{EX=await api('start',{part:no,w:innerWidth,app});EX.end=Date.now()+EX.left;set(XK(no),{part:EX.part,title:EX.title,mins:EX.mins,qs:EX.qs,end:EX.end,done:[],subs:ME?ME.subjects:[]})}catch(e){
+  try{EX=await api('start',{part:no,w:innerWidth,app});EX.end=Date.now()+EX.left;set(XK(no),{part:EX.part,title:EX.title,mins:EX.mins,qs:EX.qs,end:EX.end,done:[],subs:ME?ME.subjects:[],conf:EX.conf})}catch(e){
     const off=get(XK(no),null);
-    if(!e.s&&off&&off.end>Date.now()){EX=off}else{if(e.message==='done')del(XK(no));V.innerHTML=`<div class="card">${e.message==='done'?'এই ভাগ আগেই শেষ।':'খোলা যায়নি। নেট দেখে আবার চেষ্টা করুন।'}</div>${back}`;wire();return}}
+    if(!e.s&&off&&off.end>Date.now()){EX=off}else{if(e.message==='done')del(XK(no));V.innerHTML=`<div class="card">${e.message==='done'?'এই ভাগ আগেই শেষ।':e.message==='locked'?'এই ভাগ '+dday(e.j&&e.j.date)+' খুলবে।':'খোলা যায়নি। নেট দেখে আবার চেষ্টা করুন।'}</div>${back}`;wire();return}}
   const L=local(no);for(const [id,p] of EX.done){if(!L.a[id])L.a[id]=[p,0];if(!L.sent.includes(id))L.sent.push(id)}set(LK(no),L);
   // প্রথমে যেগুলো একবারও দেখানো হয়নি, তারপর বাদ দেওয়াগুলো (একবার)
   EX.queue=EX.qs.filter(q=>!L.a[q.id]&&!L.skip.includes(q.id)).map(q=>q.id).concat(L.skip.filter(id=>!L.a[id]));
@@ -177,20 +187,30 @@ function show(){
   V.innerHTML=`<div class="qh"><span>ভাগ ${bn(EX.part)} · ${esc(SUB(q.s))}</span><span>${bn(answered)} / ${bn(EX.qs.length)} উত্তর</span></div>
     ${again?'<p class="tag">আগে বাদ দিয়েছিলেন</p>':''}<div class="qt">${rich(q.q)}</div>
     ${q.o.map((o,k)=>`<button class="opt" data-o="${k}"><span class="k">${K[k]}</span><span>${rich(o)}</span></button>`).join('')}
+    ${EX.conf?'<p class="hint" id="cfh" hidden>উত্তরটা কেমন দিলেন?</p><div class="conf" id="cf" hidden><button data-c="1">নিশ্চিত</button><button data-c="0">আন্দাজ</button></div>':''}
     <p class="net" id="net">${navigator.onLine?'':'নেট নেই। পরীক্ষা চলছে, উত্তর ফোনে জমছে।'}</p>
-    <div class="skip"><button class="btn ghost" id="sk">${again?'জানি না':'বাদ দিন'}</button></div>
+    <div class="skip" id="skw"><button class="btn ghost" id="sk">${again?'জানি না':'বাদ দিন'}</button></div>
     ${answered&&answered%8===0&&answered!==CH0&&!again?(CH0=answered,cheer(answered)):''}`;
-  const go=pick=>{
+  // conf-সেটে: অপশন চাপলেই উত্তর লক আর ফোনে জমা (সময় শেষ হলেও থাকে); তারপর "নিশ্চিত / আন্দাজ" চাপলে পরের প্রশ্ন
+  const lock=pick=>{
+    if(busy)return;busy=true;
+    const L=local(EX.part);L.a[id]=[pick,Date.now()-t0];set(LK(EX.part),L);
+    V.querySelectorAll('.opt').forEach(b=>b.disabled=true);$('skw').hidden=true;$('cf').hidden=false;$('cfh').hidden=false;
+    $('cf').querySelectorAll('button').forEach(b=>b.onclick=()=>{
+      $('cf').querySelectorAll('button').forEach(x=>{x.disabled=true;x.setAttribute('aria-pressed',x===b?'true':'false')});
+      const L=local(EX.part);if(L.a[id])L.a[id][2]=+b.dataset.c;set(LK(EX.part),L);busy=false;go(pick,true)});
+  };
+  const go=(pick,kept)=>{
     if(busy)return;busy=true;
     const L=local(EX.part);
-    if(pick<0&&!again){L.skip.push(id)}else L.a[id]=[pick,Date.now()-t0];
+    if(!kept){if(pick<0&&!again){L.skip.push(id)}else L.a[id]=[pick,Date.now()-t0]}
     set(LK(EX.part),L);EX.queue.shift();
     V.querySelectorAll('button').forEach(b=>b.disabled=true);
     if(Object.keys(L.a).length-L.sent.length>=5)sendPart(EX.part,false).catch(()=>{});
     // পরের প্রশ্ন: দাগটা এক মুহূর্ত দেখা যায়, তারপর হালকা মিলিয়ে নতুন প্রশ্ন ফুটে ওঠে (ঝট করে বদল নয়)
     setTimeout(()=>{V.classList.add('qout');setTimeout(()=>{EX.queue.length?show():finish();requestAnimationFrame(()=>requestAnimationFrame(()=>V.classList.remove('qout')))},150)},pick>=0?220:0);
   };
-  V.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{b.classList.add('sel');go(+b.dataset.o)});
+  V.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{if(busy)return;b.classList.add('sel');EX.conf?lock(+b.dataset.o):go(+b.dataset.o)});
   $('sk').onclick=()=>go(-1);
   fresh();
   scrollTo(0,0);
@@ -222,6 +242,7 @@ function result(res){
   const left=ME.parts.filter(p=>p.st!=='done'&&p.no!==res.part).length;
   if(!left&&ME.status)return status(true);
   let h=`${back}<h1 style="margin-top:12px">ভাগ ${bn(res.part)}-এর ফল</h1>`;
+  if(res.net!=null)h+=`<div class="card"><b>নম্বর: ${bn(res.n)}-এর মধ্যে ${nb(res.net)}</b><div class="sub" style="margin:2px 0 0">${bn(res.ok)}টি ঠিক, ${bn(res.no)}টি ভুল, ${bn(res.skip)}টি বাদ${res.no?` · ভুলের জন্য কাটা গেছে ${nb(res.no*res.neg)}`:''}</div></div>`;
   h+=Object.entries(res.by).map(([sid,x])=>{const b=band(x);
     return `<div class="card"><b>${esc(SUB(sid))}</b>: ${bn(x.n)}টির মধ্যে ${bn(x.ok)}টি ঠিক<div class="sub" style="margin:2px 0 0">${bn(x.no)}টি ভুল, ${bn(x.skip)}টি বাদ</div>${b&&LINE[b]?`<p style="margin:6px 0 0">${LINE[b]}</p>`:''}</div>`}).join('');
   h+=left?`<div class="card ex"><div><b>আরও ${bn(left)} ভাগ বাকি</b><small>সব শেষে আপনার কার্ড</small></div><button class="btn" data-home>পরের ভাগ</button></div>`
@@ -246,6 +267,7 @@ async function review(no){
 const BL={strong:'শক্ত',mid:'মাঝামাঝি',focus:'এখন ফোকাস'};
 const first=()=>((ME.user&&ME.user.name)||'').trim().split(/\s+/)[0]||'';
 function status(fresh){
+  if(ME.rep)return problems(fresh);
   const st=ME.status;if(!st)return home();
   const subs=st.subjects.filter(x=>x.band),strong=subs.filter(x=>x.band==='strong'),plan=st.order.map(id=>st.subjects.find(x=>x.id===id));
   const nm=first(),tot=bn(ME.parts.reduce((a,p)=>a+p.n,0));
@@ -266,6 +288,33 @@ function status(fresh){
   photo(st,strong,plan,nm);
 }
 
+// ---------- সমস্যার তালিকা (পাইলট, site-needs.md §৩): লজ্জা নয়, সত্যি সংখ্যা আর কোথায় পড়তে হবে ----------
+const RB={weak:'এখন ফোকাস',mid:'মাঝারি',strong:'শক্ত'},RC={weak:'focus',mid:'mid',strong:'strong'};
+function problems(fresh){
+  const R=ME.rep,T=R.total,nm=first(),[lo,hi]=R.bands;
+  const row=x=>`<tr><td>${esc(x.name)}</td><td>${bn(x.n)}-এ ${bn(x.ok)}</td><td class="bd-${RC[x.band]}">${bn(x.pct)}% · ${RB[x.band]}</td></tr>`;
+  let h=fresh?'':back;
+  h+=`<div class="hello"><h1>${R.doneParts===R.parts?'অভিনন্দন'+(nm?', '+esc(nm):'')+'।':'আপনার সমস্যার তালিকা'}</h1>
+    <p>${bn(R.doneParts)} ভাগের ${bn(T.n)}টি প্রশ্ন থেকে। নিচে কোথায় ঘাটতি, কোথায় আন্দাজে নম্বর গেল। এই তালিকা ধরেই সামনের পড়া সাজানো হবে।</p>
+    ${R.doneParts<R.parts?`<p class="dim" style="margin:0">বাকি ${bn(R.parts-R.doneParts)} ভাগ দিলে তালিকা পুরো হবে।</p>`:''}</div>`;
+  h+=`<div class="card"><b>মোট নম্বর: ${bn(T.n)}-এর মধ্যে ${T.net!=null?nb(T.net):bn(T.ok)}</b><div class="sub" style="margin:2px 0 0">${bn(T.ok)}টি ঠিক, ${bn(T.no)}টি ভুল, ${bn(T.skip)}টি বাদ</div></div>`;
+  h+=`<h2>বিষয় ধরে</h2><div class="card"><table><thead><tr><th>বিষয়</th><th>ঠিক</th><th>অবস্থা</th></tr></thead><tbody>${R.subjects.map(row).join('')}</tbody></table>
+    <p class="sub" style="margin:8px 0 0">${bn(lo)}%-এর কম: এখন ফোকাস · ${bn(lo)}-${bn(hi)}%: মাঝারি · ${bn(hi)}%-এর বেশি: শক্ত</p></div>`;
+  const cl=R.clusters.filter(x=>x.n),top=cl.filter(x=>x.band==='weak').slice(0,6);
+  if(cl.length){h+=`<h2>যে টপিকে বেশি ঘাটতি</h2><div class="card">${top.length?`<ol class="plan">${top.map(x=>`<li>${esc(x.name)} <span class="dim">· ${bn(x.n)}-এ ${bn(x.ok)}</span></li>`).join('')}</ol>`:'<p style="margin:0">কোনো টপিকে বড় ঘাটতি নেই।</p>'}
+    <details><summary>সব টপিক (${bn(cl.length)})</summary><table><tbody>${cl.map(row).join('')}</tbody></table></details></div>`}
+  const G=R.guess,Su=R.sure,lines=[];
+  if(G&&G.n)lines.push(`আন্দাজে দিয়েছেন <b>${bn(G.n)}টি</b>: ${bn(G.ok)}টি ঠিক, ${bn(G.no)}টি ভুল।${R.neg&&G.no?` ভুলগুলোর জন্য কাটা গেছে <b>${nb(G.lost)} নম্বর</b>।`:''}`);
+  if(Su&&Su.no)lines.push(`নিশ্চিত বলেও ভুল হয়েছে <b>${bn(Su.no)}টি</b>। এগুলো ভুল জানা, আবার পড়ে নেওয়া দরকার।`);
+  if(R.none)lines.push(`যেসব প্রশ্নে ঠিক উত্তর ছিল "কোনোটিই নয়", সেখানে ${bn(R.none.n)}টির মধ্যে ${bn(R.none.ok)}টি ঠিক।`);
+  if(R.blank)lines.push(`সময় শেষে না-দেখা রয়ে গেছে <b>${bn(R.blank)}টি</b> প্রশ্ন।`);
+  if(lines.length)h+=`<h2>আন্দাজ আর সময়</h2><div class="card"><ul class="rules">${lines.map(x=>`<li>${x}</li>`).join('')}</ul></div>`;
+  if(R.days.length>1)h+=`<h2>দিন ধরে</h2><div class="card"><table><thead><tr><th>দিন</th><th>${R.neg?'নম্বর':'ঠিক'}</th><th>ঠিক %</th></tr></thead><tbody>${R.days.map(d=>
+    `<tr><td>${d.date?dday(d.date):'ভাগ '+bn(d.part)}</td><td>${R.neg?nb(d.net):bn(d.ok)} <small>/ ${bn(d.n)}</small></td><td>${bn(d.pct)}%</td></tr>`).join('')}</tbody></table></div>`;
+  if(fresh)h+=`<p><button class="btn ghost" data-home>সব ভাগ দেখুন</button></p>`;
+  V.innerHTML=h;wire();scrollTo(0,0);
+}
+
 // কার্ডের ছবি ১০৮০×১৩৫০। আপেক্ষিক, পরম নয়: মোট নম্বর, শতাংশ, র‍্যাঙ্ক, "দুর্বল" শব্দ নেই
 async function photo(st,strong,plan,nm){
   try{await Promise.all(['600 60px "Tiro Bangla"','400 34px "Noto Sans Bengali"','600 34px "Noto Sans Bengali"'].map(f=>document.fonts.load(f,'অআকখ')))}catch(e){}
@@ -274,7 +323,7 @@ async function photo(st,strong,plan,nm){
   g.fillStyle=PAPER;g.fillRect(0,0,W,H);
   g.fillStyle=NAVY;g.fillRect(0,0,W,210);
   g.fillStyle='#fff';g.font='600 58px "Tiro Bangla"';g.fillText(NAME+' অবস্থা-যাচাই',70,110);
-  const d=new Date(Date.now()+6*36e5),MON=['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
+  const d=new Date(Date.now()+6*36e5);
   g.fillStyle=GOLD;g.font='400 32px "Noto Sans Bengali"';
   nm=(nm||'').slice(0,24);
   g.fillText((nm?nm+' · ':'')+bn(ME.parts.reduce((a,p)=>a+p.n,0))+' প্রশ্ন · '+bn(st.parts)+' ভাগ শেষ · '+bn(d.getUTCDate())+' '+MON[d.getUTCMonth()],70,168);

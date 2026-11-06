@@ -50,11 +50,12 @@ small.dim{font-size:12.5px}
 <h1>অবস্থা-যাচাই (নিজের পরিকল্পনা)</h1>
 <p class="sub">কে কী দিয়েছেন, কে তাড়াহুড়া করেছেন, কোন প্রশ্ন কেমন গেল। তাড়াহুড়ার চিহ্ন শুধু এখানে দেখা যায়, শিক্ষার্থী দেখেন না।</p>
 <div class="row"><input type="text" id="sid" value="bcs-start" style="max-width:220px"><button class="btn ghost" id="load">আবার লোড</button><a class="btn ghost" id="csv" href="#">সব উত্তরের CSV</a></div>
-<div class="tabs" id="tabs"><button data-t="sum" aria-pressed="true">সার</button><button data-t="ppl">মানুষ</button><button data-t="items">প্রশ্ন</button><button data-t="up">সেট তোলা</button></div>
+<div class="tabs" id="tabs"><button data-t="sum" aria-pressed="true">সার</button><button data-t="ppl">মানুষ</button><button data-t="items">প্রশ্ন</button><button data-t="rep">সমস্যার তালিকা</button><button data-t="up">সেট তোলা</button></div>
 <section id="sum"></section>
 <section id="ppl" hidden></section>
 <section id="one" hidden></section>
 <section id="items" hidden></section>
+<section id="rep" hidden></section>
 <section id="up" hidden>
 <div class="card"><p class="sub" style="margin:0 0 8px">যা তুলবেন তার আসল কপি Lyanna_data-র <code>pilot/custom-plan/&lt;সেট&gt;.json</code>-এ রাখুন (D1-এর নিজের ব্যাকআপ নেই)। ছাঁচ: সেখানকার PLAN.md §৯।</p>
 <div id="setsum" class="dim"></div>
@@ -86,7 +87,7 @@ const SUBN={bn:'বাংলা',en:'ইংরেজি',bd:'বাংলাদ�
 const tm=s=>s==null?'—':s>=60?bn(Math.floor(s/60))+' মি. '+bn(s%60)+' সে.':bn(s)+' সে.';
 const when=ts=>{if(!ts)return '—';const d=new Date(ts+6*36e5);return bn(d.getUTCDate())+'/'+bn(d.getUTCMonth()+1)+' '+bn(String(d.getUTCHours()).padStart(2,'0'))+':'+bn(String(d.getUTCMinutes()).padStart(2,'0'))};
 const pc=(a,b)=>b?bn(Math.round(a/b*100))+'%':'—';
-let P=null,IT=null;
+let P=null,IT=null,RP=null;
 const TPL=[['বেখেয়ালি, আবার দিন','আপনার অবস্থা-যাচাইয়ের কয়েকটা উত্তর খুব তাড়াতাড়ি দেওয়া হয়েছে, প্রশ্ন আর অপশন পুরো পড়ার আগেই। এতে আপনার পরিকল্পনা ঠিক আসবে না। ভাগটা আবার দেওয়ার সুযোগ খুলে দিয়েছি। এবার সময় নিয়ে, প্রতিটা অপশন পড়ে দিন।'],
   ['সহজ প্রশ্নে ভুল','আপনি কঠিন প্রশ্নও পেরেছেন, কিন্তু কয়েকটা সহজ প্রশ্নে ভুল হয়েছে। পরীক্ষায় তাড়াহুড়া না করে প্রতিটা অপশন পড়ে উত্তর দিন। শুধু এতেই কয়েক নম্বর বাড়বে।'],
   ['বাকি ভাগ শেষ করুন','ভালো শুরু করেছেন! বাকি ভাগগুলোও শেষ করুন, তাহলেই আপনার পুরো পরিকল্পনা আর কার্ড তৈরি হবে।'],
@@ -109,11 +110,11 @@ function compose(box,uids,emails,resetParts,after){
     catch(e){box.querySelector('#mo').textContent='পাঠানো যায়নি: '+e.message;box.querySelector('#ms').disabled=false}};
 }
 function tab(t){document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t?'true':'false'));
-  ['sum','ppl','one','items','up'].forEach(x=>$(x).hidden=x!==t);if(t==='items'&&!IT)items();scrollTo(0,0)}
+  ['sum','ppl','one','items','up','rep'].forEach(x=>$(x).hidden=x!==t);if(t==='items'&&!IT)items();if(t==='rep'&&!RP)report();scrollTo(0,0)}
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.t));
 
 async function load(){
-  $('csv').href='/api/admin/diag/csv?s='+encodeURIComponent(S());IT=null;
+  $('csv').href='/api/admin/diag/csv?s='+encodeURIComponent(S());IT=null;RP=null;if(!$('rep').hidden)report();
   $('sum').innerHTML='<p class="dim">লোড হচ্ছে…</p>';
   try{P=await api('diag/people?s='+encodeURIComponent(S()))}catch(e){
     $('sum').innerHTML='<div class="card">'+(e.message==='admin'?'অ্যাডমিন হিসেবে লগইন করুন (<a href="/account/">/account/</a>)।':e.message==='no set'?'এই সেট এখনো তোলা হয়নি। "সেট তোলা" ট্যাবে যান।':'খোলা যায়নি: '+esc(e.message))+'</div>';$('ppl').innerHTML='';setsum();return}
@@ -154,7 +155,7 @@ function people(){
     compose($('pbox'),ids,pp.filter(x=>ids.includes(x.uid)&&x.email).map(x=>x.email),null,load)};
 }
 async function person(uid){
-  ['sum','ppl','items','up'].forEach(x=>$(x).hidden=true);$('one').hidden=false;$('one').innerHTML='<p class="dim">লোড হচ্ছে…</p>';scrollTo(0,0);
+  ['sum','ppl','items','up','rep'].forEach(x=>$(x).hidden=true);$('one').hidden=false;$('one').innerHTML='<p class="dim">লোড হচ্ছে…</p>';scrollTo(0,0);
   let r;try{r=await api('diag/person?s='+encodeURIComponent(S())+'&uid='+uid)}catch(e){$('one').innerHTML='খোলা যায়নি।';return}
   let h=`<button class="btn ghost" id="bk">← সবাই</button><h2>${esc(r.user&&r.user.name)} <small class="dim">${esc(r.user&&r.user.email)} · uid ${bn(uid)}</small></h2>
     <div class="row"><button class="btn" id="pm">বার্তা পাঠান</button></div><div id="mbox"></div>`;
@@ -188,6 +189,26 @@ async function items(){
       <td class="${x.disc!=null&&x.disc<=0?'flag':''}">${x.disc==null?'—':bn(x.disc)}</td><td>${x.o.map((o,k)=>`<div${k===x.a?' class="qok"':''}>${'কখগঘঙচ'[k]}. ${bn(x.picks[k])} <small class="dim">${esc(o)}</small></div>`).join('')}</td></tr>`).join('')}</tbody></table></div>`;
     f.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{sort=b.dataset.s;draw()});
   };draw();
+}
+// ---- সমস্যার তালিকা: সবার এক ছক (পাইলট, site-needs.md §৩) ----
+const BC={weak:'bad',mid:'warnc',strong:'ok'},nb=x=>x==null?'—':bn(String(Math.round(x*100)/100));
+const dday=d=>{if(!d)return '';const x=d.split('-');return bn(+x[2])+'/'+bn(+x[1])};
+async function report(){
+  const f=$('rep');f.innerHTML='<p class="dim">লোড হচ্ছে…</p>';
+  try{RP=await api('diag/report?s='+encodeURIComponent(S()))}catch(e){f.innerHTML='<div class="card">খোলা যায়নি: '+esc(e.message)+'</div>';return}
+  const st=RP.set,[lo,hi]=st.bands,L=RP.people.filter(x=>x.rep);
+  if(!L.length){f.innerHTML='<p class="dim">এখনো কেউ কোনো ভাগ শেষ করেননি।</p>';return}
+  const pct=x=>x&&x.n?`<span class="${BC[x.band]||''}">${bn(x.pct)}%</span>`:'—';
+  f.innerHTML=`<p class="sub">প্রতি সারিতে একজন। রং: <span class="bad">${bn(lo)}%-এর কম দুর্বল</span>, <span class="warnc">${bn(lo)}-${bn(hi)}% মাঝারি</span>, <span class="ok">${bn(hi)}%+ শক্ত</span> (ঠিকের হার)। নম্বর ভুলে ${nb(st.neg)} কেটে। সারিতে চাপলে সেই মানুষের প্রতিটি উত্তর।</p>
+  <div class="card scroll"><table><thead><tr><th>কে</th><th>ভাগ</th><th>নম্বর</th><th>ঠিক</th>${st.subjects.map(s=>`<th>${esc(s.name)}</th>`).join('')}<th>সবচেয়ে দুর্বল টপিক</th><th>আন্দাজ: ঠিক/ভুল · কাটা</th><th>নিশ্চিত, তবু ভুল</th><th>"কোনোটিই নয়" প্রশ্নে</th><th>সময় শেষে ফাঁকা</th><th>দিন ধরে নম্বর</th></tr></thead><tbody>${L.map(x=>{const r=x.rep,S=new Map(r.subjects.map(y=>[y.id,y]));
+    return `<tr class="click" data-u="${x.uid}"><td style="min-width:110px">${esc(x.name)}<br><small class="dim">uid ${bn(x.uid)}${x.going?' · একটি চলছে':''}</small></td><td>${bn(r.doneParts)}/${bn(r.parts)}</td>
+    <td><b>${r.total.net!=null?nb(r.total.net):bn(r.total.ok)}</b><small class="dim"> / ${bn(r.total.n)}</small></td><td>${pct(r.total)}</td>${st.subjects.map(s=>`<td>${pct(S.get(s.id))}</td>`).join('')}
+    <td style="min-width:240px">${r.clusters.filter(c=>c.n>=2).slice(0,3).map(c=>`<div><span class="${BC[c.band]}">${bn(c.pct)}%</span> ${esc(c.name)} <small class="dim">(${bn(c.ok)}/${bn(c.n)})</small></div>`).join('')||'—'}</td>
+    <td>${r.guess?`${bn(r.guess.n)}টি: ${bn(r.guess.ok)}/${bn(r.guess.no)} · <b>${nb(r.guess.lost)}</b>`:'—'}</td><td>${r.sure?bn(r.sure.no):'—'}</td>
+    <td>${r.none?bn(r.none.ok)+'/'+bn(r.none.n):'—'}</td><td>${bn(r.blank)}</td>
+    <td style="white-space:nowrap">${r.days.map(d=>`<div>${d.date?dday(d.date):'ভাগ '+bn(d.part)}: ${d.net!=null?nb(d.net):bn(d.ok)}<small class="dim">/${bn(d.n)}</small></div>`).join('')}</td></tr>`}).join('')}</tbody></table></div>
+  ${RP.people.some(x=>!x.rep)?`<p class="sub">শুরু করেছেন কিন্তু কোনো ভাগ শেষ হয়নি: ${RP.people.filter(x=>!x.rep).map(x=>esc(x.name)).join(', ')}</p>`:''}`;
+  f.querySelectorAll('tr[data-u]').forEach(r=>r.onclick=()=>person(+r.dataset.u));
 }
 // ---- সেট তোলা ----
 async function setsum(){
@@ -235,7 +256,9 @@ $('f').onchange=async()=>{
 $('upb').onclick=async()=>{
   if(!SET)return;$('upb').disabled=true;const log=$('log');log.hidden=false;log.textContent='সেট তোলা হচ্ছে…\n';
   try{
-    SET.id=S();await api('diag/set',{cfg:{id:SET.id,title:SET.title,subjects:SET.subjects,parts:SET.parts}});
+    SET.id=S();const cfg={id:SET.id,title:SET.title,subjects:SET.subjects,parts:SET.parts};
+    for(const k of ['neg','bands','conf','pin','report','clusters'])if(SET[k]!=null)cfg[k]=SET[k];
+    const sr=await api('diag/set',{cfg});if(sr.moved)log.textContent+='এই সেটে আগের '+bn(sr.moved)+'টি ভাগ-দেওয়া অন্য প্রশ্নে ছিল; সেগুলো "'+sr.arch+'" নামে সরানো হলো (মোছা নয়)।\n';
     const all=SET.parts.flatMap(p=>p.qs).map(id=>({id,...SET.questions[id]}));
     for(let i=0;i<all.length;i+=40){const r=await api('diag/q',{s:SET.id,qs:all.slice(i,i+40)});log.textContent+=bn(Math.min(i+40,all.length))+' / '+bn(all.length)+(r.bad.length?' · বাদ: '+r.bad.join(', '):'')+'\n'}
     log.textContent+='শেষ।';load();
