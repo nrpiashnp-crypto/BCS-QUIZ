@@ -187,6 +187,11 @@ def publish(ds: str) -> str:
     day = json.loads(day_path.read_text(encoding="utf-8"))
     build.update_month(day)
     build.update_index(day)
+    try:                                              # /news/ পাতা (স্থির HTML); ব্যর্থ হলেও খবরের ফাইল যাবে, পরেরবার সব নতুন করে বানায়
+        import build_pages  # noqa: E402
+        build_pages.build_all()
+    except Exception as e:  # noqa: BLE001
+        log(f"/news/ পাতা বানানো যায়নি: {e.__class__.__name__}: {e}")
     sh("git", "add", "news", cwd=REPO)
     sh("git", "commit", "-q", "-m", f"news: আজকের ঘটনা {ds} (PIASH-এর অনুমোদনে, Mac থেকে)", cwd=REPO)
     r = sh("git", "push", "-q", "origin", "HEAD:main", cwd=REPO, check=False)
