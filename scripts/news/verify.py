@@ -65,8 +65,7 @@ def check_item(item: dict, texts: list[dict], allow_numbers: set[float] = frozen
 
     verified_nums: set[float] = set()
     facts = item.get("facts") or []
-    if not facts:
-        why.append("কোনো তথ্য-উদ্ধৃতি নেই")
+    kept, dropped = [], []
     for f in facts:
         good_doms = set()
         for ev in f.get("evidence") or []:
@@ -79,14 +78,25 @@ def check_item(item: dict, texts: list[dict], allow_numbers: set[float] = frozen
                     good_doms.add(texts[i]["domain"])
         if len(good_doms) >= 2:
             verified_nums |= numbers(f.get("value", ""))
+            kept.append(f)
         else:
-            why.append(f"তথ্য দুই উৎসে মেলেনি: {f.get('label', '')} = {f.get('value', '')}")
+            dropped.append(f)
+    # এক উৎসের তথ্য বাদ যায়, পুরো ঘটনা নয় — তবে লেখায় সেই নাম/সংখ্যা থাকলে ঘটনা আটকায় (নিচে)
+    item["facts"] = kept
+    item["_dropped"] = [f"{f.get('label', '')} = {f.get('value', '')}" for f in dropped]
+    if not kept:
+        why.append("দুই উৎসে মেলে এমন কোনো তথ্য নেই")
 
     shown = " ".join(str(item.get(k, "")) for k in ("title", "short", "detail", "why_exam"))
     for n in numbers(shown):
         if n in allow_numbers or n in verified_nums:
             continue
-        why.append(f"সারাংশের সংখ্যা যাচাই হয়নি: {n:g}")
+        why.append(f"সারাংশের সংখ্যা দুই উৎসে মেলেনি: {n:g}")
+    shown_n = norm(shown)
+    for f in dropped:
+        v = norm(str(f.get("value", "")))
+        if len(v) >= 4 and not numbers(v) and v in shown_n:
+            why.append(f"লেখার নাম/তথ্য দুই উৎসে মেলেনি: {f.get('label', '')} = {f.get('value', '')}")
 
     for k in ("short", "detail"):
         for t in texts:

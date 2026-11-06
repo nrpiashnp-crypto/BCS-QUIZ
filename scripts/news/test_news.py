@@ -52,6 +52,19 @@ class Verify(unittest.TestCase):
         ok, why = check_item(it, self.texts())
         self.assertFalse(ok)
 
+    def test_single_source_fact_dropped_not_fatal(self):
+        it = self.item()
+        it["facts"].append({"label": "গভর্নর", "value": "অজানা ব্যক্তি", "evidence": [{"src": 0, "quote": "Bangladesh Bank said"}]})
+        ok, why = check_item(it, self.texts())
+        self.assertTrue(ok, why)
+        self.assertEqual(len(it["facts"]), 1)
+        self.assertEqual(len(it["_dropped"]), 1)
+
+    def test_dropped_name_in_text_fails(self):
+        it = self.item(short="অজানা ব্যক্তি জানান, প্রবাসী আয় ২৮৭ কোটি ডলার।")
+        it["facts"].append({"label": "কে", "value": "অজানা ব্যক্তি", "evidence": [{"src": 0, "quote": "Bangladesh Bank said"}]})
+        self.assertFalse(check_item(it, self.texts())[0])
+
     def test_unverified_number_in_summary_fails(self):
         ok, why = check_item(self.item(short="প্রবাসী আয় বেড়েছে ১২ শতাংশ।"), self.texts())
         self.assertFalse(ok)
@@ -82,6 +95,14 @@ class Feeds(unittest.TestCase):
              '<dc:date>2026-11-04T05:00:00Z</dc:date></item></rdf:RDF>')
         r = collect.parse_feed(x.encode())
         self.assertEqual((r[0]["title"], r[0]["url"]), ("DW", "https://dw.com/a"))
+
+    def test_news_sitemap(self):
+        x = (b'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" '
+             b'xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"><url><loc>https://a.com/x</loc><news:news>'
+             b'<news:publication_date>2026-11-06T10:00:00+06:00</news:publication_date><news:title>T</news:title>'
+             b'</news:news></url></urlset>')
+        r = collect.parse_feed(x)
+        self.assertEqual((r[0]["title"], r[0]["url"]), ("T", "https://a.com/x"))
 
     def test_domain(self):
         self.assertEqual(common.domain("https://bangla.thedailystar.net/x"), "thedailystar.net")
