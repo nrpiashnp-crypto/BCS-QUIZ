@@ -15,16 +15,23 @@ if [ ! -s "$KEYDIR/gemini.key" ] || [ "$1" = "--new-key" ]; then
 fi
 KEY="$(tr -d '[:space:]' < "$KEYDIR/gemini.key")"; printf '%s' "$KEY" > "$KEYDIR/gemini.key"
 BODY="$(mktemp)"
-code=$(curl -s -o "$BODY" -w '%{http_code}' -H "x-goog-api-key: $KEY" \
-  "https://generativelanguage.googleapis.com/v1beta/models?pageSize=1")
+# নতুন ধরনের চাবি (AQ. দিয়ে শুরু) মডেল-তালিকায় অনেক সময় 401 দেয়, তাই আসল একটা ছোট প্রশ্ন পাঠিয়ে পরীক্ষা
+code=000
+for MODEL in gemini-3.1-flash-lite gemini-3.6-flash gemini-2.5-flash-lite; do
+  code=$(curl -s -o "$BODY" -w '%{http_code}' -X POST -H "x-goog-api-key: $KEY" -H 'Content-Type: application/json' \
+    -d '{"contents":[{"parts":[{"text":"Reply with OK"}]}]}' \
+    "https://generativelanguage.googleapis.com/v1beta/models/$MODEL:generateContent")
+  [ "$code" = "200" ] && break
+done
 if [ "$code" != "200" ]; then
   echo "চাবি কাজ করছে না (উত্তর $code)।"
-  echo "  পেস্ট হওয়া চাবির দৈর্ঘ্য: ${#KEY} অক্ষর (ঠিক চাবি সাধারণত ৩৯), শুরু: ${KEY:0:4}… (ঠিক চাবি শুরু হয় AIza দিয়ে)"
-  msg=$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d.get("error",{}).get("message","")[:200])' "$BODY" 2>/dev/null)
+  echo "  পেস্ট হওয়া চাবির দৈর্ঘ্য: ${#KEY} অক্ষর, শুরু: ${KEY:0:4}…"
+  msg=$(python3 -c 'import json,sys;e=json.load(open(sys.argv[1])).get("error",{});print(e.get("status",""),"—",e.get("message","")[:200])' "$BODY" 2>/dev/null)
   [ -n "$msg" ] && echo "  Google-এর বার্তা: $msg"
-  echo "আবার চালান: খবরের-বট-চালু.command --new-key  (অথবা ফাইলে আবার দুবার চাপুন)"
+  echo "আবার চালান: ফাইলে আবার দুবার চাপুন"
   rm -f "$KEYDIR/gemini.key" "$BODY"; exit 1
 fi
+echo "চাবি দিয়ে $MODEL উত্তর দিল ✓"
 rm -f "$BODY"
 echo "চাবি ঠিক আছে ✓"
 python3 -m pip install -q --user certifi 2>/dev/null || true
