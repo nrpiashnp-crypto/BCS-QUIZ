@@ -200,15 +200,62 @@ async function report(){
   if(!L.length){f.innerHTML='<p class="dim">এখনো কেউ কোনো ভাগ শেষ করেননি।</p>';return}
   const pct=x=>x&&x.n?`<span class="${BC[x.band]||''}">${bn(x.pct)}%</span>`:'—';
   f.innerHTML=`<p class="sub">প্রতি সারিতে একজন। রং: <span class="bad">${bn(lo)}%-এর কম দুর্বল</span>, <span class="warnc">${bn(lo)}-${bn(hi)}% মাঝারি</span>, <span class="ok">${bn(hi)}%+ শক্ত</span> (ঠিকের হার)। নম্বর ভুলে ${nb(st.neg)} কেটে। সারিতে চাপলে সেই মানুষের প্রতিটি উত্তর।</p>
-  <div class="card scroll"><table><thead><tr><th>কে</th><th>ভাগ</th><th>নম্বর</th><th>ঠিক</th>${st.subjects.map(s=>`<th>${esc(s.name)}</th>`).join('')}<th>সবচেয়ে দুর্বল টপিক</th><th>আন্দাজ: ঠিক/ভুল · কাটা</th><th>নিশ্চিত, তবু ভুল</th><th>"কোনোটিই নয়" প্রশ্নে</th><th>সময় শেষে ফাঁকা</th><th>দিন ধরে নম্বর</th></tr></thead><tbody>${L.map(x=>{const r=x.rep,S=new Map(r.subjects.map(y=>[y.id,y]));
+  <div class="card scroll"><table><thead><tr><th>কে</th><th>ভাগ</th><th>নম্বর</th><th>ঠিক</th>${st.subjects.map(s=>`<th>${esc(s.name)}</th>`).join('')}<th>সবচেয়ে দুর্বল টপিক</th><th>আন্দাজ: ঠিক/ভুল · কাটা</th><th>নিশ্চিত, তবু ভুল</th><th>"কোনোটিই নয়" প্রশ্নে</th><th>সময় শেষে ফাঁকা</th><th>দিন ধরে নম্বর</th><th>পরামর্শ</th></tr></thead><tbody>${L.map(x=>{const r=x.rep,S=new Map(r.subjects.map(y=>[y.id,y]));
     return `<tr class="click" data-u="${x.uid}"><td style="min-width:110px">${esc(x.name)}<br><small class="dim">uid ${bn(x.uid)}${x.going?' · একটি চলছে':''}</small></td><td>${bn(r.doneParts)}/${bn(r.parts)}</td>
     <td><b>${r.total.net!=null?nb(r.total.net):bn(r.total.ok)}</b><small class="dim"> / ${bn(r.total.n)}</small></td><td>${pct(r.total)}</td>${st.subjects.map(s=>`<td>${pct(S.get(s.id))}</td>`).join('')}
     <td style="min-width:240px">${r.clusters.filter(c=>c.n>=2).slice(0,3).map(c=>`<div><span class="${BC[c.band]}">${bn(c.pct)}%</span> ${esc(c.name)} <small class="dim">(${bn(c.ok)}/${bn(c.n)})</small></div>`).join('')||'—'}</td>
     <td>${r.guess?`${bn(r.guess.n)}টি: ${bn(r.guess.ok)}/${bn(r.guess.no)} · <b>${nb(r.guess.lost)}</b>`:'—'}</td><td>${r.sure?bn(r.sure.no):'—'}</td>
     <td>${r.none?bn(r.none.ok)+'/'+bn(r.none.n):'—'}</td><td>${bn(r.blank)}</td>
-    <td style="white-space:nowrap">${r.days.map(d=>`<div>${d.date?dday(d.date):'ভাগ '+bn(d.part)}: ${d.net!=null?nb(d.net):bn(d.ok)}<small class="dim">/${bn(d.n)}</small></div>`).join('')}</td></tr>`}).join('')}</tbody></table></div>
+    <td style="white-space:nowrap">${r.days.map(d=>`<div>${d.date?dday(d.date):'ভাগ '+bn(d.part)}: ${d.net!=null?nb(d.net):bn(d.ok)}<small class="dim">/${bn(d.n)}</small></div>`).join('')}</td>
+    <td><button class="btn ghost" data-nt="${x.uid}">${x.note?(x.note.pub?'প্রকাশিত ✓':'খসড়া'):'লিখুন'}</button></td></tr>`}).join('')}</tbody></table></div>
+  <div id="ned"></div>
   ${RP.people.some(x=>!x.rep)?`<p class="sub">শুরু করেছেন কিন্তু কোনো ভাগ শেষ হয়নি: ${RP.people.filter(x=>!x.rep).map(x=>esc(x.name)).join(', ')}</p>`:''}`;
   f.querySelectorAll('tr[data-u]').forEach(r=>r.onclick=()=>person(+r.dataset.u));
+  f.querySelectorAll('[data-nt]').forEach(b=>b.onclick=e=>{e.stopPropagation();noteEd(+b.dataset.nt)});
+}
+// ---- প্রত্যেকের পরামর্শ: শিক্ষার্থীর সমস্যার তালিকা আর PDF রিপোর্টের নিচে "লিয়ানা বুকস থেকে আপনার জন্য" ----
+let RTN=null;
+async function rtn(){if(RTN||!RP||RP.set.id!=='pb-start')return RTN;try{const r=await fetch('/plan/pb/routine.json',{cache:'no-cache'});if(r.ok)RTN=await r.json()}catch(e){}return RTN}
+const MON=['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
+const dlong=d=>{const x=d.split('-');return bn(+x[2])+' '+MON[+x[1]-1]};
+// খসড়া: সংখ্যা থেকে বানানো, PIASH বদলে নেবেন
+function draft(x,rt){
+  const r=x.rep,nm=(x.name||'').trim().split(/\s+/)[0],neg=r.neg||0;
+  const strong=r.subjects.filter(y=>y.band==='strong').map(y=>y.name),top=r.clusters.filter(c=>c.n>=4&&c.band==='weak').slice(0,3);
+  const L=[];
+  L.push(`${nm?nm+', ':''}আপনার ${bn(r.doneParts)} দিনের অবস্থা-যাচাই দেখলাম। ${bn(r.total.n)}টি প্রশ্নে নম্বর ${nb(r.total.net!=null?r.total.net:r.total.ok)}।`);
+  if(strong.length)L.push(`${strong.join(', ')}-এ আপনি ভালো আছেন; এগুলো ধরে রাখুন।`);
+  if(top.length){L.push('এখন সবচেয়ে বেশি মন দিতে হবে:');
+    top.forEach((c,i)=>{const D=rt?rt.days.filter(d=>d.cluster===c.id&&d.kind==='study').map(d=>dlong(d.date)):[];
+      L.push(`${bn(i+1)}. ${c.name} (${bn(c.n)}টিতে ${bn(c.ok)}টি ঠিক)${D.length?': রুটিনে '+D.join(' ও ')+'। এই দিনগুলো বাদ দেবেন না, আগে শিট পড়ে তারপর পরীক্ষা।':'।'}`)})}
+  const g=r.guess;
+  if(g&&g.n>=8){const net=g.ok-g.no*neg;
+    L.push(net<0?`আন্দাজে ${bn(g.n)}টি দিয়ে ${nb(g.lost)} নম্বর কাটা গেছে, পেয়েছেন ${bn(g.ok)}। অচেনা প্রশ্ন বাদ দিন; দুটো অপশন বাদ দিতে পারলে তবেই দাগান।`
+      :`আন্দাজে ${bn(g.n)}টির মধ্যে ${bn(g.ok)}টি ঠিক, তাই আন্দাজে লাভ হয়েছে। তবে একেবারে অচেনা প্রশ্নে দাগাবেন না।`)}
+  if(r.sure&&r.sure.no>=5)L.push(`"নিশ্চিত" বলে ${bn(r.sure.no)}টি ভুল হয়েছে; মানে কিছু তথ্য ভুলভাবে মনে আছে। ব্যাখ্যাগুলো আবার পড়ে নিন।`);
+  if(r.blank>=5)L.push(`সময় শেষে ${bn(r.blank)}টি প্রশ্ন দেখা হয়নি। কঠিন প্রশ্নে আটকে না থেকে বাদ দিয়ে এগোন।`);
+  L.push('১৪ নভেম্বর থেকে রোজ একটি পড়া আর পরীক্ষা। আমরা পাশে আছি।');
+  return L.join('\n');
+}
+async function noteEd(uid){
+  const x=RP.people.find(y=>y.uid===uid);if(!x)return;
+  const box=$('ned'),n=x.note||{};
+  box.innerHTML=`<div class="card compose" style="margin-top:12px"><b>${esc(x.name)}-এর জন্য পরামর্শ</b>
+    <p class="sub" style="margin:4px 0 6px">প্রকাশ করলে তাঁর সমস্যার তালিকা আর PDF রিপোর্টে "লিয়ানা বুকস থেকে আপনার জন্য" হিসেবে দেখাবে। খালি করে সেভ করলে মুছে যায়।</p>
+    <div class="row" style="margin-bottom:6px"><button class="btn ghost" id="nd">সংখ্যা থেকে খসড়া</button><a class="btn ghost" href="/plan/pb/?as=${uid}" target="_blank" rel="noopener">তাঁর রিপোর্ট দেখুন</a></div>
+    <textarea id="nx" maxlength="4000" rows="10" style="width:100%">${esc(n.txt||'')}</textarea>
+    <label style="display:flex;gap:6px;margin:6px 0;color:var(--ink)"><input type="checkbox" id="np"${n.pub?' checked':''}> প্রকাশ (শিক্ষার্থী দেখবেন)</label>
+    <div class="row"><button class="btn" id="ns">সেভ</button>${x.email?'<a class="btn ghost" id="nm">মেইলে জানান</a>':''}<span id="no" class="dim"></span></div></div>`;
+  box.scrollIntoView({behavior:'smooth'});
+  $('nd').onclick=async()=>{const t=$('nx');if(t.value.trim()&&!confirm('লেখা ঘরটা খসড়া দিয়ে বদলাবে?'))return;t.value=draft(x,await rtn())};
+  $('ns').onclick=async()=>{$('ns').disabled=true;
+    try{const r=await api('diag/note',{s:S(),uid,txt:$('nx').value,pub:$('np').checked?1:0});
+      x.note=r.del?null:{txt:$('nx').value.trim(),pub:$('np').checked?1:0,ts:r.ts};$('no').textContent=r.del?'মুছে গেছে।':$('np').checked?'সেভ ও প্রকাশ হয়েছে।':'সেভ হয়েছে (লুকানো)।';
+      const b=document.querySelector(`[data-nt="${uid}"]`);if(b)b.textContent=x.note?(x.note.pub?'প্রকাশিত ✓':'খসড়া'):'লিখুন'}
+    catch(e){$('no').textContent='সেভ হয়নি: '+e.message}$('ns').disabled=false};
+  if($('nm'))$('nm').onclick=()=>{const nm=(x.name||'').trim().split(/\s+/)[0];
+    const body=`${nm?nm+', ':''}আপনার অবস্থা-যাচাইয়ের রিপোর্ট তৈরি। লগইন করে দেখুন, সেখান থেকেই রেজাল্ট কার্ড আর PDF নামানো যায়:\nhttps://lyannabooks.com/plan/pb/\n\n${$('nx').value.trim()}\n\nলিয়ানা বুকস`;
+    location.href='mailto:'+encodeURIComponent(x.email)+'?subject='+encodeURIComponent('লিয়ানা বুকস · আপনার অবস্থা-যাচাইয়ের রিপোর্ট')+'&body='+encodeURIComponent(body)};
 }
 // ---- সেট তোলা ----
 async function setsum(){

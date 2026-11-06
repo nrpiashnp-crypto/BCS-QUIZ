@@ -1458,7 +1458,9 @@ const DIAG_SCHEMA = [
   'CREATE TABLE IF NOT EXISTS diag_q(sid TEXT NOT NULL, qid TEXT NOT NULL, part INTEGER NOT NULL, s TEXT NOT NULL, d TEXT NOT NULL, PRIMARY KEY(sid, qid))',
   'CREATE TABLE IF NOT EXISTS msg(id INTEGER PRIMARY KEY, uid INTEGER NOT NULL, ts INTEGER NOT NULL, src TEXT, text TEXT NOT NULL, seen INTEGER)',
   'CREATE INDEX IF NOT EXISTS msg_uid ON msg(uid, ts)',
-  'CREATE TABLE IF NOT EXISTS diag_att(sid TEXT NOT NULL, uid INTEGER NOT NULL, part INTEGER NOT NULL, ts INTEGER NOT NULL, dl INTEGER NOT NULL, ans TEXT NOT NULL, done INTEGER, res TEXT, hid INTEGER, hn INTEGER, PRIMARY KEY(sid, uid, part))'
+  'CREATE TABLE IF NOT EXISTS diag_att(sid TEXT NOT NULL, uid INTEGER NOT NULL, part INTEGER NOT NULL, ts INTEGER NOT NULL, dl INTEGER NOT NULL, ans TEXT NOT NULL, done INTEGER, res TEXT, hid INTEGER, hn INTEGER, PRIMARY KEY(sid, uid, part))',
+  // PIASH-এর লেখা পরামর্শ (সমস্যার তালিকা আর PDF রিপোর্টে); pub = শিক্ষার্থী দেখবেন কি না
+  'CREATE TABLE IF NOT EXISTS diag_note(sid TEXT NOT NULL, uid INTEGER NOT NULL, txt TEXT NOT NULL, pub INTEGER NOT NULL, ts INTEGER NOT NULL, PRIMARY KEY(sid, uid))'
 ];
 let diagReady = false;
 async function diagSetup(db) {
@@ -1600,7 +1602,9 @@ function diagScore(c, p, Q, ans, hid, hn) {
     picks.push(a[0]); if (a[2] > 0) ms.push(a[2]);
     const cf = a[4] === 0 ? g : a[4] === 1 ? su : null;
     if (cf) cf.n++;
-    if (a[1]) { x.ok++; ok++; if (t) t.ok++; if (cf) cf.ok++; if (isN) none.ok++; } else { x.no++; no++; if (t) t.no++; if (cf) cf.no++; }
+    if (a[1]) { x.ok++; ok++; if (t) t.ok++; if (cf) cf.ok++; if (isN) none.ok++; } else { x.no++; no++; if (t) t.no++; if (cf) cf.no++;
+      // টপিক ধরে ভুলের ধরন: sw = "নিশ্চিত" বলে ভুল (ভুল জানা), gw = "আন্দাজ" বলে ভুল
+      if (t && cf) { const k = cf === su ? 'sw' : 'gw'; t[k] = (t[k] || 0) + 1; } }
   }
   const n = ok + no + skip, k = picks.length, f = [];
   const med = median(ms);
@@ -1630,7 +1634,7 @@ const r2 = x => Math.round(x * 100) / 100;
 function diagReport(c, done) {
   const [lo, hi] = c.bands || [60, 80], neg = c.neg || 0;
   const band = (ok, n) => !n ? null : ok / n * 100 < lo ? 'weak' : ok / n * 100 < hi ? 'mid' : 'strong';
-  const add = (a, b) => { for (const k of ['n', 'ok', 'no', 'skip']) a[k] = (a[k] || 0) + (b[k] || 0); return a; };
+  const add = (a, b) => { for (const k of ['n', 'ok', 'no', 'skip', 'sw', 'gw']) a[k] = (a[k] || 0) + (b[k] || 0); return a; };
   const S = new Map(c.subjects.map(s => [s.id, {id: s.id, name: s.name, n: 0, ok: 0, no: 0, skip: 0}])), T = new Map();
   const g = {n: 0, ok: 0, no: 0}, su = {n: 0, ok: 0, no: 0}, none = {n: 0, ok: 0};
   let blank = 0, n = 0, ok = 0, no = 0, skip = 0;
@@ -1692,6 +1696,13 @@ async function diag(path, req, url, env, db, u) {
   const shut = p => !!p.date && p.date > today;
   const partsPub = c.parts.map(p => ({no: p.no, title: p.title, subjects: p.subjects, n: p.qs.length, mins: p.mins, ...(p.date ? {date: p.date} : {})}));
   if (path === 'diag/me' && m === 'GET') {
+    // অ্যাডমিন কারও রিপোর্ট তাঁর চোখে দেখতে/PDF করতে: ?as=<uid> (শুধু দেখা, কিছু লেখা হয় না)
+    let as = parseInt(url.searchParams.get('as') || '', 10) || 0;
+    if (as && isAdmin(u, env)) {
+      const w = await db.prepare('SELECT id, name, email, pic FROM users WHERE id = ?').bind(as).first();
+      if (!w) return json({error: 'no user'}, 404);
+      u = w;
+    } else as = 0;
     const out = {s: sid, title: c.title, now, today, subjects: c.subjects.map(s => ({id: s.id, name: s.name, marks: s.marks})), parts: partsPub,
       ready: !!c.parts.length, user: u ? pub(u) : null, neg: c.neg || 0, conf: c.conf ? 1 : 0, report: c.report || null};
     if (!u) return json(out);
@@ -1709,6 +1720,11 @@ async function diag(path, req, url, env, db, u) {
     out.status = finished.length ? statusPub(diagStatus(c, finished)) : null;
     out.all = !!c.parts.length && finished.length === c.parts.length;
     if (c.report && finished.length && (out.all || today >= c.report)) out.rep = diagReport(c, finished);
+    if (as) out.as = as;
+    if (out.rep) {
+      const nt = await db.prepare('SELECT txt, pub, ts FROM diag_note WHERE sid = ? AND uid = ?').bind(sid, u.id).first();
+      if (nt && (nt.pub || as)) out.note = {txt: nt.txt, ts: nt.ts, pub: nt.pub};
+    }
     // অ্যাডমিনের বার্তা: না-দেখাগুলো আর শেষ কয়েকটা
     out.msgs = (await db.prepare('SELECT id, ts, text, seen FROM msg WHERE uid = ? ORDER BY ts DESC LIMIT 5').bind(u.id).all()).results;
     return json(out);
@@ -1915,6 +1931,16 @@ async function diagAdmin(path, url, req, db) {
     for (let i = 0; i < uids.length; i += 50) await db.batch(uids.slice(i, i + 50).map(u => st.bind(u, now, sid, text)));
     return json({ok: true, n: uids.length});
   }
+  // একজনের পরামর্শ লেখা/বদলানো; txt খালি হলে মোছা
+  if (path === 'admin/diag/note' && m === 'POST') {
+    const uid = parseInt(body.uid, 10), txt = nfc(String(body.txt || '')).trim().slice(0, 4000);
+    if (!uid) return json({error: 'bad'}, 400);
+    if (!txt) { await db.prepare('DELETE FROM diag_note WHERE sid = ? AND uid = ?').bind(sid, uid).run(); return json({ok: true, del: 1}); }
+    const ts = Date.now();
+    await db.prepare('INSERT INTO diag_note(sid, uid, txt, pub, ts) VALUES(?,?,?,?,?) ON CONFLICT(sid, uid) DO UPDATE SET txt = excluded.txt, pub = excluded.pub, ts = excluded.ts')
+      .bind(sid, uid, txt, body.pub ? 1 : 0, ts).run();
+    return json({ok: true, ts});
+  }
   if (path === 'admin/diag/msgdel' && m === 'POST') {
     const id = parseInt(body.id, 10);
     if (!id) return json({error: 'bad'}, 400);
@@ -2007,6 +2033,7 @@ async function diagAdmin(path, url, req, db) {
   // সমস্যার তালিকা: সবার এক ছক (PIASH প্রত্যেককে আলাদা করে বলবেন)
   if (path === 'admin/diag/report' && m === 'GET') {
     const by = new Map();
+    const N = new Map((await db.prepare('SELECT uid, txt, pub, ts FROM diag_note WHERE sid = ?').bind(sid).all()).results.map(r => [r.uid, {txt: r.txt, pub: r.pub, ts: r.ts}]));
     for (const r of await rows()) {
       const x = by.get(r.uid) || {uid: r.uid, name: r.name || '', email: r.email || '', res: [], going: 0};
       by.set(r.uid, x);
@@ -2014,7 +2041,7 @@ async function diagAdmin(path, url, req, db) {
     }
     return json({set: {id: c.id, title: c.title, neg: c.neg || 0, bands: c.bands || [60, 80], conf: !!c.conf, report: c.report || null,
       subjects: c.subjects.map(s => ({id: s.id, name: s.name})), parts: c.parts.map(p => ({no: p.no, date: p.date || null, n: p.qs.length}))},
-      people: [...by.values()].map(x => ({uid: x.uid, name: x.name, email: x.email, going: x.going, rep: x.res.length ? diagReport(c, x.res) : null}))
+      people: [...by.values()].map(x => ({uid: x.uid, name: x.name, email: x.email, going: x.going, rep: x.res.length ? diagReport(c, x.res) : null, note: N.get(x.uid) || null}))
         .sort((a, b) => (b.rep ? b.rep.doneParts : -1) - (a.rep ? a.rep.doneParts : -1) || a.name.localeCompare(b.name))}, 200, {'Cache-Control': 'no-store'});
   }
   // প্রতিটি উত্তর এক সারি; নাম/ইমেইল নয়, শুধু uid (Lyanna_data-তে নেওয়ার জন্য)

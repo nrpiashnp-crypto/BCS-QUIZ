@@ -79,14 +79,37 @@ a.card.big{display:block;text-decoration:none;color:var(--ink);padding:16px}
 a.card.big .t{display:block;font-family:var(--display);font-size:20px;color:var(--navy)}
 a.card.big .m{display:block;color:var(--muted);font-size:14.5px;margin:2px 0 6px}
 a.card.big .go{color:var(--pink);font-weight:600;font-size:15px}
+/* বিস্তারিত রিপোর্ট (PDF) */
+.rep{background:#fff;border:1px solid var(--rule);padding:18px 16px;font-size:15px}
+.rp-h{display:flex;justify-content:space-between;gap:12px;border-bottom:3px solid var(--navy);padding:0 0 10px;margin:0 0 14px}
+.rp-h b{display:block;font-family:var(--display);font-weight:400;font-size:22px;color:var(--navy)}.rp-h span{display:block;color:var(--muted);font-size:13.5px}
+.rp-who{text-align:right;font-weight:600}
+.rp-sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 12px}.rp-sum div{border:1.4px solid var(--pink);border-radius:3px;padding:8px}
+.rp-sum span,.rp-sum small{display:block;color:var(--muted);font-size:12.5px}.rp-sum b{display:block;font-size:20px;color:var(--navy)}
+.rep h2{font-size:18px;margin:18px 0 6px;color:var(--navy)}
+.rp-t{font-size:13.5px;margin:0 0 4px}.rp-t th,.rp-t td{padding:5px 4px}
+.rp-p{margin:0 0 8px}.rp-n{color:var(--muted);font-size:12.5px;margin:2px 0 0}
+.rp-l{margin:0;padding-left:20px}.rp-l li{margin:0 0 6px}
+.rp-note{border:1.4px solid var(--navy);border-radius:3px;padding:10px 12px;margin:16px 0 0}.rp-note p{margin:6px 0 0}
+.rp-f{margin:18px 0 0;padding:8px 0 0;border-top:1px solid var(--rule);color:var(--muted);font-size:12px}
+/* রুটিন */
+.wk summary{font-weight:600}.day{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px dashed var(--rule)}.day:last-child{border:0}
+.day small{display:block;color:var(--muted);font-size:13px}.day.today{background:var(--soft);margin:0 -8px;padding:7px 8px}
+@media print{
+  @page{size:A4;margin:12mm}
+  html,body{background:#fff!important}body::before,body::after{display:none!important}.sitebar,.timer,.no-print,nav,#omr-bg{display:none!important}
+  .wrap{max-width:none;padding:0}.rep{border:0;padding:0;font-size:12.5px}
+  .rep h2,.rp-t tr,.rp-note{break-inside:avoid}.rep h2{break-after:avoid}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
 </style>
 <link rel="stylesheet" href="/css/omr.css">
 </head>
 <body>
 <div class="sitebar"><a href="/" aria-label="লিয়ানা বুকস"><img src="/img/logo/li-mark.svg" alt="" width="34" height="44"><span class="lgn-n">লিয়ানা বুকস</span></a><span class="who" id="who"></span></div>
-<main class="wrap" id="view" data-set="pb-start" data-name="পেট্রোবাংলা" data-mk="আগের পরীক্ষায় প্রায় {n}% প্রশ্ন"><p class="dim">লোড হচ্ছে…</p></main>
+<main class="wrap" id="view" data-set="pb-start" data-name="পেট্রোবাংলা" data-routine="1" data-mk="আগের পরীক্ষায় প্রায় {n}% প্রশ্ন"><p class="dim">লোড হচ্ছে…</p></main>
 <div class="timer" id="timer" hidden></div>
-<script src="/plan/plan.js?v=8" defer></script>
+<script src="/plan/plan.js?v=9" defer></script>
 <script src="/js/math.js" defer></script>
 <script src="/js/report.js" defer></script>
 <!--seo-links--><nav style="max-width:760px;margin:24px auto 0;padding:0 16px 24px;text-align:center;font:13px/1.8 'Noto Sans Bengali',system-ui,sans-serif"><a href="/" style="color:inherit;opacity:.75">লিয়ানা বুকস</a> · <a href="/questions/" style="color:inherit;opacity:.75">সব প্রশ্ন ও সমাধান</a> · <a href="https://www.facebook.com/profile.php?id=61595898604238" target="_blank" rel="noopener" style="color:inherit;opacity:.75"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true" style="vertical-align:-2px;margin-right:4px"><path fill="currentColor" d="M13.5 22v-8.2h2.8l.4-3.3h-3.2V8.4c0-.9.3-1.6 1.6-1.6h1.7V3.9a23 23 0 0 0-2.5-.1c-2.5 0-4.2 1.5-4.2 4.3v2.4H7.3v3.3h2.8V22h3.4Z"/></svg>ফেসবুক পেজ</a></nav><!--/seo-links-->
