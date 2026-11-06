@@ -10,6 +10,7 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).parent))
 
 import build  # noqa: E402
+import build_pages  # noqa: E402
 import collect  # noqa: E402
 import common  # noqa: E402
 import pick  # noqa: E402
@@ -79,6 +80,73 @@ class Verify(unittest.TestCase):
         src = "এক দুই তিন চার পাঁচ ছয় সাত আট নয়"
         self.assertTrue(shared_run("শুরু এক দুই তিন চার পাঁচ ছয় সাত আট", src))
         self.assertIsNone(shared_run("এক দুই তিন চার পাঁচ ছয় সাত ভিন্ন", src))
+
+
+class Pages(unittest.TestCase):
+    """/news/ স্থির পাতা: ডেটা-ফাইল থেকে HTML, ইন্টারনেট ছাড়া।"""
+
+    @staticmethod
+    def item(n, date, sec, title, score=9, src="https://x.com/a"):
+        return {"id": f"{date}-{n:02d}", "title": title, "short": f"ছোট {n}", "detail": f"বিস্তারিত {n}", "why_exam": "কারণ",
+                "category": "economy", "category_bn": "অর্থনীতি", "section": sec, "section_bn": common.SECTIONS[sec],
+                "score": score, "facts": [{"label": "ঘর", "value": "মান"}], "sources": [{"name": "উৎস", "url": src}]}
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name)
+        nd = self.root / "news"
+        (nd / "day").mkdir(parents=True)
+        (nd / "month").mkdir()
+        secs = common.SECTIONS
+        d1 = {"date": "2026-11-04", "sections": secs, "top": [self.item(1, "2026-11-04", "bd", "প্রথম <script>alert(1)</script>")],
+              "more": [self.item(2, "2026-11-04", "intl", "দ্বিতীয়", 7)]}
+        d2 = {"date": "2026-11-05", "sections": secs, "top": [self.item(1, "2026-11-05", "gk", "তৃতীয়")], "more": []}
+        for d in (d1, d2):
+            (nd / "day" / f"{d['date']}.json").write_text(json.dumps(d), encoding="utf-8")
+        (nd / "month" / "2026-11.json").write_text(json.dumps({"month": "2026-11", "items": [
+            {"date": "2026-11-04", "id": "2026-11-04-01", "title": "প্রথম", "short": "ছোট", "section": "bd", "category": "economy", "score": 9}]}), encoding="utf-8")
+        (nd / "index.json").write_text(json.dumps({"days": [{"date": "2026-11-05", "n": 1}, {"date": "2026-11-04", "n": 2}],
+                                                   "latest": "2026-11-05"}), encoding="utf-8")
+        self.nd = nd
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_builds_all_pages_and_is_idempotent(self):
+        ch = build_pages.build_all(self.nd)
+        self.assertEqual(sorted(ch), ["news/2026/11/04/index.html", "news/2026/11/05/index.html",
+                                      "news/2026/11/index.html", "news/index.html"])
+        self.assertEqual(build_pages.build_all(self.nd), [])            # একই ডেটা → কোনো বদল নয়
+
+    def test_day_page_content(self):
+        build_pages.build_all(self.nd)
+        h = (self.root / "news/2026/11/04/index.html").read_text(encoding="utf-8")
+        self.assertIn("৪ নভেম্বর ২০২৬, বুধবার", h)
+        self.assertIn('href="https://x.com/a"', h)                      # মূল লিংক
+        self.assertIn("বাংলাদেশ (১)", h)
+        self.assertIn("আন্তর্জাতিক (১)", h)
+        self.assertNotIn("<script>alert", h)                             # শিরোনাম escape হয়
+        self.assertIn("&lt;script&gt;", h)
+        self.assertIn('href="/news/2026/11/05/"', h)                    # নতুন পাশের দিন
+        self.assertIn('href="/news/2026/11/"', h)                       # মাসের লিংক
+        self.assertNotIn("evidence", h)
+        self.assertEqual(h.count("<script"), 3 + h.count("<script>alert"))   # শুধু সাইটের app, account, omr
+
+    def test_landing_and_month(self):
+        build_pages.build_all(self.nd)
+        h = (self.root / "news/index.html").read_text(encoding="utf-8")
+        self.assertIn("৫ নভেম্বর ২০২৬, বৃহস্পতিবার", h)                 # সর্বশেষ দিন
+        self.assertIn('href="/news/2026/11/05/#2026-11-05-01"', h)
+        self.assertIn('href="/news/2026/11/04/"', h)                    # আগের দিন
+        self.assertIn("শীঘ্রই", h)                                       # /circular/ নেই → লিংকহীন ঘর
+        m = (self.root / "news/2026/11/index.html").read_text(encoding="utf-8")
+        self.assertIn('href="/news/2026/11/04/#2026-11-04-01"', m)
+
+    def test_no_dead_internal_links(self):
+        build_pages.build_all(self.nd)
+        for f in (self.root / "news").rglob("index.html"):
+            for href in __import__("re").findall(r'href="(/news/[^"#]*)', f.read_text(encoding="utf-8")):
+                self.assertTrue((self.root / href.strip("/") / "index.html").exists(), f"{f}: {href}")
 
 
 class Feeds(unittest.TestCase):
@@ -192,10 +260,12 @@ class EndToEnd(unittest.TestCase):
                  mock.patch.object(pick, "gemini_json", side_effect=fake_gemini), \
                  mock.patch.object(build, "NEWS_DIR", tmp), \
                  mock.patch.object(run_daily, "NEWS_DIR", tmp), \
+                 mock.patch.object(run_daily, "build_pages") as bp, \
                  mock.patch.object(run_daily, "now_dhaka",
                                    return_value=dt.datetime(2026, 11, 4, 22, 30, tzinfo=common.DHAKA)), \
                  mock.patch.object(sys, "argv", ["x", "--summary", str(tmp / "s.md")]):
                 self.assertEqual(run_daily.main(), 0)
+            bp.assert_called_once_with(tmp)                         # প্রকাশের পরে /news/ পাতা বানানো হয়
             day = json.loads((tmp / "day/2026-11-04.json").read_text())
             self.assertEqual(len(day["top"]), 1)
             self.assertEqual(len(day["top"][0]["sources"]), 2)

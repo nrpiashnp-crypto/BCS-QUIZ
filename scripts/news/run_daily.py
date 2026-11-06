@@ -16,6 +16,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from build import TOP_N, update_index, update_month, write_day  # noqa: E402
+from build_pages import build_all as build_pages  # noqa: E402
 from collect import collect  # noqa: E402
 from common import CALLS, DHAKA, NEWS_DIR, domain, log, now_dhaka, read_json  # noqa: E402
 from pick import BATCH, MAX_WRITE, gather_texts, group, write_batch  # noqa: E402
@@ -99,6 +100,10 @@ def main() -> int:
         day = write_day(ds, published, "auto-gemini", note)
         update_month(day)
         update_index(day)
+        try:
+            build_pages(NEWS_DIR)                       # /news/ পাতা; ব্যর্থ হলেও খবরের ফাইল আটকায় না (পরেরবার সব নতুন করে বানায়)
+        except Exception as e:  # noqa: BLE001
+            log(f"✗ /news/ পাতা বানানো যায়নি: {e.__class__.__name__}: {e}")
     report(args.summary, ds, published, review, health, note)
     log(f"Gemini ডাকা হয়েছে {CALLS['n']} বার")
     return 0
