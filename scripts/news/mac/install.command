@@ -13,11 +13,19 @@ if [ ! -s "$KEYDIR/gemini.key" ] || [ "$1" = "--new-key" ]; then
   [ -n "$KEY" ] || { echo "চাবি খালি, থামলাম।"; exit 1; }
   printf '%s' "$KEY" > "$KEYDIR/gemini.key"; chmod 600 "$KEYDIR/gemini.key"
 fi
-code=$(curl -s -o /dev/null -w '%{http_code}' -H "x-goog-api-key: $(cat "$KEYDIR/gemini.key")" \
+KEY="$(tr -d '[:space:]' < "$KEYDIR/gemini.key")"; printf '%s' "$KEY" > "$KEYDIR/gemini.key"
+BODY="$(mktemp)"
+code=$(curl -s -o "$BODY" -w '%{http_code}' -H "x-goog-api-key: $KEY" \
   "https://generativelanguage.googleapis.com/v1beta/models?pageSize=1")
 if [ "$code" != "200" ]; then
-  echo "চাবি কাজ করছে না (উত্তর $code)। আবার চালান: খবরের-বট-চালু.command --new-key"; rm -f "$KEYDIR/gemini.key" 2>/dev/null; exit 1
+  echo "চাবি কাজ করছে না (উত্তর $code)।"
+  echo "  পেস্ট হওয়া চাবির দৈর্ঘ্য: ${#KEY} অক্ষর (ঠিক চাবি সাধারণত ৩৯), শুরু: ${KEY:0:4}… (ঠিক চাবি শুরু হয় AIza দিয়ে)"
+  msg=$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print(d.get("error",{}).get("message","")[:200])' "$BODY" 2>/dev/null)
+  [ -n "$msg" ] && echo "  Google-এর বার্তা: $msg"
+  echo "আবার চালান: খবরের-বট-চালু.command --new-key  (অথবা ফাইলে আবার দুবার চাপুন)"
+  rm -f "$KEYDIR/gemini.key" "$BODY"; exit 1
 fi
+rm -f "$BODY"
 echo "চাবি ঠিক আছে ✓"
 python3 -m pip install -q --user certifi 2>/dev/null || true
 if [ ! -d "$BOT/BCS-QUIZ/.git" ]; then
