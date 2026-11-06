@@ -2,6 +2,8 @@
    ১. "ব্যাখ্যাটা বুঝলেন? বুঝেছি / বুঝিনি" এক ট্যাপ। ট্যাপগুলো জমে, পাতা ছাড়ার সময় একবারে POST /api/fb (sendBeacon)।
       "বুঝিনি"-র পরে চাইলে এক লাইন লেখা → POST /api/report (kind hard, ব্যাখ্যার ছাপ h সহ; h = দাগের ev, নিচে expSig)। Fable-যাচাই 2026-11-02।
    ২. "প্রশ্নে বা উত্তরে ভুল? জানান": ছোট ফর্ম (কী ভুল + চাইলে দু-লাইন), পাঠায় POST /api/report।
+   ৩. ছাত্রের কথায় বদলানো ব্যাখ্যা (data/ux.json, tools/build_qver.py বানায়): দেখানো ব্যাখ্যার ছাপ নতুন লেখার সঙ্গে মিললে
+      ব্যাখ্যার নিচে "✎ ছাত্রের কথায় বদলানো, <মাস>"; এই ফোনে আগের লেখায় "বুঝিনি" দেওয়া থাকলে প্রশ্নটা "এবার বুঝলেন?"।
    (🎤 কথা বলে মতামত ২০২৬-১১-০৪-এ তুলে দেওয়া হয়েছে; ভালো সমাধান পেলে আবার ভাবা হবে।)
    প্রশ্ন চেনা: কাছের [data-id] থেকে প্রশ্নের id; না পেলে পাতার Q তালিকায় লেখা মিলিয়ে; তাও না পেলে প্রশ্নের লেখা।
    পাতায় একবার: <script src="/js/report.js" defer></script> (account.js নিজে থেকেই এটা লোড করে)। */
@@ -28,6 +30,7 @@
     '.ud>span{margin-right:2px}'+
     '.ud button{font:600 14px/1 "Noto Sans Bengali",sans-serif;padding:8px 14px;min-height:36px;border:1.3px solid #13294b;border-radius:3px;background:#fff;color:#13294b;cursor:pointer}'+
     '.ud .ok{color:#1f8a4c;font-size:13.5px}'+
+    '.uxl{margin-top:10px;font-size:12.5px;color:#1f6f5c}'+
     '.ud textarea{flex:1 1 100%;box-sizing:border-box;min-height:52px;padding:8px;border:1.2px solid #c9c4b8;border-radius:3px;font:inherit;font-size:14px;resize:vertical;background:#fff;color:#1d1f21}'+
     '.ud .go{background:#13294b;color:#fff}.ud .x{border:0;background:none;color:#5f6366;font-weight:400;text-decoration:underline;padding:8px 4px}';
   document.head.appendChild(st);
@@ -102,6 +105,22 @@
   function expText(el){var c=el.cloneNode(true);c.querySelectorAll('.ud,.rq,.rqf,.rqd,button').forEach(function(n){n.remove()});return clean(c.textContent)}
   function udSeen(){try{return JSON.parse(localStorage.getItem('lb:ud')||'{}')}catch(e){return {}}}
   function udMark(k,v){try{var s=udSeen();s[k]=v;var ks=Object.keys(s);if(ks.length>500)delete s[ks[0]];localStorage.setItem('lb:ud',JSON.stringify(s))}catch(e){}}
+  // ছাত্রের কথায় বদলানো ব্যাখ্যার তালিকা: প্রথম ব্যাখ্যা খুললে একবার আনা (ছোট ফাইল, এক ঘণ্টা ক্যাশ)
+  var UXP=null,MON=['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
+  function uxMap(){return UXP||(UXP=fetch('/data/ux.json').then(function(r){return r.ok?r.json():{}}).then(function(j){return j&&j.q||{}},function(){return {}}))}
+  function bnum(n){return String(n).replace(/[0-9]/g,function(c){return '০১২৩৪৫৬৭৮৯'[c]})}
+  function uxMark(el,d,key,h){
+    if(!/^[0-9a-f]{8}$/.test(h))return;
+    uxMap().then(function(m){
+      var row=(m[key]||[]).filter(function(r){return r[0]===h})[0];if(!row||!d.parentNode)return;
+      var mm=String(row[2]||''),l=document.createElement('div');l.className='uxl';
+      l.textContent='✎ ছাত্রের কথায় বদলানো'+(/^\d{4}-\d{2}$/.test(mm)?', '+MON[+mm.slice(5)-1]+' '+bnum(mm.slice(0,4)):'');
+      el.insertBefore(l,d);
+      // এই ফোনে এই প্রশ্নের আগের লেখায় "বুঝিনি" দেওয়া থাকলে
+      var s=udSeen(),old=Object.keys(s).some(function(k){return k.indexOf(key+'|')===0&&k!==key+'|'+h&&s[k]===0});
+      var q=d.querySelector(':scope>span');if(old&&q&&d.querySelector('button[data-v]'))q.textContent='আপনার "বুঝিনি"-র পরে নতুন করে লেখা। এবার বুঝলেন?';
+    });
+  }
   var TAPS={};   // পাতা ছাড়ার আগে পাঠানো বাকি: চাবি → [চাবি, ছাপ, ১/০, প্রশ্ন]
   function flush(){
     var a=Object.keys(TAPS).map(function(k){return TAPS[k]});if(!a.length)return;TAPS={};
@@ -116,6 +135,7 @@
     var key=id||('t:'+text.slice(0,60)),h=expSig(el,id,text),mk=key+'|'+h,was=udSeen()[mk];
     var d=document.createElement('div');d.className='ud';
     function done(v){d.innerHTML='<span class="ok">'+(v?'✓ বুঝেছেন':'✓ জানিয়েছেন, ব্যাখ্যা আরও সহজ করা হবে। ধন্যবাদ!')+'</span>'}
+    uxMark(el,d,key,h);
     if(was!=null){done(was);return d}
     d.innerHTML='<span>ব্যাখ্যাটা বুঝলেন?</span><button type="button" data-v="1">বুঝেছি</button><button type="button" data-v="0">বুঝিনি</button>';
     d.querySelectorAll('button').forEach(function(b){b.onclick=function(){
