@@ -29,6 +29,8 @@ body{background:#f8f5ee!important;color:#1d1f21;position:relative;overflow-x:hid
   .sitebar nav a,body>.bar nav.sec a{font-size:13.5px;gap:3px}.sitebar nav a::before,body>.bar nav.sec a::before{width:18px;height:18px;font-size:10px}}
 @media (max-width:374px){.sitebar nav,body>.bar nav.sec{gap:4px 5px}.sitebar nav a,body>.bar nav.sec a{font-size:12.5px}}
 @media (max-width:350px){.lgn-n{display:none}.sitebar nav a,body>.bar nav.sec a{font-size:12.5px}}
+/* ফোনে পাঁচটা লিংক (ক-ঙ) এক সারিতে: পাতার নিজের CSS-এর ভেতরের ফাঁক বাদ, আর অ্যাকাউন্টের গোল ছবি লোগোর পাশে ওপরের কোণে */
+@media (max-width:420px){.sitebar nav.sec a,body>.bar nav.sec a{padding:4px 0;white-space:nowrap}.sitebar,body>.bar{position:relative}.sitebar nav.sec a.lba-me,body>.bar nav.sec a.lba-me{position:absolute;top:14px;right:16px;margin:0}.sitebar nav.sec a.lba-me::before,body>.bar nav.sec a.lba-me::before{content:none;display:none}}
 
 /* type and links */
 h1,h2,h3{color:#13294b;font-weight:600}
