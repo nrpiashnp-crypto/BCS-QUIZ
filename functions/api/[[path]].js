@@ -710,6 +710,7 @@ const FB_SCHEMA = [
   'CREATE TABLE IF NOT EXISTS fb_tap(id INTEGER PRIMARY KEY, ts INTEGER NOT NULL, page TEXT, uid INTEGER, ip TEXT, taps TEXT NOT NULL)',
   'CREATE INDEX IF NOT EXISTS fb_ts ON fb_tap(ts)',
   'CREATE INDEX IF NOT EXISTS fb_ip ON fb_tap(ip, ts)',
+  'CREATE INDEX IF NOT EXISTS fb_uid ON fb_tap(uid, ts)',
   'CREATE TABLE IF NOT EXISTS ch_day(k TEXT PRIMARY KEY, n INTEGER NOT NULL)'
 ];
 let FB_READY = false;
@@ -730,6 +731,27 @@ async function fbTap(req, db, u) {
   await db.prepare('INSERT INTO fb_tap(ts, page, uid, ip, taps) VALUES(?,?,?,?,?)')
     .bind(now, /^\/(?!\/)[^\s"'<>]*$/.test(page) ? page : '', u ? u.id : null, ip, JSON.stringify(taps)).run();
   return json({ok: true});
+}
+
+/* নিজের "বুঝিনি" (ছাত্রের মত তোলা, ধাপ ৩): GET /api/fb/mine (লগইন) → {n: [[চাবি, ব্যাখ্যার ছাপ, প্রশ্নের লেখা, পাতা, ts], …]}
+   fb_tap-এর "বুঝিনি" ট্যাপ আর rep-এর "বুঝিনি"/"ব্যাখ্যায় ভুল" (গত ১৮০ দিন), চাবি ধরে সবচেয়ে নতুনটা। /account/ এটা data/ux.json-এর সঙ্গে
+   মিলিয়ে দেখায় "আপনার জানানো nটি ব্যাখ্যা বদলেছে" (যে লেখায় বুঝিনি দিয়েছিলেন, এখনকার লেখা তার থেকে আলাদা)। শুধু পড়া। */
+async function fbMine(db, u) {
+  await fbSetup(db); await repSetup(db);
+  try { await db.prepare('CREATE INDEX IF NOT EXISTS rep_uid ON rep(uid, ts)').run(); } catch (e) { /* আছে */ }
+  const since = Date.now() - 180 * 86400e3;
+  const [a, b] = await db.batch([
+    db.prepare(`SELECT json_extract(j.value, '$[0]') k, json_extract(j.value, '$[1]') h, json_extract(j.value, '$[3]') q, f.page page, f.ts ts
+      FROM fb_tap f, json_each(f.taps) j WHERE f.uid = ? AND f.ts > ? AND json_extract(j.value, '$[2]') = 0 ORDER BY f.ts DESC LIMIT 3000`).bind(u.id, since),
+    db.prepare(`SELECT qid k, h, q, page, ts FROM rep WHERE uid = ? AND ts > ? AND kind IN ('hard', 'exp') AND qid != '' ORDER BY ts DESC LIMIT 1000`).bind(u.id, since)
+  ]);
+  const seen = new Map();
+  for (const r of [...(a.results || []), ...(b.results || [])]) {
+    if (!r.k) continue;
+    const o = seen.get(r.k);
+    if (!o || r.ts > o[4]) seen.set(r.k, [r.k, r.h || '', String(r.q || (o ? o[2] : '')).slice(0, 160), r.page || '', r.ts]);
+  }
+  return json({n: [...seen.values()].slice(0, 2000)});
 }
 
 // আমার চাকরি (/myjobs/, অ্যাডমিন /admin/jobs/): চলমান বিজ্ঞপ্তির প্রতিটা পদ এক সারি, প্রার্থীর বয়স-যোগ্যতা মেলানো হয় ব্রাউজারে।
@@ -2151,6 +2173,7 @@ export async function onRequest({request: req, env}) {
 
     if (path.startsWith('admin/')) return await admin(path, url, env, db, u, req);
     if (path === 'goal') return await goal(req, db, u);
+    if (path === 'fb/mine' && m === 'GET') return await fbMine(db, u);
     // একটা পরীক্ষার ফল আর প্রতিটি উত্তর (নিজের উত্তরপত্র দেখার পাতা /account/script/)
     if (path === 'att/one' && m === 'GET') {
       const k = str(url.searchParams.get('k') || '', 120);

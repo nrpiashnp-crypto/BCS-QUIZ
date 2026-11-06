@@ -48,6 +48,7 @@ h2{font-family:var(--display);font-weight:400;font-size:22px;margin:28px 0 10px}
 .goal select,.goal input{font:inherit;font-size:16px;padding:8px 10px;border:1px solid var(--rule);border-radius:10px;background:var(--card);color:var(--ink);min-height:44px}
 .goal select{flex:1 1 200px;min-width:0}.goal input{flex:0 1 170px;min-width:0}.goal small{display:block;width:100%;color:var(--muted);font-size:13px}
 .imp p{margin:0 0 10px}
+.uxc{margin-top:12px;padding:12px 16px;border-color:#1f6f5c}.uxc p{margin:0;font-size:15px}.uxc ul{margin:8px 0 0;padding-left:20px;font-size:14px}.uxc li{margin:4px 0}.uxc small{display:block;margin-top:8px;color:var(--muted);font-size:13px}
 .btn{display:inline-block;background:var(--navy);color:#fff;border:0;border-radius:10px;padding:10px 18px;font:inherit;font-weight:600;font-size:15px;cursor:pointer;text-decoration:none}
 .btn.ghost{background:transparent;color:var(--link);border:1px solid var(--rule)}
 :root[data-theme="dark"] .btn:not(.ghost){background:#e0b45c;color:#13294b}
@@ -323,9 +324,9 @@ async function delAll(){
 function head(u){
   ME=u;
   $('sub').textContent='আপনার সব পরীক্ষার ফল, সব ফোনে একই।';
-  $('top').innerHTML=`<div class="card me"><span class="av">${u.pic?`<img src="${esc(u.pic)}" alt="" referrerpolicy="no-referrer">`:esc((u.name||'?').slice(0,1))}</span><span class="who"><b>${esc(u.name||'আমার অ্যাকাউন্ট')}</b><small>${esc(u.email)}</small></span><button type="button" class="lnk" id="out">লগআউট</button></div><div id="goal"></div><div id="imp"></div>`;
+  $('top').innerHTML=`<div class="card me"><span class="av">${u.pic?`<img src="${esc(u.pic)}" alt="" referrerpolicy="no-referrer">`:esc((u.name||'?').slice(0,1))}</span><span class="who"><b>${esc(u.name||'আমার অ্যাকাউন্ট')}</b><small>${esc(u.email)}</small></span><button type="button" class="lnk" id="out">লগআউট</button></div><div id="goal"></div><div id="uxc"></div><div id="imp"></div>`;
   $('out').onclick=logout;
-  goalCard();
+  goalCard();uxCard();
 }
 // লক্ষ্যের পরীক্ষা: একবার বললে পরের প্রস্তুতির হিসাব সেই পরীক্ষার নম্বর-ভাগ ধরে হয় (সার্ভারে /api/goal)
 const GOALS={bcs:'বিসিএস প্রিলি',pb:'পেট্রোবাংলা',subreg:'সাব-রেজিস্ট্রার',bank:'ব্যাংক',primary:'প্রাথমিক শিক্ষক নিয়োগ',ntrca:'শিক্ষক নিবন্ধন (এনটিআরসিএ)',other:'অন্য সরকারি চাকরি'};
@@ -344,6 +345,24 @@ async function goalCard(edit){
     const r=await fetch('/api/goal',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({goal:$('gs').value,gdate:$('gd').value||''})}).then(r=>r.ok?r.json():null).catch(()=>null);
     if(!r){b.disabled=false;b.textContent='আবার চেষ্টা করুন';return}
     set('lb:goal',r);goalCard()};
+}
+// ছাত্রের কথায় বদলানো (ধাপ ৩): যে প্রশ্নে "বুঝিনি" বা "ব্যাখ্যায় ভুল" জানিয়েছিলেন, তার ব্যাখ্যা পরে নতুন করে লেখা হলে
+// (data/ux.json, tools/build_qver.py) এখানে জানানো। আপনার দেখা লেখার ছাপ নতুন লেখার সঙ্গে না মিললে, বা ছাপ না থাকলে বদলের দিনের আগে জানালে।
+async function uxCard(){
+  const box=$('uxc');if(!box)return;
+  const [ux,mine]=await Promise.all([
+    fetch('/data/ux.json').then(r=>r.ok?r.json():null).catch(()=>null),
+    fetch('/api/fb/mine',{credentials:'same-origin',cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null)]);
+  const U=ux&&ux.q||{},hit=[];
+  for(const [k,h,q,page,ts] of (mine&&mine.n)||[]){
+    const rows=U[k];if(!rows||!rows.length)continue;
+    if(/^[0-9a-f]{8}$/.test(h||'')){if(rows.some(r=>r[0]===h))continue}
+    else{const d=rows.map(r=>r[1]).filter(Boolean).sort()[0];if(!d||ts>=Date.parse(d+'T00:00:00+06:00'))continue}
+    hit.push([q,page]);
+  }
+  if(!hit.length){box.innerHTML='';return}
+  const li=hit.slice(0,5).map(([q,page])=>{const t=esc((q||'একটি প্রশ্ন').slice(0,90));return '<li>'+(/^\/(?!\/)/.test(page||'')?`<a href="${esc(page)}">${t}</a>`:t)+'</li>'}).join('');
+  box.innerHTML=`<div class="card uxc"><p>✎ আপনার জানানো <b>${bn(hit.length)}টি</b> ব্যাখ্যা নতুন করে লেখা হয়েছে।</p><ul>${li}</ul><small>আপনার কথা কাজে লেগেছে, ধন্যবাদ! আবার পড়ে দেখুন, এবার বোঝা যায় কি না।</small></div>`;
 }
 // এই ফোনের যে ফল অ্যাকাউন্টে নেই, এক ট্যাপে যোগ
 function offer(miss,reload){
