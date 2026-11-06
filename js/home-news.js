@@ -22,7 +22,7 @@
     for(var i=0;i<t.length;i++){if(i<3)h+=li(t[i]);else r+=li(t[i])}
     box.querySelector('ol').innerHTML=h;
     if(r){var dl=box.querySelector('details');dl.querySelector('summary').textContent='আরও '+bn(t.length-3)+'টি';dl.querySelector('ol').innerHTML=r;dl.hidden=false}
-    if(MORE){var a=box.querySelector('.nm');a.href='/news/'+p[0]+'/'+p[1]+'/'+p[2]+'/';a.hidden=false}
+    if(MORE){var a=box.querySelector('.nm');a.href='/news/'+p[0]+'/'+p[1]+'/'+p[2]+'/';a.textContent=(now?'আজকের সব খবর পড়ুন':'সব খবর পড়ুন')+' →';a.hidden=false}
     box.hidden=false;
   }
   function go(){get('/news/index.json').then(function(ix){
