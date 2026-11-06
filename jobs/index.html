@@ -204,9 +204,9 @@ const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(M
 const fmt=x=>bn(Number.isInteger(x)?x:(Math.round(x*100)/100).toString());
 const CAT={bank:{t:'ব্যাংকের পরীক্ষা',m:'বাংলাদেশ ব্যাংক, রাষ্ট্রায়ত্ত ও বেসরকারি ব্যাংকের বিগত নিয়োগ পরীক্ষা',subs:{gb:'সরকারি ব্যাংক ও আর্থিক প্রতিষ্ঠান',pb:'বেসরকারি ব্যাংক'}},
            gov:{t:'সরকারি অন্যান্য চাকরি',m:'মন্ত্রণালয়, অধিদপ্তর, কর্পোরেশন ও সংস্থার ৯ম থেকে ২০তম গ্রেডের সাধারণ পদ',subs:{'9':'৯ম গ্রেড','10':'১০ম গ্রেড','low':'১১-২০তম গ্রেড'}},
-           psc:{t:'পিএসসি নন-ক্যাডার',m:'সরকারি কর্ম কমিশনের (পিএসসি) নন-ক্যাডার নিয়োগ পরীক্ষার বিগত প্রশ্ন',subs:{all:'সব পরীক্ষা'},flat:1},
-           teacher:{t:'শিক্ষক নিয়োগ ও নিবন্ধন',m:'প্রাথমিক বিদ্যালয় সহকারী শিক্ষক ও শিক্ষক নিবন্ধন (এনটিআরসিএ) পরীক্ষার বিগত প্রশ্ন',subs:{all:'সব পরীক্ষা'},flat:1},
-           bar:{t:'বার কাউন্সিল',m:'বাংলাদেশ বার কাউন্সিলের আইনজীবী তালিকাভুক্তি (এনরোলমেন্ট) এমসিকিউ পরীক্ষার বিগত প্রশ্ন',subs:{all:'সব পরীক্ষা'},flat:1}};
+           psc:{t:'পিএসসি নন-ক্যাডার',m:'সরকারি কর্ম কমিশনের (পিএসসি) নন-ক্যাডার নিয়োগ পরীক্ষার বিগত প্রশ্ন',subs:{all:'সকল পরীক্ষা'},flat:1},
+           teacher:{t:'শিক্ষক নিয়োগ ও নিবন্ধন',m:'প্রাথমিক বিদ্যালয় সহকারী শিক্ষক ও শিক্ষক নিবন্ধন (এনটিআরসিএ) পরীক্ষার বিগত প্রশ্ন',subs:{all:'সকল পরীক্ষা'},flat:1},
+           bar:{t:'বার কাউন্সিল',m:'বাংলাদেশ বার কাউন্সিলের আইনজীবী তালিকাভুক্তি (এনরোলমেন্ট) এমসিকিউ পরীক্ষার বিগত প্রশ্ন',subs:{all:'সকল পরীক্ষা'},flat:1}};
 let CATALOG=null,LIST=[],CARD=null;
 const exams=()=>CATALOG.exams;
 const catOf=e=>e.cat==='gov'||e.cat==='psc'||e.cat==='teacher'||e.cat==='bar'?e.cat:'bank';
@@ -224,7 +224,7 @@ function home(){
   const L=exams(),orgs=new Set(L.map(e=>catOf(e)+e.org)).size;
   V().innerHTML=`<section class="hero"><h1>সব চাকরির পরীক্ষার প্রশ্ন, এক জায়গায়</h1>
   <div class="stats3"><span><b>${bnc(L.length)}</b>টি পরীক্ষা</span><span><b>${bnc(sum(L))}</b>টি প্রশ্ন</span><span><b>${bnc(orgs)}</b>টি প্রতিষ্ঠান</span></div></section>
-  <div class="chips cats"><a class="chip" href="#/all">সব পরীক্ষা</a>${Object.entries(CAT).map(([k,c])=>`<a class="chip" href="#/${k}">${c.t}</a>`).join('')}</div>
+  <div class="chips cats"><a class="chip" href="#/all">সকল পরীক্ষা</a>${Object.entries(CAT).map(([k,c])=>`<a class="chip" href="#/${k}">${c.t}</a>`).join('')}</div>
   `+listHTML('all',true);
   bindList();
 }
@@ -259,10 +259,10 @@ function sub(c,s){
 }
 // flat category: every exam as a card, newest first, with a search box and year chips
 function listHTML(c,home){
-  const C=c==='all'?{t:'সব চাকরির পরীক্ষা',m:'ব্যাংক, সরকারি চাকরি, পিএসসি নন-ক্যাডার ও শিক্ষক নিবন্ধন মিলিয়ে সব পরীক্ষা'}:CAT[c],L=exams().filter(e=>c==='all'||catOf(e)===c).sort((a,b)=>(b.year==='misc'?'0':b.date||b.year).localeCompare(a.year==='misc'?'0':a.date||a.year)||b.n-a.n);
+  const C=c==='all'?{t:'সকল চাকরির পরীক্ষা',m:'ব্যাংক, সরকারি চাকরি, পিএসসি নন-ক্যাডার ও শিক্ষক নিবন্ধন মিলিয়ে সকল পরীক্ষা'}:CAT[c],L=exams().filter(e=>c==='all'||catOf(e)===c).sort((a,b)=>(b.year==='misc'?'0':b.date||b.year).localeCompare(a.year==='misc'?'0':a.date||a.year)||b.n-a.n);
   const years=[...new Set(L.map(e=>e.year).filter(y=>y!=='misc'))].sort().reverse();
   const card=e=>`<a class="oc ex" href="#/x/${e.id}"><span class="yr">${e.year==='misc'?'বিবিধ':bn(e.year)}</span><span class="mid"><span class="n">${e.orgbn}</span><span class="src">${e.postbn}${e.note?' · '+e.note:''}</span><span class="cnt">${bn(e.n)}টি প্রশ্ন · সময় ${bn(e.time||minutesFor(e.n))} মিনিট</span></span><span class="go">শুরু →</span></a>`;LIST=L;CARD=card;
-  return (home?`<h2 class="lh">সব পরীক্ষা, নতুন আগে</h2>`:crumb([[null,C.t]])+`<h1>${C.t}</h1><p class="sub">${C.m}: ${bnc(L.length)}টি পরীক্ষা, ${bnc(sum(L))}টি প্রশ্ন।</p>`)+`
+  return (home?`<h2 class="lh">সকল পরীক্ষা, নতুনগুলো আগে</h2>`:crumb([[null,C.t]])+`<h1>${C.t}</h1><p class="sub">${C.m}: ${bnc(L.length)}টি পরীক্ষা, ${bnc(sum(L))}টি প্রশ্ন।</p>`)+`
   <input id="fq" type="search" placeholder="পদ বা মন্ত্রণালয়ের নাম লিখে খুঁজুন" style="width:100%;font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--rule);border-radius:10px;background:var(--card);color:var(--ink)">
   <div class="chips yrow" id="fy"><button type="button" class="chip" data-y="" aria-pressed="true">সব বছর</button>${years.map(y=>`<button type="button" class="chip" data-y="${y}" aria-pressed="false">${bn(y)}</button>`).join('')}</div>
   <div class="ogrid" id="fl"></div><p class="load" id="fnone" hidden>কিছু পাওয়া যায়নি।</p><button type="button" class="more" id="fmore" hidden>আরও দেখুন</button>`;
