@@ -63,6 +63,11 @@ def ask(title: str, text: str) -> str:
               f'giving up after {ASK_WAIT}')
     r = sh("osascript", "-e", script, check=False)
     out = r.stdout or ""
+    if r.returncode and sys.stdin.isatty():
+        # জানালা খুলল না → Terminal-এ লিখে উত্তর
+        print("\n" + text + "\n")
+        ans = input("প্রকাশ করবেন? হ্যাঁ হলে  হ  , পরে হলে  প  , বাদ দিতে  ব  লিখে Enter: ").strip()
+        return {"হ": "publish", "h": "publish", "y": "publish", "ব": "reject", "b": "reject"}.get(ans[:1], "later")
     if "gave up:true" in out or r.returncode:
         return "later"
     if "প্রকাশ করুন" in out:
@@ -193,31 +198,13 @@ def publish(ds: str) -> str:
     return br
 
 
-def main() -> int:
-    BOT.mkdir(parents=True, exist_ok=True)
-    lock = open(BOT / ".lock", "w")
-    try:
-        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except BlockingIOError:
-        log("আগের চালানো এখনো চলছে, এবার বাদ")
-        return 0
-    if not KEYFILE.exists():
-        notify("খবরের বট", "Gemini চাবি নেই। ~/Lyanna-Backup/খবরের-বট-চালু.command আবার চালান।")
-        return 1
-    now = dt.datetime.now(DHAKA)
-    state = load_state()
-    try:
-        sync_repo()
-    except RuntimeError as e:
-        log(f"রিপো হালনাগাদ হলো না: {e}")
-        return 1
-    for ds in targets(now, state):
-        st = state.get(ds, {}).get("status")
-        if st != "draft" or not (DRAFTS / ds / "day.json").exists():
-            if not make_draft(ds, state):
-                save_state(state)
-                continue
-            save_state(state)
+def approve(state: dict) -> None:
+    """খসড়া হয়ে থাকা দিনগুলোর জন্য সারাংশ খুলে PIASH-কে জিজ্ঞেস করা (Terminal থেকে চলে, তাই জানালা খোলে)।"""
+    pending = sorted(ds for ds, st in state.items()
+                     if st.get("status") == "draft" and (DRAFTS / ds / "day.json").exists())
+    if not pending:
+        print("অনুমোদনের অপেক্ষায় কোনো খসড়া নেই।")
+    for ds in pending:
         page = preview(ds)
         sh("open", str(page), check=False)
         day = json.loads((DRAFTS / ds / "day.json").read_text(encoding="utf-8"))
@@ -230,18 +217,58 @@ def main() -> int:
                 where = publish(ds)
             except RuntimeError as e:
                 log(f"{ds}: প্রকাশ হলো না: {e}")
-                notify("খবরের বট", f"{ds}: প্রকাশ হলো না। পরের ঘণ্টায় আবার জিজ্ঞেস করবে।")
+                print(f"{ds}: প্রকাশ হলো না। পরের ঘণ্টায় আবার জিজ্ঞেস করবে।")
                 continue
             state[ds] = {"status": "published", "at": dt.datetime.now(DHAKA).isoformat(), "where": where}
-            notify("খবরের বট", f"{ds}: প্রকাশ হয়েছে ✓" if where == "main" else f"{ds}: শাখা {where}-এ রাখা হলো (মার্জ বাকি)")
+            msg = f"{ds}: প্রকাশ হয়েছে ✓" if where == "main" else f"{ds}: শাখা {where}-এ রাখা হলো (মার্জ বাকি)"
+            notify("খবরের বট", msg)
+            print(msg)
             log(f"{ds}: প্রকাশ → {where}")
         elif choice == "reject":
             state[ds] = {"status": "rejected", "at": dt.datetime.now(DHAKA).isoformat()}
-            notify("খবরের বট", f"{ds}: বাদ দেওয়া হলো, প্রকাশ হবে না।")
+            print(f"{ds}: বাদ দেওয়া হলো।")
             log(f"{ds}: বাদ")
         else:
-            log(f"{ds}: পরে — পরের ঘণ্টায় আবার জিজ্ঞেস করবে")
+            print(f"{ds}: পরে — এক ঘণ্টা পরে আবার জিজ্ঞেস করবে।")
+            log(f"{ds}: পরে")
         save_state(state)
+
+
+def main() -> int:
+    approving = "--approve" in sys.argv
+    BOT.mkdir(parents=True, exist_ok=True)
+    lock = open(BOT / ".lock", "w")
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX if approving else fcntl.LOCK_EX | fcntl.LOCK_NB)  # অনুমোদন অপেক্ষা করে
+    except BlockingIOError:
+        log("আগের চালানো এখনো চলছে, এবার বাদ")
+        return 0
+    if not KEYFILE.exists():
+        notify("খবরের বট", "Gemini চাবি নেই। ~/Lyanna-Backup/খবরের-বট-চালু.command আবার চালান।")
+        return 1
+    state = load_state()
+    if approving:
+        approve(state)
+        return 0
+    now = dt.datetime.now(DHAKA)
+    try:
+        sync_repo()
+    except RuntimeError as e:
+        log(f"রিপো হালনাগাদ হলো না: {e}")
+        return 1
+    src = REPO / "scripts/news/mac/approve.command"            # অনুমোদনের ফাইল সবসময় নতুন রাখা
+    if src.exists():
+        shutil.copy2(src, BOT / "approve.command")
+        os.chmod(BOT / "approve.command", 0o755)
+    for ds in targets(now, state):
+        if state.get(ds, {}).get("status") == "draft" and (DRAFTS / ds / "day.json").exists():
+            continue
+        make_draft(ds, state)
+        save_state(state)
+    if any(st.get("status") == "draft" for st in state.values()):
+        # পেছনে চলা কাজ জানালা খুলতে পারে না, তাই Terminal-এ অনুমোদনের জানালা খোলা
+        notify("খবরের বট", "খসড়া তৈরি। অনুমোদনের জানালা খুলছে।")
+        sh("open", "-a", "Terminal", str(BOT / "approve.command"), check=False)
     return 0
 
 
