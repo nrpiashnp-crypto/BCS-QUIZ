@@ -50,11 +50,13 @@ small.dim{font-size:12.5px}
 <h1>অবস্থা-যাচাই (নিজের পরিকল্পনা)</h1>
 <p class="sub">কে কী দিয়েছেন, কে তাড়াহুড়া করেছেন, কোন প্রশ্ন কেমন গেল। তাড়াহুড়ার চিহ্ন শুধু এখানে দেখা যায়, শিক্ষার্থী দেখেন না।</p>
 <div class="row"><input type="text" id="sid" value="bcs-start" style="max-width:220px"><button class="btn ghost" id="load">আবার লোড</button><a class="btn ghost" id="csv" href="#">সব উত্তরের CSV</a></div>
-<div class="tabs" id="tabs"><button data-t="sum" aria-pressed="true">সার</button><button data-t="ppl">মানুষ</button><button data-t="items">প্রশ্ন</button><button data-t="up">সেট তোলা</button></div>
+<div class="tabs" id="tabs"><button data-t="sum" aria-pressed="true">সার</button><button data-t="ppl">মানুষ</button><button data-t="items">প্রশ্ন</button><button data-t="rep">সমস্যার তালিকা</button><button data-t="att">উপস্থিতি</button><button data-t="up">সেট তোলা</button></div>
 <section id="sum"></section>
 <section id="ppl" hidden></section>
 <section id="one" hidden></section>
 <section id="items" hidden></section>
+<section id="rep" hidden></section>
+<section id="att" hidden></section>
 <section id="up" hidden>
 <div class="card"><p class="sub" style="margin:0 0 8px">যা তুলবেন তার আসল কপি Lyanna_data-র <code>pilot/custom-plan/&lt;সেট&gt;.json</code>-এ রাখুন (D1-এর নিজের ব্যাকআপ নেই)। ছাঁচ: সেখানকার PLAN.md §৯।</p>
 <div id="setsum" class="dim"></div>
@@ -86,7 +88,7 @@ const SUBN={bn:'বাংলা',en:'ইংরেজি',bd:'বাংলাদ�
 const tm=s=>s==null?'—':s>=60?bn(Math.floor(s/60))+' মি. '+bn(s%60)+' সে.':bn(s)+' সে.';
 const when=ts=>{if(!ts)return '—';const d=new Date(ts+6*36e5);return bn(d.getUTCDate())+'/'+bn(d.getUTCMonth()+1)+' '+bn(String(d.getUTCHours()).padStart(2,'0'))+':'+bn(String(d.getUTCMinutes()).padStart(2,'0'))};
 const pc=(a,b)=>b?bn(Math.round(a/b*100))+'%':'—';
-let P=null,IT=null;
+let P=null,IT=null,RP=null,AT=null;
 const TPL=[['বেখেয়ালি, আবার দিন','আপনার অবস্থা-যাচাইয়ের কয়েকটা উত্তর খুব তাড়াতাড়ি দেওয়া হয়েছে, প্রশ্ন আর অপশন পুরো পড়ার আগেই। এতে আপনার পরিকল্পনা ঠিক আসবে না। ভাগটা আবার দেওয়ার সুযোগ খুলে দিয়েছি। এবার সময় নিয়ে, প্রতিটা অপশন পড়ে দিন।'],
   ['সহজ প্রশ্নে ভুল','আপনি কঠিন প্রশ্নও পেরেছেন, কিন্তু কয়েকটা সহজ প্রশ্নে ভুল হয়েছে। পরীক্ষায় তাড়াহুড়া না করে প্রতিটা অপশন পড়ে উত্তর দিন। শুধু এতেই কয়েক নম্বর বাড়বে।'],
   ['বাকি ভাগ শেষ করুন','ভালো শুরু করেছেন! বাকি ভাগগুলোও শেষ করুন, তাহলেই আপনার পুরো পরিকল্পনা আর কার্ড তৈরি হবে।'],
@@ -109,11 +111,11 @@ function compose(box,uids,emails,resetParts,after){
     catch(e){box.querySelector('#mo').textContent='পাঠানো যায়নি: '+e.message;box.querySelector('#ms').disabled=false}};
 }
 function tab(t){document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t?'true':'false'));
-  ['sum','ppl','one','items','up'].forEach(x=>$(x).hidden=x!==t);if(t==='items'&&!IT)items();scrollTo(0,0)}
+  ['sum','ppl','one','items','up','rep','att'].forEach(x=>$(x).hidden=x!==t);if(t==='items'&&!IT)items();if(t==='rep'&&!RP)report();if(t==='att'&&!AT)attView();scrollTo(0,0)}
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.t));
 
 async function load(){
-  $('csv').href='/api/admin/diag/csv?s='+encodeURIComponent(S());IT=null;
+  $('csv').href='/api/admin/diag/csv?s='+encodeURIComponent(S());IT=null;RP=null;AT=null;if(!$('rep').hidden)report();if(!$('att').hidden)attView();
   $('sum').innerHTML='<p class="dim">লোড হচ্ছে…</p>';
   try{P=await api('diag/people?s='+encodeURIComponent(S()))}catch(e){
     $('sum').innerHTML='<div class="card">'+(e.message==='admin'?'অ্যাডমিন হিসেবে লগইন করুন (<a href="/account/">/account/</a>)।':e.message==='no set'?'এই সেট এখনো তোলা হয়নি। "সেট তোলা" ট্যাবে যান।':'খোলা যায়নি: '+esc(e.message))+'</div>';$('ppl').innerHTML='';setsum();return}
@@ -154,13 +156,13 @@ function people(){
     compose($('pbox'),ids,pp.filter(x=>ids.includes(x.uid)&&x.email).map(x=>x.email),null,load)};
 }
 async function person(uid){
-  ['sum','ppl','items','up'].forEach(x=>$(x).hidden=true);$('one').hidden=false;$('one').innerHTML='<p class="dim">লোড হচ্ছে…</p>';scrollTo(0,0);
+  ['sum','ppl','items','up','rep'].forEach(x=>$(x).hidden=true);$('one').hidden=false;$('one').innerHTML='<p class="dim">লোড হচ্ছে…</p>';scrollTo(0,0);
   let r;try{r=await api('diag/person?s='+encodeURIComponent(S())+'&uid='+uid)}catch(e){$('one').innerHTML='খোলা যায়নি।';return}
   let h=`<button class="btn ghost" id="bk">← সবাই</button><h2>${esc(r.user&&r.user.name)} <small class="dim">${esc(r.user&&r.user.email)} · uid ${bn(uid)}</small></h2>
     <div class="row"><button class="btn" id="pm">বার্তা পাঠান</button></div><div id="mbox"></div>`;
   if(r.msgs&&r.msgs.length)h+='<details class="card"><summary>আগে পাঠানো বার্তা ('+bn(r.msgs.length)+')</summary>'+r.msgs.map(x=>`<div style="border-top:1px dashed var(--rule);padding:6px 0"><small class="dim">${when(x.ts)} · ${x.seen?'দেখেছেন '+when(x.seen):'এখনো দেখেননি'}</small> <button class="btn ghost" data-md="${x.id}" style="padding:2px 8px;font-size:13px">মুছুন</button><br>${esc(x.text)}</div>`).join('')+'</details>';
   if(r.status)h+='<div class="card scroll"><b>বিষয় ধরে</b><table><thead><tr><th>বিষয়</th><th>ঠিক</th><th>ভুল</th><th>বাদ</th><th>দেখানো ব্যান্ড</th><th>ভেতরের চিহ্ন</th></tr></thead><tbody>'+r.status.subjects.filter(x=>x.taken).map(x=>
-    `<tr><td>${esc(x.name)}</td><td>${bn(x.ok)}/${bn(x.n)}</td><td>${bn(x.no)}</td><td>${bn(x.skip)}</td><td>${({strong:'শক্ত',mid:'মাঝামাঝি',focus:'এখন ফোকাস'})[x.band]||'—'}</td><td>${x.unsure?'<span class="flag">সন্দেহজনক</span> ':''}${x.few?'কম উত্তর':''}</td></tr>`).join('')+'</tbody></table><p class="sub" style="margin:6px 0 0">পরিকল্পনার ক্রম: '+r.status.order.map(id=>SUBN[id]||id).join(' → ')+'</p></div>';
+    `<tr><td>${esc(x.name)}</td><td>${bn(x.ok)}/${bn(x.n)}</td><td>${bn(x.no)}</td><td>${bn(x.skip)}</td><td>${({strong:'বেশ ভালো',mid:'মাঝারি',focus:'একটু ভালো করতে হবে!'})[x.band]||'—'}</td><td>${x.unsure?'<span class="flag">সন্দেহজনক</span> ':''}${x.few?'কম উত্তর':''}</td></tr>`).join('')+'</tbody></table><p class="sub" style="margin:6px 0 0">পরিকল্পনার ক্রম: '+r.status.order.map(id=>SUBN[id]||id).join(' → ')+'</p></div>';
   h+=r.parts.sort((a,b)=>a.part-b.part).map(p=>{const x=p.res;
     return `<div class="card"><div class="row" style="justify-content:space-between"><b>ভাগ ${bn(p.part)} · ${esc(p.title)}</b><button class="btn ghost" data-reset="${p.part}">আবার দিতে দিন</button></div>
     <p class="sub" style="margin:4px 0">শুরু ${when(p.ts)} · ${p.done?'শেষ '+when(p.done)+' · সময় লেগেছে '+tm(p.sec)+' / '+bn(p.mins)+' মি.':'চলছে বা শেষ হয়নি'} · ${esc(p.meta.dev||'')}${p.meta.w?' '+bn(p.meta.w)+'px':''}${p.meta.app?' · অ্যাপ':''}${p.meta.opens>1?' · '+bn(p.meta.opens)+' বার খোলা':''}${p.hn?' · অন্য অ্যাপে '+bn(p.hn)+' বার, '+tm(p.hid):''}</p>
@@ -188,6 +190,95 @@ async function items(){
       <td class="${x.disc!=null&&x.disc<=0?'flag':''}">${x.disc==null?'—':bn(x.disc)}</td><td>${x.o.map((o,k)=>`<div${k===x.a?' class="qok"':''}>${'কখগঘঙচ'[k]}. ${bn(x.picks[k])} <small class="dim">${esc(o)}</small></div>`).join('')}</td></tr>`).join('')}</tbody></table></div>`;
     f.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{sort=b.dataset.s;draw()});
   };draw();
+}
+// ---- সমস্যার তালিকা: সবার এক ছক (পাইলট, site-needs.md §৩) ----
+const BC={weak:'bad',mid:'warnc',strong:'ok'},nb=x=>x==null?'—':bn(String(Math.round(x*100)/100));
+const dday=d=>{if(!d)return '';const x=d.split('-');return bn(+x[2])+'/'+bn(+x[1])};
+// ---- উপস্থিতি (site-needs.md §৮): কে কোন দিন দিলেন, কে ২ দিন বা বেশি পিছিয়ে, রাতের মতামত; CSV কোডে ----
+const EASE=['','সহজ','ঠিকঠাক','কঠিন'],STUDY=['পড়িনি','<৩০ মি.','৩০-৬০ মি.','১-২ ঘ.','২ ঘ.+'];
+async function attView(){
+  const f=$('att');f.innerHTML='<p class="dim">লোড হচ্ছে…</p>';
+  try{AT=await api('diag/att?s='+encodeURIComponent(S()))}catch(e){f.innerHTML='<div class="card">খোলা যায়নি: '+esc(e.message)+'</div>';return}
+  const {parts}=AT.set,T=AT.today,pp=AT.people;
+  const dd=d=>d?bn(+d.slice(8))+'/'+bn(+d.slice(5,7)):'';
+  const cell=(x,p)=>{const a=x.parts[p.no];
+    if(a&&a.st==='done')return `<td class="ok" title="${a.fb?'মতামত দিয়েছেন':''}">✓ ${a.score!=null?bn(a.score):''}${a.late?'<small class="dim"> দেরিতে</small>':''}${a.fb?' 💬':''}</td>`;
+    if(a)return '<td class="warnc">চলছে</td>';
+    return p.date&&p.date>T?'<td class="dim">—</td>':'<td class="bad">✗</td>'};
+  const late=pp.filter(x=>x.behind>=2);
+  let h=`<p class="sub">সেট <b>${esc(AT.set.id)}</b> (রোজকার পরীক্ষা: সেট-ঘরে pb-w1, pb-w2 … লিখে "আবার লোড")। ✓ = দিয়েছেন (নম্বর), ✗ = দিন পেরিয়েছে কিন্তু দেননি, 💬 = রাতের মতামত।</p>
+  <div class="row" style="margin-bottom:8px"><a class="btn ghost" href="/api/admin/diag/att?s=${encodeURIComponent(AT.set.id)}&csv=1">উপস্থিতির CSV (কোডে)</a></div>
+  ${late.length?`<div class="card"><b class="bad">২ দিন বা বেশি পিছিয়ে: ${bn(late.length)} জন</b><p style="margin:4px 0 0">${late.map(x=>esc(x.code||x.name)+' ('+bn(x.behind)+')').join(', ')}</p></div>`:''}
+  <div class="card scroll"><table><thead><tr><th>কোড</th><th>নাম</th>${parts.map(p=>`<th title="${esc(p.title)}">${p.date?dd(p.date):'ভাগ '+bn(p.no)}</th>`).join('')}<th>পিছিয়ে</th></tr></thead><tbody>
+  ${pp.length?pp.map(x=>`<tr><td>${esc(x.code||'—')}</td><td>${esc(x.name)}</td>${parts.map(p=>cell(x,p)).join('')}<td class="${x.behind>=2?'bad':''}">${bn(x.behind)}</td></tr>`).join(''):`<tr><td colspan="${parts.length+3}" class="dim">এখনো কেউ নেই।</td></tr>`}</tbody></table></div>`;
+  const nm=new Map(pp.map(x=>[x.uid,x.code||x.name])),pd=new Map(parts.map(p=>[p.no,p]));
+  if(AT.fb.length)h+=`<h2>রাতের মতামত (${bn(AT.fb.length)})</h2><div class="card scroll"><table><thead><tr><th>কে</th><th>দিন</th><th>পরীক্ষা</th><th>পড়া</th><th>লেখা</th></tr></thead><tbody>${AT.fb.map(r=>
+    `<tr><td>${esc(nm.get(r.uid)||'uid '+r.uid)}</td><td>${pd.get(r.part)&&pd.get(r.part).date?dd(pd.get(r.part).date):'ভাগ '+bn(r.part)}</td><td>${EASE[r.d.ease]||'—'}</td><td>${r.d.mins!=null?STUDY[r.d.mins]:'—'}</td><td>${esc(r.d.txt||'')}</td></tr>`).join('')}</tbody></table></div>`;
+  f.innerHTML=h;
+}
+async function report(){
+  const f=$('rep');f.innerHTML='<p class="dim">লোড হচ্ছে…</p>';
+  try{RP=await api('diag/report?s='+encodeURIComponent(S()))}catch(e){f.innerHTML='<div class="card">খোলা যায়নি: '+esc(e.message)+'</div>';return}
+  const st=RP.set,[lo,hi]=st.bands,L=RP.people.filter(x=>x.rep);
+  if(!L.length){f.innerHTML='<p class="dim">এখনো কেউ কোনো ভাগ শেষ করেননি।</p>';return}
+  const pct=x=>x&&x.n?`<span class="${BC[x.band]||''}">${bn(x.pct)}%</span>`:'—';
+  f.innerHTML=`<p class="sub">প্রতি সারিতে একজন। রং: <span class="bad">${bn(lo)}%-এর কম: একটু ভালো করতে হবে!</span>, <span class="warnc">${bn(lo)}-${bn(hi)}% মাঝারি</span>, <span class="ok">${bn(hi)}%+ বেশ ভালো</span> (ঠিকের হার)। নম্বর ভুলে ${nb(st.neg)} কেটে। সারিতে চাপলে সেই মানুষের প্রতিটি উত্তর।</p>
+  <div class="card scroll"><table><thead><tr><th>কে</th><th>ভাগ</th><th>নম্বর</th><th>ঠিক</th>${st.subjects.map(s=>`<th>${esc(s.name)}</th>`).join('')}<th>কোথায় ফোকাস করবেন</th><th>আন্দাজ: ঠিক/ভুল · কাটা</th><th>নিশ্চিত, তবু ভুল</th><th>"কোনোটিই নয়" প্রশ্নে</th><th>সময় শেষে ফাঁকা</th><th>দিন ধরে নম্বর</th><th>পরামর্শ</th></tr></thead><tbody>${L.map(x=>{const r=x.rep,S=new Map(r.subjects.map(y=>[y.id,y]));
+    return `<tr class="click" data-u="${x.uid}"><td style="min-width:110px">${esc(x.name)}<br><small class="dim">uid ${bn(x.uid)}${x.going?' · একটি চলছে':''}</small></td><td>${bn(r.doneParts)}/${bn(r.parts)}</td>
+    <td><b>${r.total.net!=null?nb(r.total.net):bn(r.total.ok)}</b><small class="dim"> / ${bn(r.total.n)}</small></td><td>${pct(r.total)}</td>${st.subjects.map(s=>`<td>${pct(S.get(s.id))}</td>`).join('')}
+    <td style="min-width:240px">${r.clusters.filter(c=>c.n>=2).slice(0,3).map(c=>`<div><span class="${BC[c.band]}">${bn(c.pct)}%</span> ${esc(c.name)} <small class="dim">(${bn(c.ok)}/${bn(c.n)})</small></div>`).join('')||'—'}</td>
+    <td>${r.guess?`${bn(r.guess.n)}টি: ${bn(r.guess.ok)}/${bn(r.guess.no)} · <b>${nb(r.guess.lost)}</b>`:'—'}</td><td>${r.sure?bn(r.sure.no):'—'}</td>
+    <td>${r.none?bn(r.none.ok)+'/'+bn(r.none.n):'—'}</td><td>${bn(r.blank)}</td>
+    <td style="white-space:nowrap">${r.days.map(d=>`<div>${d.date?dday(d.date):'ভাগ '+bn(d.part)}: ${d.net!=null?nb(d.net):bn(d.ok)}<small class="dim">/${bn(d.n)}</small></div>`).join('')}</td>
+    <td><button class="btn ghost" data-nt="${x.uid}">${x.note?(x.note.pub?'প্রকাশিত ✓':'খসড়া'):'লিখুন'}</button></td></tr>`}).join('')}</tbody></table></div>
+  <div id="ned"></div>
+  ${RP.people.some(x=>!x.rep)?`<p class="sub">শুরু করেছেন কিন্তু কোনো ভাগ শেষ হয়নি: ${RP.people.filter(x=>!x.rep).map(x=>esc(x.name)).join(', ')}</p>`:''}`;
+  f.querySelectorAll('tr[data-u]').forEach(r=>r.onclick=()=>person(+r.dataset.u));
+  f.querySelectorAll('[data-nt]').forEach(b=>b.onclick=e=>{e.stopPropagation();noteEd(+b.dataset.nt)});
+}
+// ---- প্রত্যেকের পরামর্শ: শিক্ষার্থীর সমস্যার তালিকা আর PDF রিপোর্টের নিচে "লিয়ানা বুকস থেকে আপনার জন্য" ----
+let RTN=null;
+async function rtn(){if(RTN||!RP||RP.set.id!=='pb-start')return RTN;try{const r=await fetch('/plan/pb/routine.json',{cache:'no-cache'});if(r.ok)RTN=await r.json()}catch(e){}return RTN}
+const MON=['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
+const dlong=d=>{const x=d.split('-');return bn(+x[2])+' '+MON[+x[1]-1]};
+// খসড়া: সংখ্যা থেকে বানানো, PIASH বদলে নেবেন
+function draft(x,rt){
+  const r=x.rep,nm=(x.name||'').trim().split(/\s+/)[0],neg=r.neg||0;
+  const strong=r.subjects.filter(y=>y.band==='strong').map(y=>y.name),top=r.clusters.filter(c=>c.n>=4&&c.band==='weak').slice(0,3);
+  const L=[];
+  L.push(`${nm?nm+', ':''}আপনার ${bn(r.doneParts)} দিনের অবস্থা-যাচাই দেখলাম। ${bn(r.total.n)}টি প্রশ্নে নম্বর ${nb(r.total.net!=null?r.total.net:r.total.ok)}।`);
+  if(strong.length)L.push(`${strong.join(', ')}-এ আপনি ভালো আছেন; এগুলো ধরে রাখুন।`);
+  if(top.length){L.push('কোথায় ফোকাস করবেন:');
+    top.forEach((c,i)=>{const D=rt?rt.days.filter(d=>d.cluster===c.id&&d.kind==='study').map(d=>dlong(d.date)):[];
+      L.push(`${bn(i+1)}. ${c.name} (${bn(c.n)}টিতে ${bn(c.ok)}টি ঠিক)${D.length?': রুটিনে '+D.join(' ও ')+'। এই দিনগুলো বাদ দেবেন না, আগে শিট পড়ে তারপর পরীক্ষা।':'।'}`)})}
+  const g=r.guess;
+  if(g&&g.n>=8){const net=g.ok-g.no*neg;
+    L.push(net<0?`আন্দাজে ${bn(g.n)}টি দিয়ে ${nb(g.lost)} নম্বর কাটা গেছে, পেয়েছেন ${bn(g.ok)}। অচেনা প্রশ্ন বাদ দিন; দুটো অপশন বাদ দিতে পারলে তবেই দাগান।`
+      :`আন্দাজে ${bn(g.n)}টির মধ্যে ${bn(g.ok)}টি ঠিক, তাই আন্দাজে লাভ হয়েছে। তবে একেবারে অচেনা প্রশ্নে দাগাবেন না।`)}
+  if(r.sure&&r.sure.no>=5)L.push(`"নিশ্চিত" বলে ${bn(r.sure.no)}টি ভুল হয়েছে; মানে কিছু তথ্য ভুলভাবে মনে আছে। ব্যাখ্যাগুলো আবার পড়ে নিন।`);
+  if(r.blank>=5)L.push(`সময় শেষে ${bn(r.blank)}টি প্রশ্ন দেখা হয়নি। কঠিন প্রশ্নে আটকে না থেকে বাদ দিয়ে এগোন।`);
+  L.push('১৪ নভেম্বর থেকে রোজ একটি পড়া আর পরীক্ষা। আমরা পাশে আছি।');
+  return L.join('\n');
+}
+async function noteEd(uid){
+  const x=RP.people.find(y=>y.uid===uid);if(!x)return;
+  const box=$('ned'),n=x.note||{};
+  box.innerHTML=`<div class="card compose" style="margin-top:12px"><b>${esc(x.name)}-এর জন্য পরামর্শ</b>
+    <p class="sub" style="margin:4px 0 6px">প্রকাশ করলে তাঁর সমস্যার তালিকা আর PDF রিপোর্টে "লিয়ানা বুকস থেকে আপনার জন্য" হিসেবে দেখাবে। খালি করে সেভ করলে মুছে যায়।</p>
+    <div class="row" style="margin-bottom:6px"><button class="btn ghost" id="nd">সংখ্যা থেকে খসড়া</button><a class="btn ghost" href="/plan/pb/?as=${uid}" target="_blank" rel="noopener">তাঁর রিপোর্ট দেখুন</a></div>
+    <textarea id="nx" maxlength="4000" rows="10" style="width:100%">${esc(n.txt||'')}</textarea>
+    <label style="display:flex;gap:6px;margin:6px 0;color:var(--ink)"><input type="checkbox" id="np"${n.pub?' checked':''}> প্রকাশ (শিক্ষার্থী দেখবেন)</label>
+    <div class="row"><button class="btn" id="ns">সেভ</button>${x.email?'<a class="btn ghost" id="nm">মেইলে জানান</a>':''}<span id="no" class="dim"></span></div></div>`;
+  box.scrollIntoView({behavior:'smooth'});
+  $('nd').onclick=async()=>{const t=$('nx');if(t.value.trim()&&!confirm('লেখা ঘরটা খসড়া দিয়ে বদলাবে?'))return;t.value=draft(x,await rtn())};
+  $('ns').onclick=async()=>{$('ns').disabled=true;
+    try{const r=await api('diag/note',{s:S(),uid,txt:$('nx').value,pub:$('np').checked?1:0});
+      x.note=r.del?null:{txt:$('nx').value.trim(),pub:$('np').checked?1:0,ts:r.ts};$('no').textContent=r.del?'মুছে গেছে।':$('np').checked?'সেভ ও প্রকাশ হয়েছে।':'সেভ হয়েছে (লুকানো)।';
+      const b=document.querySelector(`[data-nt="${uid}"]`);if(b)b.textContent=x.note?(x.note.pub?'প্রকাশিত ✓':'খসড়া'):'লিখুন'}
+    catch(e){$('no').textContent='সেভ হয়নি: '+e.message}$('ns').disabled=false};
+  if($('nm'))$('nm').onclick=()=>{const nm=(x.name||'').trim().split(/\s+/)[0];
+    const body=`${nm?nm+', ':''}আপনার অবস্থা-যাচাইয়ের রিপোর্ট তৈরি। লগইন করে দেখুন, সেখান থেকেই রেজাল্ট কার্ড আর PDF নামানো যায়:\nhttps://lyannabooks.com/plan/pb/\n\n${$('nx').value.trim()}\n\nলিয়ানা বুকস`;
+    location.href='mailto:'+encodeURIComponent(x.email)+'?subject='+encodeURIComponent('লিয়ানা বুকস · আপনার অবস্থা-যাচাইয়ের রিপোর্ট')+'&body='+encodeURIComponent(body)};
 }
 // ---- সেট তোলা ----
 async function setsum(){
@@ -235,7 +326,9 @@ $('f').onchange=async()=>{
 $('upb').onclick=async()=>{
   if(!SET)return;$('upb').disabled=true;const log=$('log');log.hidden=false;log.textContent='সেট তোলা হচ্ছে…\n';
   try{
-    SET.id=S();await api('diag/set',{cfg:{id:SET.id,title:SET.title,subjects:SET.subjects,parts:SET.parts}});
+    SET.id=S();const cfg={id:SET.id,title:SET.title,subjects:SET.subjects,parts:SET.parts};
+    for(const k of ['neg','bands','conf','pin','report','clusters'])if(SET[k]!=null)cfg[k]=SET[k];
+    const sr=await api('diag/set',{cfg});if(sr.moved)log.textContent+='এই সেটে আগের '+bn(sr.moved)+'টি ভাগ-দেওয়া অন্য প্রশ্নে ছিল; সেগুলো "'+sr.arch+'" নামে সরানো হলো (মোছা নয়)।\n';
     const all=SET.parts.flatMap(p=>p.qs).map(id=>({id,...SET.questions[id]}));
     for(let i=0;i<all.length;i+=40){const r=await api('diag/q',{s:SET.id,qs:all.slice(i,i+40)});log.textContent+=bn(Math.min(i+40,all.length))+' / '+bn(all.length)+(r.bad.length?' · বাদ: '+r.bad.join(', '):'')+'\n'}
     log.textContent+='শেষ।';load();
