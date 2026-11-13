@@ -133,7 +133,7 @@ def head(title: str, desc: str, path: str) -> str:
 </head>
 <body>
 {MARK}
-<div class="bar"><a href="/" aria-label="লিয়ানা বুকস"><img src="/img/logo/li-mark.svg" alt="" width="34" height="44"><span class="lgn-n">লিয়ানা বুকস</span></a><nav class="sec" aria-label="সাইটের অংশ"><a href="/bcs/">বিসিএস</a><a href="/jobs/">চাকরি</a><a href="/science/">বিজ্ঞান</a><a href="/running/">চলমান</a></nav></div>
+<div class="bar"><a href="/" aria-label="লিয়ানা বুকস"><img src="/img/logo/li-mark.svg" alt="" width="34" height="44"><span class="lgn-n">লিয়ানা বুকস</span></a><nav class="sec" aria-label="সাইটের অংশ"><a href="/bcs/">বিসিএস</a><a href="/jobs/">চাকরি</a><a href="/science/">বিজ্ঞান</a><a href="/subject/" aria-label="বিষয়ভিত্তিক প্রস্তুতি">বিষয়<span class="n1">ভিত্তিক</span><span class="n2"> প্রস্তুতি</span></a><a href="/running/">চলমান</a></nav></div>
 <main class="wrap">
 """
 
