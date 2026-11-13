@@ -3,7 +3,7 @@
 দিনে তিন খেপ সংগ্রহ (সকাল ৮টা, দুপুর ২টা, রাত ৯টার পরের প্রথম চালানোয়):
   collect → মূল বিজ্ঞপ্তি নামানো → দুইবার পড়া (দুই মডেল) → যাচাই →
   মিললে circular/data-তে + /circular/ পাতা (Mac-এর কপিতে কমিট); না মিললে আটকে রাখা (অ্যাডমিনের তালিকা)।
-সাইটে তোলা (GitHub push + Cloudflare): নতুন বিজ্ঞপ্তি এলে সেই খেপেই (দিনে সর্বোচ্চ তিনবার), নইলে রাতের খেপে একবার।
+সাইটে তোলা (দুই দিক মিলিয়ে GitHub push; Cloudflare সেখান থেকে): নতুন বিজ্ঞপ্তি এলে সেই খেপেই (দিনে সর্বোচ্চ তিনবার), নইলে রাতের খেপে একবার।
 নিজে থেকে প্রকাশ, সন্দেহজনক শুধু PIASH-এর কাছে (২০২৬-১১-০৭)।
 
 ফাইল (~/Lyanna-Backup/news-bot/): jobs-state.json (কোনটা দেখা হয়েছে), jobs-held/ (আটকে থাকা, হুবহু অংশসহ),
@@ -163,19 +163,13 @@ def run_slot(st: dict, today: dt.date) -> tuple[int, int]:
 
 
 def ship(st: dict, today: dt.date) -> str:
-    """GitHub (পারলে) + Cloudflare।"""
-    where = []
-    r = M.sh("git", "push", "-q", "origin", "HEAD:main", cwd=REPO, check=False, timeout=120)
-    if r.returncode == 0:
-        where.append("GitHub")
-    ok, tail = M.deploy_cloudflare()
-    if ok:
-        where.append("Cloudflare")
-    else:
-        log(f"Cloudflare-এ তোলা গেল না: {tail}")
-    if where:
-        st["last_ship"] = today.isoformat()
-    return "+".join(where) or "কোথাও না"
+    """সাইটে তোলা, দুই দিক মিলিয়ে (mac_daily.deploy_cloudflare → scripts/deploy_guard.py)।"""
+    ok, where = M.deploy_cloudflare()
+    if not ok:
+        log(f"সাইটে তোলা থামানো হলো: {where}")
+        return "কোথাও না"
+    st["last_ship"] = today.isoformat()
+    return where
 
 
 def main() -> int:
