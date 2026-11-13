@@ -14,6 +14,8 @@ Cloudflare GitHub-এর পুরোনো কপি লাইভ করে, �
 চালানো (Mac-এর Terminal থেকে, রিপোর কপির ভেতরে):
   python3 scripts/deploy_guard.py check      # শুধু মেলানো, কিছু বদলায় না
   python3 scripts/deploy_guard.py ship       # মিলিয়ে push (Cloudflare GitHub থেকে নিজে তুলবে)
+  python3 scripts/deploy_guard.py direct     # জরুরি পথ: শুধু অনুমতি-ফাইল থাকলে সরাসরি Cloudflare
+Mac-এর deploy.sh (আর তাকে ডাকা ইনবক্স-মেলাও) এটাই চালায়: scripts/mac/deploy.sh।
 """
 from __future__ import annotations
 
@@ -56,13 +58,30 @@ def state(repo: Path) -> dict:
     return {"head": head, "github": gh, "ahead": ahead, "behind": behind, "dirty": dirty}
 
 
-def check(repo: Path) -> dict:
+def catch_up(repo: Path) -> None:
+    """Mac পিছিয়ে থাকলে নিরাপদে GitHub-এর কাজ আনা: শুধু এগিয়ে-চলা (ff) বা rebase; না বসলে থামা, কিছু হারায় না।"""
+    s = state(repo)
+    if not s["behind"] or s["dirty"]:
+        return
+    if not s["ahead"]:
+        _git(repo, "merge", "-q", "--ff-only", "origin/main")
+        return
+    if _git(repo, "rebase", "-q", "origin/main").returncode:
+        _git(repo, "rebase", "--abort")
+
+
+def check(repo: Path, sync: bool = False) -> dict:
     """push-এর আগে মেলানো। ঠিক থাকলে অবস্থা ফেরত, নইলে GuardError।"""
     if not fetch_main(repo):
         raise GuardError("GitHub পাওয়া যাচ্ছে না, তাই দুই দিক মেলানো গেল না। সাইটে তোলা হবে না; কাজ Mac-এ জমা থাকল।")
+    if sync:
+        catch_up(repo)
     s = state(repo)
     if s["dirty"]:
         raise GuardError(f"Mac-এর কপিতে কমিট না হওয়া বদল আছে ({len(s['dirty'])}টা ফাইল)। আগে কমিট বা বাতিল, তারপর সাইটে।")
+    if s["behind"] and s["ahead"]:
+        raise GuardError(f"GitHub-এ {s['behind']}টা আর Mac-এ {s['ahead']}টা আলাদা কমিট, নিজে থেকে মেলানো গেল না (সম্ভবত একই ফাইলে দুই দিকে বদল)। "
+                         "সাইটে তোলা হলো না, কিছু হারায়নি; Claude-কে দিয়ে হাতে মেলাতে হবে।")
     if s["behind"]:
         raise GuardError(f"GitHub-এ এমন {s['behind']}টা কমিট আছে যা Mac-এর কপিতে নেই। এখন তুললে সেগুলো সাইট থেকে মুছে যেত। "
                          "আগে GitHub থেকে মিলিয়ে নিন (sync), তারপর আবার।")
@@ -71,7 +90,7 @@ def check(repo: Path) -> dict:
 
 def ship(repo: Path) -> str:
     """মিলিয়ে GitHub-এ push। Cloudflare GitHub থেকে নিজে তোলে, Mac থেকে সরাসরি নয়।"""
-    s = check(repo)
+    s = check(repo, sync=True)
     if s["ahead"]:
         r = _git(repo, "push", "-q", "origin", "HEAD:main")
         if r.returncode:
@@ -105,6 +124,16 @@ def direct_deploy(repo: Path, run_wrangler) -> str:
     return "Cloudflare সরাসরি (জরুরি পথ; GitHub-এ ওঠার আগে কোনো PR মার্জ নয়)"
 
 
+def wrangler(repo: Path) -> tuple[bool, str]:
+    """সরাসরি Cloudflare-এ তোলা; শুধু direct_deploy() ডাকে।"""
+    env = dict(os.environ, PATH="/opt/homebrew/bin:/usr/local/bin:" + os.environ.get("PATH", "/usr/bin:/bin"))
+    head = _out(repo, "rev-parse", "HEAD") or "local"
+    r = subprocess.run(["npx", "--yes", "wrangler", "pages", "deploy", ".", "--project-name", PAGES_PROJECT,
+                        "--branch", "main", "--commit-hash", head], cwd=repo, env=env, text=True,
+                       capture_output=True, timeout=900)
+    return r.returncode == 0, ((r.stdout or "") + (r.stderr or "")).strip()[-600:]
+
+
 def main() -> int:
     repo = Path(sys.argv[2]) if len(sys.argv) > 2 else Path.cwd()
     cmd = sys.argv[1] if len(sys.argv) > 1 else "check"
@@ -114,6 +143,8 @@ def main() -> int:
             print(f"ঠিক আছে ✓ GitHub আর Mac মিলছে। Mac এগিয়ে {s['ahead']}টা কমিট (push বাকি), পিছিয়ে ০।")
         elif cmd == "ship":
             print("✓", ship(repo))
+        elif cmd == "direct":
+            print("✓", direct_deploy(repo, wrangler))
         else:
             print(__doc__)
             return 2
