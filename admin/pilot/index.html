@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="bn">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="theme-color" content="#13294b">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>পাইলট ব্যাচ · অ্যাডমিন · লিয়ানা বুকস</title>
+<title>Pilot batch · Admin · Lyanna Books</title>
 <meta name="robots" content="noindex">
 <link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/fonts/fonts.css">
@@ -32,97 +32,98 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;p
 pre{white-space:pre-wrap;font-size:13px;background:var(--soft);padding:8px;border-radius:3px;margin:6px 0 0}
 </style>
 <link rel="stylesheet" href="/css/omr.css">
+<link rel="stylesheet" href="/admin/admin.css">
 </head>
 <body>
-<div class="bar"><a href="/" aria-label="লিয়ানা বুকস"><img src="/img/logo/li-mark.svg" alt="" width="34" height="44"><span class="lgn-n">লিয়ানা বুকস</span></a><span>অ্যাডমিন</span></div>
+<div class="adbar"><a class="adback" href="/admin/">← Admin</a><span class="adname">Pilot batch</span></div>
 <main class="wrap">
-<h1>পাইলট ব্যাচ</h1>
-<p class="sub">সেট তোলা, শুরুর তারিখ, সদস্য অনুমোদন, হাজিরা আর উত্তরের CSV। যা তুলবেন তার আসল কপি Lyanna_data-র <code>pilot/&lt;ব্যাচ&gt;/</code>-এ রাখুন।</p>
-<div class="card row"><label style="margin:0">ব্যাচ</label><input type="text" id="pid" value="petrobangla-1" style="max-width:240px"><button class="btn ghost" id="load">খুলুন</button> <a id="open" target="_blank" rel="noopener">পরীক্ষার্থীর পাতা →</a></div>
-<div id="msg" class="card dim">লোড হচ্ছে…</div>
+<h1>Pilot batch</h1>
+<p class="sub">Upload sets, start date, member approval, attendance and the answers CSV. Keep the original of whatever you upload in Lyanna_data under <code>pilot/&lt;batch&gt;/</code>.</p>
+<div class="card row"><label style="margin:0">Batch</label><input type="text" id="pid" value="petrobangla-1" style="max-width:240px"><button class="btn ghost" id="load">Open</button> <a id="open" target="_blank" rel="noopener">Learner page →</a></div>
+<div id="msg" class="card dim">Loading…</div>
 
 <section id="main" hidden>
-<h2>অবস্থা</h2><div class="card" id="info"></div>
+<h2>Status</h2><div class="card" id="info"></div>
 
-<h2>তারিখ আর রাতের ফর্ম</h2>
+<h2>Date and night form</h2>
 <div class="card">
-<label for="start">শুরুর তারিখ (দিন ১, সকাল ৬টা থেকে)। বদলালে পুরো সূচি সরে যায়।</label><input type="date" id="start">
-<label for="form">Google Form-এর আগে-থেকে-বসানো লিংক। কোডের জায়গায় <code>{code}</code>, দিনের জায়গায় <code>{day}</code> লিখুন।</label><input type="url" id="form" placeholder="https://docs.google.com/forms/d/e/…/viewform?usp=pp_url&amp;entry.123={code}&amp;entry.456={day}">
-<p class="row" style="margin:10px 0 0"><button class="btn" id="saveCfg">রাখুন</button><span id="cfgMsg" class="dim"></span></p>
+<label for="start">Start date (day 1, from 6 am). Changing it shifts the whole schedule.</label><input type="date" id="start">
+<label for="form">Pre-filled Google Form link. Write <code>{code}</code> where the code goes and <code>{day}</code> where the day goes.</label><input type="url" id="form" placeholder="https://docs.google.com/forms/d/e/…/viewform?usp=pp_url&amp;entry.123={code}&amp;entry.456={day}">
+<p class="row" style="margin:10px 0 0"><button class="btn" id="saveCfg">Save</button><span id="cfgMsg" class="dim"></span></p>
 </div>
 
-<h2>সদস্য</h2>
-<div class="card scroll"><table><thead><tr><th>কোড</th><th>নাম</th><th>অবস্থা</th><th>হাজিরা</th><th></th></tr></thead><tbody id="mem"></tbody></table>
-<p class="sub" style="margin:8px 0 0">অনুমোদন দিলে পরের খালি কোড বসে (P01, P02…)। জোড় কোড ক-দলের শিট আগে পান, বিজোড় খ-দলের। একবার দেওয়া কোড আর বদলায় না।</p></div>
+<h2>Members</h2>
+<div class="card scroll"><table><thead><tr><th>Code</th><th>Name</th><th>Status</th><th>Attendance</th><th></th></tr></thead><tbody id="mem"></tbody></table>
+<p class="sub" style="margin:8px 0 0">Approving assigns the next free code (P01, P02…). Even codes get the sheets first (group A), odd codes are group B. A code, once given, never changes.</p></div>
 <div id="repBox"></div>
 
-<h2>রপ্তানি</h2>
-<div class="card row"><a class="btn" id="csv">সব উত্তরের CSV</a><a class="btn ghost" id="csvS">শিট খোলার CSV</a><span class="dim">নাম/ইমেইল নেই, শুধু কোড। Lyanna_data-র pilot/&lt;ব্যাচ&gt;/-এ রাখুন।</span></div>
+<h2>Export</h2>
+<div class="card row"><a class="btn" id="csv">All answers CSV</a><a class="btn ghost" id="csvS">Sheet unlock CSV</a><span class="dim">No names or emails, codes only. Keep it in Lyanna_data under pilot/&lt;batch&gt;/.</span></div>
 </section>
 
-<h2>সেট তোলা</h2>
+<h2>Upload set</h2>
 <div class="card">
-<p class="sub" style="margin:0 0 8px">LY Course-এর দেওয়া <code>set.json</code> (ছাঁচ: Lyanna_data/pilot/README.md)। আবার তুললে একই আইডির প্রশ্ন হালনাগাদ হয়।</p>
+<p class="sub" style="margin:0 0 8px">The <code>set.json</code> from LY Course (template: Lyanna_data/pilot/README.md). Uploading again updates questions with the same id.</p>
 <input type="file" id="file" accept=".json,application/json">
-<p class="row" style="margin:10px 0 0"><button class="btn" id="up" disabled>তুলুন</button><span id="upMsg" class="dim"></span></p>
+<p class="row" style="margin:10px 0 0"><button class="btn" id="up" disabled>Upload</button><span id="upMsg" class="dim"></span></p>
 <pre id="chk" hidden></pre>
 </div>
 </main>
 <script>
-const $=id=>document.getElementById(id),bn=x=>String(x).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+const $=id=>document.getElementById(id),bn=x=>String(x);
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const mask=e=>e?e.replace(/^(.{3}).*@/,'$1…@'):'';
 let P=$('pid').value.trim(),D=null,SET=null;
 async function api(p,b){const r=await fetch('/api/'+p,b?{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:{credentials:'same-origin',cache:'no-store'});
   const j=await r.json().catch(()=>({}));if(r.status===401)throw 'login';if(r.status===403)throw 'admin';if(!r.ok){const e=new Error(j.error||'err');e.j=j;throw e}return j}
-function fail(e){$('msg').hidden=false;$('msg').innerHTML=e==='login'?'আগে <a href="/account/">লগইন করুন</a> (অ্যাডমিন ইমেইল দিয়ে)।':e==='admin'?'এই ইমেইল অ্যাডমিন তালিকায় নেই।':e&&e.message==='no pilot'?'এই ব্যাচ এখনো তোলা হয়নি। নিচে সেট তুলুন।':'সার্ভারে সমস্যা, পরে চেষ্টা করুন।'}
+function fail(e){$('msg').hidden=false;$('msg').innerHTML=e==='login'?'Please <a href="/account/">log in</a> first (with an admin email).':e==='admin'?'This email is not on the admin list.':e&&e.message==='no pilot'?'This batch has not been uploaded yet. Upload a set below.':'Server problem, try again later.'}
 async function load(){
   P=$('pid').value.trim();$('open').href='/pilot/'+encodeURIComponent(P)+'/';
   $('csv').href='/api/admin/pilot/csv?p='+encodeURIComponent(P);$('csvS').href=$('csv').href+'&kind=sheets';
   try{D=await api('admin/pilot?p='+encodeURIComponent(P))}catch(e){$('main').hidden=true;fail(e);return}
   $('msg').hidden=true;$('main').hidden=false;
   const c=D.cfg,am=c.attend_min;
-  $('info').innerHTML=`<b>${esc(c.title)}</b><br>দিন: ${D.day==null?'তারিখ বসানো হয়নি':D.day<1?'শুরু হয়নি':D.day>c.days?'শেষ':bn(D.day)+' / '+bn(c.days)} · টপিক ${bn(c.topics.length)} · পরীক্ষা ${bn(c.exams.length)} · প্রশ্ন ${bn(D.qn)}`+
-    (!c.exams.length?'<br><span class="bad">প্রশ্নের সেট এখনো তোলা হয়নি</span> (মানুষ এখনই যোগ দিতে পারেন)':D.missingN?`<br><span class="bad">সেটের ${bn(D.missingN)}টি প্রশ্ন এখনো তোলা হয়নি</span>`:'<br><span class="ok">সব প্রশ্ন তোলা আছে</span>')+
-    `<br>শিট নেই: ${c.topics.filter(t=>!t.sheet).map(t=>esc(t.name)).join(', ')||'<span class="ok">সব আছে</span>'} · রাতের ফর্ম: ${c.form?'<span class="ok">আছে</span>':'<span class="bad">নেই</span>'}`;
+  $('info').innerHTML=`<b>${esc(c.title)}</b><br>Day: ${D.day==null?'date not set':D.day<1?'not started':D.day>c.days?'ended':bn(D.day)+' / '+bn(c.days)} · Topics ${bn(c.topics.length)} · Tests ${bn(c.exams.length)} · Questions ${bn(D.qn)}`+
+    (!c.exams.length?'<br><span class="bad">Question set not uploaded yet</span> (people can join now)':D.missingN?`<br><span class="bad">${bn(D.missingN)} questions from the set are not uploaded yet</span>`:'<br><span class="ok">All questions uploaded</span>')+
+    `<br>Missing sheets: ${c.topics.filter(t=>!t.sheet).map(t=>esc(t.name)).join(', ')||'<span class="ok">none</span>'} · Night form: ${c.form?'<span class="ok">set</span>':'<span class="bad">missing</span>'}`;
   $('start').value=c.start||'';$('form').value=c.form||'';
   const took={};D.ans.forEach(a=>{if(a.k>=am)took[a.uid]=(took[a.uid]||0)+1});
-  const L={ok:'অনুমোদিত',wait:'অপেক্ষায়',out:'বাদ'};
-  $('mem').innerHTML=D.members.map(m=>`<tr data-u="${m.uid}"><td>${esc(m.code||'—')}</td><td>${m.nick?'<b>'+esc(m.nick)+'</b>':'<span class="bad">নাম দেননি</span>'}<br><span class="dim">Google: ${esc(m.name)} · ${esc(mask(m.email))}</span></td><td>${L[m.st]||m.st}</td>
-    <td>${bn(took[m.uid]||0)} / ${bn(c.exams.length)}${(took[m.uid]||0)>=c.pass?' <span class="ok">উত্তীর্ণ</span>':''}</td>
-    <td class="row">${m.st!=='ok'?'<button class="btn" data-a="ok">অনুমোদন</button>':''}${m.st!=='out'?'<button class="btn ghost" data-a="out">বাদ</button>':''}${m.code?'<button class="btn ghost" data-rep>রিপোর্ট</button><button class="btn ghost" data-reset>একটা পরীক্ষা মুছুন</button>':''}</td></tr>`).join('')||'<tr><td colspan="5" class="dim">এখনো কেউ যোগ দেননি।</td></tr>';
+  const L={ok:'Approved',wait:'Waiting',out:'Removed'};
+  $('mem').innerHTML=D.members.map(m=>`<tr data-u="${m.uid}"><td>${esc(m.code||'—')}</td><td>${m.nick?'<b>'+esc(m.nick)+'</b>':'<span class="bad">No name given</span>'}<br><span class="dim">Google: ${esc(m.name)} · ${esc(mask(m.email))}</span></td><td>${L[m.st]||m.st}</td>
+    <td>${bn(took[m.uid]||0)} / ${bn(c.exams.length)}${(took[m.uid]||0)>=c.pass?' <span class="ok">Passed</span>':''}</td>
+    <td class="row">${m.st!=='ok'?'<button class="btn" data-a="ok">Approve</button>':''}${m.st!=='out'?'<button class="btn ghost" data-a="out">Remove</button>':''}${m.code?'<button class="btn ghost" data-rep>Report</button><button class="btn ghost" data-reset>Delete one test</button>':''}</td></tr>`).join('')||'<tr><td colspan="5" class="dim">No one has joined yet.</td></tr>';
   document.querySelectorAll('#mem [data-a]').forEach(b=>b.onclick=async()=>{b.disabled=true;await api('admin/pilot/mem',{p:P,uid:+b.closest('tr').dataset.u,act:b.dataset.a}).catch(fail);load()});
   document.querySelectorAll('#mem [data-rep]').forEach(b=>b.onclick=async()=>{const code=b.closest('tr').children[0].textContent;
     const r=await api('pilot/report?p='+encodeURIComponent(P)+'&code='+encodeURIComponent(code)).catch(()=>null);if(!r)return;
-    $('repBox').innerHTML=`<div class="card"><b>${esc(code)}</b> · হাজিরা ${bn(r.took)} · আন্দাজে ঠিক ${bn(r.guessOk)} · নিশ্চিত-ভুল ${bn(r.sureWrong)}<table><tbody>`+
-      r.topics.map(t=>`<tr><td>${esc(t.name)}</td><td>${t.pct==null?'—':bn(t.pct)+'%'}</td><td>${t.level||''}</td><td class="dim">১ম ${bn(t.r[0][0])}/${bn(t.r[0][1])} · ২য় ${bn(t.r[1][0])}/${bn(t.r[1][1])}</td></tr>`).join('')+'</tbody></table></div>';});
-  document.querySelectorAll('#mem [data-reset]').forEach(b=>b.onclick=async()=>{const no=prompt('কোন পরীক্ষা-নম্বর মুছবেন? (শুধু পরীক্ষা করে দেখার জন্য; উত্তর চিরতরে মুছে যাবে)');
+    $('repBox').innerHTML=`<div class="card"><b>${esc(code)}</b> · Attendance ${bn(r.took)} · Right by guess ${bn(r.guessOk)} · Sure-wrong ${bn(r.sureWrong)}<table><tbody>`+
+      r.topics.map(t=>`<tr><td>${esc(t.name)}</td><td>${t.pct==null?'—':bn(t.pct)+'%'}</td><td>${t.level||''}</td><td class="dim">1st ${bn(t.r[0][0])}/${bn(t.r[0][1])} · 2nd ${bn(t.r[1][0])}/${bn(t.r[1][1])}</td></tr>`).join('')+'</tbody></table></div>';});
+  document.querySelectorAll('#mem [data-reset]').forEach(b=>b.onclick=async()=>{const no=prompt('Which test number to delete? (For testing only; the answers are deleted permanently)');
     if(!no)return;await api('admin/pilot/reset',{p:P,uid:+b.closest('tr').dataset.u,no:+no}).catch(fail);load()});
 }
 $('load').onclick=load;
-$('saveCfg').onclick=async()=>{$('cfgMsg').textContent='রাখা হচ্ছে…';
-  try{await api('admin/pilot/cfg',{p:P,start:$('start').value,form:$('form').value.trim()});$('cfgMsg').textContent='রাখা হয়েছে।';load()}
-  catch(e){$('cfgMsg').textContent=e.message==='form'?'ফর্মের লিংক Google Form-এর হতে হবে।':e.message==='date'?'তারিখ ঠিক নয়।':'রাখা যায়নি।'}};
+$('saveCfg').onclick=async()=>{$('cfgMsg').textContent='Saving…';
+  try{await api('admin/pilot/cfg',{p:P,start:$('start').value,form:$('form').value.trim()});$('cfgMsg').textContent='Saved.';load()}
+  catch(e){$('cfgMsg').textContent=e.message==='form'?'The form link must be a Google Form link.':e.message==='date'?'Invalid date.':'Could not save.'}};
 
 // সেট-ফাইল: আগে ফোনেই যাচাই, তারপর cfg আর প্রশ্ন (৪০টা করে)
 $('file').onchange=async()=>{
   const f=$('file').files[0];$('up').disabled=true;$('chk').hidden=false;
-  try{SET=JSON.parse(await f.text())}catch(e){$('chk').textContent='JSON পড়া যায়নি: '+e.message;SET=null;return}
+  try{SET=JSON.parse(await f.text())}catch(e){$('chk').textContent='Could not read JSON: '+e.message;SET=null;return}
   const q=SET.questions||{},need=new Set((SET.exams||[]).flatMap(e=>[...(e.qs||[]),...(e.fill||[])]));
   const miss=[...need].filter(id=>!q[id]),bad=Object.entries(q).filter(([id,x])=>!/^q[0-9a-f]{10}$/.test(id)||!x||!x.q||!Array.isArray(x.o)||!Number.isInteger(x.a)||x.a<0||x.a>=x.o.length||!(SET.topics||[]).some(t=>t.id===x.t));
-  $('chk').textContent=`ব্যাচ: ${SET.id}\nটপিক: ${(SET.topics||[]).length}, পরীক্ষা: ${(SET.exams||[]).length}, প্রশ্ন: ${Object.keys(q).length}\n`+
-    (miss.length?`সেটে আছে কিন্তু questions-এ নেই: ${miss.length}টি (${miss.slice(0,5).join(', ')}…)\n`:'')+(bad.length?`ঠিক নয় এমন প্রশ্ন: ${bad.length}টি (${bad.slice(0,5).map(x=>x[0]).join(', ')})\n`:'')+
-    (miss.length||bad.length?'আগে ফাইল ঠিক করুন।':'ফাইল ঠিক আছে। বাকি নিয়ম (টপিক দুবার, মাঝে ২ দিন…) তোলার সময় সার্ভার যাচাই করবে।');
+  $('chk').textContent=`Batch: ${SET.id}\nTopics: ${(SET.topics||[]).length}, tests: ${(SET.exams||[]).length}, questions: ${Object.keys(q).length}\n`+
+    (miss.length?`In the set but missing from questions: ${miss.length} (${miss.slice(0,5).join(', ')}…)\n`:'')+(bad.length?`Invalid questions: ${bad.length} (${bad.slice(0,5).map(x=>x[0]).join(', ')})\n`:'')+
+    (miss.length||bad.length?'Fix the file first.':'The file is fine. The server checks the remaining rules (topic twice, 2 days gap…) on upload.');
   $('up').disabled=!!(miss.length||bad.length);
   if(SET.id)$('pid').value=SET.id;
 };
 $('up').onclick=async()=>{
   if(!SET)return;$('up').disabled=true;const P2=SET.id,{questions,...cfg}=SET;
-  try{await api('admin/pilot/set',{p:P2,cfg})}catch(e){$('upMsg').textContent='সেট নেওয়া হয়নি।';if(e.j&&e.j.list)$('chk').textContent=e.j.list.join('\n');$('up').disabled=false;return}
+  try{await api('admin/pilot/set',{p:P2,cfg})}catch(e){$('upMsg').textContent='Set was not accepted.';if(e.j&&e.j.list)$('chk').textContent=e.j.list.join('\n');$('up').disabled=false;return}
   const list=Object.entries(questions).map(([id,x])=>({id,...x}));let n=0,bad=[];
-  for(let i=0;i<list.length;i+=40){$('upMsg').textContent=`প্রশ্ন তোলা হচ্ছে ${bn(i)}/${bn(list.length)}…`;
-    try{const r=await api('admin/pilot/q',{p:P2,qs:list.slice(i,i+40)});n+=r.n;bad=bad.concat(r.bad)}catch(e){$('upMsg').textContent='মাঝপথে থেমেছে, আবার "তুলুন" চাপুন (আগেরগুলো দুবার হবে না)।';$('up').disabled=false;return}}
-  $('upMsg').textContent=`হয়েছে: ${bn(n)}টি প্রশ্ন।`+(bad.length?` বাদ ${bn(bad.length)}টি: ${bad.slice(0,5).join(', ')}`:'');
+  for(let i=0;i<list.length;i+=40){$('upMsg').textContent=`Uploading questions ${bn(i)}/${bn(list.length)}…`;
+    try{const r=await api('admin/pilot/q',{p:P2,qs:list.slice(i,i+40)});n+=r.n;bad=bad.concat(r.bad)}catch(e){$('upMsg').textContent='Stopped midway, tap "Upload" again (earlier ones won\'t be duplicated).';$('up').disabled=false;return}}
+  $('upMsg').textContent=`Done: ${bn(n)} questions.`+(bad.length?` Skipped ${bn(bad.length)}: ${bad.slice(0,5).join(', ')}`:'');
   $('pid').value=P2;load();
 };
 load();

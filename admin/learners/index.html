@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="bn">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="theme-color" content="#13294b">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>শিক্ষার্থীদের ফল · লিয়ানা বুকস</title>
+<title>Learner results · Lyanna Books</title>
 <meta name="robots" content="noindex">
 <link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/fonts/fonts.css">
@@ -42,49 +42,52 @@ tr.pick{cursor:pointer}tr.pick:hover{background:var(--soft)}
 .day{background:var(--soft);font-weight:600}
 .scroll{overflow-x:auto}
 </style>
+<link rel="stylesheet" href="/admin/admin.css">
 </head>
 <body>
-<div class="bar"><a href="/" aria-label="লিয়ানা বুকস"><img src="/img/logo/li-mark.svg" alt="" width="34" height="44"><span class="lgn-n">লিয়ানা বুকস</span></a><span>অ্যাডমিন</span></div>
+<div class="adbar"><a class="adback" href="/admin/">← Admin</a><span class="adname">Learner results</span></div>
 <main class="wrap">
-<h1>শিক্ষার্থীদের ফল</h1>
-<p class="sub">লগইন করা শিক্ষার্থীদের প্রতিটি পরীক্ষা আর প্রতিটি উত্তর। শুধু অ্যাডমিন দেখতে পান। "উত্তর জমেছে" ঘরে ✓ মানে প্রশ্নের সংখ্যা আর সঠিক+ভুলের সংখ্যা উত্তর-তালিকার সঙ্গে মিলেছে।</p>
-<div id="msg" class="card dim">লোড হচ্ছে…</div>
-<section id="list" hidden><h2>শিক্ষার্থী</h2><div class="card scroll"><table><thead><tr><th>নাম</th><th>ইমেইল</th><th>পরীক্ষা</th><th>উত্তরসহ</th><th>শেষ পরীক্ষা</th></tr></thead><tbody id="users"></tbody></table></div></section>
+<h1>Learner results</h1>
+<p class="sub">Every test and every answer from logged-in learners. Only admins can see this. A ✓ in "Answers saved" means the question count and the right+wrong count match the answer list.</p>
+<div id="msg" class="card dim">Loading…</div>
+<section id="list" hidden><h2>Learners</h2><div class="card scroll"><table><thead><tr><th>Name</th><th>Email</th><th>Tests</th><th>With answers</th><th>Last test</th></tr></thead><tbody id="users"></tbody></table></div></section>
 <section id="one" hidden>
 <h2 id="who"></h2>
 <p class="stats" id="sum"></p>
-<p><a class="btn" id="rv" href="/admin/review/">পর্যালোচনা দেখুন</a> <button class="btn ghost" id="dl">JSON নামান</button> <button class="btn ghost" id="back">সবার তালিকায় ফিরুন</button></p>
-<div class="card scroll"><table><thead><tr><th>সময়</th><th>পরীক্ষা</th><th>নম্বর</th><th>সঠিক</th><th>ভুল</th><th>ফাঁকা</th><th>সময় লেগেছে</th><th>উত্তর জমেছে</th></tr></thead><tbody id="rows"></tbody></table></div>
+<p><a class="btn" id="rv" href="/admin/review/">View review</a> <button class="btn ghost" id="dl">Download JSON</button> <button class="btn ghost" id="back">Back to all learners</button></p>
+<div class="card scroll"><table><thead><tr><th>Time</th><th>Test</th><th>Score</th><th>Right</th><th>Wrong</th><th>Blank</th><th>Time taken</th><th>Answers saved</th></tr></thead><tbody id="rows"></tbody></table></div>
 </section>
 </main>
 <script>
-const $=id=>document.getElementById(id),bn=x=>String(x).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+const $=id=>document.getElementById(id),bn=x=>String(x);
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const dhaka=ts=>new Date(ts).toLocaleString('en-GB',{timeZone:'Asia/Dhaka',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});
 const dayOf=ts=>new Date(ts).toLocaleDateString('en-GB',{timeZone:'Asia/Dhaka'});
-const mins=s=>s==null?'':bn(Math.floor(s/60))+' মি '+bn(s%60)+' সে';
+const mins=s=>s==null?'':bn(Math.floor(s/60))+' min '+bn(s%60)+' s';
 async function api(p){const r=await fetch('/api/'+p,{credentials:'same-origin',cache:'no-store'});if(r.status===401)throw 'login';if(r.status===403)throw 'admin';if(!r.ok)throw 'err';return r.json()}
-function fail(e){$('msg').hidden=false;$('msg').innerHTML=e==='login'?'আগে <a href="/account/">লগইন করুন</a> (অ্যাডমিন ইমেইল দিয়ে)।':e==='admin'?'এই ইমেইল অ্যাডমিন তালিকায় নেই।':'সার্ভার থেকে আনা যায়নি, আবার চেষ্টা করুন।'}
+function fail(e){$('msg').hidden=false;$('msg').innerHTML=e==='login'?'Please <a href="/account/">log in</a> first (with an admin email).':e==='admin'?'This email is not on the admin list.':'Could not load from the server, try again.'}
 // একটা ফল ঠিকমতো জমেছে কি না: উত্তর-তালিকার দৈর্ঘ্য = n, আর দাগানো = সঠিক + ভুল
-function check(a){if(!a.qd)return {ok:false,txt:'নেই',blank:a.n-(a.ok||0)-(a.no||0)};const ans=a.qd.filter(x=>x[1]>=0).length;
-  const good=a.qd.length===a.n&&(a.ok==null||a.no==null||ans===a.ok+a.no);return {ok:good,txt:good?'✓':'গরমিল ('+bn(a.qd.length)+'/'+bn(a.n)+')',blank:a.n-(a.ok||0)-(a.no||0)}}
-let cur=null;
+function check(a){if(!a.qd)return {ok:false,txt:'none',blank:a.n-(a.ok||0)-(a.no||0)};const ans=a.qd.filter(x=>x[1]>=0).length;
+  const good=a.qd.length===a.n&&(a.ok==null||a.no==null||ans===a.ok+a.no);return {ok:good,txt:good?'✓':'Mismatch ('+bn(a.qd.length)+'/'+bn(a.n)+')',blank:a.n-(a.ok||0)-(a.no||0)}}
+let cur=null,PUSHED=0;
 async function list(){
   const j=await api('admin/learners');$('msg').hidden=true;$('one').hidden=true;$('list').hidden=false;
-  $('users').innerHTML=j.users.map(u=>`<tr class="pick" data-id="${u.id}"><td>${esc(u.name)}</td><td>${esc(u.email)}</td><td>${bn(u.tests)}</td><td>${bn(u.withq)}</td><td>${u.last?dhaka(u.last):'—'}</td></tr>`).join('')||'<tr><td colspan="5" class="dim">কেউ নেই</td></tr>';
+  $('users').innerHTML=j.users.map(u=>`<tr class="pick" data-id="${u.id}"><td>${esc(u.name)}</td><td>${esc(u.email)}</td><td>${bn(u.tests)}</td><td>${bn(u.withq)}</td><td>${u.last?dhaka(u.last):'—'}</td></tr>`).join('')||'<tr><td colspan="5" class="dim">No one yet</td></tr>';
   document.querySelectorAll('#users tr.pick').forEach(tr=>tr.onclick=()=>one(tr.dataset.id));
 }
 async function one(id){
-  const j=await api('admin/att?uid='+encodeURIComponent(id));cur=j;$('rv').href='/admin/review/#'+encodeURIComponent(id);$('list').hidden=true;$('one').hidden=false;history.replaceState(null,'','#'+id);
+  const j=await api('admin/att?uid='+encodeURIComponent(id));cur=j;$('rv').href='/admin/review/#'+encodeURIComponent(id);$('list').hidden=true;$('one').hidden=false;if(location.hash!=='#'+id){history.pushState(null,'','#'+id);PUSHED++}
   $('who').textContent=(j.user.name||'')+' · '+(j.user.email||'');
   let last='',html='',good=0,withq=0;
   j.att.forEach(a=>{const d=dayOf(a.ts),c=check(a);if(a.qd)withq++;if(c.ok)good++;
     if(d!==last){last=d;html+=`<tr class="day"><td colspan="8">${bn(d)}</td></tr>`}
     html+=`<tr><td>${dhaka(a.ts).split(', ')[1]||''}</td><td>${esc(a.t)}</td><td>${a.s==null?'':bn(Math.round(a.s*100)/100)} / ${bn(a.n)}</td><td>${bn(a.ok??'')}</td><td>${bn(a.no??'')}</td><td>${c.blank==null?'':bn(c.blank)}</td><td>${mins(a.sec)}</td><td class="${c.ok?'ok':a.qd?'bad':'dim'}">${c.txt}</td></tr>`});
-  $('rows').innerHTML=html||'<tr><td colspan="8" class="dim">কোনো পরীক্ষা নেই</td></tr>';
-  $('sum').innerHTML=`<span>মোট পরীক্ষা <b>${bn(j.att.length)}</b></span><span>উত্তরসহ <b>${bn(withq)}</b></span><span>ঠিকমতো মিলেছে <b>${bn(good)}</b></span>`;
+  $('rows').innerHTML=html||'<tr><td colspan="8" class="dim">No tests</td></tr>';
+  $('sum').innerHTML=`<span>Total tests <b>${bn(j.att.length)}</b></span><span>With answers <b>${bn(withq)}</b></span><span>Matched <b>${bn(good)}</b></span>`;
 }
-$('back').onclick=()=>{history.replaceState(null,'',location.pathname);list().catch(fail)};
+$('back').onclick=()=>{if(PUSHED)history.back();else{history.replaceState(null,'',location.pathname);list().catch(fail)}};
+// ফোনের ব্যাক: একজনের পাতা থেকে সবার তালিকায়
+addEventListener('popstate',()=>(location.hash.length>1?one(location.hash.slice(1)):list()).catch(fail));
 $('dl').onclick=()=>{if(!cur)return;const b=new Blob([JSON.stringify(cur)],{type:'application/json'}),a=document.createElement('a');
   a.href=URL.createObjectURL(b);a.download='learner-'+cur.user.id+'-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)};
 (location.hash.length>1?one(location.hash.slice(1)):list()).catch(fail);

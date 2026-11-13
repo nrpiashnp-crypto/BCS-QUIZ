@@ -1,4 +1,4 @@
-/* হোমের "আজকের ঘটনা" ফালি (LY Sites)।
+/* হোমের "আজকের গুরুত্বপূর্ণ সংবাদ" ফালি (LY Sites)।
    তথ্য LY News-এর: /news/index.json → "latest" → /news/day/<তারিখ>.json → "top"-এর ৭টা।
    ফালি পর্দার কাছে এলে তবেই ফাইল আনে (প্রথম স্ক্রিন হালকা থাকে); না পেলে ফালি লুকানোই থাকে।
    "আরও পড়ুন" লিংক: /news/ লাইভ হলে MORE = true করুন। */
@@ -15,14 +15,14 @@
     var p=String(d.date).split('-'),dt=bn(+p[2])+' '+MON[+p[1]-1],td=today(),dd=0;
     if(td){dd=Math.round((Date.parse(td)-Date.parse(d.date))/864e5)}
     var now=dd<=0;
-    box.querySelector('h2').textContent=now?'আজকের ঘটনা':'সাম্প্রতিক ঘটনা';
-    box.querySelector('.nd').textContent=dt+(now?'':' '+bn(p[0]))+'-এর ঘটনা';
+    box.querySelector('h2').textContent=now?'আজকের গুরুত্বপূর্ণ সংবাদ':'সাম্প্রতিক গুরুত্বপূর্ণ সংবাদ';
+    box.querySelector('.nd').textContent=dt+(now?'':' '+bn(p[0]))+'-এর সংবাদ';
     function li(x){return '<li><b><span class="ns">'+esc(x.section_bn)+' —</span> '+esc(x.title)+'</b><p>'+esc(x.short)+'</p></li>'}
     var h='',r='';
     for(var i=0;i<t.length;i++){if(i<3)h+=li(t[i]);else r+=li(t[i])}
     box.querySelector('ol').innerHTML=h;
     if(r){var dl=box.querySelector('details');dl.querySelector('summary').textContent='আরও '+bn(t.length-3)+'টি';dl.querySelector('ol').innerHTML=r;dl.hidden=false}
-    if(MORE){var a=box.querySelector('.nm');a.href='/news/'+p[0]+'/'+p[1]+'/'+p[2]+'/';a.textContent=(now?'আজকের সব খবর পড়ুন':'সব খবর পড়ুন')+' →';a.hidden=false}
+    if(MORE){var a=box.querySelector('.nm');a.href='/news/'+p[0]+'/'+p[1]+'/'+p[2]+'/';a.textContent=(now?'আজকের সব সংবাদ পড়ুন':'সব সংবাদ পড়ুন')+' →';a.hidden=false}
     box.hidden=false;
   }
   function go(){get('/news/index.json').then(function(ix){

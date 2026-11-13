@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="bn">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="theme-color" content="#13294b">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>প্রশ্নে ভুলের অভিযোগ · লিয়ানা বুকস</title>
+<title>Question error reports · Lyanna Books</title>
 <meta name="robots" content="noindex">
 <link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/fonts/fonts.css">
@@ -42,34 +42,51 @@ tr.pick{cursor:pointer}tr.pick:hover{background:var(--soft)}
 .day{background:var(--soft);font-weight:600}
 .scroll{overflow-x:auto}
 .rep td.q{max-width:380px}.rep .k{display:inline-block;font-size:12.5px;padding:1px 8px;border-radius:99px;background:var(--soft);white-space:nowrap}
+.rep a.go{display:inline-block;margin-top:4px;font-weight:600;white-space:nowrap}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 12px}.tabs button[aria-pressed="true"]{background:var(--navy);color:#fff}
 </style>
+<link rel="stylesheet" href="/admin/admin.css">
 </head>
 <body>
-<div class="bar"><a href="/" aria-label="লিয়ানা বুকস"><img src="/img/logo/li-mark.svg" alt="" width="34" height="44"><span class="lgn-n">লিয়ানা বুকস</span></a><span>অ্যাডমিন</span></div>
+<div class="adbar"><a class="adback" href="/admin/">← Admin</a><span class="adname">Question error reports</span></div>
 <main class="wrap">
-<h1>প্রশ্নে ভুলের অভিযোগ</h1>
-<p class="sub">শিক্ষার্থীরা ব্যাখ্যার নিচের "প্রশ্নে বা উত্তরে ভুল? জানান" আর "বুঝিনি" থেকে যা পাঠিয়েছেন। যাচাই করে ঠিক করার কাজ LY Quiz &amp; Sheets-এর; ঠিক হলে "ঠিক করা হয়েছে" চাপুন।</p>
-<div class="tabs"><button class="btn ghost" data-st="new" aria-pressed="true">নতুন</button><button class="btn ghost" data-st="done" aria-pressed="false">ঠিক করা হয়েছে</button><button class="btn ghost" data-st="no" aria-pressed="false">ভুল নয়</button><button class="btn ghost" data-st="all" aria-pressed="false">সব</button><button class="btn ghost" data-st="fb" aria-pressed="false">বুঝেছি/বুঝিনি</button> <button class="btn" id="dl">JSON নামান</button></div>
-<div id="msg" class="card dim">লোড হচ্ছে…</div>
-<div class="card scroll" id="fbox" hidden><p class="dim" id="fsum" style="margin:0 0 8px;font-size:14px"></p><table class="rep"><thead><tr><th>প্রশ্ন</th><th>বুঝিনি</th><th>বুঝেছি</th><th>পাতা</th></tr></thead><tbody id="frows"></tbody></table></div>
-<div class="card scroll" id="box" hidden><table class="rep"><thead><tr><th>সময়</th><th>কী ভুল</th><th>প্রশ্ন ও মন্তব্য</th><th>পাতা</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
+<h1>Question error reports</h1>
+<p class="sub">What learners sent from "Wrong question or answer? Tell us" and "Didn't understand" under an explanation. "Open question" takes you straight to the question, with its answer and explanation. Steps: junk → "Not an error"; the rest → "List for LY Quiz" (download, give it to LY Quiz &amp; Sheets, then mark as sent). LY Quiz checks and reports back; once the correction is live, tap "Fixed".</p>
+<div class="tabs"><button class="btn ghost" data-st="new" aria-pressed="true">New</button><button class="btn ghost" data-st="sent" aria-pressed="false">Sent to LY Quiz</button><button class="btn ghost" data-st="done" aria-pressed="false">Fixed</button><button class="btn ghost" data-st="no" aria-pressed="false">Not an error</button><button class="btn ghost" data-st="all" aria-pressed="false">All</button><button class="btn ghost" data-st="fb" aria-pressed="false">Understood / Didn't understand</button> <button class="btn" id="lq">List for LY Quiz</button> <button class="btn ghost" id="dl">Download JSON</button></div>
+<div id="lqbar" class="card" hidden style="margin-bottom:12px"></div>
+<div id="msg" class="card dim">Loading…</div>
+<div class="card scroll" id="fbox" hidden><p class="dim" id="fsum" style="margin:0 0 8px;font-size:14px"></p><table class="rep"><thead><tr><th>Question</th><th>Didn't understand</th><th>Understood</th><th>Page</th></tr></thead><tbody id="frows"></tbody></table></div>
+<div class="card scroll" id="box" hidden><table class="rep"><thead><tr><th>Time</th><th>What's wrong</th><th>Question &amp; comment</th><th>Page</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
 </main>
 <script>
-const $=id=>document.getElementById(id),bn=x=>String(x).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+const $=id=>document.getElementById(id),bn=x=>String(x);
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const dhaka=ts=>new Date(ts).toLocaleString('en-GB',{timeZone:'Asia/Dhaka',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
-const KN={hard:'বুঝিনি',ans:'উত্তর ভুল',exp:'ব্যাখ্যায় ভুল',q:'প্রশ্ন/অপশন',other:'অন্য'};
+const KN={hard:'Didn\'t understand',ans:'Wrong answer',exp:'Wrong explanation',q:'Question/option',other:'Other'};
 let st='new',cur=null;
+// প্রশ্ন কোন পাতায়: /admin/data/qloc/<id-এর ২-৩ অক্ষর>.json (tools/build_qloc.py); শুধু দরকারি ভাগগুলো নামানো
+const QL={};
+async function locs(rows){
+  const ks=[...new Set(rows.filter(r=>/^q[0-9a-f]{10}$/.test(r.qid||'')).map(r=>r.qid.slice(1,3)))].filter(k=>!QL[k]);
+  await Promise.all(ks.map(k=>fetch('/admin/data/qloc/'+k+'.json').then(x=>x.ok?x.json():{}).catch(()=>({})).then(o=>QL[k]=o)));
+  const m={};rows.forEach(r=>{const o=r.qid&&QL[r.qid.slice(1,3)];if(o&&o[r.qid])m[r.qid]=o[r.qid]});return m;
+}
+// প্রশ্নে যাওয়ার লিংক: যে পাতা থেকে জানানো হয়েছে সেটা (বা তার ভেতরের প্রশ্নপত্র) আগে, নইলে প্রশ্নটা যে পাতায় আছে
+function qlink(r,L){
+  const pg=/^\/(?!\/)/.test(r.page||'')?r.page:'',path=pg.split(/[?#]/)[0],ps=r.qid&&L[r.qid]||[];
+  if(ps.length){const p=ps.find(x=>x===path)||ps.find(x=>path.length>1&&x.startsWith(path))||ps[0];return p+'#id='+r.qid}
+  if(path&&r.q)return path+'#t='+encodeURIComponent(String(r.q).slice(0,50));
+  return pg;
+}
 async function api(p,b){const r=await fetch('/api/'+p,b?{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:{credentials:'same-origin',cache:'no-store'});
   if(r.status===401)throw 'login';if(r.status===403)throw 'admin';if(!r.ok)throw 'err';return r.json()}
-function fail(e){$('msg').hidden=false;$('box').hidden=true;$('msg').innerHTML=e==='login'?'আগে <a href="/account/">লগইন করুন</a> (অ্যাডমিন ইমেইল দিয়ে)।':e==='admin'?'এই ইমেইল অ্যাডমিন তালিকায় নেই।':'সার্ভারে সমস্যা, পরে চেষ্টা করুন।'}
+function fail(e){$('msg').hidden=false;$('box').hidden=true;$('msg').innerHTML=e==='login'?'Please <a href="/account/">log in</a> first (with an admin email).':e==='admin'?'This email is not on the admin list.':'Server problem, try again later.'}
 async function loadFb(){
-  const j=await api('admin/fb?days=30');cur=j;$('box').hidden=true;
-  $('msg').hidden=!!j.rows.length;$('msg').textContent='গত ৩০ দিনে কেউ এখনো "বুঝেছি/বুঝিনি" চাপেননি।';$('fbox').hidden=!j.rows.length;
-  $('fsum').textContent=`গত ${bn(j.days)} দিন, ${bn(j.visits)}টি পাতা-দেখা থেকে। যে ব্যাখ্যায় "বুঝিনি" বেশি, সেটা আগে; লেখা মন্তব্য "নতুন" ট্যাবে "বুঝিনি" নামে। ব্যাখ্যা নতুন করে লিখলে হিসাব আবার শূন্য থেকে।`;
+  const j=await api('admin/fb?days=30');cur=j;$('box').hidden=true;$('lq').hidden=true;$('lqbar').hidden=true;
+  $('msg').hidden=!!j.rows.length;$('msg').textContent='No one has tapped "Understood / Didn\'t understand" in the last 30 days.';$('fbox').hidden=!j.rows.length;
+  $('fsum').textContent=`Last ${bn(j.days)} days, from ${bn(j.visits)} page views. Explanations with more "Didn't understand" come first; written comments appear in the "New" tab as "Didn't understand". Rewriting an explanation resets its count to zero.`;
   $('frows').innerHTML=j.rows.map(r=>{const t=r.yes+r.no,pc=t?Math.round(r.no/t*100):0;
-    return `<tr><td class="q">${r.q?esc(r.q):'<span class="dim">(লেখা নেই)</span>'} <span class="dim">(${esc(String(r.k).replace(/^t:/,'লেখা: '))})</span></td>
+    return `<tr><td class="q">${r.q?esc(r.q):'<span class="dim">(no text)</span>'} <span class="dim">(${esc(String(r.k).replace(/^t:/,'Text: '))})</span></td>
     <td><b class="${r.no>=3&&pc>=40?'bad':''}">${bn(r.no)}</b>${t>=5?' <span class="dim">('+bn(pc)+'%)</span>':''}</td><td>${bn(r.yes)}</td>
     <td>${/^\/(?!\/)/.test(r.page||'')?'<a href="'+esc(r.page)+'" target="_blank" rel="noopener">'+esc(r.page)+'</a>':''}</td></tr>`}).join('');
 }
@@ -77,18 +94,39 @@ async function load(){
   if(st==='fb')return loadFb();
   $('fbox').hidden=true;
   const j=await api('admin/reports?st='+st);cur=j;
-  $('msg').hidden=!!j.rows.length;$('msg').textContent='কোনো অভিযোগ নেই।';$('box').hidden=!j.rows.length;
+  $('msg').hidden=!!j.rows.length;$('msg').textContent='No reports.';$('box').hidden=!j.rows.length;
+  const L=await locs(j.rows);
+  $('lq').hidden=st!=='new';$('lqbar').hidden=true;
   $('rows').innerHTML=j.rows.map(r=>`<tr data-id="${r.id}"><td>${dhaka(r.ts)}</td><td><span class="k">${KN[r.kind]||esc(r.kind)}</span>${r.src==='voice'?' 🎤':''}</td>
-    <td class="q">${esc(r.q)}${r.qid?' <span class="dim">('+esc(r.qid)+')</span>':''}${r.note?'<br><b>মন্তব্য:</b> '+esc(r.note):''}${r.uname?'<br><span class="dim">'+esc(r.uname)+'</span>':''}</td>
+    <td class="q">${esc(r.q)}${r.qid?' <span class="dim">('+esc(r.qid)+')</span>':''}${qlink(r,L)?'<br><a class="go" href="'+esc(qlink(r,L))+'" target="_blank" rel="noopener">Open question →</a>':''}${r.note?'<br><b>Comment:</b> '+esc(r.note):''}${r.uname?'<br><span class="dim">'+esc(r.uname)+'</span>':''}</td>
     <td>${/^\/(?!\/)/.test(r.page||'')?'<a href="'+esc(r.page)+'" target="_blank" rel="noopener">'+esc(r.page)+'</a>':esc(r.page)}</td>
-    <td>${r.st==='new'?'<button class="btn ghost" data-s="done">ঠিক করা হয়েছে</button> <button class="btn ghost" data-s="no">ভুল নয়</button>':'<button class="btn ghost" data-s="new">আবার নতুন</button>'}</td></tr>`).join('');
+    <td>${r.st==='new'||r.st==='sent'?'<button class="btn ghost" data-s="done">Fixed</button> <button class="btn ghost" data-s="no">Not an error</button>'+(r.st==='sent'?' <button class="btn ghost" data-s="new">Back to New</button>':''):'<button class="btn ghost" data-s="new">Reopen</button>'}</td></tr>`).join('');
   document.querySelectorAll('#rows button[data-s]').forEach(b=>b.onclick=async()=>{b.disabled=true;
     try{await api('admin/reports',{ids:[+b.closest('tr').dataset.id],st:b.dataset.s});b.closest('tr').remove()}catch(e){fail(e)}});
 }
-document.querySelectorAll('.tabs button[data-st]').forEach(b=>b.onclick=()=>{st=b.dataset.st;
-  document.querySelectorAll('.tabs button[data-st]').forEach(o=>o.setAttribute('aria-pressed',o===b?'true':'false'));load().catch(fail)});
+// ট্যাব ঠিকানায় জমা হয় (#done, #fb …), তাই ব্যাক চাপলে আগের ট্যাবে ফেরে
+function pick(v,nopush){const b=document.querySelector('.tabs button[data-st="'+v+'"]');if(!b)return;st=v;
+  document.querySelectorAll('.tabs button[data-st]').forEach(o=>o.setAttribute('aria-pressed',o===b?'true':'false'));
+  const h=v==='new'?'':'#'+v;if(!nopush&&location.hash!==h)history.pushState(null,'',h||location.pathname);load().catch(fail)}
+document.querySelectorAll('.tabs button[data-st]').forEach(b=>b.onclick=()=>pick(b.dataset.st));
+addEventListener('popstate',()=>pick(location.hash.slice(1)||'new',1));
+if(location.hash.length>1&&document.querySelector('.tabs button[data-st="'+location.hash.slice(1)+'"]')){st=location.hash.slice(1);document.querySelectorAll('.tabs button[data-st]').forEach(o=>o.setAttribute('aria-pressed',o.dataset.st===st?'true':'false'))}
 $('dl').onclick=()=>{if(!cur)return;const b=new Blob([JSON.stringify(cur)],{type:'application/json'}),a=document.createElement('a');
   a.href=URL.createObjectURL(b);a.download='reports-'+st+'-'+new Date(Date.now()+6*36e5).toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)};
+// LY Quiz-এর তালিকা: নতুন রিপোর্টগুলো (ইমেইল ছাড়া), প্রতিটায় প্রশ্নে যাওয়ার পূর্ণ লিংক; নামানোর পরে "পাঠানো" চিহ্ন
+$('lq').onclick=async()=>{if(!cur||st!=='new'||!cur.rows.length)return;const L=await locs(cur.rows),day=new Date(Date.now()+6*36e5).toISOString().slice(0,10);
+  const items=cur.rows.map(r=>({report_id:r.id,at:new Date(r.ts+6*36e5).toISOString().slice(0,16).replace('T',' '),qid:r.qid||null,kind:r.kind,kind_name:KN[r.kind]||r.kind,
+    learner_note:r.note||'',question:r.q||'',link:'https://lyannabooks.com'+qlink(r,L),pages:r.qid&&L[r.qid]||[],reported_from:r.page||''}));
+  const out={for:'LY Quiz & Sheets',made:day,count:items.length,
+    task:'প্রতিটি রিপোর্ট যাচাই করুন: প্রশ্ন, উত্তর বা ব্যাখ্যায় সত্যিই ভুল আছে কি না, বা ব্যাখ্যা আরও সহজ/বিস্তারিত করা দরকার কি না। qid দিয়ে Lyanna_data-তে প্রশ্নটা খুঁজুন। আগে পিয়াসকে রিপোর্ট দিন (কোনটা ঠিক করবেন, কী বদল, কোনটা ভুল নয়); তাঁর সম্মতির পরে সংশোধন। report_id-গুলো রিপোর্টে রাখুন, যাতে অ্যাডমিন পাতায় "Fixed" বা "Not an error" চাপা যায়।',
+    items};
+  const b=new Blob([JSON.stringify(out,null,1)],{type:'application/json'}),a=document.createElement('a');
+  a.href=URL.createObjectURL(b);a.download='ly-quiz-reports-'+day+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  const ids=cur.rows.map(r=>r.id),bar=$('lqbar');bar.hidden=false;
+  bar.innerHTML='Downloaded a list of '+ids.length+' reports. Once you have given it to LY Quiz, mark them as sent: <button class="btn" id="lqsent">Mark '+ids.length+' as sent</button>';
+  $('lqsent').onclick=async()=>{$('lqsent').disabled=true;
+    try{for(let i=0;i<ids.length;i+=200)await api('admin/reports',{ids:ids.slice(i,i+200),st:'sent'});bar.textContent='Done: '+ids.length+' moved to "Sent to LY Quiz".';$('rows').innerHTML='';$('box').hidden=true}catch(e){fail(e)}};
+};
 load().catch(fail);
 </script>
 </body>

@@ -214,8 +214,15 @@ def _configs(model: str, gen: dict):
     yield {"temperature": gen["temperature"]}                    # শেষ চেষ্টা: কোনো বাড়তি সাজ ছাড়া
 
 
-def gemini_json(prompt: str, models: list[str], schema: dict | None = None, temperature: float = 0.2):
-    """Gemini/Gemma-কে ডেকে JSON ফেরত। মডেল না পেলে বা দিনের সীমা শেষ হলে তালিকার পরেরটা।"""
+def gemini_json(prompt: str, models: list[str], schema: dict | None = None, temperature: float = 0.2,
+                files: list[tuple[str, bytes]] | None = None):
+    """Gemini/Gemma-কে ডেকে JSON ফেরত। মডেল না পেলে বা দিনের সীমা শেষ হলে তালিকার পরেরটা।
+
+    files: [(mime, bytes)] — PDF/ছবি সঙ্গে পাঠাতে (চাকরির বট মূল বিজ্ঞপ্তি পড়ে)।
+    """
+    import base64
+    parts = [{"text": prompt}] + [{"inline_data": {"mime_type": m, "data": base64.b64encode(b).decode()}}
+                                  for m, b in (files or [])]
     if CALLS["n"] >= MAX_CALLS:
         raise RuntimeError(f"আজকের অনুরোধের সীমা ({MAX_CALLS}) শেষ")
     key = os.environ.get("GEMINI_API_KEY")
@@ -232,7 +239,7 @@ def gemini_json(prompt: str, models: list[str], schema: dict | None = None, temp
         for cfg in _configs(model, gen):
             if gone:
                 break
-            body = {"contents": [{"role": "user", "parts": [{"text": prompt}]}], "generationConfig": cfg}
+            body = {"contents": [{"role": "user", "parts": parts}], "generationConfig": cfg}
             for attempt in range(3):
                 wait = GAP_SECONDS - (time.time() - _last_call[0])
                 if wait > 0:

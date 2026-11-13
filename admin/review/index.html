@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="bn">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="theme-color" content="#13294b">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>শিক্ষার্থীর পর্যালোচনা · অ্যাডমিন · লিয়ানা বুকস</title>
+<title>Learner review · Admin · Lyanna Books</title>
 <meta name="robots" content="noindex">
 <link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/fonts/fonts.css">
@@ -38,19 +38,20 @@ ul.say{margin:4px 0 0;padding-left:20px}ul.say li{margin:3px 0}
 details{margin-top:6px}summary{cursor:pointer;color:var(--link);font-size:14.5px}
 pre{white-space:pre-wrap;font-size:12.5px;background:var(--soft);padding:8px;border-radius:3px;margin:6px 0 0;max-height:260px;overflow:auto}
 </style>
+<link rel="stylesheet" href="/admin/admin.css">
 </head>
 <body>
-<div class="bar"><a href="/admin/learners/"><img src="/img/logo/li-mark.svg" alt="" width="26" height="34"><span>শিক্ষার্থীরা</span></a><span>অ্যাডমিন · পর্যালোচনা</span></div>
+<div class="adbar"><a class="adback" href="/admin/learners/">← Learners</a><span class="adname">Learner review</span></div>
 <main class="wrap">
-<h1 id="who">শিক্ষার্থীর পর্যালোচনা</h1>
-<p class="sub" id="meta">লোড হচ্ছে…</p>
-<div class="row"><label for="goal" class="dim">লক্ষ্যের পরীক্ষা</label><select id="goal"></select>
-  <button class="btn ghost" id="copy">Claude-এর জন্য সারাংশ কপি</button></div>
+<h1 id="who">Learner review</h1>
+<p class="sub" id="meta">Loading…</p>
+<div class="row"><label for="goal" class="dim">Target exam</label><select id="goal"></select>
+  <button class="btn ghost" id="copy">Copy summary for Claude</button></div>
 <div id="out"></div>
 </main>
 <script src="/admin/review/review.js"></script>
 <script>
-const $=id=>document.getElementById(id),bn=x=>String(x).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+const $=id=>document.getElementById(id),bn=x=>String(x);
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const P=x=>x==null?'—':bn(x)+'%',D=x=>x==null?'—':(x>0?'+':x<0?'−':'')+bn(Math.abs(x));
 const uid=(location.hash.slice(1)||new URLSearchParams(location.search).get('uid')||'').replace(/\D/g,'');
@@ -60,104 +61,104 @@ try{const g=localStorage.getItem('rv-goal');if(g&&LYReview.TARGETS[g])$('goal').
 $('goal').onchange=()=>{try{localStorage.setItem('rv-goal',$('goal').value)}catch(e){}draw()};
 async function get(u){const r=await fetch(u,{credentials:'same-origin',cache:'no-store'});if(r.status===401)throw 'login';if(r.status===403)throw 'admin';if(!r.ok)throw 'err';return r.json()}
 function meter(v,mark){return `<span class="meter"><i style="width:${Math.max(0,Math.min(100,v||0))}%"></i>${mark!=null?`<b style="left:${mark}%"></b>`:''}</span>`}
-const unsure='<span class="tag">অনিশ্চিত (কম প্রশ্ন)</span>';
+const unsure='<span class="tag">Unsure (few questions)</span>';
 
 function draw(){
   R=LYReview.build(J,M,QS,$('goal').value,BAD);const c=R.counts,a=R.all,h=R.habit,G=R.target;let o='';
-  $('who').textContent=(J.user.name||'শিক্ষার্থী');
-  const GN={bcs:'বিসিএস প্রিলি',pb:'পেট্রোবাংলা',subreg:'সাব-রেজিস্ট্রার',bank:'ব্যাংক',primary:'প্রাথমিক শিক্ষক',ntrca:'এনটিআরসিএ',other:'অন্য সরকারি চাকরি'};
-  let gl='';if(J.user.goal){gl=`নিজের লক্ষ্য: <b>${esc(GN[J.user.goal]||J.user.goal)}</b>`;
-    if(J.user.gdate){const mo=(+J.user.gdate.slice(0,4)-new Date().getFullYear())*12+(+J.user.gdate.slice(5)-1-new Date().getMonth());gl+=` (${bn(J.user.gdate)}${mo>=0?', আর প্রায় '+bn(mo)+' মাস':''})`}
-    if(!LYReview.TARGETS[J.user.goal])gl+=' <span class="dim">· এই পরীক্ষার নম্বর-ভাগ এখনো নেই, নিচে কাছাকাছিটা বেছে নিন</span>';gl+='<br>'}
-  $('meta').innerHTML=gl+`${esc(J.user.email||'')} · পরীক্ষা ${bn(c.exams)}টি (সাধারণ ${bn(c.att)}, অবস্থা-যাচাইয়ের ভাগ ${bn(c.diag)}) · আলাদা প্রশ্ন ${bn(c.unique)}টি`+
-    (c.keyBad?` · <span class="tag">${bn(c.keyBad)}টি পরীক্ষায় উত্তর-চাবি মেলেনি, সেগুলোর ঠিক/ভুল বাদ</span>`:'')+
-    (c.noTime?` · <span class="dim">${bn(c.noTime)}টিতে সময়ের তথ্য নেই (পুরোনো বা সময় মেলেনি)</span>`:'')+
-    `<br><span class="dim" style="font-size:13px">টপিক-জানা ${P(Math.round((c.unique-c.noMap)/c.unique*100))}, কঠিনতা-জানা ${P(Math.round(c.withDiff/c.unique*100))} প্রশ্ন`+
-    (c.flagged?`; ভুল জানানো ${bn(c.flagged)}টি প্রশ্ন কঠিন/সহজের হিসাবে নেই (<a href="/admin/reports/">অভিযোগ</a>-এ "ভুল নয়" করলে আবার আসবে)`:'')+`</span>`;
-  if(!c.exams){$('out').innerHTML='<div class="card dim">এখনো উত্তরসহ কোনো পরীক্ষা নেই।</div>';return}
+  $('who').textContent=(J.user.name||'Learner');
+  const GN={bcs:'BCS Prelim',pb:'Petrobangla',subreg:'Sub-Registrar',bank:'Bank',primary:'Primary teacher',ntrca:'NTRCA',other:'Other government job'};
+  let gl='';if(J.user.goal){gl=`Own goal: <b>${esc(GN[J.user.goal]||J.user.goal)}</b>`;
+    if(J.user.gdate){const mo=(+J.user.gdate.slice(0,4)-new Date().getFullYear())*12+(+J.user.gdate.slice(5)-1-new Date().getMonth());gl+=` (${bn(J.user.gdate)}${mo>=0?', about '+bn(mo)+' months left':''})`}
+    if(!LYReview.TARGETS[J.user.goal])gl+=' <span class="dim">· No mark split for this exam yet; pick the closest one below</span>';gl+='<br>'}
+  $('meta').innerHTML=gl+`${esc(J.user.email||'')} · ${bn(c.exams)} tests (${bn(c.att)} regular, ${bn(c.diag)} Diagnostic parts) · ${bn(c.unique)} unique questions`+
+    (c.keyBad?` · <span class="tag">${bn(c.keyBad)} tests had an answer-key mismatch; their right/wrong is left out</span>`:'')+
+    (c.noTime?` · <span class="dim">${bn(c.noTime)} have no timing data (old, or times didn't match)</span>`:'')+
+    `<br><span class="dim" style="font-size:13px">Topic known for ${P(Math.round((c.unique-c.noMap)/c.unique*100))}, difficulty known for ${P(Math.round(c.withDiff/c.unique*100))} of questions`+
+    (c.flagged?`; ${bn(c.flagged)} reported-wrong questions are left out of the hard/easy calculation (they return if you mark the <a href="/admin/reports/">report</a> "not wrong")`:'')+`</span>`;
+  if(!c.exams){$('out').innerHTML='<div class="card dim">No tests with answers yet.</div>';return}
 
   // ১. এক নজরে
   const say=[];
-  say.push(`দাগানো প্রশ্নে ঠিক <b>${P(a.acc)}</b>, উত্তর দিয়েছেন ${P(a.attempt)} প্রশ্নে। ${G.name}-এর নিয়মে (প্রতি ভুলে −${bn(G.neg)}) মোট নম্বরের হার <b>${P(R.risk.net)}</b>; ভুলে কাটা গেছে ${bn(R.risk.lost)} নম্বর।`);
-  if(a.vsExp!=null)say.push(`একই প্রশ্নে সবার গড়ের চেয়ে <b>${D(a.vsExp)}</b> শতাংশ-বিন্দু ${a.vsExp>=0?'বেশি':'কম'} পারেন (কঠিনতা বাদ দিয়ে তুলনা)।`);
+  say.push(`Correct on <b>${P(a.acc)}</b> of the questions marked; answered ${P(a.attempt)} of questions. Under ${G.name} rules (−${bn(G.neg)} per wrong answer) the net score rate is <b>${P(R.risk.net)}</b>; ${bn(R.risk.lost)} marks lost to wrong answers.`);
+  if(a.vsExp!=null)say.push(`Scores <b>${D(a.vsExp)}</b> percentage points ${a.vsExp>=0?'higher':'lower'} than the average of all learners on the same questions (difficulty adjusted).`);
   if(R.trend){const e=R.trend.early,l=R.trend.late,dv=e.vsExp!=null&&l.vsExp!=null?l.vsExp-e.vsExp:l.acc-e.acc;
-    say.push(`শুরুর ${bn(R.trend.k)}টি পরীক্ষা থেকে শেষের ${bn(R.trend.k)}টিতে ঠিক ${P(e.acc)} → ${P(l.acc)}`+(e.vsExp!=null&&l.vsExp!=null?` (সবার তুলনায় ${D(e.vsExp)} → ${D(l.vsExp)})`:'')+
-      (R.trend.sure?(dv>=5?': <span class="ok">উন্নতি হচ্ছে</span>':dv<=-5?': <span class="bad">নামছে</span>':': মোটামুটি একই'):' <span class="dim">(২০টি পরীক্ষার আগে ধারা নিয়ে সিদ্ধান্ত নয়)</span>'));}
-  const sg={bold:'কঠিন প্রশ্নে ঝুঁকি নিয়ে নম্বর হারাচ্ছেন (এগুলো ছেড়ে দিলে বেশি পেতেন)',shy:'সহজ প্রশ্নও অনেক ছেড়ে দিচ্ছেন (নিশ্চিত নম্বর হারাচ্ছেন)',careless:'সবাই যেটা পারেন এমন সহজ প্রশ্নেও ভুল বেশি'};
+    say.push(`From the first ${bn(R.trend.k)} tests to the last ${bn(R.trend.k)}: correct ${P(e.acc)} → ${P(l.acc)}`+(e.vsExp!=null&&l.vsExp!=null?` (vs all learners ${D(e.vsExp)} → ${D(l.vsExp)})`:'')+
+      (R.trend.sure?(dv>=5?': <span class="ok">improving</span>':dv<=-5?': <span class="bad">dropping</span>':': about the same'):' <span class="dim">(no trend conclusion before 20 tests)</span>'));}
+  const sg={bold:'Losing marks by gambling on hard questions (would have scored more by skipping them)',shy:'Skipping many easy questions too (giving up sure marks)',careless:'Making many mistakes even on easy questions that most learners get right'};
   R.risk.signs.forEach(x=>say.push('<span class="bad">'+sg[x]+'</span>'));
-  if(R.weak.length)say.push('সবচেয়ে দুর্বল টপিক: '+R.weak.slice(0,3).map(t=>esc(t.name)).join(', '));
-  if(R.match!=null)say.push(`${G.name}-এর নম্বর-ভাগের সঙ্গে অনুশীলনের মিল <b>${bn(R.match)}/১০০</b>`);
-  o+=`<h2>এক নজরে</h2><div class="card"><ul class="say">${say.map(x=>'<li>'+x+'</li>').join('')}</ul></div>`;
+  if(R.weak.length)say.push('Weakest topics: '+R.weak.slice(0,3).map(t=>esc(t.name)).join(', '));
+  if(R.match!=null)say.push(`Practice matches the ${G.name} mark split at <b>${bn(R.match)}/100</b>`);
+  o+=`<h2>At a glance</h2><div class="card"><ul class="say">${say.map(x=>'<li>'+x+'</li>').join('')}</ul></div>`;
 
   // ২. লক্ষ্যের সঙ্গে মিল
-  o+=`<h2>${esc(G.name)}: কোথায় নম্বর বাড়ানো যায়</h2><div class="card scroll"><table><thead><tr><th>বিষয়</th><th>অনুশীলন / নম্বরের ভাগ</th><th class="n">ঠিক</th><th class="n">সুযোগ</th></tr></thead><tbody>`+
-    R.fit.map(f=>`<tr><td>${esc(f.name)}<small>${bn(f.marks)} নম্বর</small></td><td>${meter(f.share,f.want)}<small>${bn(f.share)}% / ${bn(f.want)}%</small></td><td class="n">${f.n?P(f.acc)+(f.small?'<br>'+unsure:''):'<span class="dim">দেননি</span>'}</td><td class="n"><b>${bn(f.gain)}</b></td></tr>`).join('')+
-    `</tbody></table><p class="dim" style="font-size:13px;margin:6px 0 0">গোলাপি দাগ = পরীক্ষায় এই বিষয়ের নম্বরের ভাগ; নীল = শিক্ষার্থী যত প্রশ্ন অনুশীলন করেছেন তার ভাগ। সুযোগ = নম্বর × (০.৮০ − ঠিকের হার); কম প্রশ্নে হার ৫০% ধরা।`+
-    (R.outside?` সিলেবাসের বাইরের বিষয়ে ${bn(R.outside)}টি প্রশ্ন।`:'')+`</p></div>`;
+  o+=`<h2>${esc(G.name)}: where marks can be gained</h2><div class="card scroll"><table><thead><tr><th>Subject</th><th>Practice / mark share</th><th class="n">Correct</th><th class="n">Gain</th></tr></thead><tbody>`+
+    R.fit.map(f=>`<tr><td>${esc(f.name)}<small>${bn(f.marks)} marks</small></td><td>${meter(f.share,f.want)}<small>${bn(f.share)}% / ${bn(f.want)}%</small></td><td class="n">${f.n?P(f.acc)+(f.small?'<br>'+unsure:''):'<span class="dim">Not attempted</span>'}</td><td class="n"><b>${bn(f.gain)}</b></td></tr>`).join('')+
+    `</tbody></table><p class="dim" style="font-size:13px;margin:6px 0 0">Pink line = the subject's share of exam marks; blue = share of questions the learner practised. Gain = marks × (0.80 − correct rate); with few questions the rate is taken as 50%.`+
+    (R.outside?` ${bn(R.outside)} questions are outside the syllabus.`:'')+`</p></div>`;
 
   // ৩. বিষয়
-  o+=`<h2>বিষয় ধরে</h2><div class="card scroll"><table><thead><tr><th>বিষয়</th><th class="n">প্রশ্ন</th><th class="n">ঠিক</th><th class="n">সবার তুলনায়</th></tr></thead><tbody>`+
-    R.subjects.map(s=>`<tr><td>${esc(s.name)}</td><td class="n">${bn(s.n)}<small>দাগ ${P(s.attempt)}</small></td><td class="n">${P(s.acc)} ${s.small?'<br>'+unsure:''}</td><td class="n">${D(s.vsExp)}</td></tr>`).join('')+
-    `</tbody></table><p class="dim" style="font-size:13px;margin:6px 0 0">"সবার তুলনায়" = একই প্রশ্নগুলোতে সব শিক্ষার্থীর গড়ের চেয়ে কত শতাংশ-বিন্দু বেশি (+) বা কম (−)। কঠিন প্রশ্ন বেশি পেলেও এটা ন্যায্য থাকে।</p></div>`;
+  o+=`<h2>By subject</h2><div class="card scroll"><table><thead><tr><th>Subject</th><th class="n">Questions</th><th class="n">Correct</th><th class="n">vs all learners</th></tr></thead><tbody>`+
+    R.subjects.map(s=>`<tr><td>${esc(s.name)}</td><td class="n">${bn(s.n)}<small>marked ${P(s.attempt)}</small></td><td class="n">${P(s.acc)} ${s.small?'<br>'+unsure:''}</td><td class="n">${D(s.vsExp)}</td></tr>`).join('')+
+    `</tbody></table><p class="dim" style="font-size:13px;margin:6px 0 0">"vs all learners" = percentage points above (+) or below (−) the average of all learners on the same questions. It stays fair even if the learner got more hard questions.</p></div>`;
 
   // ৪. টপিক
   const tl=L=>L.map(t=>`<tr><td>${esc(t.name)}<br><span class="dim" style="font-size:12.5px">${esc(t.subj)}</span></td><td class="n">${bn(t.ok)}/${bn(t.graded)}</td><td class="n">${P(Math.round(t.ok/t.graded*100))}</td></tr>`).join('');
-  o+=`<h2>দুর্বল আর শক্ত টপিক</h2><div class="card scroll">`+
-    (R.weak.length?`<table><thead><tr><th>দুর্বল (ভাগ্যের কারণে নয়, সত্যিই)</th><th class="n">ঠিক/দাগানো</th><th class="n">হার</th></tr></thead><tbody>${tl(R.weak)}</tbody></table>`:'<p class="dim" style="margin:0">নিশ্চিতভাবে দুর্বল বলার মতো টপিক এখনো নেই (প্রতি টপিকে অন্তত ৮টি দাগানো লাগে)।</p>')+
-    (R.strong.length?`<details><summary>শক্ত টপিক (${bn(R.strong.length)})</summary><table><tbody>${tl(R.strong)}</tbody></table></details>`:'')+`</div>`;
+  o+=`<h2>Weak and strong topics</h2><div class="card scroll">`+
+    (R.weak.length?`<table><thead><tr><th>Weak (genuinely, not by luck)</th><th class="n">Correct/marked</th><th class="n">Rate</th></tr></thead><tbody>${tl(R.weak)}</tbody></table>`:'<p class="dim" style="margin:0">No topic can be called weak with confidence yet (needs at least 8 marked answers per topic).</p>')+
+    (R.strong.length?`<details><summary>Strong topics (${bn(R.strong.length)})</summary><table><tbody>${tl(R.strong)}</tbody></table></details>`:'')+`</div>`;
 
   // ৫. ফাঁদ, কঠিন আর সহজ প্রশ্ন, ফাঁকা
   const v=R.avoid,rk=R.risk;
-  o+=`<h2>কঠিন প্রশ্ন এড়ানো, সহজে ভুল, ফাঁকা রাখা</h2><div class="card"><ul class="say">`+(v?`
-    ${v.hardN>=10?`<li>কঠিন প্রশ্নে (সবার মধ্যে খুব কম ঠিক, ${bn(v.hardN)}টি) ফাঁকা ${P(v.hardSkip)}, ভুল ${P(v.hardWrong)}।${v.hardTried>=10?` দাগানোগুলোতে ঠিক ${P(v.hardAcc)}; লাভ-ক্ষতি মিলিয়ে <b>${D(v.hardNet)}</b> নম্বর ${v.hardNet<0?'<span class="bad">(দাগিয়ে ক্ষতি)</span>':'(দাগিয়ে লাভ)'}।`:''}</li>`:''}
-    ${v.easyN>=10?`<li>সহজ প্রশ্নে (সবার মধ্যে বেশির ভাগ ঠিক, ${bn(v.easyN)}টি) ফাঁকা ${P(v.easySkip)}, ভুল ${P(v.easyWrong)}।</li>`:''}
-    ${v.hardN>=10&&v.easyN>=10?`<li>${v.hardSkip-v.easySkip>=15?'<span class="ok">কঠিন প্রশ্ন চিনে ছেড়ে দিতে পারেন।</span>':v.hardSkip-v.easySkip>=5?'কঠিন প্রশ্ন কিছুটা চেনেন।':'কঠিন আর সহজ প্রশ্নে প্রায় একইভাবে দাগান: কোনটা এড়ানো উচিত, তা আলাদা করেন না।'}</li>`:''}`:
-    `<li class="dim">কঠিন/সহজ বলার মতো সবার-মিলিয়ে হিসাব এখনো কম (একটা প্রশ্ন অন্তত ২৫ জন দেখলে তবেই)।</li>`)+
-    `<li>ফাঁকা: ইচ্ছা করে ছাড়া ${bn(rk.skipChose)}টি, শেষের দিকে না-পৌঁছানো ${bn(rk.skipTail)}টি${rk.timeOut?`; ${bn(rk.timeOut)}টি পরীক্ষায় <span class="bad">সময় ফুরিয়ে গেছে</span>`:''}।</li>
-    <li class="dim">এই পরীক্ষায় এলোমেলো দাগে লাভ শুরু হয় ঠিকের সম্ভাবনা ${bn(rk.breakEven)}%-এর বেশি হলে।</li></ul></div>`;
+  o+=`<h2>Avoiding hard questions, mistakes on easy ones, blanks</h2><div class="card"><ul class="say">`+(v?`
+    ${v.hardN>=10?`<li>On hard questions (very few learners get them right, ${bn(v.hardN)}): blank ${P(v.hardSkip)}, wrong ${P(v.hardWrong)}.${v.hardTried>=10?` Correct on those marked: ${P(v.hardAcc)}; net <b>${D(v.hardNet)}</b> marks ${v.hardNet<0?'<span class="bad">(loses by marking)</span>':'(gains by marking)'}.`:''}</li>`:''}
+    ${v.easyN>=10?`<li>On easy questions (most learners get them right, ${bn(v.easyN)}): blank ${P(v.easySkip)}, wrong ${P(v.easyWrong)}.</li>`:''}
+    ${v.hardN>=10&&v.easyN>=10?`<li>${v.hardSkip-v.easySkip>=15?'<span class="ok">Can spot hard questions and skip them.</span>':v.hardSkip-v.easySkip>=5?'Somewhat recognises hard questions.':'Marks hard and easy questions about the same way: does not tell which to avoid.'}</li>`:''}`:
+    `<li class="dim">Not enough all-learner data yet to call questions hard/easy (a question needs at least 25 learners).</li>`)+
+    `<li>Blanks: ${bn(rk.skipChose)} skipped on purpose, ${bn(rk.skipTail)} not reached at the end${rk.timeOut?`; <span class="bad">time ran out</span> in ${bn(rk.timeOut)} tests`:''}.</li>
+    <li class="dim">In this exam, random guessing starts to pay off when the chance of being right is above ${bn(rk.breakEven)}%.</li></ul></div>`;
 
   // ৬. গতি, মনোযোগ, ক্লান্তি
   const p=R.pace,w=R.away,tr=R.tired;
-  o+=`<h2>গতি আর মনোযোগ</h2><div class="card">`+(p.timedExams?`<ul class="say">
-    ${p.median!=null?`<li>পরপর দুই প্রশ্নের মাঝে মাঝারি সময় ${bn(Math.round(p.median))} সেকেন্ড (${bn(p.seqN)}টি দাগ থেকে)।</li>`:''}
-    ${p.fastN>=10?`<li>৬ সেকেন্ডের কমে দাগানো ${P(p.fastPct)}; সেগুলোতে ভুল ${P(p.fastWrong)}, বাকিগুলোয় ${P(p.slowWrong)}।${p.fastWrong-p.slowWrong>=15?' <span class="bad">তাড়াহুড়ায় ভুল হচ্ছে।</span>':''}</li>`:''}
-    ${p.noread?`<li>২.৫ সেকেন্ডের কমে দাগ (প্রশ্ন পড়ার আগেই): ${bn(p.noread)}টি।</li>`:''}
-    ${p.rush>=5?`<li>শেষ এক মিনিটে দাগানো ${bn(p.rush)}টি, তাতে ভুল ${P(p.rushWrong)}।</li>`:''}
-    ${p.backPct!=null?`<li>${p.backPct<=10?'প্রশ্ন ক্রম ধরে দাগান।':'আগে-পিছে ঘুরে দাগান ('+P(p.backPct)+' বার পেছনের প্রশ্নে ফিরেছেন)।'}</li>`:''}
-    <li>পরীক্ষার মাঝে অন্য অ্যাপ/ট্যাবে: মোট ${bn(Math.round(w.sec/60))} মিনিট, ${bn(w.times)} বার; ${bn(w.exams)}টি পরীক্ষায় ৩০ সেকেন্ডের বেশি।</li>
-    ${tr.drop!=null?`<li>লম্বা পরীক্ষায় (${bn(tr.exams)}টি) প্রথম অর্ধেক থেকে শেষ অর্ধেকে, কঠিনতা বাদ দিয়ে, ঠিকের হার ${tr.drop>0?bn(tr.drop)+'% কমে':tr.drop<0?bn(-tr.drop)+'% বাড়ে':'একই থাকে'}${tr.drop>=10?' <span class="bad">(ক্লান্তি)</span>':''}।</li>`:''}</ul>
-    <p class="dim" style="font-size:13px;margin:6px 0 0">এক পাতায় সব প্রশ্ন থাকে, তাই দুই দাগের ফাঁক মানে "এর বেশি নয়"; দ্রুত দাগের মাপ নির্ভরযোগ্য, ধীরের নয়।</p>`:
-    '<p class="dim" style="margin:0">সময়ের তথ্য এই হালনাগাদের পরের পরীক্ষা থেকে জমবে।</p>')+`</div>`;
+  o+=`<h2>Pace and attention</h2><div class="card">`+(p.timedExams?`<ul class="say">
+    ${p.median!=null?`<li>Median time between two consecutive answers: ${bn(Math.round(p.median))} seconds (from ${bn(p.seqN)} marks).</li>`:''}
+    ${p.fastN>=10?`<li>Answered in under 6 seconds: ${P(p.fastPct)}; of those, wrong ${P(p.fastWrong)}, of the rest ${P(p.slowWrong)}.${p.fastWrong-p.slowWrong>=15?' <span class="bad">Rushing is causing mistakes.</span>':''}</li>`:''}
+    ${p.noread?`<li>Marked in under 2.5 seconds (before reading the question): ${bn(p.noread)}.</li>`:''}
+    ${p.rush>=5?`<li>Marked in the last minute: ${bn(p.rush)}, wrong ${P(p.rushWrong)}.</li>`:''}
+    ${p.backPct!=null?`<li>${p.backPct<=10?'Answers in question order.':'Jumps back and forth (went back to an earlier question '+P(p.backPct)+' of the time).'}</li>`:''}
+    <li>Away on another app/tab during tests: ${bn(Math.round(w.sec/60))} minutes total, ${bn(w.times)} times; over 30 seconds in ${bn(w.exams)} tests.</li>
+    ${tr.drop!=null?`<li>In long tests (${bn(tr.exams)}), from the first half to the second half, difficulty adjusted, the correct rate ${tr.drop>0?'drops by '+bn(tr.drop)+'%':tr.drop<0?'rises by '+bn(-tr.drop)+'%':'stays the same'}${tr.drop>=10?' <span class="bad">(fatigue)</span>':''}.</li>`:''}</ul>
+    <p class="dim" style="font-size:13px;margin:6px 0 0">All questions are on one page, so the gap between two marks means "no more than this"; fast marks are measured reliably, slow ones are not.</p>`:
+    '<p class="dim" style="margin:0">Timing data will build up from tests taken after this update.</p>')+`</div>`;
 
   // ৭. মনে রাখা
   const m=R.mem;
-  o+=`<h2>মনে রাখা আর ভুল ধারণা</h2><div class="card">`+(m.again?`<ul class="say">
-    <li>${bn(m.again)}টি প্রশ্ন একাধিকবার এসেছে: আগে ভুল পরে ঠিক ${bn(m.learned)}, আগে ঠিক পরে ভুল ${bn(m.forgot)}, দুবারই ভুল ${bn(m.stuck)}।</li>
-    ${m.same.length?`<li>${bn(m.same.length)}টি প্রশ্নে একই ভুল বিকল্প বারবার: এটা ভুলে যাওয়া নয়, ভুল ধারণা।</li>`:''}</ul>
-    ${m.same.length?`<details><summary>প্রশ্নগুলো</summary><pre>${m.same.slice(0,40).map(x=>x.qid+'  '+x.topic+'  ×'+x.times).join('\n')}</pre></details>`:''}`:
-    '<p class="dim" style="margin:0">এখনো কোনো প্রশ্ন দুবার আসেনি।</p>')+`</div>`;
+  o+=`<h2>Retention and misconceptions</h2><div class="card">`+(m.again?`<ul class="say">
+    <li>${bn(m.again)} questions came up more than once: wrong then right ${bn(m.learned)}, right then wrong ${bn(m.forgot)}, wrong both times ${bn(m.stuck)}.</li>
+    ${m.same.length?`<li>${bn(m.same.length)} questions had the same wrong option repeatedly: a misconception, not forgetting.</li>`:''}</ul>
+    ${m.same.length?`<details><summary>Questions</summary><pre>${m.same.slice(0,40).map(x=>x.qid+'  '+x.topic+'  ×'+x.times).join('\n')}</pre></details>`:''}`:
+    '<p class="dim" style="margin:0">No question has come up twice yet.</p>')+`</div>`;
 
   // ৮. নিয়মিততা
-  const hn=['ভোর','সকাল','দুপুর','বিকেল','সন্ধ্যা','রাত'],hl=['ভোরে','সকালে','দুপুরে','বিকেলে','সন্ধ্যায়','রাতে'],hm=Math.max(...h.hours);
-  o+=`<h2>নিয়মিততা</h2><div class="card"><ul class="say">
-    <li>${bn(h.span)} দিনের মধ্যে ${bn(h.days)} দিন এসেছেন; টানা সর্বোচ্চ ${bn(h.best)} দিন; দিনে গড়ে ${bn(h.perDay)}টি পরীক্ষা।</li>
-    <li>শেষ পরীক্ষা ${h.last?bn(h.last):'—'}।</li>
-    <li>বেশি পড়েন ${hl[h.hours.indexOf(hm)]}। ${h.hours.map((x,i)=>hn[i]+' '+bn(x)).join(' · ')}</li></ul></div>`;
+  const hn=['Dawn','Morning','Noon','Afternoon','Evening','Night'],hl=['at dawn','in the morning','at noon','in the afternoon','in the evening','at night'],hm=Math.max(...h.hours);
+  o+=`<h2>Consistency</h2><div class="card"><ul class="say">
+    <li>Came on ${bn(h.days)} of ${bn(h.span)} days; longest streak ${bn(h.best)} days; ${bn(h.perDay)} tests per day on average.</li>
+    <li>Last test: ${h.last?bn(h.last):'—'}.</li>
+    <li>Studies most ${hl[h.hours.indexOf(hm)]}. ${h.hours.map((x,i)=>hn[i]+' '+bn(x)).join(' · ')}</li></ul></div>`;
 
   // ৯. ধারা
-  o+=`<h2>প্রতি ৫ পরীক্ষায়</h2><div class="card scroll"><table><thead><tr><th>পরীক্ষা</th><th>দাগানোয় ঠিক</th><th class="n">সবার তুলনায়</th></tr></thead><tbody>`+
-    R.steps.map(s=>`<tr><td>${bn(s.from)}–${bn(s.to)}</td><td>${meter(s.acc)} ${P(s.acc)}<small>দাগ ${P(s.attempt)}</small></td><td class="n">${D(s.vsExp)}</td></tr>`).join('')+`</tbody></table>
-    <details><summary>সব পরীক্ষা</summary><table><tbody>${R.exams.map(e=>`<tr><td>${bn(new Date(e.ts).toLocaleDateString('en-GB',{timeZone:'Asia/Dhaka'}))}</td><td>${esc(e.title)}</td><td class="n">${bn(e.rows.filter(r=>r.ok===1).length)}/${bn(e.n)}</td><td class="dim">${e.timed?'':'সময় নেই'}${e.trust?'':' চাবি মেলেনি'}</td></tr>`).join('')}</tbody></table></details></div>`;
-  o+=`<p class="dim" style="font-size:13px">প্রশ্ন-মানচিত্র ${esc(R.built||'')}। মান গোনায় একই প্রশ্নের প্রথম দেখাটাই নেওয়া; কোনো বিষয়/টপিকে ${bn(LYReview.MIN_N)}টির কম দাগানো থাকলে "অনিশ্চিত"।</p>`;
+  o+=`<h2>Every 5 tests</h2><div class="card scroll"><table><thead><tr><th>Tests</th><th>Correct on marked</th><th class="n">vs all learners</th></tr></thead><tbody>`+
+    R.steps.map(s=>`<tr><td>${bn(s.from)}–${bn(s.to)}</td><td>${meter(s.acc)} ${P(s.acc)}<small>marked ${P(s.attempt)}</small></td><td class="n">${D(s.vsExp)}</td></tr>`).join('')+`</tbody></table>
+    <details><summary>All tests</summary><table><tbody>${R.exams.map(e=>`<tr><td>${bn(new Date(e.ts).toLocaleDateString('en-GB',{timeZone:'Asia/Dhaka'}))}</td><td>${esc(e.title)}</td><td class="n">${bn(e.rows.filter(r=>r.ok===1).length)}/${bn(e.n)}</td><td class="dim">${e.timed?'':'no timing'}${e.trust?'':' key mismatch'}</td></tr>`).join('')}</tbody></table></details></div>`;
+  o+=`<p class="dim" style="font-size:13px">Question map ${esc(R.built||'')}. Scoring counts only the first time a question was seen; a subject/topic with fewer than ${bn(LYReview.MIN_N)} marked answers is shown as "Unsure".</p>`;
   $('out').innerHTML=o;
 }
-$('copy').onclick=()=>{if(!R)return;const t='নিচের সংখ্যাগুলো একজন সরকারি চাকরি/বিসিএস প্রার্থীর অনুশীলনের হিসাব। এগুলো দেখে সহজ বাংলায় তাঁর জন্য একটা পর্যালোচনা লিখুন: মূল ৩টি সমস্যা, প্রমাণসহ; কী ভালো করছেন; আগামী দুই সপ্তাহের ৩-৫টি নির্দিষ্ট কাজ। "অনিশ্চিত" চিহ্নিত অংশে সিদ্ধান্ত নয়। লজ্জা দেওয়া নয়, সত্যি কথা আর পরের ধাপ।\n\n'+JSON.stringify(LYReview.summary(R));
-  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>{$('copy').textContent='কপি হয়েছে ✓'},()=>{const p=document.createElement('textarea');p.value=t;document.body.appendChild(p);p.select();document.execCommand('copy');p.remove();$('copy').textContent='কপি হয়েছে ✓'})};
+$('copy').onclick=()=>{if(!R)return;const t='The numbers below are the practice stats of a government-job/BCS candidate. From them, write a review for the candidate in simple Bengali: the top 3 problems, with evidence; what they are doing well; 3-5 specific tasks for the next two weeks. Do not draw conclusions from parts marked "uncertain". No shaming: honest facts and next steps.\n\n'+JSON.stringify(LYReview.summary(R));
+  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>{$('copy').textContent='Copied ✓'},()=>{const p=document.createElement('textarea');p.value=t;document.body.appendChild(p);p.select();document.execCommand('copy');p.remove();$('copy').textContent='Copied ✓'})};
 (async()=>{
-  if(!uid){$('meta').innerHTML='কোন শিক্ষার্থী? <a href="/admin/learners/">তালিকা থেকে বাছুন</a>।';return}
+  if(!uid){$('meta').innerHTML='Which learner? <a href="/admin/learners/">Pick from the list</a>.';return}
   try{[J,M,QS,BAD]=await Promise.all([get('/api/admin/att?uid='+uid),get('/admin/data/qmap.json'),get('/api/qstat').catch(()=>({rows:[]})),get('/api/admin/repq').catch(()=>({qids:[]}))]);
     if(J.user.goal&&LYReview.TARGETS[J.user.goal])$('goal').value=J.user.goal;draw()}
-  catch(e){$('meta').innerHTML=e==='login'?'আগে <a href="/account/">লগইন করুন</a> (অ্যাডমিন ইমেইল দিয়ে)।':e==='admin'?'এই ইমেইল অ্যাডমিন তালিকায় নেই।':'আনা যায়নি, আবার চেষ্টা করুন।'}
+  catch(e){$('meta').innerHTML=e==='login'?'Please <a href="/account/">log in</a> first (with the admin e-mail).':e==='admin'?'This e-mail is not on the admin list.':'Could not load, try again.'}
 })();
 </script>
 </body>

@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="bn">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="theme-color" content="#13294b">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>টপিক লাইব্রেরি · লিয়ানা বুকস</title>
+<title>Topic library · Lyanna Books</title>
 <meta name="robots" content="noindex">
 <link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/fonts/fonts.css">
@@ -59,22 +59,23 @@ details.card summary{cursor:pointer;font-weight:600}
 [hidden]{display:none!important}
 </style>
 <link rel="stylesheet" href="/css/omr.css"><script src="/js/omr.js" defer></script>
+<link rel="stylesheet" href="/admin/admin.css">
 </head>
 <body>
-<div class="bar"><a href="/" aria-label="লিয়ানা বুকস"><img src="/img/logo/li-mark.svg" alt="" width="34" height="44"><span class="lgn-n">লিয়ানা বুকস</span></a><span id="who"></span></div>
+<div class="adbar"><a class="adback" href="/admin/">← Admin</a><span class="adname">Topic library</span><span class="adwho" id="who"></span></div>
 <main class="wrap">
-<h1>টপিক লাইব্রেরি</h1>
-<p class="sub">শুধু অ্যাডমিনের জন্য। সব উৎস থেকে একটা টপিকের অংশ খুঁজে বাছাই করুন, তারপর একসাথে Markdown হিসেবে নামান।</p>
+<h1>Topic library</h1>
+<p class="sub">Admin only. Search all sources for passages on a topic, select them, then download together as Markdown.</p>
 
 <section id="gate" class="card" hidden></section>
 
 <div id="app" hidden>
   <form class="q" id="qf">
-    <input type="search" id="q" placeholder="টপিক বা ট্যাগ লিখুন, যেমন সুন্দরবন" autocomplete="off">
-    <select id="subject" aria-label="বিষয়"><option value="">সব বিষয়</option></select>
-    <select id="topic" aria-label="টপিক"><option value="">সব টপিক</option></select>
-    <select id="kind" aria-label="ধরন"><option value="">সব ধরন</option><option value="section">সাধারণ লেখা</option><option value="question">প্রশ্নোত্তর</option><option value="past_questions">বিগত প্রশ্ন</option></select>
-    <button class="btn">খুঁজুন</button>
+    <input type="search" id="q" placeholder="Type a topic or tag, e.g. সুন্দরবন" autocomplete="off">
+    <select id="subject" aria-label="Subject"><option value="">All subjects</option></select>
+    <select id="topic" aria-label="Topic"><option value="">All topics</option></select>
+    <select id="kind" aria-label="Type"><option value="">All types</option><option value="section">General text</option><option value="question">Q&amp;A</option><option value="past_questions">Past questions</option></select>
+    <button class="btn">Search</button>
   </form>
   <div class="stats" id="stats"></div>
   <div class="chips" id="tags"></div>
@@ -82,24 +83,24 @@ details.card summary{cursor:pointer;font-weight:600}
   <div class="res" id="res"></div>
   <div class="pager" id="pager"></div>
   <section id="mcqs" hidden>
-    <h2>সংশ্লিষ্ট এমসিকিউ <small class="msg" id="mcount"></small></h2>
-    <p class="sub">সাইটের প্রশ্নব্যাংক (বিসিএস, চাকরি, চলমান, অধ্যায়) থেকে একই শব্দ মেলে এমন প্রশ্ন। টিক দিলে এক্সপোর্টে লিখিত অংশের পরে যাবে। <button type="button" class="chip" id="mall">এই পাতার সব বাছাই</button></p>
+    <h2>Related MCQs <small class="msg" id="mcount"></small></h2>
+    <p class="sub">Questions from the site question bank (BCS, jobs, current, chapters) that match the same words. Ticked ones go after the written passages in the export. <button type="button" class="chip" id="mall">Select all on this page</button></p>
     <div class="res" id="mres"></div>
     <div class="pager" id="mpager"></div>
   </section>
 
-  <h2>নতুন অংশ তোলা</h2>
+  <h2>Upload new passages</h2>
   <details class="card" id="imp">
-    <summary>CSV বা JSON ফাইল থেকে তুলুন</summary>
-    <p class="sub" style="margin-top:8px">ফাইলে প্রতিটি অংশে id আর text লাগবে; বাকি ঘর (subject, exam, chapter, chapter_title, section_no, section_title, parent_section, kind, tags, pages, source) থাকলে ভালো। একই id আবার তুললে আগেরটা হালনাগাদ হয়, ডুপ্লিকেট হয় না।</p>
+    <summary>Upload from a CSV or JSON file</summary>
+    <p class="sub" style="margin-top:8px">Each passage in the file needs an id and text; the other columns (subject, exam, chapter, chapter_title, section_no, section_title, parent_section, kind, tags, pages, source) are good to have. Uploading the same id again updates the old one, with no duplicates.</p>
     <input type="file" id="file" accept=".json,.csv,application/json,text/csv">
     <p id="impMsg" class="msg"></p>
     <div class="prog" hidden><i id="bar"></i></div>
-    <button class="btn" id="go" hidden>তুলুন</button>
+    <button class="btn" id="go" hidden>Upload</button>
   </details>
   <details class="card" id="msync" style="margin-top:10px">
-    <summary>এমসিকিউ ব্যাংক ও টপিক তালিকা খোলা</summary>
-    <p class="sub" style="margin-top:8px">Lyanna_data থেকে বানানো <code>library-mcq.json.gz</code> ফাইলটা দিন (কম্পিউটার থেকে দেওয়া ভালো, ফাইলটা বড়)। ফাইলটা সার্ভারে যায় না: এই ব্রাউজারেই রাখা থাকে আর এখানেই খোঁজা হয়, তাই D1-এ কিছু লেখা হয় না। নতুন এক্সপোর্ট বানালে আবার দিন। <span id="mstat"></span></p>
+    <summary>Open MCQ bank and topic list</summary>
+    <p class="sub" style="margin-top:8px">Choose the <code>library-mcq.json.gz</code> file built from Lyanna_data (best from a computer; the file is large). It does not go to the server: it stays in this browser and is searched here, so nothing is written to D1. Choose it again after making a new export. <span id="mstat"></span></p>
     <input type="file" id="mfile" accept=".gz,.json,application/gzip,application/json">
     <p id="syncMsg" class="msg"></p>
     <div class="prog" hidden id="sprog"><i id="sbar"></i></div>
@@ -109,17 +110,17 @@ details.card summary{cursor:pointer;font-weight:600}
 
 <div class="tray" id="tray" hidden>
   <b id="nsel"></b>
-  <button class="btn" id="dl">Markdown নামান</button>
-  <button class="btn" id="cp">কপি করুন</button>
-  <button class="btn ghost" id="clr">বাছাই মুছুন</button>
+  <button class="btn" id="dl">Download Markdown</button>
+  <button class="btn" id="cp">Copy</button>
+  <button class="btn ghost" id="clr">Clear selection</button>
 </div>
 
 <script>
 (function(){
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const BN='০১২৩৪৫৬৭৮৯',bn=n=>String(n).replace(/\d/g,d=>BN[d]);
-const KIND={section:'লেখা',question:'প্রশ্নোত্তর',past_questions:'বিগত প্রশ্ন'};
+const BN='০১২৩৪৫৬৭৮৯',bn=n=>String(n).replace(/\d/g,d=>BN[d]),en=n=>String(n);
+const KIND={section:'Text',question:'Q&A',past_questions:'Past questions'};
 const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 // এমসিকিউ ব্যাংক ব্রাউজারে: ফাইলটা IndexedDB-তে থাকে, পাতা খুললে সেখান থেকে খোলে
 let BANK=null;
@@ -138,7 +139,7 @@ async function api(path,body){
 async function start(){
   try{const s=await api('lib/stats');$('gate').hidden=true;$('app').hidden=false;showStats(s);readHash();search()}
   catch(e){gate(e.status);return}
-  try{const f=await idb('readonly',st=>st.get('mcq'));if(f){$('mstat').textContent='এমসিকিউ ব্যাংক খোলা হচ্ছে…';await loadBank(f.file,f.at);if(state.q||state.tag||state.topic){moff=0;mcq()}}}
+  try{const f=await idb('readonly',st=>st.get('mcq'));if(f){$('mstat').textContent='Opening MCQ bank…';await loadBank(f.file,f.at);if(state.q||state.tag||state.topic){moff=0;mcq()}}}
   catch(e){BANK=null}
   showBank();
 }
@@ -146,27 +147,27 @@ async function gate(st){
   const g=$('gate');g.hidden=false;$('app').hidden=true;
   if(st===403){
     const me=await api('me').catch(()=>({}));
-    g.innerHTML='<b>এই পাতা শুধু অ্যাডমিনের জন্য।</b><p class="sub" style="margin:6px 0 0">আপনি লগইন করেছেন '+esc(me.user&&me.user.email||'')+' দিয়ে। এই ইমেইল Cloudflare-এর ADMIN_EMAILS ভেরিয়েবলে না থাকলে লাইব্রেরি খুলবে না।</p>';
+    g.innerHTML='<b>This page is for admins only.</b><p class="sub" style="margin:6px 0 0">You are logged in as '+esc(me.user&&me.user.email||'')+'. The library will not open unless this email is in the ADMIN_EMAILS variable in Cloudflare.</p>';
     return;
   }
-  if(st!==401){g.innerHTML='<b>সার্ভার এখন সাড়া দিচ্ছে না।</b> <button class="btn ghost" onclick="location.reload()">আবার চেষ্টা</button>';return}
-  g.innerHTML='<b>লগইন করুন</b><p class="sub" style="margin:6px 0 0">অ্যাডমিন ইমেইলের Google অ্যাকাউন্ট দিয়ে।</p><div id="gbtn"></div>';
+  if(st!==401){g.innerHTML='<b>The server is not responding.</b> <button class="btn ghost" onclick="location.reload()">Try again</button>';return}
+  g.innerHTML='<b>Log in</b><p class="sub" style="margin:6px 0 0">Use the Google account of an admin email.</p><div id="gbtn"></div>';
   const me=await api('me').catch(()=>({}));
-  if(!me.cid){$('gbtn').textContent='লগইন এখনো চালু নেই।';return}
+  if(!me.cid){$('gbtn').textContent='Login is not set up yet.';return}
   const go=()=>{google.accounts.id.initialize({client_id:me.cid,ux_mode:'popup',context:'signin',callback:async res=>{
-      try{const j=await api('login',{credential:res.credential});store.set('lb:u',j.user);start()}catch(e){$('gbtn').textContent='লগইন হয়নি, আবার চেষ্টা করুন।'}}});
-    google.accounts.id.renderButton($('gbtn'),{theme:'filled_blue',size:'large',shape:'pill',text:'continue_with',locale:'bn',width:260})};
+      try{const j=await api('login',{credential:res.credential});store.set('lb:u',j.user);start()}catch(e){$('gbtn').textContent='Login failed, please try again.'}}});
+    google.accounts.id.renderButton($('gbtn'),{theme:'filled_blue',size:'large',shape:'pill',text:'continue_with',locale:'en',width:260})};
   const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.async=true;s.onload=go;document.head.appendChild(s);
 }
 
 function showStats(s){
   const total=s.subjects.reduce((a,x)=>a+x.n,0);
-  $('stats').innerHTML='<span>মোট <b>'+bn(total)+'</b>টি অংশ</span>'+s.subjects.map(x=>'<span>'+esc(x.subject||'—')+': <b>'+bn(x.n)+'</b></span>').join('')+
+  $('stats').innerHTML='<span>Total <b>'+en(total)+'</b> passages</span>'+s.subjects.map(x=>'<span>'+esc(x.subject||'—')+': <b>'+en(x.n)+'</b></span>').join('')+
     '<span>'+s.sources.map(x=>esc(x.title||x.id)).join(' · ')+'</span>';
   const sub=$('subject');sub.length=1;s.subjects.forEach(x=>sub.add(new Option(x.subject,x.subject)));
   showBank();
-  $('tags').innerHTML=s.tags.slice(0,16).map(t=>'<button type="button" class="chip" data-tag="'+esc(t.tag)+'">'+esc(t.tag)+' '+bn(t.n)+'</button>').join('');
-  if(!total)$('count').textContent='লাইব্রেরি এখনো খালি। নিচে থেকে ফাইল তুলুন।';
+  $('tags').innerHTML=s.tags.slice(0,16).map(t=>'<button type="button" class="chip" data-tag="'+esc(t.tag)+'">'+esc(t.tag)+' '+en(t.n)+'</button>').join('');
+  if(!total)$('count').textContent='The library is empty. Upload a file below.';
 }
 // টপিক তালিকা (এমসিকিউ ফাইল থেকে) গাছের মতো: বিষয়, তার নিচে অধ্যায়, তার নিচে উপ-টপিক
 function showBank(){
@@ -176,13 +177,13 @@ function showBank(){
   const tp=$('topic'),cur=state.topic;tp.length=1;
   const walk=(id,d)=>(kids[id]||[]).forEach(t=>{tp.add(new Option('\u00a0\u00a0'.repeat(d)+t.bn,t.id));walk(t.id,d+1)});walk('',0);
   tp.value=cur;tp.hidden=!tax.length;
-  $('mstat').textContent=BANK?'এই ব্রাউজারে আছে '+bn(BANK.mcq.length)+'টি প্রশ্ন, ফাইল দেওয়া হয়েছে '+new Date(BANK.at).toLocaleDateString('bn-BD')+'।':'এই ব্রাউজারে এখনো ফাইল দেওয়া হয়নি, তাই এমসিকিউ খোঁজা যাবে না।';
+  $('mstat').textContent=BANK?'This browser has '+en(BANK.mcq.length)+' questions; file added on '+new Date(BANK.at).toLocaleDateString('en-GB')+'.':'No file added in this browser yet, so MCQs cannot be searched.';
 }
 async function loadBank(f,at){
   const d=JSON.parse(await readFile(f));
-  if(!d||!Array.isArray(d.mcq)||!Array.isArray(d.taxonomy))throw new Error('এটা library-mcq ফাইল নয়');
+  if(!d||!Array.isArray(d.mcq)||!Array.isArray(d.taxonomy))throw new Error('This is not a library-mcq file');
   const mcq=d.mcq.filter(r=>r&&r.id&&r.q&&Array.isArray(r.o));
-  if(mcq.length<d.mcq.length*0.9)throw new Error('ফাইলে অনেক প্রশ্ন ভাঙা');
+  if(mcq.length<d.mcq.length*0.9)throw new Error('Many questions in the file are broken');
   const by=new Map();
   mcq.forEach(r=>{r.src=Array.isArray(r.src)?r.src:[];r.topic_ids=r.topic_ids||[];r.exams=r.exams||[];by.set(r.id,r);
     r._q=String(r.q).toLowerCase();r._o=r.o.join(' ').toLowerCase();r._t=String(r.t||'').toLowerCase();r._n=JSON.stringify(r.src).length});
@@ -228,41 +229,41 @@ async function search(){
   writeHash();
   [...$('tags').children].forEach(b=>b.setAttribute('aria-pressed',b.dataset.tag===state.tag));
   const p=new URLSearchParams();for(const k of ['q','subject','kind','tag','topic','offset'])if(state[k])p.set(k,state[k]);
-  $('count').textContent='খোঁজা হচ্ছে…';
-  try{last=await api('lib/search?'+p)}catch(e){$('count').textContent='খোঁজা যায়নি ('+e.message+')।';return}
+  $('count').textContent='Searching…';
+  try{last=await api('lib/search?'+p)}catch(e){$('count').textContent='Search failed ('+e.message+').';return}
   const {total,items,offset}=last;
-  $('count').textContent=total?('মিলেছে '+bn(total)+'টি অংশ'+(state.tag?' · ট্যাগ: '+state.tag:'')+(total>items.length?' · দেখানো হচ্ছে '+bn(offset+1)+'–'+bn(offset+items.length):'')):'কিছু মেলেনি।';
+  $('count').textContent=total?('Found '+en(total)+' passages'+(state.tag?' · tag: '+state.tag:'')+(total>items.length?' · showing '+en(offset+1)+'–'+en(offset+items.length):'')):'No matches.';
   $('res').innerHTML=items.map(card).join('');
-  $('pager').innerHTML=(offset?'<button class="btn ghost" data-off="'+Math.max(0,offset-30)+'">← আগের</button>':'')+(offset+items.length<total?'<button class="btn ghost" data-off="'+(offset+30)+'">পরের →</button>':'');
+  $('pager').innerHTML=(offset?'<button class="btn ghost" data-off="'+Math.max(0,offset-30)+'">← Previous</button>':'')+(offset+items.length<total?'<button class="btn ghost" data-off="'+(offset+30)+'">Next →</button>':'');
   if(!offset){moff=0;mcq()}
 }
 // একই শব্দ দিয়ে এমসিকিউ ব্যাংকেও খোঁজা (ট্যাগ বাছাই থাকলে ট্যাগের নাম দিয়ে)
 let mlast=null;
 async function mcq(){
   const q=state.q||state.tag;$('mcqs').hidden=!q&&!state.topic;if(!q&&!state.topic)return;
-  $('mcount').textContent='খোঁজা হচ্ছে…';
-  if(!BANK){$('mcount').textContent='এমসিকিউ ফাইল দেওয়া হয়নি (নিচে "এমসিকিউ ব্যাংক ও টপিক তালিকা খোলা")';$('mres').innerHTML='';$('mpager').innerHTML='';return}
+  $('mcount').textContent='Searching…';
+  if(!BANK){$('mcount').textContent='No MCQ file added (see "Open MCQ bank and topic list" below)';$('mres').innerHTML='';$('mpager').innerHTML='';return}
   mlast=mcqFind(q,state.topic,moff);
   const {more,any,items,offset}=mlast;
-  $('mcount').textContent=items.length?(offset||more?bn(offset+1)+'–'+bn(offset+items.length)+(more?', আরও আছে':''):bn(items.length)+'টি')+(any?' · সব শব্দ একসাথে মেলেনি, যেকোনো শব্দ':''):'মেলেনি';
+  $('mcount').textContent=items.length?(offset||more?en(offset+1)+'–'+en(offset+items.length)+(more?', more available':''):en(items.length)+' found')+(any?' · not all words matched together; any word':''):'No match';
   $('mres').innerHTML=items.map(mcard).join('');
-  $('mpager').innerHTML=(offset?'<button class="btn ghost" data-moff="'+Math.max(0,offset-30)+'">← আগের</button>':'')+(more?'<button class="btn ghost" data-moff="'+(offset+30)+'">পরের →</button>':'');
+  $('mpager').innerHTML=(offset?'<button class="btn ghost" data-moff="'+Math.max(0,offset-30)+'">← Previous</button>':'')+(more?'<button class="btn ghost" data-moff="'+(offset+30)+'">Next →</button>':'');
 }
 const L='কখগঘঙচ';
 function mcard(m){
   const on=msel.includes(m.id);
-  return '<article class="it mq'+(on?' on':'')+'" data-mid="'+esc(m.id)+'"><input type="checkbox" aria-label="বাছাই"'+(on?' checked':'')+'>'+
+  return '<article class="it mq'+(on?' on':'')+'" data-mid="'+esc(m.id)+'"><input type="checkbox" aria-label="Select"'+(on?' checked':'')+'>'+
     '<div><h3>'+hi(m.q)+'</h3><div class="meta">'+m.o.map((o,i)=>(i===m.a?'<b>':'')+L[i]+') '+hi(o)+(i===m.a?' ✓</b>':'')).join(' · ')+'</div>'+
-    '<div class="meta">'+esc(m.topic_ids&&m.topic_ids.length&&TAX[m.topic_ids[0]]?[m.s,...m.topic_ids.filter(i=>TAX[i]&&TAX[i].parent).map(i=>TAX[i].bn)].filter(Boolean).join(' › '):[m.s,m.t].filter(Boolean).join(' › '))+(m.src.length?' · '+m.src.slice(0,3).map(x=>/^(\/|https?:\/\/)/.test(x[1])?'<a href="'+esc(x[1])+'" target="_blank">'+esc(x[0])+'</a>':esc(x[0])).join(', ')+(m.src.length>3?' +'+bn(m.src.length-3):''):'')+'</div></div></article>';
+    '<div class="meta">'+esc(m.topic_ids&&m.topic_ids.length&&TAX[m.topic_ids[0]]?[m.s,...m.topic_ids.filter(i=>TAX[i]&&TAX[i].parent).map(i=>TAX[i].bn)].filter(Boolean).join(' › '):[m.s,m.t].filter(Boolean).join(' › '))+(m.src.length?' · '+m.src.slice(0,3).map(x=>/^(\/|https?:\/\/)/.test(x[1])?'<a href="'+esc(x[1])+'" target="_blank">'+esc(x[0])+'</a>':esc(x[0])).join(', ')+(m.src.length>3?' +'+en(m.src.length-3):''):'')+'</div></div></article>';
 }
 function card(t){
   const on=sel.includes(t.id);
-  return '<article class="it'+(on?' on':'')+'" data-id="'+esc(t.id)+'"><input type="checkbox" aria-label="বাছাই"'+(on?' checked':'')+'>'+
+  return '<article class="it'+(on?' on':'')+'" data-id="'+esc(t.id)+'"><input type="checkbox" aria-label="Select"'+(on?' checked':'')+'>'+
     '<div><h3><span class="kind">'+esc(KIND[t.kind]||t.kind)+'</span>'+hi((t.section_no?t.section_no+' ':'')+t.section_title)+'</h3>'+
-    '<div class="meta">'+esc(t.subject)+(t.chapter!=null?' · অধ্যায় '+bn(t.chapter):'')+': '+esc(t.chapter_title)+(t.parent_section?' › '+esc(t.parent_section):'')+' · পৃ. '+bn(t.pages)+' · '+esc(t.source)+' · '+bn(Math.round(t.len/100)/10)+'k অক্ষর'+(t.mcq_ids&&t.mcq_ids.length?' · জোড়া এমসিকিউ '+bn(t.mcq_ids.length)+'টি (এক্সপোর্টে আসবে)':'')+' · <code>'+esc(t.id)+'</code></div></div>'+
+    '<div class="meta">'+esc(t.subject)+(t.chapter!=null?' · Chapter '+en(t.chapter):'')+': '+esc(t.chapter_title)+(t.parent_section?' › '+esc(t.parent_section):'')+' · p. '+en(t.pages)+' · '+esc(t.source)+' · '+en(Math.round(t.len/100)/10)+'k chars'+(t.mcq_ids&&t.mcq_ids.length?' · linked MCQs: '+en(t.mcq_ids.length)+' (included in export)':'')+' · <code>'+esc(t.id)+'</code></div></div>'+
     '<p class="snip">'+hi(t.snippet)+'</p>'+
     '<div class="tg">'+t.tags.slice(0,10).map(x=>'<button type="button" class="chip" data-tag="'+esc(x)+'">'+esc(x)+'</button>').join('')+'</div>'+
-    '<button type="button" class="more">পুরো লেখা</button></article>';
+    '<button type="button" class="more">Full text</button></article>';
 }
 
 $('qf').onsubmit=e=>{e.preventDefault();state.q=$('q').value.trim();state.subject=$('subject').value;state.kind=$('kind').value;state.topic=$('topic').value;state.offset=0;search()};
@@ -275,11 +276,11 @@ document.addEventListener('click',async e=>{
   const more=e.target.closest('.more');
   if(more){
     const it=more.closest('.it'),f=it.querySelector('.full');
-    if(f){f.remove();more.textContent='পুরো লেখা';return}
-    more.textContent='আনা হচ্ছে…';
+    if(f){f.remove();more.textContent='Full text';return}
+    more.textContent='Loading…';
     const j=await api('lib/get',{ids:[it.dataset.id]}).catch(()=>({items:[]}));
-    const d=document.createElement('div');d.className='full';d.innerHTML=hi(j.items[0]?j.items[0].text:'পাওয়া যায়নি');
-    it.append(d);more.textContent='লেখা বন্ধ করুন';
+    const d=document.createElement('div');d.className='full';d.innerHTML=hi(j.items[0]?j.items[0].text:'Not found');
+    it.append(d);more.textContent='Hide text';
   }
 });
 document.addEventListener('change',e=>{
@@ -292,7 +293,7 @@ document.addEventListener('change',e=>{
 addEventListener('hashchange',()=>{readHash();search()});
 
 // ---- বাছাই করা অংশ নামানো ----
-function tray(){$('tray').hidden=!sel.length&&!msel.length;$('nsel').textContent=[sel.length?bn(sel.length)+'টি অংশ':'',msel.length?bn(msel.length)+'টি এমসিকিউ':''].filter(Boolean).join(' + ')+' বাছাই'}
+function tray(){$('tray').hidden=!sel.length&&!msel.length;$('nsel').textContent=[sel.length?en(sel.length)+' passages':'',msel.length?en(msel.length)+' MCQs':''].filter(Boolean).join(' + ')+' selected'}
 // প্রশ্নের HTML থেকে Markdown: <br> → লাইন, <b> → **, ছবি → পুরো লিংক; প্রশ্ন/অপশনে (bold-এর ভেতরে) <b> বাদ
 function plain(s,inBold){
   return String(s||'').replace(/<img[^>]*src="([^"]+)"[^>]*>/gi,(m,u)=>' [ছবি: '+(u[0]==='/'?location.origin+u:u)+'] ')
@@ -328,8 +329,8 @@ $('dl').onclick=async()=>{
   finally{$('dl').disabled=false}
 };
 $('cp').onclick=async()=>{
-  try{await navigator.clipboard.writeText((await markdown()).md);$('cp').textContent='কপি হয়েছে ✓'}catch(e){$('cp').textContent='কপি হয়নি'}
-  setTimeout(()=>$('cp').textContent='কপি করুন',2000);
+  try{await navigator.clipboard.writeText((await markdown()).md);$('cp').textContent='Copied ✓'}catch(e){$('cp').textContent='Copy failed'}
+  setTimeout(()=>$('cp').textContent='Copy',2000);
 };
 $('clr').onclick=()=>{sel=[];msel=[];store.set('lib:sel',sel);store.set('lib:msel',msel);tray();document.querySelectorAll('.it').forEach(it=>{it.classList.remove('on');it.querySelector('input').checked=false})};
 
@@ -349,9 +350,9 @@ $('file').onchange=async()=>{
   const f=$('file').files[0];if(!f)return;
   const txt=await f.text();
   try{pending=/\.json$/i.test(f.name)||/^\s*[\[{]/.test(txt)?JSON.parse(txt):parseCSV(txt);if(!Array.isArray(pending))pending=pending.topics||[]}
-  catch(e){$('impMsg').textContent='ফাইলটা পড়া গেল না।';return}
+  catch(e){$('impMsg').textContent='Could not read the file.';return}
   pending=pending.filter(t=>t&&t.id&&t.text);
-  $('impMsg').textContent=bn(pending.length)+'টি অংশ পাওয়া গেছে ('+[...new Set(pending.map(t=>t.subject))].join(', ')+')।';
+  $('impMsg').textContent=en(pending.length)+' passages found ('+[...new Set(pending.map(t=>t.subject))].join(', ')+').';
   $('go').hidden=!pending.length;
 };
 $('go').onclick=async()=>{
@@ -360,34 +361,34 @@ $('go').onclick=async()=>{
     const part=pending.slice(i,i+15);
     for(let tries=0;;tries++){
       try{const j=await api('lib/import',{topics:part});done+=j.saved;break}
-      catch(e){if(tries>=2){$('impMsg').textContent='থেমে গেছে '+bn(i)+'টির পরে ('+e.message+')। আবার "তুলুন" চাপলে বাকিগুলোসহ আবার যাবে, ডুপ্লিকেট হবে না।';b.disabled=false;return}
+      catch(e){if(tries>=2){$('impMsg').textContent='Stopped after '+en(i)+' ('+e.message+'). Tap "Upload" again to resend the rest; no duplicates.';b.disabled=false;return}
         await new Promise(r=>setTimeout(r,1500))}
     }
-    $('bar').style.width=(100*(i+part.length)/pending.length)+'%';$('impMsg').textContent=bn(done)+' / '+bn(pending.length)+' তোলা হলো…';
+    $('bar').style.width=(100*(i+part.length)/pending.length)+'%';$('impMsg').textContent=en(done)+' / '+en(pending.length)+' uploaded…';
   }
-  $('impMsg').textContent='✓ '+bn(done)+'টি অংশ তোলা হয়েছে।';b.hidden=true;b.disabled=false;
+  $('impMsg').textContent='✓ '+en(done)+' passages uploaded.';b.hidden=true;b.disabled=false;
   showStats(await api('lib/stats'));search();
 };
 
 // ---- এমসিকিউ ব্যাংক: Lyanna_data-র এক্সপোর্ট (tools/library/from_lyanna.py) তোলা ----
 async function readFile(f){
   if(/\.gz$/i.test(f.name)){
-    if(!window.DecompressionStream)throw new Error('এই ব্রাউজারে .gz খোলা যায় না, Chrome দিয়ে চেষ্টা করুন');
+    if(!window.DecompressionStream)throw new Error('This browser cannot open .gz; try Chrome');
     return await new Response(f.stream().pipeThrough(new DecompressionStream('gzip'))).text();
   }
   return await f.text();
 }
 $('mfile').onchange=async()=>{
   const f=$('mfile').files[0],m=t=>$('syncMsg').textContent=t;if(!f)return;
-  $('mfile').disabled=true;$('sprog').hidden=false;$('sbar').style.width='0';m('ফাইল খোলা হচ্ছে…');
+  $('mfile').disabled=true;$('sprog').hidden=false;$('sbar').style.width='0';m('Opening file…');
   try{
     const at=Date.now();await loadBank(f,at);
-    m('ব্রাউজারে রাখা হচ্ছে…');
+    m('Saving in browser…');
     const kept=await idb('readwrite',st=>st.put({file:f,at},'mcq')).then(()=>true,()=>false);
     $('sbar').style.width='100%';
-    m('✓ '+bn(BANK.taxonomy.length)+'টি টপিক আর '+bn(BANK.mcq.length)+'টি প্রশ্ন খোলা হয়েছে।'+(kept?'':' এই ব্রাউজারে রাখা গেল না, পাতা আবার খুললে ফাইলটা আবার দিতে হবে।'));
+    m('✓ '+en(BANK.taxonomy.length)+' topics and '+en(BANK.mcq.length)+' questions opened.'+(kept?'':' Could not save in this browser; you will need to choose the file again when you reopen the page.'));
     showBank();if(state.q||state.tag||state.topic){moff=0;mcq()}
-  }catch(e){m('খোলা গেল না ('+e.message+')।')}
+  }catch(e){m('Could not open ('+e.message+').')}
   $('mfile').disabled=false;$('mfile').value='';
 };
 

@@ -363,7 +363,7 @@ for slug, L in series.items():
     rel = (f'<h2>আরও {esc(CATN[e0["cat"]])} পরীক্ষা: সব বছর একসঙ্গে</h2><ul class="list">' +
            ''.join(f'<li><a href="/jobs/{x}/">{esc(sname(series[x][0]))}</a></li>' for x in near) + '</ul>') if near else ''
     body = f"""<h1>{esc(nm)}: প্রশ্ন ও সমাধান, সব বছর</h1>
-<p class="lead">{esc(e0['orgbn'])}-এর {esc(e0['postbn'])} পদের {bn(len(L))}টি পরীক্ষার ({span}) প্রশ্ন এক জায়গায়। প্রতিটি পাতায় সঠিক উত্তর, ব্যাখ্যা আর সময় ধরে পরীক্ষা দেওয়ার সুযোগ আছে। মোট {bn(nq)}টি প্রশ্ন।</p>
+<p class="lead">{esc(e0['orgbn'])}-এর {esc(e0['postbn'])} পদের {bn(len(L))}টি পরীক্ষার ({span}) প্রশ্ন এক জায়গায়। প্রতিটি প্রশ্নপত্রে সঠিক উত্তর, ব্যাখ্যা আর সময় ধরে পরীক্ষা দেওয়ার সুযোগ আছে। মোট {bn(nq)}টি প্রশ্ন।</p>
 <h2>সাল অনুযায়ী প্রশ্ন ও সমাধান</h2>
 <ul class="list">{rows}</ul>
 <h2>কোন বিষয় থেকে কত প্রশ্ন আসে</h2>
@@ -460,7 +460,7 @@ for c in CAT_ORDER:
         sec.append(f'<h2 id="{c}">{CATN[c]} ({bn(len(L))})</h2><ul class="list">' + ''.join(f'<li><a href="/jobs/{x["id"]}/">{esc(jname(x))}</a></li>' for x in L) + '</ul>')
 nall = len(bcs_links) + len(ch_links) + len(jobs_ok)
 qbody = f"""<h1>সব প্রশ্ন ও সমাধান</h1>
-<p class="lead">বিসিএস প্রিলিমিনারি, ব্যাংক জব, সরকারি চাকরি আর পিএসসি নন-ক্যাডারের বিগত প্রশ্ন: সঠিক উত্তর আর ব্যাখ্যাসহ {bn(nall)}টি পাতা। প্রতিটি পাতা থেকে সময় ধরে ফ্রি মডেল টেস্টও দেওয়া যায়।</p>
+<p class="lead">বিসিএস প্রিলিমিনারি, ব্যাংক জব, সরকারি চাকরি আর পিএসসি নন-ক্যাডারের বিগত প্রশ্ন: সঠিক উত্তর আর ব্যাখ্যাসহ {bn(nall)}টি প্রশ্নপত্র। প্রতিটি প্রশ্নপত্র দিয়ে সময় ধরে ফ্রি মডেল টেস্টও দেওয়া যায়।</p>
 <ul class="toc"><li><a href="#bcs">বিসিএস</a></li><li><a href="#science">বিজ্ঞান</a></li><li><a href="#series">সব বছর একসঙ্গে</a></li><li><a href="#gb">সরকারি ব্যাংক</a></li><li><a href="#pb">বেসরকারি ব্যাংক</a></li><li><a href="#gov">সরকারি চাকরি</a></li><li><a href="#psc">পিএসসি</a></li><li><a href="#teacher">শিক্ষক নিবন্ধন</a></li></ul>
 {''.join(sec)}"""
 wr('questions/index.html', page('/questions/', 'বিসিএস, ব্যাংক জব ও সরকারি চাকরির প্রশ্ন ও সমাধান · লিয়ানা বুকস',
@@ -546,3 +546,8 @@ for u, lm in sorted(urls, key=lambda x: pri(x[0])):
 xml.append('</urlset>')
 wr('sitemap.xml', '\n'.join(xml) + '\n')
 print(f'bcs {len(bcs_links)} · jobs {len(jobs_ok)}/{len(jcat)} · series {len(series)} · chapters {len(ch_links)} · hand-made pages {len(hand)} · sitemap {len(urls)} urls')
+
+# ---------- রিপোর্ট পাতার জন্য প্রশ্ন → পাতা (admin/data/qloc/, tools/build_qloc.py) ----------
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import build_qloc
+build_qloc.main()

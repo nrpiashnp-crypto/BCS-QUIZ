@@ -192,9 +192,9 @@
   function badge(){
     var nav=document.querySelector('.sitebar nav.sec, .bar nav.sec');if(!nav||document.querySelector('.lba-me'))return;
     style();
-    var u=user(),a=document.createElement('a');a.className='lba-me';a.href=u?'/today/':'/account/';a.setAttribute('aria-label','আমার রেজাল্ট কার্ড');a.title='আমার রেজাল্ট কার্ড';
-    a.setAttribute('aria-label',u?'আজ: আমার পাতা':'লগইন ও রেজাল্ট কার্ড');a.title=a.getAttribute('aria-label');
-    if(location.pathname===(u?'/today/':'/account/'))a.setAttribute('aria-current','page');
+    var u=user(),a=document.createElement('a');a.className='lba-me';a.href='/account/';a.setAttribute('aria-label','আমার রেজাল্ট কার্ড');a.title='আমার রেজাল্ট কার্ড';
+    a.setAttribute('aria-label',u?'আমার রেজাল্ট কার্ড':'লগইন ও রেজাল্ট কার্ড');a.title=a.getAttribute('aria-label');
+    if(location.pathname==='/account/')a.setAttribute('aria-current','page');
     a.innerHTML=u&&u.pic?'<img src="'+u.pic.replace(/"/g,'')+'" alt="" referrerpolicy="no-referrer">'
       :'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>';
     nav.appendChild(a);
@@ -205,7 +205,5 @@
   document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init):init();
   addEventListener('online',flush);
   // প্রতিটি ব্যাখ্যার নিচে "প্রশ্নে ভুল আছে? জানান" (js/report.js); প্রশ্ন দেখানো সব পাতায় account.js আছে
-  // সাইটে কাজের সময় ("আছি", শুধু লগইন থাকলে): js/here.js
-  if(!window.LBH&&user()){var h=document.createElement('script');h.src='/js/here.js';h.defer=true;document.head.appendChild(h)}
   if(!window.LBR){var r=document.createElement('script');r.src='/js/report.js';r.defer=true;document.head.appendChild(r)}
 })();

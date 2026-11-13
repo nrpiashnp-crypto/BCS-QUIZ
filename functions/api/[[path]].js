@@ -34,7 +34,8 @@
    POST /api/ch/<id>/try {name,picks,sec} → নম্বর, উত্তর-ব্যাখ্যা, র‍্যাংক
    প্রশ্নে ভুল জানানো (লগইন লাগে না; বোতাম js/report.js):
    POST /api/report {qid?, page, q, kind: ans|exp|q|other, note?} → {ok}
-   অ্যাডমিন: GET /api/admin/reports?st=new|done|all → তালিকা (পাতা /admin/reports/); POST /api/admin/reports {ids:[…], st}
+   অ্যাডমিন: GET /api/admin/reports?st=new|sent|done|no|all → তালিকা (পাতা /admin/reports/); POST /api/admin/reports {ids:[…], st}
+   ধাপ: new → sent (LY Quiz-এর তালিকায় গেল) → done (ঠিক করা হলো) বা no (ভুল নয়)
             GET /api/admin/qver?days= → চাবি/ব্যাখ্যা বদলের খাতা (qver_log; সংস্করণ-চিহ্ন, নিচে qVer)
             GET /api/admin/repq → ভুল জানানো প্রশ্নের id (পর্যালোচনায় কঠিন/সহজ থেকে বাদ)
    ব্যাখ্যা বুঝেছি/বুঝিনি: POST /api/fb (নিচে "বুঝেছি / বুঝিনি" অংশ), অ্যাডমিন GET /api/admin/fb
@@ -42,7 +43,6 @@
    পাইলট ব্যাচ (/pilot/<id>/, /admin/pilot/): নিচে "পাইলট ব্যাচ" অংশের মাথায় সব পথ।
    নিজের পরিকল্পনা, অবস্থা-যাচাই (/plan/<সেট>/, /admin/diag/): নিচে "নিজের পরিকল্পনা" অংশের মাথায় সব পথ।
    আমার চাকরি (/myjobs/, /admin/jobs/): নিচে "আমার চাকরি" অংশের মাথায় সব পথ।
-   "আজ" পাতা আর সাইটে কাজের সময় (/today/, GET /api/today, POST /api/here; D1 sday): নিচে "আজ" অংশে।
    শিক্ষকের সাপ্তাহিক রপ্তানি (GET /api/export/teacher, রপ্তানির চাবি দিয়ে): নিচে "শিক্ষকের সাপ্তাহিক রপ্তানি" অংশে। */
 const COOKIE = 'lb_s', AGE = 180 * 86400;
 const MAX_BATCH = 300, MAX_ROWS = 3000;
@@ -931,7 +931,8 @@ async function admin(path, url, env, db, u, req) {
     if (req.method === 'POST') {
       const b = await req.json().catch(() => ({}));
       const ids = (Array.isArray(b.ids) ? b.ids : []).filter(Number.isInteger).slice(0, 200);
-      const st = b.st === 'done' || b.st === 'new' || b.st === 'no' ? b.st : null;
+      // sent = LY Quiz-এ যাচাইয়ের তালিকায় পাঠানো (যাচাই আর সংশোধন সেখানে; ঠিক হলে done)
+      const st = ['done', 'new', 'no', 'sent'].includes(b.st) ? b.st : null;
       if (!ids.length || !st) return json({error: 'bad'}, 400);
       await db.batch(ids.map(id => db.prepare('UPDATE rep SET st = ? WHERE id = ?').bind(st, id)));
       return json({ok: true, n: ids.length});
@@ -2396,80 +2397,6 @@ async function teacherExport(path, url, req, db) {
   return json({error: 'part'}, 400);
 }
 
-// ── "আজ" পাতা আর সাইটে কাজের সময় (social-review ঙ-১, ঙ-২; পাতা /today/) ──
-// GET  /api/today → লগইনের পরের প্রথম স্ক্রিনের সব কিছু একবারে: আজকের পরীক্ষা, শেষ ৭ দিনের গতি, আমার চাকরির পরের শেষ তারিখ
-// POST /api/here {s} → "আছি": js/here.js প্রতি ৫ মিনিটে (আর পাতা ছাড়ার সময়) জানায় কত সেকেন্ড পাতা সামনে ছিল আর ছোঁয়া/স্ক্রল হয়েছে।
-//   সার্ভার মানে min(s, ৩০০, আগের "আছি"-র পর যত সময় গেছে), তাই কয়েকটা ট্যাব খুলে রাখলেও সময় দ্বিগুণ হয় না; দিনে ১৪ ঘণ্টার ওপরে নয়।
-// sday: প্রতিজনের দিনে (ঢাকার তারিখ) এক সারি। sec = পাতায় সক্রিয় সময়, paras = পড়ার পাতার অনুচ্ছেদ (পড়ার পাতা এলে), last = শেষ "আছি"।
-//   পরীক্ষার সময় এখানে নয়: att.sec আর diag_att থেকে পড়া হয়; দিনের কাজের সময় = দুটোর বড়টা (পরীক্ষার পাতায়ও "আছি" চলে, তাই যোগ নয়)।
-//   সময় কাউকে দেখানো হয় না, শুধু নিজেকে (social-review ক-৩)।
-const SDAY_SQL = 'CREATE TABLE IF NOT EXISTS sday(uid INTEGER NOT NULL, d TEXT NOT NULL, sec INTEGER NOT NULL DEFAULT 0, paras INTEGER NOT NULL DEFAULT 0, last INTEGER, PRIMARY KEY(uid, d))';
-let sdayReady = false;
-async function sdaySetup(db) { if (!sdayReady) { await db.prepare(SDAY_SQL).run(); sdayReady = true; } }
-const HERE_MAX = 300, DAY_MAX = 14 * 3600, TEST_MAX = 3 * 3600;
-async function here(req, db, u) {
-  const b = await req.json().catch(() => ({}));
-  const s = Math.max(0, Math.min(Math.round(num(b.s) || 0), HERE_MAX));
-  if (s < 5) return json({ok: true});
-  await sdaySetup(db);
-  const now = Date.now();
-  await db.prepare('INSERT INTO sday(uid, d, sec, paras, last) VALUES(?,?,?,0,?) ON CONFLICT(uid, d) DO UPDATE SET ' +
-    'sec = MIN(' + DAY_MAX + ', sec + MIN(excluded.sec, MAX(0, (excluded.last - COALESCE(last, 0)) / 1000))), last = excluded.last')
-    .bind(u.id, dhakaDay(now), s, now).run();
-  return json({ok: true});
-}
-// সেটের পাতা: pb-start → /plan/pb/, pb-w3 → /plan/pb/?w=3
-const setUrl = sid => { const w = /^([a-z0-9]+)-w(\d+)$/.exec(sid); if (w) return '/plan/' + w[1] + '/?w=' + w[2]; const st = /^([a-z0-9]+)-start$/.exec(sid); return st ? '/plan/' + st[1] + '/' : '/plan/'; };
-const nextSet = sid => { if (sid === 'pb-start') return 'pb-w1'; const w = PB_WEEK.exec(sid); return w ? 'pb-w' + (+w[1] + 1) : ''; };
-// নিজের সর্বশেষ সেটে আজ কোন ভাগ দেওয়ার আছে (diag/me-র তালার নিয়মেই; পরীক্ষক নয়, সাধারণ নিয়ম)
-async function todayPart(db, u, now) {
-  const last = await db.prepare('SELECT sid FROM diag_att WHERE uid = ? ORDER BY ts DESC LIMIT 1').bind(u.id).first();
-  if (!last) return null;
-  const today = dhakaDay(now);
-  for (let sid = last.sid, hop = 0; sid && hop < 2; sid = nextSet(sid), hop++) {
-    const c = await diagCfg(db, sid);
-    if (!c || !c.parts.length) return hop ? {sid, url: setUrl(last.sid), wait: 1} : null;
-    const {results} = await db.prepare('SELECT part, dl, done, res FROM diag_att WHERE sid = ? AND uid = ?').bind(sid, u.id).all();
-    const A = new Map(results.map(r => [r.part, r])), L = [...c.parts].sort((a, b) => a.no - b.no);
-    for (let i = 0; i < L.length; i++) {
-      const p = L[i], r = A.get(p.no), base = {sid, url: setUrl(sid), set: c.title || '', no: p.no, title: p.title || '', n: p.qs.length, mins: p.mins || 0};
-      if (r && r.res) continue;
-      if (r && !r.done && now < r.dl + GRACE) return {...base, st: 'going'};
-      if (r) return {...base, st: 'going'}; // সময় শেষ, ফল গোনা বাকি: পাতা খুললেই বন্ধ হয়
-      if (p.date && p.date > today) return {...base, st: 'later', date: p.date};
-      if (i === 0 && hop === 0) { const pv = await diagPrev(db, c, p, u.id); if (pv && !pv.done) return {...base, st: 'later'}; }
-      return {...base, st: 'todo'};
-    }
-  }
-  return {sid: last.sid, url: setUrl(last.sid), st: 'all'};
-}
-async function today(db, u) {
-  await sdaySetup(db); await diagSetup(db); await jobsSetup(db);
-  const now = Date.now(), d0 = dhakaDay(now - 6 * DAY), t0 = Date.parse(d0 + 'T00:00:00+06:00');
-  const [a, g, s, j] = await db.batch([
-    db.prepare('SELECT ts, sec FROM att WHERE uid = ? AND ts >= ?').bind(u.id, t0),
-    db.prepare('SELECT ts, done FROM diag_att WHERE uid = ? AND done IS NOT NULL AND done >= ?').bind(u.id, t0),
-    db.prepare('SELECT d, sec, paras FROM sday WHERE uid = ? AND d >= ?').bind(u.id, d0),
-    db.prepare("SELECT j.data FROM myjob m JOIN jobs j ON j.id = m.jid WHERE m.uid = ? AND j.st = 'live' AND j.ae >= ? ORDER BY j.ae LIMIT 3").bind(u.id, dhakaDay(now))
-  ]);
-  const D = new Map();
-  for (let i = 0; i < 7; i++) D.set(dhakaDay(now - (6 - i) * DAY), {tests: 0, tsec: 0, sec: 0});
-  for (const r of a.results) { const x = D.get(dhakaDay(r.ts)); if (x) { x.tests++; x.tsec += Math.min(Math.max(r.sec || 0, 0), TEST_MAX); } }
-  for (const r of g.results) { const x = D.get(dhakaDay(r.done)); if (x) { x.tests++; x.tsec += Math.min(Math.max(Math.round((r.done - r.ts) / 1000), 0), TEST_MAX); } }
-  for (const r of s.results) { const x = D.get(r.d); if (x) x.sec = r.sec || 0; }
-  // একটা দিন "কাজের দিন" = অন্তত একটা পরীক্ষা, বা ৫ মিনিট সক্রিয় থাকা
-  const days = [...D].map(([d, x]) => { const sec = Math.min(Math.max(x.sec, x.tsec), DAY_MAX); return {d, tests: x.tests, sec, on: x.tests > 0 || sec >= 300 ? 1 : 0}; });
-  let lastTs = 0;
-  if (!days.some(x => x.on)) {
-    const r = await db.prepare('SELECT MAX(ts) t FROM att WHERE uid = ?').bind(u.id).first();
-    lastTs = r && r.t || 0;
-  }
-  return json({today: dhakaDay(now), name: u.name || '', days, last: lastTs || null,
-    part: await todayPart(db, u, now).catch(() => null),
-    jobs: j.results.map(r => { try { const x = JSON.parse(r.data); return {post: x.post, org: x.org, ae: x.ae, exam: x.exam || '', est: x.est || 0}; } catch (e) { return null; } }).filter(Boolean)
-  }, 200, {'Cache-Control': 'no-store'});
-}
-
 export async function onRequest({request: req, env}) {
   const url = new URL(req.url), path = url.pathname.replace(/^\/api\/?/, '').replace(/\/+$/, ''), m = req.method;
   if (m === 'POST') {
@@ -2512,8 +2439,6 @@ export async function onRequest({request: req, env}) {
 
     if (path.startsWith('admin/')) return await admin(path, url, env, db, u, req);
     if (path === 'goal') return await goal(req, db, u);
-    if (path === 'today' && m === 'GET') return await today(db, u);
-    if (path === 'here' && m === 'POST') return await here(req, db, u);
     if (path === 'fb/mine' && m === 'GET') return await fbMine(db, u);
     // একটা পরীক্ষার ফল আর প্রতিটি উত্তর (নিজের উত্তরপত্র দেখার পাতা /account/script/)
     if (path === 'att/one' && m === 'GET') {
@@ -2562,9 +2487,8 @@ export async function onRequest({request: req, env}) {
       return json({ok: true, saved: rows.length, qs, qd: qds.length});
     }
     if (path === 'delete' && m === 'POST') {
-      await attqTable(db); await diagSetup(db); await jobsSetup(db); await sdaySetup(db);
+      await attqTable(db); await diagSetup(db); await jobsSetup(db);
       await db.batch([
-        db.prepare('DELETE FROM sday WHERE uid = ?').bind(u.id),
         db.prepare('DELETE FROM jprof WHERE uid = ?').bind(u.id),
         db.prepare('DELETE FROM myjob WHERE uid = ?').bind(u.id),
         db.prepare('DELETE FROM attq WHERE uid = ?').bind(u.id),
