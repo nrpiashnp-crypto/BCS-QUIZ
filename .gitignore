@@ -3,3 +3,4 @@ node_modules/
 tools/__pycache__/
 scripts/news/__pycache__/
 scripts/news/mac/__pycache__/
+live.json

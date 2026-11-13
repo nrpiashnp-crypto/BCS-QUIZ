@@ -5,8 +5,10 @@ launchd প্রতি ঘণ্টায় এটা চালায় (Mac 
 2. দিনটা আগে তৈরি না হলে run_daily.py চালিয়ে খসড়া বানায় (Gemini চাবি ~/.lyanna/gemini.key থেকে, রিপোর বাইরে)।
 3. **নিজে থেকে প্রকাশ** (PIASH, ২০২৬-১১-০৭): যাচাই পেরোনো খবর সাইটে যায়; দুই উৎসে না মেলা খবর
    আটকে থাকে, সেগুলোর কথা Mac-এর বিজ্ঞপ্তিতে আর drafts/<দিন>/preview.html-এ।
-4. প্রকাশ মানে: রিপোর কপিতে এক কমিট → (ক) GitHub-এ push চেষ্টা, (খ) **Mac থেকে সরাসরি Cloudflare Pages-এ তোলা**
-   (wrangler), যাতে GitHub আটকে থাকলেও সাইট হালনাগাদ হয় (PIASH-এর অনুমতি, ২০২৬-১১-০৭)।
+4. প্রকাশ মানে: রিপোর কপিতে এক কমিট → scripts/deploy_guard.py দুই দিক মিলিয়ে GitHub-এ push, Cloudflare সেখান
+   থেকে নিজে তোলে (PIASH, ২০২৬-১১-১৩; আগের "push না হলেও সরাসরি Cloudflare" বাতিল, কারণ তাতে GitHub পিছিয়ে
+   পড়ে আর পরের PR মার্জে সাইট পুরোনো হয়ে যায়)। GitHub না গেলে সরাসরি Cloudflare শুধু PIASH-এর
+   ~/Lyanna-Backup/allow-direct-deploy ফাইল থাকলে।
 5. GitHub থেকে নতুন কোড আনা না গেলে Mac-এর কপি দিয়েই চলে (আটকে যায় না)।
 
 নিরাপত্তা (LY Sites-এর নির্দেশনা, ২০২৬-১১-১০):
@@ -256,16 +258,39 @@ h1{{font-size:22px}} .c{{background:#fff;border-left:4px solid #1E5B4A;padding:1
     return out
 
 
-def deploy_cloudflare() -> tuple[bool, str]:
-    """রিপোর কপিটা পুরো সাইট হিসেবে Cloudflare Pages-এ তোলা (deploy.sh-এর মতো)। GitHub লাগে না।"""
+def _wrangler(repo: Path) -> tuple[bool, str]:
+    """Mac থেকে সরাসরি Cloudflare Pages-এ তোলা। শুধু deploy_guard.direct_deploy() ডাকে (জরুরি পথ)।"""
     env = dict(os.environ, PATH="/opt/homebrew/bin:/usr/local/bin:" + os.environ.get("PATH", "/usr/bin:/bin"))
-    head = sh("git", "rev-parse", "HEAD", cwd=REPO, check=False).stdout.strip() or "local"
-    msg = (sh("git", "log", "-1", "--format=%s", cwd=REPO, check=False).stdout.strip() or "Mac deploy")[:200]
+    head = sh("git", "rev-parse", "HEAD", cwd=repo, check=False).stdout.strip() or "local"
+    msg = (sh("git", "log", "-1", "--format=%s", cwd=repo, check=False).stdout.strip() or "Mac deploy")[:200]
     r = sh("npx", "--yes", "wrangler", "pages", "deploy", ".", "--project-name", PAGES_PROJECT,
-           "--branch", "main", "--commit-hash", head, "--commit-message", msg, "--commit-dirty=true",
-           cwd=REPO, env=env, check=False, timeout=DEPLOY_TIMEOUT)
+           "--branch", "main", "--commit-hash", head, "--commit-message", msg,
+           cwd=repo, env=env, check=False, timeout=DEPLOY_TIMEOUT)
     tail = ((r.stdout or "") + (r.stderr or "")).strip()[-600:]
     return r.returncode == 0, tail
+
+
+def _guard():
+    if str(REPO / "scripts") not in sys.path:
+        sys.path.insert(0, str(REPO / "scripts"))
+    import deploy_guard  # noqa: E402  (রিপোর নিজের কোড)
+    return deploy_guard
+
+
+def deploy_cloudflare() -> tuple[bool, str]:
+    """সাইটে তোলা, দুই দিক মিলিয়ে (scripts/deploy_guard.py; PIASH, ২০২৬-১১-১৩)।
+    সাধারণ পথ: GitHub আর Mac মিলিয়ে push, Cloudflare GitHub থেকে নিজে তোলে।
+    GitHub না গেলে: শুধু PIASH-এর অনুমতি-ফাইল থাকলে সরাসরি Cloudflare, নইলে কোথাও না (কাজ Mac-এ জমা)।
+    ফেরত: (হলো কি না, কোথায় গেল বা কেন থামল)।"""
+    g = _guard()
+    try:
+        return True, g.ship(REPO)
+    except g.GuardError as e:
+        first = str(e)
+    try:
+        return True, g.direct_deploy(REPO, _wrangler)
+    except g.GuardError as e:
+        return False, f"{first} | {e}"
 
 
 def day_errors(day) -> list[str]:
@@ -312,20 +337,11 @@ def publish(ds: str) -> str:
         raise RuntimeError(f"পাতা বানানো মাঝপথে ভাঙল ({e.__class__.__name__}: {str(e)[:160]}); কিছু প্রকাশ হয়নি") from None
     sh("git", "add", "news", cwd=REPO)
     sh("git", "commit", "-q", "-m", f"news: আজকের গুরুত্বপূর্ণ সংবাদ {ds} (Mac থেকে)", cwd=REPO, check=False)
-    where = []
-    r = sh("git", "push", "-q", "origin", "HEAD:main", cwd=REPO, check=False, timeout=120)
-    if r.returncode == 0:
-        where.append("GitHub")
-    else:
-        log(f"{ds}: GitHub-এ পাঠানো গেল না ({(r.stderr or '').strip()[:120]}); Mac-এর কপিতে কমিট রাখা আছে, GitHub ফিরলে যাবে")
-    ok, tail = deploy_cloudflare()
-    if ok:
-        where.append("Cloudflare")
-    else:
-        log(f"{ds}: Cloudflare-এ তোলা গেল না: {tail}")
-    if not where:
-        raise RuntimeError("GitHub আর Cloudflare দুটোতেই গেল না")
-    return "+".join(where)
+    ok, where = deploy_cloudflare()
+    if not ok:
+        log(f"{ds}: সাইটে তোলা থামানো হলো: {where}")
+        raise RuntimeError(f"সাইটে তোলা হলো না (দুই দিক মেলেনি): {where[:200]}")
+    return where
 
 
 def do_publish(ds: str, state: dict, auto: bool) -> bool:

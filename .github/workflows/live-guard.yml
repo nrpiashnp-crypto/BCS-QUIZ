@@ -1,0 +1,41 @@
+# মার্জের আগে দুই দিক মেলানো (PIASH, ২০২৬-১১-১৩; scripts/deploy_guard.py দেখুন)।
+# Mac জরুরি পথে সরাসরি Cloudflare-এ তুললে সাইটের মূলে live.json থাকে, তাতে কোন কমিট তোলা হয়েছে লেখা।
+# সেই কমিট GitHub-এর main-এ না থাকলে এই যাচাই লাল: তখন মার্জ করলে Mac-এর কাজ সাইট থেকে মুছে যাবে।
+# live.json না থাকলে সাইট GitHub থেকেই তোলা, তাই সবুজ।
+name: live-guard
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 300
+      - name: লাইভ সাইট আর GitHub main মেলানো
+        run: |
+          code=$(curl -sS -L -o live.json -w '%{http_code}' "https://lyannabooks.com/live.json?t=$(date +%s)" || echo 000)
+          if [ "$code" = "000" ]; then
+            echo "::warning::সাইটে পৌঁছানো গেল না; যাচাই হয়নি। মার্জের আগে আবার চালান (Actions → live-guard → Run workflow)।"
+            exit 0
+          fi
+          commit=$(python3 -c "import json;print(json.load(open('live.json')).get('commit',''))" 2>/dev/null || true)
+          if [ "$code" != "200" ] || [ -z "$commit" ]; then
+            echo "ঠিক আছে ✓ সাইট GitHub থেকেই তোলা (live.json নেই)। মার্জ নিরাপদ।"
+            exit 0
+          fi
+          if git cat-file -e "${commit}^{commit}" 2>/dev/null && git merge-base --is-ancestor "$commit" origin/main; then
+            echo "ঠিক আছে ✓ Mac থেকে তোলা কমিট ${commit:0:8} GitHub-এর main-এ আছে। মার্জ নিরাপদ।"
+            exit 0
+          fi
+          echo "::error::মার্জ করবেন না! Mac থেকে সরাসরি তোলা কাজ (কমিট ${commit:0:8}) এখনো GitHub-এ ওঠেনি। এখন মার্জ করলে সেই কাজ সাইট থেকে মুছে যাবে। আগে Mac থেকে GitHub-এ push হোক, তারপর এই যাচাই আবার চালান।"
+          exit 1
