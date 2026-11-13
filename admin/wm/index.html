@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="theme-color" content="#13294b">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Copy check · Admin · Lyanna Books</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+:root{--paper:#f8f5ee;--ink:#1d1f21;--muted:#5f6366;--rule:#d9d6cf;--card:#fff;--navy:#13294b;--pink:#c8326a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 'Noto Sans Bengali',system-ui,sans-serif}
+.wrap{max-width:720px;margin:0 auto;padding:20px 16px 80px}
+h1{font:400 28px/1.3 'Tiro Bangla',Georgia,serif;margin:0 0 4px;color:var(--navy)}
+.sub{color:var(--muted);margin:0 0 18px;font-size:14.5px}
+.pick{display:block;border:1.5px dashed var(--navy);border-radius:3px;background:var(--card);padding:26px 16px;text-align:center;cursor:pointer;color:var(--navy);font-weight:600}
+.pick input{display:none}
+.chk{display:flex;gap:8px;align-items:center;margin:12px 0;font-size:15px}
+#prev{display:block;max-width:100%;max-height:340px;margin:14px auto 0;border:1px solid var(--rule)}
+#prev:not([src]){display:none}
+.out{background:var(--card);border:1px solid var(--rule);border-radius:3px;padding:14px;margin-top:14px}
+.out:empty{display:none}
+.out b.id{font-size:26px;color:var(--navy);letter-spacing:.5px}
+.bad{border-color:var(--pink)}
+.bar2{height:6px;background:var(--rule);border-radius:3px;overflow:hidden;margin-top:8px}.bar2 i{display:block;height:100%;width:0;background:var(--navy)}
+.tips{font-size:14px;color:var(--muted);margin-top:22px}.tips li{margin-bottom:4px}
+</style>
+<link rel="stylesheet" href="/css/omr.css">
+<link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body>
+<div class="adbar"><a class="adback" href="/admin/">← Admin</a><span class="adname">Copy check</span></div>
+<main class="wrap">
+<h1>Copy check</h1>
+<p class="sub">Found one of our sheets somewhere else? Give a screenshot or photo of one page. This page reads the hidden dot pattern and shows which download it came from. Nothing is uploaded; it is read on this phone.</p>
+<label class="pick">Choose a screenshot or photo<input type="file" id="f" accept="image/*"></label>
+<label class="chk"><input type="checkbox" id="full" checked> The picture shows one whole page (faster)</label>
+<img id="prev" alt="">
+<div class="out" id="out"></div>
+<ul class="tips">
+<li>Best: a straight screenshot of a page. A cropped part of a page also works, it just takes longer.</li>
+<li>Not yet: a tilted photo of a printed page.</li>
+<li>Download numbers start being added to sheets once marked downloads go live; older PDFs have no number.</li>
+</ul>
+</main>
+<script src="/js/lywm.js"></script>
+<script>
+(function(){
+const $=id=>document.getElementById(id), out=$('out');
+const A4W=595.28, MAXW=1400;
+$('f').onchange=async e=>{
+  const file=e.target.files[0]; if(!file) return;
+  const url=URL.createObjectURL(file); $('prev').src=url;
+  const img=new Image(); img.src=url; await img.decode();
+  let w=img.naturalWidth,h=img.naturalHeight;
+  if(w>MAXW){h=Math.round(h*MAXW/w);w=MAXW}
+  const c=document.createElement('canvas'); c.width=w; c.height=h;
+  const g=c.getContext('2d',{willReadFrequently:true}); g.drawImage(img,0,0,w,h);
+  const d=g.getImageData(0,0,w,h).data, gray=new Uint8Array(w*h);
+  for(let i=0,j=0;i<gray.length;i++,j+=4) gray[i]=(d[j]*299+d[j+1]*587+d[j+2]*114)/1000;
+  out.className='out'; out.innerHTML='Reading the pattern…<div class="bar2"><i id="pb"></i></div>';
+  const r=await LYWM.decode(gray,w,h,{pageWidthPt:$('full').checked?A4W:0,onProgress:p=>{const b=$('pb');if(b)b.style.width=Math.round(p*100)+'%'}});
+  if(r.id!==null){
+    out.innerHTML='Download number<br><b class="id">LY-'+String(r.id).padStart(8,'0')+'</b><br><span class="sub">Both hidden copies agree on '+r.agree+' of 40 marks.</span>';
+  }else{
+    out.className='out bad';
+    out.innerHTML='No number found. Either this copy is from before marking began, the picture is too small or tilted, or it is not our sheet. Try a sharper, straight screenshot of a single page.';
+  }
+};
+})();
+</script>
+</body>
+</html>

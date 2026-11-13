@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from common import CATEGORIES, HOME_QUOTA, NEWS_DIR, SECTIONS, now_dhaka, read_json, write_json
 
+QC_VERSION = 2          # ২০২৬-১১-১০: পরীক্ষার জন্য গুরুত্বপূর্ণ + ছক ৩-৬ + বানান-ধাপ (quality.py)
+
 TOP_N = 7
 MONTH_MIN_SCORE = 8
 
@@ -16,7 +18,7 @@ def public_item(item: dict, n: int, date: str) -> dict:
         "title": item["title"].strip(),
         "short": item["short"].strip(),
         "detail": item["detail"].strip(),
-        "why_exam": item.get("why_exam", "").strip(),
+        "exam_point": (item.get("exam_point") or "").strip(),       # "পরীক্ষার জন্য গুরুত্বপূর্ণ" (আগে why_exam)
         "category": item["category"],
         "category_bn": CATEGORIES[item["category"]],
         "section": item.get("section", "intl"),
@@ -44,7 +46,7 @@ def pick_home(items: list[dict]) -> list[dict]:
     return order(chosen[:TOP_N])
 
 
-def write_day(date: str, items: list[dict], method: str, note: str = "") -> dict:
+def write_day(date: str, items: list[dict], method: str, note: str = "", qc: dict | None = None) -> dict:
     items = order(items)
     home = pick_home(items)
     rest = [x for x in items if x not in home]
@@ -54,6 +56,7 @@ def write_day(date: str, items: list[dict], method: str, note: str = "") -> dict
         "generated_at": now_dhaka().isoformat(timespec="minutes"),
         "method": method,
         "note": note,
+        "qc": {"v": QC_VERSION, **(qc or {})},
         "sections": SECTIONS,
         "top": pub[:len(home)],
         "more": pub[len(home):],
@@ -85,3 +88,27 @@ def update_index(day: dict) -> None:
     idx["days"].sort(key=lambda d: d["date"], reverse=True)
     idx["latest"] = idx["days"][0]["date"]
     write_json(path, idx)
+
+
+def rebuild_all(news_dir=None) -> None:
+    """সব দিনের ফাইল থেকে news/index.json আর মাসের ফাইল নতুন করে (পুরোনো দিন বদলালে সূচি আর মাস যেন না পিছিয়ে থাকে)।"""
+    from pathlib import Path
+    nd = Path(news_dir or NEWS_DIR)
+    days = sorted((read_json(p) for p in (nd / "day").glob("*.json")), key=lambda d: d["date"])
+    months: dict[str, dict] = {}
+    for day in days:
+        ym = day["date"][:7]
+        m = months.setdefault(ym, {"month": ym, "items": []})
+        for it in [*day.get("top", []), *day.get("more", [])]:
+            if it["score"] >= MONTH_MIN_SCORE:
+                m["items"].append({"date": day["date"], "id": it["id"], "title": it["title"], "short": it["short"],
+                                   "section": it["section"], "category": it["category"], "score": it["score"]})
+        m["updated"] = day.get("generated_at", "")
+    for ym, m in months.items():
+        m["items"].sort(key=lambda x: (-x["score"], x["date"]))
+        write_json(nd / "month" / f"{ym}.json", m)
+    idx = {"days": sorted(({"date": d["date"], "n": len(d.get("top", [])) + len(d.get("more", []))} for d in days),
+                          key=lambda d: d["date"], reverse=True)}
+    if idx["days"]:
+        idx["latest"] = idx["days"][0]["date"]
+        write_json(nd / "index.json", idx)

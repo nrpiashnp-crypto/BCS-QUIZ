@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="bn">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="theme-color" content="#13294b">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>চাকরির বিজ্ঞপ্তি তোলা · লিয়ানা বুকস</title>
+<title>Job circulars · Lyanna Books</title>
 <meta name="robots" content="noindex">
 <link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/fonts/fonts.css">
@@ -41,19 +41,20 @@ tr.pick{cursor:pointer}tr.pick:hover{background:#f4ede3}
 .st.draft{color:var(--warn);border-color:var(--warn)}
 </style>
 <link rel="stylesheet" href="/css/omr.css">
+<link rel="stylesheet" href="/admin/admin.css">
 </head>
 <body>
-<div class="sitebar"><a href="/" aria-label="লিয়ানা বুকস"><img src="/img/logo/li-mark.svg" alt="" width="34" height="44"><span class="lgn-n">লিয়ানা বুকস</span></a><a href="/myjobs/" style="font-size:15px">আমার চাকরি</a></div>
-<main class="wrap" id="app"><p class="sub">খোলা হচ্ছে…</p></main>
+<div class="adbar"><a class="adback" href="/admin/">← Admin</a><span class="adname">Job circulars</span><a class="adwho" href="/myjobs/" style="color:#cfd6e2">My jobs page</a></div>
+<main class="wrap" id="app"><p class="sub">Opening…</p></main>
 <script>
 (function(){
 'use strict';
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const TYPES={g9:'৯ম গ্রেড',g10:'১০ম গ্রেড',bcs:'বিসিএস',gbank:'সরকারি ব্যাংক',pbank:'বেসরকারি ব্যাংক',gov:'অন্যান্য সরকারি'};
-const EDU={ssc:'এসএসসি',hsc:'এইচএসসি',diploma:'ডিপ্লোমা',hons:'স্নাতক',masters:'স্নাতকোত্তর'};
-const GRP={sci:'বিজ্ঞান',arts:'মানবিক',com:'ব্যবসায় শিক্ষা',eng:'প্রকৌশল',med:'চিকিৎসা',other:'অন্যান্য'};
-const ST={draft:'খসড়া',live:'চালু',off:'বন্ধ'};
+const TYPES={g9:'Grade 9',g10:'Grade 10',bcs:'BCS',gbank:'Government bank',pbank:'Private bank',gov:'Other government'};
+const EDU={ssc:'SSC',hsc:'HSC',diploma:'Diploma',hons:'Bachelor\'s',masters:'Master\'s'};
+const GRP={sci:'Science',arts:'Humanities',com:'Business studies',eng:'Engineering',med:'Medical',other:'Other'};
+const ST={draft:'Draft',live:'Live',off:'Closed'};
 const api=(p,b)=>fetch('/api/'+p,b?{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:{credentials:'same-origin',cache:'no-store'}).then(r=>r.json().then(j=>r.ok?j:Promise.reject(j)));
 let ALL=[],cur=null;
 const newId=()=>'j-'+new Date().toISOString().slice(0,10).replace(/-/g,'')+'-'+Math.random().toString(36).slice(2,6);
@@ -61,81 +62,86 @@ const opt=(o,sel,blank)=>(blank?`<option value="">${blank}</option>`:'')+Object.
 const F=(id,lab,val,type,hint,extra)=>`<div><label for="${id}">${lab}</label><input id="${id}" type="${type||'text'}" value="${esc(val==null?'':val)}"${extra||''}>${hint?`<p class="hint">${hint}</p>`:''}</div>`;
 
 function listView(){
-  const rows=ALL.map((j,i)=>`<tr class="pick" data-i="${i}"><td><b>${esc(j.post)}</b><br><span class="hint">${esc(j.org)} · ${TYPES[j.type]||''}</span></td><td>${esc(j.ae||'')}</td><td><span class="st ${j.st}">${ST[j.st]}</span>${j.st==='live'&&j.ae&&j.ae<new Date(Date.now()+216e5).toISOString().slice(0,10)?'<br><span class="hint">মেয়াদ শেষ</span>':''}</td></tr>`).join('');
-  $('app').innerHTML=`<h1>চাকরির বিজ্ঞপ্তি</h1><p class="sub">প্রতিটা পদ এক সারি। "চালু" করলে /myjobs/-এ দেখায়, শেষ তারিখ পার হলে নিজেই সরে যায়।</p>
-  <button class="btn" id="add">নতুন পদ যোগ</button>
-  <h2>তোলা পদ: ${ALL.length}টা</h2>
-  ${ALL.length?`<table>${rows}</table>`:'<p class="sub">এখনো কিছু তোলা হয়নি।</p>'}
-  <div class="box" style="margin-top:20px"><b>ব্যাকআপ</b><p class="hint" style="margin:4px 0 8px">এই তথ্যের আলাদা ব্যাকআপ নেই। কয়েকটা তোলার পরে নিচের বোতামে চেপে কপি করুন আর Claude-কে দিন; Lyanna_data-তে রেখে দেবে।</p><button class="btn line" id="cp">সব তথ্য কপি করুন</button><p class="msg" id="cpm"></p></div>`;
+  const rows=ALL.map((j,i)=>`<tr class="pick" data-i="${i}"><td><b>${esc(j.post)}</b><br><span class="hint">${esc(j.org)} · ${TYPES[j.type]||''}</span></td><td>${esc(j.ae||'')}</td><td><span class="st ${j.st}">${ST[j.st]}</span>${j.st==='live'&&j.ae&&j.ae<new Date(Date.now()+216e5).toISOString().slice(0,10)?'<br><span class="hint">Expired</span>':''}</td></tr>`).join('');
+  $('app').innerHTML=`<h1>Job circulars</h1><p class="sub">One row per post. "Live" posts show on /myjobs/ and drop off by themselves after the deadline.</p>
+  <button class="btn" id="add">Add new post</button>
+  <h2>Posts added: ${ALL.length}</h2>
+  ${ALL.length?`<table>${rows}</table>`:'<p class="sub">Nothing added yet.</p>'}
+  <div class="box" style="margin-top:20px"><b>Backup</b><p class="hint" style="margin:4px 0 8px">This data has no separate backup. After adding a few posts, tap the button below, copy, and give it to Claude to save in Lyanna_data.</p><button class="btn line" id="cp">Copy all data</button><p class="msg" id="cpm"></p></div>`;
   $('add').onclick=()=>edit(null);
   document.querySelectorAll('tr.pick').forEach(t=>t.onclick=()=>edit(ALL[+t.dataset.i]));
   $('cp').onclick=async()=>{const txt=JSON.stringify({ts:new Date().toISOString(),jobs:ALL},null,1);
-    try{await navigator.clipboard.writeText(txt);$('cpm').textContent='কপি হয়েছে ('+ALL.length+'টা পদ)।';$('cpm').className='msg ok'}
+    try{await navigator.clipboard.writeText(txt);$('cpm').textContent='Copied ('+ALL.length+' posts).';$('cpm').className='msg ok'}
     catch(e){$('cpm').innerHTML='<textarea style="min-height:140px">'+esc(txt)+'</textarea>';$('cpm').className='msg'}};
 }
 
-function edit(j,copy){
+let PUSHED=0;
+// পদের ফর্ম খুললে ঠিকানায় #edit জমা হয়, তাই ফোনের ব্যাক চাপলে তালিকায় ফেরে
+function toList(){if(PUSHED&&location.hash==='#edit'){PUSHED--;history.back()}else load()}
+addEventListener('popstate',()=>{if(location.hash!=='#edit')load()});
+function edit(j,copy){if(location.hash!=='#edit'){history.pushState(null,'','#edit');PUSHED++}
   cur=copy?{...copy,id:newId(),post:'',seats:null,st:'draft'}:j?{...j}:{id:newId(),st:'draft',grp:[],subj:[]};const c=cur;
-  $('app').innerHTML=`<button class="lnk" id="bk">← তালিকা</button><h1>${j?'পদ বদলান':'নতুন পদ'}</h1>
-  <p class="sub">মূল বিজ্ঞপ্তি দেখে পূরণ করুন। যা বিজ্ঞপ্তিতে নেই, ফাঁকা রাখুন; আন্দাজ নয়। এক বিজ্ঞপ্তিতে কয়েকটা পদ থাকলে প্রতিটা আলাদা যোগ করুন (নিচে "এর মতো আরেকটা")।</p>
+  $('app').innerHTML=`<button class="lnk" id="bk">← List</button><h1>${j?'Edit post':'New post'}</h1>
+  <p class="sub">Fill in from the original circular. Leave blank what the circular does not say; do not guess. If one circular has several posts, add each separately (use "Duplicate" below).</p>
   <form id="jf" novalidate>
-  <div><label for="ty">ধরন</label><select id="ty">${opt(TYPES,c.type,'বাছুন')}</select></div>
-  ${F('po','পদের নাম',c.post)}
-  ${F('or','প্রতিষ্ঠান',c.org,'','যেমন: বাংলাদেশ ব্যাংক; সমন্বিত হলে "সমন্বিত ৮ ব্যাংক"')}
-  <div class="two">${F('gr','গ্রেড',c.grade,'number','','inputmode="numeric"')}${F('se','পদসংখ্যা',c.seats,'number','','inputmode="numeric"')}</div>
-  <h2>তারিখ</h2>
-  <div class="two">${F('nd','বিজ্ঞপ্তির তারিখ',c.nd,'date')}${F('as','আবেদন শুরু',c.as,'date')}</div>
-  <div class="two">${F('ae','আবেদনের শেষ তারিখ',c.ae,'date')}${F('at','শেষ সময়',c.at,'','যেমন: বিকেল ৫টা')}</div>
-  <h2>বয়স</h2>
-  <div class="two">${F('amin','সর্বনিম্ন বয়স',c.amin,'number','','inputmode="numeric"')}${F('amax','সর্বোচ্চ বয়স',c.amax,'number','সাধারণ প্রার্থীর','inputmode="numeric"')}</div>
-  ${F('aref','বয়স গোনার তারিখ',c.aref,'date','বিজ্ঞপ্তিতে যে তারিখ ধরে বয়স গুনতে বলা হয়েছে')}
-  <h2>যোগ্যতা</h2>
-  <div><label for="ed">সর্বনিম্ন পাস</label><select id="ed">${opt(EDU,c.edu,'বলা নেই')}</select></div>
-  ${F('edut','পাসের খুঁটিনাটি',c.edut,'','যেমন: যেকোনো বিষয়ে স্নাতক; বা ইংরেজিতে স্নাতক')}
-  <label>শুধু এই বিভাগের জন্য <small>(কিছু না দাগালে সবার জন্য)</small></label>
+  <div><label for="ty">Type</label><select id="ty">${opt(TYPES,c.type,'Choose')}</select></div>
+  ${F('po','Post name',c.post)}
+  ${F('or','Organisation',c.org,'','e.g. বাংলাদেশ ব্যাংক; for a joint circular, "সমন্বিত ৮ ব্যাংক"')}
+  <div class="two">${F('gr','Grade',c.grade,'number','','inputmode="numeric"')}${F('se','Number of seats',c.seats,'number','','inputmode="numeric"')}</div>
+  <h2>Dates</h2>
+  <div class="two">${F('nd','Circular date',c.nd,'date')}${F('as','Application opens',c.as,'date')}</div>
+  <div class="two">${F('ae','Application deadline',c.ae,'date')}${F('at','Deadline time',c.at,'','e.g. বিকেল ৫টা (5 PM)')}</div>
+  <h2>Age</h2>
+  <div class="two">${F('amin','Minimum age',c.amin,'number','','inputmode="numeric"')}${F('amax','Maximum age',c.amax,'number','For general candidates','inputmode="numeric"')}</div>
+  ${F('aref','Age cut-off date',c.aref,'date','The date the circular says age is counted on')}
+  <h2>Eligibility</h2>
+  <div><label for="ed">Minimum qualification</label><select id="ed">${opt(EDU,c.edu,'Not stated')}</select></div>
+  ${F('edut','Qualification details',c.edut,'','e.g. যেকোনো বিষয়ে স্নাতক; বা ইংরেজিতে স্নাতক (bachelor\'s in any subject; or in English)')}
+  <label>Only for these groups <small>(tick none for everyone)</small></label>
   <div class="ck">${Object.entries(GRP).map(([k,v])=>`<label><input type="checkbox" name="gp" value="${k}"${(c.grp||[]).includes(k)?' checked':''}>${v}</label>`).join('')}</div>
-  <label>তৃতীয় বিভাগ/শ্রেণি</label>
-  <div class="ck"><label><input type="radio" name="th" value="0"${c.third===0?' checked':''}>চলবে না</label><label><input type="radio" name="th" value=""${c.third!==0?' checked':''}>বলা নেই / চলবে</label></div>
-  <div><label for="ot">অন্য শর্ত <small>(যা সাইট মেলাতে পারে না)</small></label><textarea id="ot">${esc(c.other||'')}</textarea><p class="hint">যেমন: ২ বছরের অভিজ্ঞতা; নির্দিষ্ট জেলা; উচ্চতা। থাকলে প্রার্থী পদটা "নিজে মিলিয়ে নিতে হবে" ভাঁজে দেখবেন।</p></div>
-  <h2>ফি, পরীক্ষা, করণীয়</h2>
-  ${F('fe','ফি',c.fee,'','যেমন: ২০০ টাকা')}
-  ${F('ft','ফি জমার নিয়ম',c.feet,'','যেমন: আবেদনের ৭২ ঘণ্টার মধ্যে টেলিটক দিয়ে')}
-  ${F('ad','প্রবেশপত্র',c.admit,'','জানা থাকলে; না থাকলে ফাঁকা')}
-  <div class="two">${F('ex','পরীক্ষার মাস বা তারিখ',c.exam,'','যেমন 2026-12 বা 2026-12-20')}<div><label>তারিখটা</label><div class="ck"><label><input type="checkbox" id="es"${c.est?' checked':''}>আনুমানিক</label></div></div></div>
-  ${F('sj','পরীক্ষার বিষয়',(c.subj||[]).join(', '),'','কমা দিয়ে: বাংলা, ইংরেজি, গণিত, সাধারণ জ্ঞান')}
-  <h2>লিংক</h2>
-  ${F('ur','আবেদনের সাইট',c.url,'url')}
-  ${F('sr','মূল বিজ্ঞপ্তির লিংক',c.src,'url')}
-  ${F('sn','বিজ্ঞপ্তি কার',c.srcn,'','যেমন: বাংলাদেশ ব্যাংকের বিজ্ঞপ্তি')}
-  ${F('co','কোর্সের পাতা',c.course,'','সাইটের পথ, যেমন /running/petrobangla/; না থাকলে ফাঁকা')}
-  <div><label for="st">অবস্থা</label><select id="st">${opt(ST,c.st)}</select></div>
+  <label>Third division/class</label>
+  <div class="ck"><label><input type="radio" name="th" value="0"${c.third===0?' checked':''}>Not accepted</label><label><input type="radio" name="th" value=""${c.third!==0?' checked':''}>Not stated / accepted</label></div>
+  <div><label for="ot">Other conditions <small>(that the site cannot match)</small></label><textarea id="ot">${esc(c.other||'')}</textarea><p class="hint">e.g. 2 years of experience; a specific district; height. If filled, the learner sees the post under "Check yourself".</p></div>
+  <h2>Fee, exam, to-do</h2>
+  ${F('fe','Fee',c.fee,'','e.g. ২০০ টাকা')}
+  ${F('ft','How to pay the fee',c.feet,'','e.g. আবেদনের ৭২ ঘণ্টার মধ্যে টেলিটক দিয়ে')}
+  ${F('ad','Admit card',c.admit,'','If known; otherwise leave blank')}
+  <div class="two">${F('ex','Exam month or date',c.exam,'','e.g. 2026-12 or 2026-12-20')}<div><label>The date is</label><div class="ck"><label><input type="checkbox" id="es"${c.est?' checked':''}>Approximate</label></div></div></div>
+  ${F('sj','Exam subjects',(c.subj||[]).join(', '),'','Comma-separated, e.g. বাংলা, ইংরেজি, গণিত, সাধারণ জ্ঞান')}
+  <h2>Links</h2>
+  ${F('ur','Application site',c.url,'url')}
+  ${F('sr','Original circular link',c.src,'url')}
+  ${F('sn','Circular issued by',c.srcn,'','e.g. বাংলাদেশ ব্যাংকের বিজ্ঞপ্তি')}
+  ${F('co','Course page',c.course,'','Site path, e.g. /running/petrobangla/; leave blank if none')}
+  <div><label for="st">Status</label><select id="st">${opt(ST,c.st)}</select></div>
   <p class="msg" id="fm"></p>
-  <div class="bar2"><button class="btn">রাখুন</button>${j?'<button type="button" class="btn line" id="dup">এর মতো আরেকটা</button><button type="button" class="lnk" id="dl">মুছুন</button>':''}</div>
+  <div class="bar2"><button class="btn">Save</button>${j?'<button type="button" class="btn line" id="dup">Duplicate</button><button type="button" class="lnk" id="dl">Delete</button>':''}</div>
   </form>`;
-  $('bk').onclick=load;
+  $('bk').onclick=toList;
   $('jf').onsubmit=async e=>{e.preventDefault();
     const v=id=>$(id).value.trim(),th=document.querySelector('input[name=th]:checked');
     const job={id:c.id,type:v('ty'),post:v('po'),org:v('or'),grade:v('gr'),seats:v('se'),nd:v('nd'),as:v('as'),ae:v('ae'),at:v('at'),amin:v('amin'),amax:v('amax'),aref:v('aref'),
       edu:v('ed'),edut:v('edut'),grp:[...document.querySelectorAll('input[name=gp]:checked')].map(x=>x.value),third:th&&th.value==='0'?0:null,other:v('ot'),
       fee:v('fe'),feet:v('ft'),admit:v('ad'),exam:v('ex'),est:$('es').checked?1:0,subj:v('sj').split(/[,،]/).map(s=>s.trim()).filter(Boolean),url:v('ur'),src:v('sr'),srcn:v('sn'),course:v('co')};
     const fm=$('fm'),st=v('st'),miss=[];
-    if(!job.type)miss.push('ধরন');if(!job.post)miss.push('পদের নাম');if(!job.org)miss.push('প্রতিষ্ঠান');
-    if(st==='live'){if(!job.ae)miss.push('শেষ তারিখ');if(!job.src)miss.push('মূল বিজ্ঞপ্তির লিংক')}
-    if(job.amax&&!job.aref)miss.push('বয়স গোনার তারিখ');
-    if(miss.length){fm.textContent='বাকি: '+miss.join(', ');fm.className='msg err';return}
-    try{await api('admin/jobs',{job,st});fm.textContent='রাখা হয়েছে।';fm.className='msg ok';await fetchAll();const nj=ALL.find(x=>x.id===c.id);if(!j&&nj)edit(nj),$('fm').textContent='রাখা হয়েছে।',$('fm').className='msg ok'}
-    catch(err){fm.textContent='রাখা যায়নি: '+(err&&err.error||'নেট দেখুন');fm.className='msg err'}};
+    if(!job.type)miss.push('Type');if(!job.post)miss.push('Post name');if(!job.org)miss.push('Organisation');
+    if(st==='live'){if(!job.ae)miss.push('Deadline');if(!job.src)miss.push('Original circular link')}
+    if(job.amax&&!job.aref)miss.push('Age cut-off date');
+    if(miss.length){fm.textContent='Missing: '+miss.join(', ');fm.className='msg err';return}
+    try{await api('admin/jobs',{job,st});fm.textContent='Saved.';fm.className='msg ok';await fetchAll();const nj=ALL.find(x=>x.id===c.id);if(!j&&nj)edit(nj),$('fm').textContent='Saved.',$('fm').className='msg ok'}
+    catch(err){fm.textContent='Could not save: '+(err&&err.error||'check your connection');fm.className='msg err'}};
   if(j){
     $('dup').onclick=()=>edit(null,cur);
-    $('dl').onclick=async function(){if(!this.dataset.sure){this.dataset.sure=1;this.textContent='নিশ্চিত? আবার চাপুন';return}
-      try{await api('admin/jobs/del',{id:c.id});load()}catch(e){}};
+    $('dl').onclick=async function(){if(!this.dataset.sure){this.dataset.sure=1;this.textContent='Sure? Tap again';return}
+      try{await api('admin/jobs/del',{id:c.id});toList()}catch(e){}};
   }
 }
 async function fetchAll(){ALL=(await api('admin/jobs')).jobs}
 async function load(){
   try{await fetchAll();listView()}
-  catch(e){$('app').innerHTML=e&&e.error==='login'?'<p>আগে <a href="/account/">লগইন</a> করুন।</p>':e&&e.error==='admin'?'<p>এই পাতা শুধু অ্যাডমিনের।</p>':'<p>খোলা যায়নি। নেট দেখে আবার খুলুন।</p>'}
+  catch(e){$('app').innerHTML=e&&e.error==='login'?'<p>Please <a href="/account/">log in</a> first.</p>':e&&e.error==='admin'?'<p>This page is for admins only.</p>':'<p>Could not open. Check your connection and try again.</p>'}
 }
+if(location.hash==='#edit')history.replaceState(null,'',location.pathname);
 load();
 })();
 </script>

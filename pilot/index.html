@@ -119,7 +119,9 @@ function nameView(kind){
 // সেট ওঠার আগে: অবস্থা-যাচাই (৬ ভাগ, /plan/pb/, সেট pb-start) এই পাতা থেকেই
 const DIAG=[['ইংরেজি',50,30],['গাণিতিক যুক্তি',40,35],['বাংলা ভাষা ও ব্যাকরণ',35,21],['বাংলা সাহিত্য',27,16],['বাংলাদেশ বিষয়াবলি',43,26],['আন্তর্জাতিক বিষয়াবলি ও কম্পিউটার',55,33]];
 const diagCard=()=>`<div class="card"><b>প্রথম কাজ: অবস্থা-যাচাই পরীক্ষা</b><p class="sub" style="margin:2px 0 8px">${bn(250)} প্রশ্ন, ${bn(6)} ভাগে। সব ভাগ শেষে বিষয় ধরে আপনার অবস্থা।</p><ol style="margin:0 0 10px;padding-left:22px">${DIAG.map(d=>`<li>${d[0]} <span class="dim">: ${bn(d[1])} প্রশ্ন, ${bn(d[2])} মিনিট</span></li>`).join('')}</ol><a class="btn" href="/plan/pb/">পরীক্ষা দিন →</a></div>`;
-const head=()=>ME.ready?`<h1>${esc(ME.title)}</h1><p class="sub">${bn(ME.days)} দিন, রোজ ${bn(4)}টি পরীক্ষা। প্রতিটি ${bn(ME.n)} প্রশ্ন, ${bn(ME.mins)} মিনিট, একবারই।</p>`:`<h1>${esc(ME.title)}</h1>`+diagCard();
+const bookCard=`<div class="card ex"><img src="/img/cover-intl.webp" width="52" height="74" alt="লিয়ানা বিসিএস আন্তর্জাতিক বিষয়াবলি" style="flex:none;border:1px solid #e3ddd0;margin-right:10px"><div style="flex:1"><b>লিয়ানা আন্তর্জাতিক: জাতিসংঘ অধ্যায়</b><small>বইয়ের নমুনা অধ্যায় · ফ্রি, পড়ুন বা নামান</small></div><a class="btn ghost" href="/sample/international/">পড়ুন</a></div>`;
+const head=()=>head0()+bookCard;
+const head0=()=>ME.ready?`<h1>${esc(ME.title)}</h1><p class="sub">${bn(ME.days)} দিন, রোজ ${bn(4)}টি পরীক্ষা। প্রতিটি ${bn(ME.n)} প্রশ্ন, ${bn(ME.mins)} মিনিট, একবারই।</p>`:`<h1>${esc(ME.title)}</h1>`+diagCard();
 
 function loginView(){
   V.innerHTML=head()+'<div class="card"><p>পরীক্ষা দিতে Google দিয়ে লগইন করুন। পাসওয়ার্ড লাগে না।</p><div id="g"></div></div>';

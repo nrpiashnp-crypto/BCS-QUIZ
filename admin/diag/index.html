@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="bn">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="theme-color" content="#13294b">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>অবস্থা-যাচাই · অ্যাডমিন · লিয়ানা বুকস</title>
+<title>Diagnostic · Admin · Lyanna Books</title>
 <meta name="robots" content="noindex">
 <link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/fonts/fonts.css">
@@ -43,14 +43,15 @@ small.dim{font-size:12.5px}
 .care{font-weight:700}.care.hi{color:#b3261e}.care.mid{color:#8a5a00}.care.lo{color:#1e7a46}
 </style>
 <link rel="stylesheet" href="/css/omr.css">
+<link rel="stylesheet" href="/admin/admin.css">
 </head>
 <body>
-<div class="bar"><a href="/" aria-label="লিয়ানা বুকস"><img src="/img/logo/li-mark.svg" alt="" width="34" height="44"><span class="lgn-n">লিয়ানা বুকস</span></a><span>অ্যাডমিন</span></div>
+<div class="adbar"><a class="adback" href="/admin/">← Admin</a><span class="adname">Diagnostic</span></div>
 <main class="wrap">
-<h1>অবস্থা-যাচাই (নিজের পরিকল্পনা)</h1>
-<p class="sub">কে কী দিয়েছেন, কে তাড়াহুড়া করেছেন, কোন প্রশ্ন কেমন গেল। তাড়াহুড়ার চিহ্ন শুধু এখানে দেখা যায়, শিক্ষার্থী দেখেন না।</p>
-<div class="row"><input type="text" id="sid" value="bcs-start" style="max-width:220px"><button class="btn ghost" id="load">আবার লোড</button><a class="btn ghost" id="csv" href="#">সব উত্তরের CSV</a></div>
-<div class="tabs" id="tabs"><button data-t="sum" aria-pressed="true">সার</button><button data-t="ppl">মানুষ</button><button data-t="items">প্রশ্ন</button><button data-t="rep">সমস্যার তালিকা</button><button data-t="att">উপস্থিতি</button><button data-t="tst">পরীক্ষক</button><button data-t="up">সেট তোলা</button></div>
+<h1>Diagnostic (custom plan)</h1>
+<p class="sub">Who answered what, who rushed, how each question went. Rushing flags show only here; learners never see them.</p>
+<div class="row"><input type="text" id="sid" value="bcs-start" style="max-width:220px"><button class="btn ghost" id="load">Reload</button><a class="btn ghost" id="csv" href="#">All answers CSV</a></div>
+<div class="tabs" id="tabs"><button data-t="sum" aria-pressed="true">Summary</button><button data-t="ppl">Learners</button><button data-t="items">Questions</button><button data-t="rep">Weak spots</button><button data-t="att">Attendance</button><button data-t="tst">Testers</button><button data-t="up">Upload set</button></div>
 <section id="sum"></section>
 <section id="ppl" hidden></section>
 <section id="one" hidden></section>
@@ -58,201 +59,206 @@ small.dim{font-size:12.5px}
 <section id="rep" hidden></section>
 <section id="att" hidden></section>
 <section id="tst" hidden>
-<div class="card"><p class="sub" style="margin:0 0 8px">পরীক্ষকের জন্য সব ভাগ এখনই খোলা, তারিখ বা আগের পরীক্ষার অপেক্ষা নেই। তাঁদের ফল অবস্থান আর উপস্থিতিতে গোনা হয় না। ইমেইল যোগের আগে মানুষটা একবার সাইটে Google দিয়ে লগইন করবেন।</p>
-<div class="row"><input type="email" id="tsm" placeholder="ইমেইল" style="max-width:260px"><button class="btn" id="tsa">যোগ করুন</button></div>
+<div class="card"><p class="sub" style="margin:0 0 8px">All parts are open for testers right away, with no wait for dates or earlier tests. Their results are not counted in standing or attendance. Before you add an e-mail, that person must log in to the site once with Google.</p>
+<div class="row"><input type="email" id="tsm" placeholder="E-mail" style="max-width:260px"><button class="btn" id="tsa">Add</button></div>
 <div id="tsl" style="margin-top:10px"></div></div>
-<div class="card" style="margin-top:14px"><p style="margin:0 0 6px;font-weight:600">পরীক্ষা শেষে পরিষ্কার</p>
-<p class="sub" style="margin:0 0 8px">পরীক্ষকদের সব দাগ, রাতের মতামত আর পরামর্শ মুছে যাবে, যাতে তাঁরা আবার শুরু থেকে দিতে পারেন। অন্য কারও কিছু মোছে না।</p>
-<button class="btn ghost" id="tsc1">শুধু ওপরের সেটে মুছুন</button> <button class="btn ghost" id="tsc">সব সেটে মুছুন</button><div id="tsr" class="dim" style="margin-top:6px"></div></div>
+<div class="card" style="margin-top:14px"><p style="margin:0 0 6px;font-weight:600">Clean up after testing</p>
+<p class="sub" style="margin:0 0 8px">This deletes all testers' marks, night feedback and notes so they can start over. Nobody else's data is touched.</p>
+<button class="btn ghost" id="tsc1">Delete for this set only</button> <button class="btn ghost" id="tsc">Delete for all sets</button><div id="tsr" class="dim" style="margin-top:6px"></div></div>
 </section>
 <section id="up" hidden>
-<div class="card"><p class="sub" style="margin:0 0 8px">যা তুলবেন তার আসল কপি Lyanna_data-র <code>pilot/custom-plan/&lt;সেট&gt;.json</code>-এ রাখুন (D1-এর নিজের ব্যাকআপ নেই)। ছাঁচ: সেখানকার PLAN.md §৯।</p>
+<div class="card"><p class="sub" style="margin:0 0 8px">Keep the original copy of whatever you upload in Lyanna_data at <code>pilot/custom-plan/&lt;set&gt;.json</code> (D1 has no backup of its own). Format: PLAN.md §9 there.</p>
 <div id="setsum" class="dim"></div>
-<input type="file" id="f" style="margin-top:10px"><div id="chk"></div><button class="btn" id="upb" disabled style="margin-top:8px">তুলুন</button><pre id="log" hidden></pre></div>
-<div class="card" style="margin-top:14px"><p style="margin:0 0 6px;font-weight:600">স্বয়ংক্রিয় তোলা (তোলার চাবি)</p>
-<p class="sub" style="margin:0 0 8px">Lyanna_data-র <code>pilot/custom-plan/sets/</code>-এ সেট মার্জ হলে GitHub নিজেই এখানে তোলে। তার জন্য এই চাবি BCS-QUIZ-এর গোপন ঘরে <code>LY_UPLOAD_KEY</code> নামে রাখতে হয়। চাবি দিয়ে শুধু সেট আর প্রশ্ন তোলা যায়। নতুন বানালে পুরোনোটা বাতিল।</p>
+<input type="file" id="f" style="margin-top:10px"><div id="chk"></div><button class="btn" id="upb" disabled style="margin-top:8px">Upload</button><pre id="log" hidden></pre></div>
+<div class="card" style="margin-top:14px"><p style="margin:0 0 6px;font-weight:600">Automatic upload (upload key)</p>
+<p class="sub" style="margin:0 0 8px">When a set is merged into <code>pilot/custom-plan/sets/</code> in Lyanna_data, GitHub uploads it here by itself. For that, this key must be stored in BCS-QUIZ's secrets as <code>LY_UPLOAD_KEY</code>. The key can only upload sets and questions. Making a new one cancels the old one.</p>
 <div id="ukst" class="dim"></div>
-<button class="btn ghost" id="ukb" style="margin-top:8px">তোলার চাবি বানান</button>
-<div id="ukout" hidden style="margin-top:10px"><p class="bad" style="margin:0 0 6px">চাবিটা শুধু এখনই দেখা যাবে। কপি করে GitHub-এ রাখুন।</p>
+<button class="btn ghost" id="ukb" style="margin-top:8px">Make upload key</button>
+<div id="ukout" hidden style="margin-top:10px"><p class="bad" style="margin:0 0 6px">The key is shown only now. Copy it and put it in GitHub.</p>
 <textarea id="ukv" readonly rows="2" style="width:100%;font:14px/1.4 monospace;padding:8px;box-sizing:border-box"></textarea>
-<button class="btn" id="ukc" style="margin-top:6px">কপি</button> <a class="btn ghost" href="https://github.com/nrpiashnp-crypto/BCS-QUIZ/settings/secrets/actions/new" target="_blank" rel="noopener" style="margin-top:6px">GitHub-এর গোপন ঘর খুলুন</a></div></div>
-<div class="card" style="margin-top:14px"><p style="margin:0 0 6px;font-weight:600">শিক্ষকের সাপ্তাহিক রপ্তানি (রপ্তানির চাবি)</p>
-<p class="sub" style="margin:0 0 8px">প্রতি সোমবার সকালে Lyanna_data নিজেই গত সপ্তাহের দাগ, মতামত আর বদলের খাতা টেনে <code>feedback/</code>-এ রাখে (LY Teacher পড়ে)। নাম, ইমেইল কোনো ঘরে যায় না। তার জন্য এই চাবি Lyanna_data-র গোপন ঘরে <code>LY_EXPORT_KEY</code> নামে রাখতে হয়। চাবি দিয়ে শুধু পড়া যায়। নতুন বানালে পুরোনোটা বাতিল।</p>
+<button class="btn" id="ukc" style="margin-top:6px">Copy</button> <a class="btn ghost" href="https://github.com/nrpiashnp-crypto/BCS-QUIZ/settings/secrets/actions/new" target="_blank" rel="noopener" style="margin-top:6px">Open GitHub secrets</a></div></div>
+<div class="card" style="margin-top:14px"><p style="margin:0 0 6px;font-weight:600">Teacher's weekly export (export key)</p>
+<p class="sub" style="margin:0 0 8px">Every Monday morning Lyanna_data pulls last week's marks, feedback and change log into <code>feedback/</code> by itself (LY Teacher reads it). No names or e-mails go in. For that, this key must be stored in Lyanna_data's secrets as <code>LY_EXPORT_KEY</code>. The key is read-only. Making a new one cancels the old one.</p>
 <div id="xkst" class="dim"></div>
-<button class="btn ghost" id="xkb" style="margin-top:8px">রপ্তানির চাবি বানান</button>
-<div id="xkout" hidden style="margin-top:10px"><p class="bad" style="margin:0 0 6px">চাবিটা শুধু এখনই দেখা যাবে। কপি করে GitHub-এ রাখুন।</p>
+<button class="btn ghost" id="xkb" style="margin-top:8px">Make export key</button>
+<div id="xkout" hidden style="margin-top:10px"><p class="bad" style="margin:0 0 6px">The key is shown only now. Copy it and put it in GitHub.</p>
 <textarea id="xkv" readonly rows="2" style="width:100%;font:14px/1.4 monospace;padding:8px;box-sizing:border-box"></textarea>
-<button class="btn" id="xkc" style="margin-top:6px">কপি</button> <a class="btn ghost" href="https://github.com/nrpiashnp-crypto/Lyanna_data/settings/secrets/actions/new" target="_blank" rel="noopener" style="margin-top:6px">GitHub-এর গোপন ঘর খুলুন</a></div></div>
+<button class="btn" id="xkc" style="margin-top:6px">Copy</button> <a class="btn ghost" href="https://github.com/nrpiashnp-crypto/Lyanna_data/settings/secrets/actions/new" target="_blank" rel="noopener" style="margin-top:6px">Open GitHub secrets</a></div></div>
 </section>
 </main>
 <script>
 const $=id=>document.getElementById(id),esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const bn=x=>String(x).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+const en=x=>String(x),bn=x=>String(x).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
 const S=()=>$('sid').value.trim();
 async function api(p,b){const r=await fetch('/api/admin/'+p,b?{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}:{credentials:'same-origin',cache:'no-store'});
   const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(j.error||r.status);e.j=j;throw e}return j}
-const FL={fast:'খুব দ্রুত (মধ্যমা <৫ সে.)',quick:'দ্রুত (৫-৮ সে.)',same:'একই অপশন বারবার',low:'আন্দাজের চেয়েও কম ঠিক',few:'অর্ধেকের বেশি বাদ',away:'অন্য অ্যাপে গিয়েছিলেন'};
-const SUBN={bn:'বাংলা',en:'ইংরেজি',bd:'বাংলাদেশ',intl:'আন্তর্জাতিক',geo:'ভূগোল',sci:'বিজ্ঞান',ict:'আইসিটি',math:'গণিত',mental:'মানসিক দক্ষতা',ethics:'নৈতিকতা'};
-const tm=s=>s==null?'—':s>=60?bn(Math.floor(s/60))+' মি. '+bn(s%60)+' সে.':bn(s)+' সে.';
-const when=ts=>{if(!ts)return '—';const d=new Date(ts+6*36e5);return bn(d.getUTCDate())+'/'+bn(d.getUTCMonth()+1)+' '+bn(String(d.getUTCHours()).padStart(2,'0'))+':'+bn(String(d.getUTCMinutes()).padStart(2,'0'))};
-const pc=(a,b)=>b?bn(Math.round(a/b*100))+'%':'—';
+const FL={fast:'Very fast (median <5 s)',quick:'Fast (5-8 s)',same:'Same option again and again',low:'Worse than guessing',few:'More than half skipped',away:'Switched to another app'};
+const SUBN={bn:'Bangla',en:'English',bd:'Bangladesh',intl:'International',geo:'Geography',sci:'Science',ict:'ICT',math:'Math',mental:'Mental ability',ethics:'Ethics'};
+const tm=s=>s==null?'—':s>=60?en(Math.floor(s/60))+' min '+en(s%60)+' s':en(s)+' s';
+const when=ts=>{if(!ts)return '—';const d=new Date(ts+6*36e5);return en(d.getUTCDate())+'/'+en(d.getUTCMonth()+1)+' '+en(String(d.getUTCHours()).padStart(2,'0'))+':'+en(String(d.getUTCMinutes()).padStart(2,'0'))};
+const pc=(a,b)=>b?en(Math.round(a/b*100))+'%':'—';
 let P=null,IT=null,RP=null,AT=null;
-const TPL=[['বেখেয়ালি, আবার দিন','আপনার অবস্থা-যাচাইয়ের কয়েকটা উত্তর খুব তাড়াতাড়ি দেওয়া হয়েছে, প্রশ্ন আর অপশন পুরো পড়ার আগেই। এতে আপনার পরিকল্পনা ঠিক আসবে না। ভাগটা আবার দেওয়ার সুযোগ খুলে দিয়েছি। এবার সময় নিয়ে, প্রতিটা অপশন পড়ে দিন।'],
-  ['সহজ প্রশ্নে ভুল','আপনি কঠিন প্রশ্নও পেরেছেন, কিন্তু কয়েকটা সহজ প্রশ্নে ভুল হয়েছে। পরীক্ষায় তাড়াহুড়া না করে প্রতিটা অপশন পড়ে উত্তর দিন। শুধু এতেই কয়েক নম্বর বাড়বে।'],
-  ['বাকি ভাগ শেষ করুন','ভালো শুরু করেছেন! বাকি ভাগগুলোও শেষ করুন, তাহলেই আপনার পুরো পরিকল্পনা আর কার্ড তৈরি হবে।'],
-  ['অভিনন্দন','সব ভাগ শেষ করার জন্য অভিনন্দন! এখন পরিকল্পনার প্রথম বিষয় দিয়ে প্রতিদিন একটু করে শুরু করুন। আমরা পাশে আছি।']];
+const TPL=[['Careless, retake','আপনার অবস্থা-যাচাইয়ের কয়েকটা উত্তর খুব তাড়াতাড়ি দেওয়া হয়েছে, প্রশ্ন আর অপশন পুরো পড়ার আগেই। এতে আপনার পরিকল্পনা ঠিক আসবে না। ভাগটা আবার দেওয়ার সুযোগ খুলে দিয়েছি। এবার সময় নিয়ে, প্রতিটা অপশন পড়ে দিন।'],
+  ['Easy-question errors','আপনি কঠিন প্রশ্নও পেরেছেন, কিন্তু কয়েকটা সহজ প্রশ্নে ভুল হয়েছে। পরীক্ষায় তাড়াহুড়া না করে প্রতিটা অপশন পড়ে উত্তর দিন। শুধু এতেই কয়েক নম্বর বাড়বে।'],
+  ['Finish remaining parts','ভালো শুরু করেছেন! বাকি ভাগগুলোও শেষ করুন, তাহলেই আপনার পুরো পরিকল্পনা আর কার্ড তৈরি হবে।'],
+  ['Congratulations','সব ভাগ শেষ করার জন্য অভিনন্দন! এখন পরিকল্পনার প্রথম বিষয় দিয়ে প্রতিদিন একটু করে শুরু করুন। আমরা পাশে আছি।']];
 const careCls=v=>v>=40?'hi':v>=20?'mid':'lo';
 // বার্তা লেখার বাক্স: uids = কাকে কাকে; reset = [{uid,part}] সঙ্গে আবার দিতে দেওয়া
 function compose(box,uids,emails,resetParts,after){
-  box.innerHTML=`<div class="compose"><b>বার্তা পাঠান</b> <span class="dim">(${bn(uids.length)} জনকে)</span>
-    <p class="sub" style="margin:4px 0 6px">শিক্ষার্থী এটা দেখবেন তাঁর পরিকল্পনার পাতায় (/plan/bcs/), সবার ওপরে।</p>
+  box.innerHTML=`<div class="compose"><b>Send message</b> <span class="dim">(${en(uids.length)} selected)</span>
+    <p class="sub" style="margin:4px 0 6px">The learner sees this at the top of their plan page (/plan/bcs/).</p>
     <div class="row" style="margin-bottom:6px">${TPL.map((t,i)=>`<button class="btn ghost" data-tp="${i}">${t[0]}</button>`).join('')}</div>
-    <textarea id="mt" maxlength="1000" placeholder="বার্তা লিখুন"></textarea>
-    ${resetParts&&resetParts.length?`<div style="margin-top:6px;color:var(--ink)">সঙ্গে যে ভাগ আবার দিতে দেবেন (আগের উত্তর মুছে যাবে): ${resetParts.map((x,i)=>`<label style="display:inline-flex;gap:4px;margin-right:10px;color:var(--ink)"><input type="checkbox" data-mr="${i}"> ভাগ ${bn(x.part)}</label>`).join('')}</div>`:''}
-    <div class="row" style="margin-top:8px"><button class="btn" id="ms">পাঠান</button>${emails.length?`<a class="btn ghost" id="me">ইমেইলেও লিখুন</a>`:''}<span id="mo" class="dim"></span></div></div>`;
+    <textarea id="mt" maxlength="1000" placeholder="Write a message"></textarea>
+    ${resetParts&&resetParts.length?`<div style="margin-top:6px;color:var(--ink)">Parts to let them retake too (earlier answers will be deleted): ${resetParts.map((x,i)=>`<label style="display:inline-flex;gap:4px;margin-right:10px;color:var(--ink)"><input type="checkbox" data-mr="${i}"> Part ${en(x.part)}</label>`).join('')}</div>`:''}
+    <div class="row" style="margin-top:8px"><button class="btn" id="ms">Send</button>${emails.length?`<a class="btn ghost" id="me">Write as e-mail too</a>`:''}<span id="mo" class="dim"></span></div></div>`;
   box.querySelectorAll('[data-tp]').forEach(b=>b.onclick=()=>{box.querySelector('#mt').value=TPL[+b.dataset.tp][1]});
   const me=box.querySelector('#me');if(me)me.onclick=()=>{location.href='mailto:'+emails.join(',')+'?subject='+encodeURIComponent('লিয়ানা বুকস · নিজের পরিকল্পনা')+'&body='+encodeURIComponent(box.querySelector('#mt').value)};
-  box.querySelector('#ms').onclick=async()=>{const t=box.querySelector('#mt').value.trim();if(t.length<2){box.querySelector('#mo').textContent='বার্তা লিখুন।';return}
+  box.querySelector('#ms').onclick=async()=>{const t=box.querySelector('#mt').value.trim();if(t.length<2){box.querySelector('#mo').textContent='Write a message.';return}
     box.querySelector('#ms').disabled=true;
     try{for(const c of box.querySelectorAll('[data-mr]:checked')){const x=resetParts[+c.dataset.mr];await api('diag/reset',{s:S(),uid:x.uid,part:x.part})}
-      const r=await api('diag/msg',{s:S(),uids,text:t});box.querySelector('#mo').textContent=bn(r.n)+' জনকে পাঠানো হয়েছে।';if(after)setTimeout(after,900)}
-    catch(e){box.querySelector('#mo').textContent='পাঠানো যায়নি: '+e.message;box.querySelector('#ms').disabled=false}};
+      const r=await api('diag/msg',{s:S(),uids,text:t});box.querySelector('#mo').textContent=en(r.n)+' sent.';if(after)setTimeout(after,900)}
+    catch(e){box.querySelector('#mo').textContent='Not sent: '+e.message;box.querySelector('#ms').disabled=false}};
 }
-function tab(t){document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t?'true':'false'));
+const TABS=['sum','ppl','items','rep','att','tst','up'];let PUSHED=0;
+// ভেতরের প্রতিটা ভাগ ঠিকানায় (#ppl, #p12) জমা হয়, তাই ফোনের ব্যাক বোতাম আগের ভাগে ফেরায়, পাতা থেকে বেরিয়ে যায় না
+function mark(h,nopush){if(!nopush&&location.hash!=='#'+h){history.pushState(null,'','#'+h);PUSHED++}}
+function route(){const h=location.hash.slice(1);if(/^p\d+$/.test(h))person(+h.slice(1),1);else tab(TABS.includes(h)?h:'sum',1)}
+addEventListener('popstate',route);
+function tab(t,nopush){mark(t,nopush);document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t?'true':'false'));
   ['sum','ppl','one','items','up','rep','att','tst'].forEach(x=>$(x).hidden=x!==t);if(t==='tst')testers();if(t==='items'&&!IT)items();if(t==='rep'&&!RP)report();if(t==='att'&&!AT)attView();scrollTo(0,0)}
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.t));
 
 // ---- পরীক্ষক: সব ভাগ খোলা, পরে তাঁদের দাগ মোছা ----
 async function testers(b){
-  $('tsl').innerHTML='<p class="dim">লোড হচ্ছে…</p>';
-  let r;try{r=await api('diag/testers',b)}catch(e){$('tsl').innerHTML='<p class="bad">'+(e.message==='no user'?'এই ইমেইলে কেউ লগইন করেননি। আগে তিনি একবার সাইটে লগইন করবেন।':'হয়নি: '+esc(e.message))+'</p>';return}
-  $('tsl').innerHTML=r.testers.length?'<table><thead><tr><th>কে</th><th>দাগ দেওয়া ভাগ</th><th></th></tr></thead><tbody>'+r.testers.map(x=>
-    `<tr><td>${esc(x.name||'')}<br><small class="dim">${esc(x.email||'uid '+x.uid)}</small></td><td>${bn(x.n)}</td><td><button class="btn ghost" data-tdel="${x.uid}">বাদ দিন</button></td></tr>`).join('')+'</tbody></table>':'<p class="dim">এখনো কোনো পরীক্ষক নেই।</p>';
+  $('tsl').innerHTML='<p class="dim">Loading…</p>';
+  let r;try{r=await api('diag/testers',b)}catch(e){$('tsl').innerHTML='<p class="bad">'+(e.message==='no user'?'Nobody has logged in with this e-mail. They must log in to the site once first.':'Failed: '+esc(e.message))+'</p>';return}
+  $('tsl').innerHTML=r.testers.length?'<table><thead><tr><th>Who</th><th>Parts marked</th><th></th></tr></thead><tbody>'+r.testers.map(x=>
+    `<tr><td>${esc(x.name||'')}<br><small class="dim">${esc(x.email||'uid '+x.uid)}</small></td><td>${en(x.n)}</td><td><button class="btn ghost" data-tdel="${x.uid}">Remove</button></td></tr>`).join('')+'</tbody></table>':'<p class="dim">No testers yet.</p>';
   $('tsl').querySelectorAll('[data-tdel]').forEach(x=>x.onclick=()=>testers({del:+x.dataset.tdel}));
 }
 $('tsa').onclick=()=>{const v=$('tsm').value.trim();if(v){$('tsm').value='';testers({add:v})}};
-const tclear=async one=>{if(!confirm(one?'পরীক্ষকদের এই সেটের সব দাগ মুছবেন?':'পরীক্ষকদের সব সেটের সব দাগ মুছবেন?'))return;
-  try{const r=await api('diag/testclear',one?{s:S()}:{});$('tsr').textContent=bn(r.n)+'টি ভাগের দাগ মোছা হলো।';testers()}catch(e){$('tsr').textContent='হয়নি: '+e.message}};
+const tclear=async one=>{if(!confirm(one?'Delete all testers\' marks for this set?':'Delete all testers\' marks for all sets?'))return;
+  try{const r=await api('diag/testclear',one?{s:S()}:{});$('tsr').textContent=en(r.n)+' parts\' marks cleared.';testers()}catch(e){$('tsr').textContent='Failed: '+e.message}};
 $('tsc1').onclick=()=>tclear(true);$('tsc').onclick=()=>tclear(false);
 async function load(){
   $('csv').href='/api/admin/diag/csv?s='+encodeURIComponent(S());IT=null;RP=null;AT=null;if(!$('rep').hidden)report();if(!$('att').hidden)attView();
-  $('sum').innerHTML='<p class="dim">লোড হচ্ছে…</p>';
+  $('sum').innerHTML='<p class="dim">Loading…</p>';
   try{P=await api('diag/people?s='+encodeURIComponent(S()))}catch(e){
-    $('sum').innerHTML='<div class="card">'+(e.message==='admin'?'অ্যাডমিন হিসেবে লগইন করুন (<a href="/account/">/account/</a>)।':e.message==='no set'?'এই সেট এখনো তোলা হয়নি। "সেট তোলা" ট্যাবে যান।':'খোলা যায়নি: '+esc(e.message))+'</div>';$('ppl').innerHTML='';setsum();return}
+    $('sum').innerHTML='<div class="card">'+(e.message==='admin'?'Log in as admin (<a href="/account/">/account/</a>).':e.message==='no set'?'This set has not been uploaded yet. Go to the "Upload set" tab.':'Could not open: '+esc(e.message))+'</div>';$('ppl').innerHTML='';setsum();return}
   summary();people();setsum();
 }
 // ---- সার: কতজন শুরু, কতজন শেষ, কোন ভাগে থেমে যায়, কতজন সন্দেহজনক ----
 function summary(){
   const pp=P.people,parts=P.set.parts,all=pp.filter(x=>x.done===parts.length).length,sus=pp.filter(x=>x.unsure).length;
   const tot=pp.reduce((a,x)=>a+x.ok+x.no+x.skip,0),ok=pp.reduce((a,x)=>a+x.ok,0),sk=pp.reduce((a,x)=>a+x.skip,0);
-  let h=`<div class="kp"><div><b>${bn(pp.length)}</b><span>জন শুরু করেছেন</span></div><div><b>${bn(all)}</b><span>জন সব ভাগ শেষ</span></div>
-    <div><b>${bn(sus)}</b><span>জনের অন্তত এক ভাগ সন্দেহজনক</span></div><div><b>${pc(ok,tot)}</b><span>সব উত্তরে ঠিক</span></div><div><b>${pc(sk,tot)}</b><span>প্রশ্ন বাদ</span></div>
-    <div><b>${bn(pp.filter(x=>x.going).length)}</b><span>জনের ভাগ এখন চলছে</span></div>
-    <div><b>${bn(pp.filter(x=>x.care.care>=40).length)}</b><span>জন বেশ বেখেয়ালি (সূচক ৪০+)</span></div>
-    <div><b>${pp.length?bn(Math.round(pp.reduce((a,x)=>a+x.care.noreadPct,0)/pp.length))+'%':'—'}</b><span>গড়ে উত্তর না পড়ে দাগ</span></div></div>`;
-  h+='<h2>ভাগ ধরে</h2><div class="card scroll"><table><thead><tr><th>ভাগ</th><th>শুরু</th><th>শেষ</th><th>গড় ঠিক</th><th>গড় সময়</th><th>সন্দেহজনক</th></tr></thead><tbody>'+parts.map(p=>{
+  let h=`<div class="kp"><div><b>${en(pp.length)}</b><span>started</span></div><div><b>${en(all)}</b><span>finished all parts</span></div>
+    <div><b>${en(sus)}</b><span>with at least one suspicious part</span></div><div><b>${pc(ok,tot)}</b><span>correct overall</span></div><div><b>${pc(sk,tot)}</b><span>questions skipped</span></div>
+    <div><b>${en(pp.filter(x=>x.going).length)}</b><span>with a part in progress</span></div>
+    <div><b>${en(pp.filter(x=>x.care.care>=40).length)}</b><span>quite careless (score 40+)</span></div>
+    <div><b>${pp.length?en(Math.round(pp.reduce((a,x)=>a+x.care.noreadPct,0)/pp.length))+'%':'—'}</b><span>avg answers marked without reading</span></div></div>`;
+  h+='<h2>By part</h2><div class="card scroll"><table><thead><tr><th>Part</th><th>Started</th><th>Finished</th><th>Avg correct</th><th>Avg time</th><th>Suspicious</th></tr></thead><tbody>'+parts.map(p=>{
     const L=pp.flatMap(x=>x.parts.filter(y=>y.part===p.no)),D=L.filter(y=>y.done);
     const avg=D.length?D.reduce((a,y)=>a+y.ok,0)/D.length:0,sec=D.length?Math.round(D.reduce((a,y)=>a+(y.sec||0),0)/D.length):null;
-    return `<tr><td>${bn(p.no)} · ${esc(p.title)}</td><td>${bn(L.length)}</td><td>${bn(D.length)}</td><td>${D.length?bn(avg.toFixed(1))+' / '+bn(p.n):'—'}</td><td>${tm(sec)} <small class="dim">/ ${bn(p.mins)} মি.</small></td><td>${bn(D.filter(y=>y.unsure).length)}</td></tr>`}).join('')+'</tbody></table></div>';
-  h+='<h2>কোন চিহ্ন কতবার</h2><div class="card"><ul class="list" style="list-style:none;padding:0;margin:0">'+Object.keys(FL).map(f=>`<li>${FL[f]}: ${bn(pp.reduce((a,x)=>a+(x.flags[f]||0),0))}টি ভাগে</li>`).join('')+'</ul><p class="sub" style="margin:8px 0 0"><b>বেখেয়ালি সূচক</b> (০-১০০) = না পড়ে দাগ ৪০% + সহজ প্রশ্নে ভুল ৪০% + ৬ সেকেন্ডের কম সময়ে ভুল ২০%। "না পড়ে" মানে প্রশ্ন আর অপশন পড়তে যত সময় লাগার কথা (অক্ষরপ্রতি ০.০৩ সেকেন্ড), তার চেয়ে কম। "সহজ" মানে অন্তত ৮ জনের ৭৫%+ যে প্রশ্ন পেরেছেন, বা সেট-ফাইলে lvl "easy"। ২০-এর নিচে ঠিক আছে, ২০-৪০ খেয়াল রাখার মতো, ৪০+ বেশ বেখেয়ালি।</p><p class="sub" style="margin:8px 0 0">"সন্দেহজনক" মানে খুব দ্রুত, একই অপশন বারবার, বা আন্দাজের চেয়েও কম ঠিক। এই ভাগের বিষয়গুলো পরিকল্পনার ক্রমে চুপচাপ সিলেবাসের নম্বর ধরে বসে।</p></div>';
+    return `<tr><td>${en(p.no)} · ${esc(p.title)}</td><td>${en(L.length)}</td><td>${en(D.length)}</td><td>${D.length?en(avg.toFixed(1))+' / '+en(p.n):'—'}</td><td>${tm(sec)} <small class="dim">/ ${en(p.mins)} min</small></td><td>${en(D.filter(y=>y.unsure).length)}</td></tr>`}).join('')+'</tbody></table></div>';
+  h+='<h2>How often each flag</h2><div class="card"><ul class="list" style="list-style:none;padding:0;margin:0">'+Object.keys(FL).map(f=>`<li>${FL[f]}: ${en(pp.reduce((a,x)=>a+(x.flags[f]||0),0))} parts</li>`).join('')+'</ul><p class="sub" style="margin:8px 0 0"><b>Careless score</b> (0-100) = 40% marked without reading + 40% wrong on easy questions + 20% wrong in under 6 seconds. "Without reading" means less time than it takes to read the question and options (0.03 s per character). "Easy" means 75%+ of at least 8 people got it right, or lvl "easy" in the set file. Under 20 is fine, 20-40 worth watching, 40+ quite careless.</p><p class="sub" style="margin:8px 0 0">"Suspicious" means very fast, same option again and again, or worse than guessing. In the plan order, subjects from such a part quietly fall back to their syllabus marks.</p></div>';
   $('sum').innerHTML=h;
 }
 // ---- মানুষ: প্রতিজন এক সারি; চাপলে খুঁটিনাটি ----
 function people(){
   const pp=P.people,n=P.set.parts.length;
-  if(!pp.length){$('ppl').innerHTML='<p class="dim">এখনো কেউ দেননি।</p>';return}
-  $('ppl').innerHTML=`<div class="row" style="margin-bottom:8px"><button class="btn ghost" id="pk1">বেখেয়ালি (৪০+) বাছুন</button><button class="btn ghost" id="pk2">সন্দেহজনক বাছুন</button><button class="btn ghost" id="pk3">শেষ করেননি বাছুন</button><button class="btn ghost" id="pk0">বাছাই মুছুন</button><button class="btn" id="pkm">বাছাইদের বার্তা</button></div><div id="pbox"></div>
-  <div class="card scroll"><table><thead><tr><th></th><th>কে</th><th>ভাগ</th><th>ঠিক / ভুল / বাদ</th><th>বেখেয়ালি</th><th>না পড়ে</th><th>সহজে ভুল</th><th>মোট সময়</th><th>প্রশ্নে মধ্যমা</th><th>অন্য অ্যাপে</th><th>চিহ্ন</th><th>শেষ দেখা</th></tr></thead><tbody>`+pp.map(x=>
-    `<tr class="click" data-u="${x.uid}"><td><input type="checkbox" data-pick="${x.uid}"></td><td>${esc(x.name)}${x.unread?' <span class="tag" title="না-দেখা বার্তা">✉ '+bn(x.unread)+'</span>':''}<br><small class="dim">${esc(x.email)} · ${esc(x.dev)}</small></td><td>${bn(x.done)}/${bn(n)}${x.going?' <small class="dim">+চলছে</small>':''}</td>
-    <td>${bn(x.ok)} / ${bn(x.no)} / ${bn(x.skip)}</td><td class="care ${careCls(x.care.care)}">${bn(x.care.care)}</td><td>${bn(x.care.noreadPct)}%</td><td>${x.care.easy?bn(x.care.easyWrong)+'/'+bn(x.care.easy):'—'}</td><td>${tm(x.sec)}</td><td>${x.med==null?'—':bn(x.med)+' সে.'}</td><td>${x.hn?bn(x.hn)+' বার, '+tm(x.hid):'—'}</td>
-    <td>${x.unsure?'<span class="flag">সন্দেহজনক '+bn(x.unsure)+'</span><br>':''}<small class="dim">${Object.keys(x.flags).filter(f=>f!=='fast'&&f!=='same'&&f!=='low').map(f=>FL[f].split(' (')[0]).join(', ')}${x.late?' · নেট-কাটা '+bn(x.late):''}</small></td><td>${when(x.last)}</td></tr>`).join('')+'</tbody></table></div><p class="sub">সারিতে চাপলে সেই মানুষের প্রতিটা ভাগ আর প্রতিটা উত্তর। বাঁয়ের ঘরে টিক দিয়ে কয়েকজনকে একসঙ্গে বার্তা।</p>';
+  if(!pp.length){$('ppl').innerHTML='<p class="dim">No one has taken it yet.</p>';return}
+  $('ppl').innerHTML=`<div class="row" style="margin-bottom:8px"><button class="btn ghost" id="pk1">Pick careless (40+)</button><button class="btn ghost" id="pk2">Pick suspicious</button><button class="btn ghost" id="pk3">Pick unfinished</button><button class="btn ghost" id="pk0">Clear picks</button><button class="btn" id="pkm">Message picked</button></div><div id="pbox"></div>
+  <div class="card scroll"><table><thead><tr><th></th><th>Who</th><th>Parts</th><th>Right / Wrong / Skipped</th><th>Careless</th><th>Unread</th><th>Easy wrong</th><th>Total time</th><th>Median per question</th><th>Other app</th><th>Flags</th><th>Last seen</th></tr></thead><tbody>`+pp.map(x=>
+    `<tr class="click" data-u="${x.uid}"><td><input type="checkbox" data-pick="${x.uid}"></td><td>${esc(x.name)}${x.unread?' <span class="tag" title="Unseen messages">✉ '+en(x.unread)+'</span>':''}<br><small class="dim">${esc(x.email)} · ${esc(x.dev)}</small></td><td>${en(x.done)}/${en(n)}${x.going?' <small class="dim">+in progress</small>':''}</td>
+    <td>${en(x.ok)} / ${en(x.no)} / ${en(x.skip)}</td><td class="care ${careCls(x.care.care)}">${en(x.care.care)}</td><td>${en(x.care.noreadPct)}%</td><td>${x.care.easy?en(x.care.easyWrong)+'/'+en(x.care.easy):'—'}</td><td>${tm(x.sec)}</td><td>${x.med==null?'—':en(x.med)+' s'}</td><td>${x.hn?en(x.hn)+' times, '+tm(x.hid):'—'}</td>
+    <td>${x.unsure?'<span class="flag">Suspicious '+en(x.unsure)+'</span><br>':''}<small class="dim">${Object.keys(x.flags).filter(f=>f!=='fast'&&f!=='same'&&f!=='low').map(f=>FL[f].split(' (')[0]).join(', ')}${x.late?' · offline '+en(x.late):''}</small></td><td>${when(x.last)}</td></tr>`).join('')+'</tbody></table></div><p class="sub">Tap a row to see every part and answer for that learner. Tick the boxes on the left to message several at once.</p>';
   const box=$('ppl');
   box.querySelectorAll('[data-pick]').forEach(c=>c.onclick=e=>e.stopPropagation());
   box.querySelectorAll('tr[data-u]').forEach(r=>r.onclick=()=>person(+r.dataset.u));
   const pick=f=>box.querySelectorAll('[data-pick]').forEach(c=>{const x=pp.find(y=>y.uid===+c.dataset.pick);c.checked=f(x)});
   $('pk1').onclick=()=>pick(x=>x.care.care>=40);$('pk2').onclick=()=>pick(x=>x.unsure>0);$('pk3').onclick=()=>pick(x=>x.done<n);$('pk0').onclick=()=>pick(()=>false);
   $('pkm').onclick=()=>{const ids=[...box.querySelectorAll('[data-pick]:checked')].map(c=>+c.dataset.pick);
-    if(!ids.length){$('pbox').innerHTML='<p class="dim">আগে কাউকে বাছুন।</p>';return}
+    if(!ids.length){$('pbox').innerHTML='<p class="dim">Pick someone first.</p>';return}
     compose($('pbox'),ids,pp.filter(x=>ids.includes(x.uid)&&x.email).map(x=>x.email),null,load)};
 }
-async function person(uid){
-  ['sum','ppl','items','up','rep'].forEach(x=>$(x).hidden=true);$('one').hidden=false;$('one').innerHTML='<p class="dim">লোড হচ্ছে…</p>';scrollTo(0,0);
-  let r;try{r=await api('diag/person?s='+encodeURIComponent(S())+'&uid='+uid)}catch(e){$('one').innerHTML='খোলা যায়নি।';return}
-  let h=`<button class="btn ghost" id="bk">← সবাই</button><h2>${esc(r.user&&r.user.name)} <small class="dim">${esc(r.user&&r.user.email)} · uid ${bn(uid)}</small></h2>
-    <div class="row"><button class="btn" id="pm">বার্তা পাঠান</button></div><div id="mbox"></div>`;
-  if(r.msgs&&r.msgs.length)h+='<details class="card"><summary>আগে পাঠানো বার্তা ('+bn(r.msgs.length)+')</summary>'+r.msgs.map(x=>`<div style="border-top:1px dashed var(--rule);padding:6px 0"><small class="dim">${when(x.ts)} · ${x.seen?'দেখেছেন '+when(x.seen):'এখনো দেখেননি'}</small> <button class="btn ghost" data-md="${x.id}" style="padding:2px 8px;font-size:13px">মুছুন</button><br>${esc(x.text)}</div>`).join('')+'</details>';
-  if(r.status)h+='<div class="card scroll"><b>বিষয় ধরে</b><table><thead><tr><th>বিষয়</th><th>ঠিক</th><th>ভুল</th><th>বাদ</th><th>দেখানো ব্যান্ড</th><th>ভেতরের চিহ্ন</th></tr></thead><tbody>'+r.status.subjects.filter(x=>x.taken).map(x=>
-    `<tr><td>${esc(x.name)}</td><td>${bn(x.ok)}/${bn(x.n)}</td><td>${bn(x.no)}</td><td>${bn(x.skip)}</td><td>${({strong:'বেশ ভালো',mid:'মাঝারি',focus:'একটু ভালো করতে হবে!'})[x.band]||'—'}</td><td>${x.unsure?'<span class="flag">সন্দেহজনক</span> ':''}${x.few?'কম উত্তর':''}</td></tr>`).join('')+'</tbody></table><p class="sub" style="margin:6px 0 0">পরিকল্পনার ক্রম: '+r.status.order.map(id=>SUBN[id]||id).join(' → ')+'</p></div>';
+async function person(uid,nopush){mark('p'+uid,nopush);
+  ['sum','ppl','items','up','rep'].forEach(x=>$(x).hidden=true);$('one').hidden=false;$('one').innerHTML='<p class="dim">Loading…</p>';scrollTo(0,0);
+  let r;try{r=await api('diag/person?s='+encodeURIComponent(S())+'&uid='+uid)}catch(e){$('one').innerHTML='Could not open.';return}
+  let h=`<button class="btn ghost" id="bk">← Everyone</button><h2>${esc(r.user&&r.user.name)} <small class="dim">${esc(r.user&&r.user.email)} · uid ${en(uid)}</small></h2>
+    <div class="row"><button class="btn" id="pm">Send message</button></div><div id="mbox"></div>`;
+  if(r.msgs&&r.msgs.length)h+='<details class="card"><summary>Earlier messages ('+en(r.msgs.length)+')</summary>'+r.msgs.map(x=>`<div style="border-top:1px dashed var(--rule);padding:6px 0"><small class="dim">${when(x.ts)} · ${x.seen?'Seen '+when(x.seen):'Not seen yet'}</small> <button class="btn ghost" data-md="${x.id}" style="padding:2px 8px;font-size:13px">Delete</button><br>${esc(x.text)}</div>`).join('')+'</details>';
+  if(r.status)h+='<div class="card scroll"><b>By subject</b><table><thead><tr><th>Subject</th><th>Right</th><th>Wrong</th><th>Skipped</th><th>Band shown</th><th>Internal flag</th></tr></thead><tbody>'+r.status.subjects.filter(x=>x.taken).map(x=>
+    `<tr><td>${esc(x.name)}</td><td>${en(x.ok)}/${en(x.n)}</td><td>${en(x.no)}</td><td>${en(x.skip)}</td><td>${({strong:'Strong',mid:'Medium',focus:'Needs work'})[x.band]||'—'}</td><td>${x.unsure?'<span class="flag">Suspicious</span> ':''}${x.few?'Few answers':''}</td></tr>`).join('')+'</tbody></table><p class="sub" style="margin:6px 0 0">Plan order: '+r.status.order.map(id=>SUBN[id]||id).join(' → ')+'</p></div>';
   h+=r.parts.sort((a,b)=>a.part-b.part).map(p=>{const x=p.res;
-    return `<div class="card"><div class="row" style="justify-content:space-between"><b>ভাগ ${bn(p.part)} · ${esc(p.title)}</b><button class="btn ghost" data-reset="${p.part}">আবার দিতে দিন</button></div>
-    <p class="sub" style="margin:4px 0">শুরু ${when(p.ts)} · ${p.done?'শেষ '+when(p.done)+' · সময় লেগেছে '+tm(p.sec)+' / '+bn(p.mins)+' মি.':'চলছে বা শেষ হয়নি'} · ${esc(p.meta.dev||'')}${p.meta.w?' '+bn(p.meta.w)+'px':''}${p.meta.app?' · অ্যাপ':''}${p.meta.opens>1?' · '+bn(p.meta.opens)+' বার খোলা':''}${p.hn?' · অন্য অ্যাপে '+bn(p.hn)+' বার, '+tm(p.hid):''}</p>
-    ${p.care&&p.care.answered?`<p style="margin:4px 0">বেখেয়ালি সূচক <span class="care ${careCls(p.care.care)}">${bn(p.care.care)}</span> · না পড়ে দাগ ${bn(p.care.noread)}টি (${bn(p.care.noreadPct)}%) · সহজ প্রশ্নে ভুল ${bn(p.care.easyWrong)}/${bn(p.care.easy)} · ৬ সেকেন্ডের কমে ভুল ${bn(p.care.fastWrong)}টি${p.care.tired!=null?' · প্রথম অর্ধেকের চেয়ে শেষ অর্ধেকে ঠিক '+(p.care.tired>0?bn(p.care.tired)+'% কম':p.care.tired<0?bn(-p.care.tired)+'% বেশি':'সমান'):''}${p.meta.late?' · নেট-কাটায় দেরিতে এসেছে '+bn(p.meta.late)+'টি':''}</p>`:''}
-    ${x?`<p style="margin:4px 0">${bn(x.ok)} ঠিক, ${bn(x.no)} ভুল, ${bn(x.skip)} বাদ · প্রশ্নে মধ্যমা ${x.med==null?'—':bn(x.med)+' সে.'} ${x.unsure?'· <span class="flag">সন্দেহজনক</span>':''}</p>${x.flags.length?'<p class="warnc" style="margin:0 0 4px">'+x.flags.map(f=>FL[f]).join(' · ')+'</p>':''}`:''}
-    <details><summary>প্রতিটা উত্তর (${bn(p.qs.length)})</summary><div class="scroll"><table><thead><tr><th>#</th><th>প্রশ্ন</th><th>দাগ</th><th>সঠিক</th><th>সময়</th></tr></thead><tbody>${p.qs.map((q,i)=>
-      `<tr><td>${bn(i+1)}</td><td>${esc(q.q)}<br><small class="dim">${SUBN[q.s]||q.s} · ${q.id}${q.pop!=null?' · সবার '+bn(q.pop)+'% পারেন':''} · পড়তে লাগে ~${bn((q.read/1000).toFixed(1))} সে.</small><br>${q.tags.map(t=>`<span class="tagx">${({noread:'না পড়ে',easywrong:'সহজে ভুল',fastwrong:'দ্রুত ভুল'})[t]}</span>`).join('')}</td><td class="${!q.seen||q.pick==null?'qsk':q.ok?'qok':'qno'}">${q.pick==null?(q.seen?'বাদ':'দেখেননি'):esc(q.pick)}</td><td>${esc(q.right)}</td><td>${q.ms?bn((q.ms/1000).toFixed(1))+' সে.':'—'}</td></tr>`).join('')}</tbody></table></div></details></div>`}).join('');
-  $('one').innerHTML=h;$('bk').onclick=()=>tab('ppl');
+    return `<div class="card"><div class="row" style="justify-content:space-between"><b>Part ${en(p.part)} · ${esc(p.title)}</b><button class="btn ghost" data-reset="${p.part}">Let them retake</button></div>
+    <p class="sub" style="margin:4px 0">Started ${when(p.ts)} · ${p.done?'Finished '+when(p.done)+' · took '+tm(p.sec)+' / '+en(p.mins)+' min':'In progress or unfinished'} · ${esc(p.meta.dev||'')}${p.meta.w?' '+en(p.meta.w)+'px':''}${p.meta.app?' · app':''}${p.meta.opens>1?' · '+en(p.meta.opens)+' times opened':''}${p.hn?' · other app '+en(p.hn)+' times, '+tm(p.hid):''}</p>
+    ${p.care&&p.care.answered?`<p style="margin:4px 0">Careless score <span class="care ${careCls(p.care.care)}">${en(p.care.care)}</span> · marked without reading ${en(p.care.noread)} (${en(p.care.noreadPct)}%) · wrong on easy ${en(p.care.easyWrong)}/${en(p.care.easy)} · wrong in under 6 s: ${en(p.care.fastWrong)}${p.care.tired!=null?' · second half '+(p.care.tired>0?en(p.care.tired)+'% less accurate than first':p.care.tired<0?en(-p.care.tired)+'% more accurate than first':'as accurate as first'):''}${p.meta.late?' · late after going offline: '+en(p.meta.late):''}</p>`:''}
+    ${x?`<p style="margin:4px 0">${en(x.ok)} right, ${en(x.no)} wrong, ${en(x.skip)} skipped · median per question ${x.med==null?'—':en(x.med)+' s'} ${x.unsure?'· <span class="flag">Suspicious</span>':''}</p>${x.flags.length?'<p class="warnc" style="margin:0 0 4px">'+x.flags.map(f=>FL[f]).join(' · ')+'</p>':''}`:''}
+    <details><summary>Every answer (${en(p.qs.length)})</summary><div class="scroll"><table><thead><tr><th>#</th><th>Question</th><th>Marked</th><th>Correct</th><th>Time</th></tr></thead><tbody>${p.qs.map((q,i)=>
+      `<tr><td>${en(i+1)}</td><td>${esc(q.q)}<br><small class="dim">${SUBN[q.s]||q.s} · ${q.id}${q.pop!=null?' · '+en(q.pop)+'% of all get it right':''} · ~${en((q.read/1000).toFixed(1))} s to read</small><br>${q.tags.map(t=>`<span class="tagx">${({noread:'unread',easywrong:'easy wrong',fastwrong:'fast wrong'})[t]}</span>`).join('')}</td><td class="${!q.seen||q.pick==null?'qsk':q.ok?'qok':'qno'}">${q.pick==null?(q.seen?'Skipped':'Not seen'):esc(q.pick)}</td><td>${esc(q.right)}</td><td>${q.ms?en((q.ms/1000).toFixed(1))+' s':'—'}</td></tr>`).join('')}</tbody></table></div></details></div>`}).join('');
+  $('one').innerHTML=h;$('bk').onclick=()=>PUSHED?history.back():tab('ppl');
   $('pm').onclick=()=>compose($('mbox'),[uid],r.user&&r.user.email?[r.user.email]:[],r.parts.filter(p=>p.res).map(p=>({uid,part:p.part})),()=>person(uid));
-  $('one').querySelectorAll('[data-md]').forEach(b=>b.onclick=async()=>{if(!confirm('বার্তাটা মুছবেন?'))return;await api('diag/msgdel',{s:S(),id:+b.dataset.md}).catch(()=>{});person(uid)});
-  $('one').querySelectorAll('[data-reset]').forEach(b=>b.onclick=async()=>{if(!confirm('এই ভাগের সব উত্তর মুছে যাবে, মানুষটা একই প্রশ্নে আবার দিতে পারবেন। মুছবেন?'))return;
+  $('one').querySelectorAll('[data-md]').forEach(b=>b.onclick=async()=>{if(!confirm('Delete this message?'))return;await api('diag/msgdel',{s:S(),id:+b.dataset.md}).catch(()=>{});person(uid)});
+  $('one').querySelectorAll('[data-reset]').forEach(b=>b.onclick=async()=>{if(!confirm('All answers for this part will be deleted and the learner can take the same questions again. Delete?'))return;
     await api('diag/reset',{s:S(),uid,part:+b.dataset.reset}).catch(e=>alert(e.message));await load();person(uid)});
 }
 // ---- প্রশ্ন: কোনটা সবাই পারে, কোনটা কেউ পারে না, কোন ভুল অপশন টানে, ভালোরা পারে কিন্তু খারাপরা পারে না কি না ----
 async function items(){
-  $('items').innerHTML='<p class="dim">লোড হচ্ছে…</p>';
-  try{IT=(await api('diag/items?s='+encodeURIComponent(S()))).items}catch(e){$('items').innerHTML='খোলা যায়নি।';return}
+  $('items').innerHTML='<p class="dim">Loading…</p>';
+  try{IT=(await api('diag/items?s='+encodeURIComponent(S()))).items}catch(e){$('items').innerHTML='Could not open.';return}
   const f=$('items');let sort='ok';
   const draw=()=>{
     const L=[...IT].sort(sort==='ok'?(a,b)=>(a.n?a.ok/a.n:2)-(b.n?b.ok/b.n:2):sort==='disc'?(a,b)=>(a.disc==null?9:a.disc)-(b.disc==null?9:b.disc):sort==='skip'?(a,b)=>(b.n?b.skip/b.n:0)-(a.n?a.skip/a.n:0):(a,b)=>a.part-b.part);
-    f.innerHTML=`<div class="row" style="margin-bottom:8px"><span class="dim">সাজান:</span>${[['ok','কম ঠিক আগে'],['disc','পার্থক্য কম আগে'],['skip','বেশি বাদ আগে'],['part','ভাগ ধরে']].map(([k,t])=>`<button class="btn ghost" data-s="${k}"${sort===k?' style="background:var(--soft)"':''}>${t}</button>`).join('')}</div>
-    <p class="sub">"পার্থক্য" = ভাগে ভালো করা অর্ধেকের ঠিকের হার − খারাপ করা অর্ধেকের। শূন্য বা ঋণাত্মক হলে প্রশ্ন বা উত্তর-চাবি সন্দেহজনক, দেখে নিন।</p>
-    <div class="card scroll"><table><thead><tr><th>প্রশ্ন</th><th>দেখেছেন</th><th>ঠিক</th><th>বাদ</th><th>মধ্যমা সময়</th><th>পার্থক্য</th><th>কোন অপশনে কতজন</th></tr></thead><tbody>${L.map(x=>
-      `<tr><td>${esc(x.q)}<br><small class="dim">ভাগ ${bn(x.part)} · ${SUBN[x.s]||x.s} · ${x.id}</small></td><td>${bn(x.n)}</td><td>${pc(x.ok,x.n)}</td><td>${pc(x.skip,x.n)}</td><td>${x.med==null?'—':bn(x.med)+' সে.'}</td>
-      <td class="${x.disc!=null&&x.disc<=0?'flag':''}">${x.disc==null?'—':bn(x.disc)}</td><td>${x.o.map((o,k)=>`<div${k===x.a?' class="qok"':''}>${'কখগঘঙচ'[k]}. ${bn(x.picks[k])} <small class="dim">${esc(o)}</small></div>`).join('')}</td></tr>`).join('')}</tbody></table></div>`;
+    f.innerHTML=`<div class="row" style="margin-bottom:8px"><span class="dim">Sort:</span>${[['ok','Least correct first'],['disc','Smallest gap first'],['skip','Most skipped first'],['part','By part']].map(([k,t])=>`<button class="btn ghost" data-s="${k}"${sort===k?' style="background:var(--soft)"':''}>${t}</button>`).join('')}</div>
+    <p class="sub">"Gap" = correct rate of the better-performing half of the part minus that of the weaker half. If zero or negative, the question or answer key is suspect; check it.</p>
+    <div class="card scroll"><table><thead><tr><th>Question</th><th>Seen</th><th>Correct</th><th>Skipped</th><th>Median time</th><th>Gap</th><th>Picks per option</th></tr></thead><tbody>${L.map(x=>
+      `<tr><td>${esc(x.q)}<br><small class="dim">Part ${en(x.part)} · ${SUBN[x.s]||x.s} · ${x.id}</small></td><td>${en(x.n)}</td><td>${pc(x.ok,x.n)}</td><td>${pc(x.skip,x.n)}</td><td>${x.med==null?'—':en(x.med)+' s'}</td>
+      <td class="${x.disc!=null&&x.disc<=0?'flag':''}">${x.disc==null?'—':en(x.disc)}</td><td>${x.o.map((o,k)=>`<div${k===x.a?' class="qok"':''}>${'কখগঘঙচ'[k]}. ${en(x.picks[k])} <small class="dim">${esc(o)}</small></div>`).join('')}</td></tr>`).join('')}</tbody></table></div>`;
     f.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{sort=b.dataset.s;draw()});
   };draw();
 }
 // ---- সমস্যার তালিকা: সবার এক ছক (পাইলট, site-needs.md §৩) ----
-const BC={weak:'bad',mid:'warnc',strong:'ok'},nb=x=>x==null?'—':bn(String(Math.round(x*100)/100));
-const dday=d=>{if(!d)return '';const x=d.split('-');return bn(+x[2])+'/'+bn(+x[1])};
+const BC={weak:'bad',mid:'warnc',strong:'ok'},nb=x=>x==null?'—':en(String(Math.round(x*100)/100)),nbs=x=>x==null?'—':bn(String(Math.round(x*100)/100));
+const dday=d=>{if(!d)return '';const x=d.split('-');return en(+x[2])+'/'+en(+x[1])};
 // ---- উপস্থিতি (site-needs.md §৮): কে কোন দিন দিলেন, কে ২ দিন বা বেশি পিছিয়ে, রাতের মতামত; CSV কোডে ----
-const EASE=['','সহজ','ঠিকঠাক','কঠিন'],STUDY=['পড়িনি','<৩০ মি.','৩০-৬০ মি.','১-২ ঘ.','২ ঘ.+'];
+const EASE=['','Easy','OK','Hard'],STUDY=['Did not study','<30 min','30-60 min','1-2 h','2 h+'];
 async function attView(){
-  const f=$('att');f.innerHTML='<p class="dim">লোড হচ্ছে…</p>';
-  try{AT=await api('diag/att?s='+encodeURIComponent(S()))}catch(e){f.innerHTML='<div class="card">খোলা যায়নি: '+esc(e.message)+'</div>';return}
+  const f=$('att');f.innerHTML='<p class="dim">Loading…</p>';
+  try{AT=await api('diag/att?s='+encodeURIComponent(S()))}catch(e){f.innerHTML='<div class="card">Could not open: '+esc(e.message)+'</div>';return}
   const {parts}=AT.set,T=AT.today,pp=AT.people;
-  const dd=d=>d?bn(+d.slice(8))+'/'+bn(+d.slice(5,7)):'';
+  const dd=d=>d?en(+d.slice(8))+'/'+en(+d.slice(5,7)):'';
   const cell=(x,p)=>{const a=x.parts[p.no];
-    if(a&&a.st==='done')return `<td class="ok" title="${a.fb?'মতামত দিয়েছেন':''}">✓ ${a.score!=null?bn(a.score):''}${a.late?'<small class="dim"> দেরিতে</small>':''}${a.fb?' 💬':''}</td>`;
-    if(a)return '<td class="warnc">চলছে</td>';
+    if(a&&a.st==='done')return `<td class="ok" title="${a.fb?'Gave feedback':''}">✓ ${a.score!=null?en(a.score):''}${a.late?'<small class="dim"> late</small>':''}${a.fb?' 💬':''}</td>`;
+    if(a)return '<td class="warnc">In progress</td>';
     return p.date&&p.date>T?'<td class="dim">—</td>':'<td class="bad">✗</td>'};
   const late=pp.filter(x=>x.behind>=2);
-  let h=`<p class="sub">সেট <b>${esc(AT.set.id)}</b> (রোজকার পরীক্ষা: সেট-ঘরে pb-w1, pb-w2 … লিখে "আবার লোড")। ✓ = দিয়েছেন (নম্বর), ✗ = দিন পেরিয়েছে কিন্তু দেননি, 💬 = রাতের মতামত।</p>
-  <div class="row" style="margin-bottom:8px"><a class="btn ghost" href="/api/admin/diag/att?s=${encodeURIComponent(AT.set.id)}&csv=1">উপস্থিতির CSV (কোডে)</a></div>
-  ${late.length?`<div class="card"><b class="bad">২ দিন বা বেশি পিছিয়ে: ${bn(late.length)} জন</b><p style="margin:4px 0 0">${late.map(x=>esc(x.code||x.name)+' ('+bn(x.behind)+')').join(', ')}</p></div>`:''}
-  <div class="card scroll"><table><thead><tr><th>কোড</th><th>নাম</th>${parts.map(p=>`<th title="${esc(p.title)}">${p.date?dd(p.date):'ভাগ '+bn(p.no)}</th>`).join('')}<th>পিছিয়ে</th></tr></thead><tbody>
-  ${pp.length?pp.map(x=>`<tr><td>${esc(x.code||'—')}</td><td>${esc(x.name)}</td>${parts.map(p=>cell(x,p)).join('')}<td class="${x.behind>=2?'bad':''}">${bn(x.behind)}</td></tr>`).join(''):`<tr><td colspan="${parts.length+3}" class="dim">এখনো কেউ নেই।</td></tr>`}</tbody></table></div>`;
+  let h=`<p class="sub">Set <b>${esc(AT.set.id)}</b> (daily tests: type pb-w1, pb-w2 … in the set box and press "Reload"). ✓ = taken (score), ✗ = day passed but not taken, 💬 = night feedback.</p>
+  <div class="row" style="margin-bottom:8px"><a class="btn ghost" href="/api/admin/diag/att?s=${encodeURIComponent(AT.set.id)}&csv=1">Attendance CSV (coded)</a></div>
+  ${late.length?`<div class="card"><b class="bad">2+ days behind: ${en(late.length)}</b><p style="margin:4px 0 0">${late.map(x=>esc(x.code||x.name)+' ('+en(x.behind)+')').join(', ')}</p></div>`:''}
+  <div class="card scroll"><table><thead><tr><th>Code</th><th>Name</th>${parts.map(p=>`<th title="${esc(p.title)}">${p.date?dd(p.date):'Part '+en(p.no)}</th>`).join('')}<th>Behind</th></tr></thead><tbody>
+  ${pp.length?pp.map(x=>`<tr><td>${esc(x.code||'—')}</td><td>${esc(x.name)}</td>${parts.map(p=>cell(x,p)).join('')}<td class="${x.behind>=2?'bad':''}">${en(x.behind)}</td></tr>`).join(''):`<tr><td colspan="${parts.length+3}" class="dim">No one yet.</td></tr>`}</tbody></table></div>`;
   const nm=new Map(pp.map(x=>[x.uid,x.code||x.name])),pd=new Map(parts.map(p=>[p.no,p]));
-  if(AT.fb.length)h+=`<h2>রাতের মতামত (${bn(AT.fb.length)})</h2><div class="card scroll"><table><thead><tr><th>কে</th><th>দিন</th><th>পরীক্ষা</th><th>পড়া</th><th>লেখা</th></tr></thead><tbody>${AT.fb.map(r=>
-    `<tr><td>${esc(nm.get(r.uid)||'uid '+r.uid)}</td><td>${pd.get(r.part)&&pd.get(r.part).date?dd(pd.get(r.part).date):'ভাগ '+bn(r.part)}</td><td>${EASE[r.d.ease]||'—'}</td><td>${r.d.mins!=null?STUDY[r.d.mins]:'—'}</td><td>${esc(r.d.txt||'')}</td></tr>`).join('')}</tbody></table></div>`;
+  if(AT.fb.length)h+=`<h2>Night feedback (${en(AT.fb.length)})</h2><div class="card scroll"><table><thead><tr><th>Who</th><th>Day</th><th>Test</th><th>Study</th><th>Comment</th></tr></thead><tbody>${AT.fb.map(r=>
+    `<tr><td>${esc(nm.get(r.uid)||'uid '+r.uid)}</td><td>${pd.get(r.part)&&pd.get(r.part).date?dd(pd.get(r.part).date):'Part '+en(r.part)}</td><td>${EASE[r.d.ease]||'—'}</td><td>${r.d.mins!=null?STUDY[r.d.mins]:'—'}</td><td>${esc(r.d.txt||'')}</td></tr>`).join('')}</tbody></table></div>`;
   f.innerHTML=h;
 }
 async function report(){
-  const f=$('rep');f.innerHTML='<p class="dim">লোড হচ্ছে…</p>';
-  try{RP=await api('diag/report?s='+encodeURIComponent(S()))}catch(e){f.innerHTML='<div class="card">খোলা যায়নি: '+esc(e.message)+'</div>';return}
+  const f=$('rep');f.innerHTML='<p class="dim">Loading…</p>';
+  try{RP=await api('diag/report?s='+encodeURIComponent(S()))}catch(e){f.innerHTML='<div class="card">Could not open: '+esc(e.message)+'</div>';return}
   const st=RP.set,[lo,hi]=st.bands,L=RP.people.filter(x=>x.rep);
-  if(!L.length){f.innerHTML='<p class="dim">এখনো কেউ কোনো ভাগ শেষ করেননি।</p>';return}
-  const pct=x=>x&&x.n?`<span class="${BC[x.band]||''}">${bn(x.pct)}%</span>`:'—';
-  f.innerHTML=`<p class="sub">প্রতি সারিতে একজন। রং: <span class="bad">${bn(lo)}%-এর কম: একটু ভালো করতে হবে!</span>, <span class="warnc">${bn(lo)}-${bn(hi)}% মাঝারি</span>, <span class="ok">${bn(hi)}%+ বেশ ভালো</span> (ঠিকের হার)। নম্বর ভুলে ${nb(st.neg)} কেটে। সারিতে চাপলে সেই মানুষের প্রতিটি উত্তর।</p>
-  <div class="card scroll"><table><thead><tr><th>কে</th><th>ভাগ</th><th>নম্বর</th><th>ঠিক</th>${st.subjects.map(s=>`<th>${esc(s.name)}</th>`).join('')}<th>কোথায় ফোকাস করবেন</th><th>আন্দাজ: ঠিক/ভুল · কাটা</th><th>নিশ্চিত, তবু ভুল</th><th>"কোনোটিই নয়" প্রশ্নে</th><th>সময় শেষে ফাঁকা</th><th>দিন ধরে নম্বর</th><th>পরামর্শ</th></tr></thead><tbody>${L.map(x=>{const r=x.rep,S=new Map(r.subjects.map(y=>[y.id,y]));
-    return `<tr class="click" data-u="${x.uid}"><td style="min-width:110px">${esc(x.name)}<br><small class="dim">uid ${bn(x.uid)}${x.going?' · একটি চলছে':''}</small></td><td>${bn(r.doneParts)}/${bn(r.parts)}</td>
-    <td><b>${r.total.net!=null?nb(r.total.net):bn(r.total.ok)}</b><small class="dim"> / ${bn(r.total.n)}</small></td><td>${pct(r.total)}</td>${st.subjects.map(s=>`<td>${pct(S.get(s.id))}</td>`).join('')}
-    <td style="min-width:240px">${r.clusters.filter(c=>c.n>=2).slice(0,3).map(c=>`<div><span class="${BC[c.band]}">${bn(c.pct)}%</span> ${esc(c.name)} <small class="dim">(${bn(c.ok)}/${bn(c.n)})</small></div>`).join('')||'—'}</td>
-    <td>${r.guess?`${bn(r.guess.n)}টি: ${bn(r.guess.ok)}/${bn(r.guess.no)} · <b>${nb(r.guess.lost)}</b>`:'—'}</td><td>${r.sure?bn(r.sure.no):'—'}</td>
-    <td>${r.none?bn(r.none.ok)+'/'+bn(r.none.n):'—'}</td><td>${bn(r.blank)}</td>
-    <td style="white-space:nowrap">${r.days.map(d=>`<div>${d.date?dday(d.date):'ভাগ '+bn(d.part)}: ${d.net!=null?nb(d.net):bn(d.ok)}<small class="dim">/${bn(d.n)}</small></div>`).join('')}</td>
-    <td><button class="btn ghost" data-nt="${x.uid}">${x.note?(x.note.pub?'প্রকাশিত ✓':'খসড়া'):'লিখুন'}</button></td></tr>`}).join('')}</tbody></table></div>
+  if(!L.length){f.innerHTML='<p class="dim">No one has finished any part yet.</p>';return}
+  const pct=x=>x&&x.n?`<span class="${BC[x.band]||''}">${en(x.pct)}%</span>`:'—';
+  f.innerHTML=`<p class="sub">One learner per row. Colors: <span class="bad">under ${en(lo)}%: needs work</span>, <span class="warnc">${en(lo)}-${en(hi)}% medium</span>, <span class="ok">${en(hi)}%+ strong</span> (correct rate). Each wrong answer costs ${nb(st.neg)}. Tap a row to see that learner's every answer.</p>
+  <div class="card scroll"><table><thead><tr><th>Who</th><th>Parts</th><th>Marks</th><th>Correct</th>${st.subjects.map(s=>`<th>${esc(s.name)}</th>`).join('')}<th>Where to focus</th><th>Guesses: right/wrong · lost</th><th>Sure but wrong</th><th>On "none of these" questions</th><th>Blank at time-up</th><th>Marks by day</th><th>Note</th></tr></thead><tbody>${L.map(x=>{const r=x.rep,S=new Map(r.subjects.map(y=>[y.id,y]));
+    return `<tr class="click" data-u="${x.uid}"><td style="min-width:110px">${esc(x.name)}<br><small class="dim">uid ${en(x.uid)}${x.going?' · one in progress':''}</small></td><td>${en(r.doneParts)}/${en(r.parts)}</td>
+    <td><b>${r.total.net!=null?nb(r.total.net):en(r.total.ok)}</b><small class="dim"> / ${en(r.total.n)}</small></td><td>${pct(r.total)}</td>${st.subjects.map(s=>`<td>${pct(S.get(s.id))}</td>`).join('')}
+    <td style="min-width:240px">${r.clusters.filter(c=>c.n>=2).slice(0,3).map(c=>`<div><span class="${BC[c.band]}">${en(c.pct)}%</span> ${esc(c.name)} <small class="dim">(${en(c.ok)}/${en(c.n)})</small></div>`).join('')||'—'}</td>
+    <td>${r.guess?`${en(r.guess.n)}: ${en(r.guess.ok)}/${en(r.guess.no)} · <b>${nb(r.guess.lost)}</b>`:'—'}</td><td>${r.sure?en(r.sure.no):'—'}</td>
+    <td>${r.none?en(r.none.ok)+'/'+en(r.none.n):'—'}</td><td>${en(r.blank)}</td>
+    <td style="white-space:nowrap">${r.days.map(d=>`<div>${d.date?dday(d.date):'Part '+en(d.part)}: ${d.net!=null?nb(d.net):en(d.ok)}<small class="dim">/${en(d.n)}</small></div>`).join('')}</td>
+    <td><button class="btn ghost" data-nt="${x.uid}">${x.note?(x.note.pub?'Published ✓':'Draft'):'Write'}</button></td></tr>`}).join('')}</tbody></table></div>
   <div id="ned"></div>
-  ${RP.people.some(x=>!x.rep)?`<p class="sub">শুরু করেছেন কিন্তু কোনো ভাগ শেষ হয়নি: ${RP.people.filter(x=>!x.rep).map(x=>esc(x.name)).join(', ')}</p>`:''}`;
+  ${RP.people.some(x=>!x.rep)?`<p class="sub">Started but no part finished yet: ${RP.people.filter(x=>!x.rep).map(x=>esc(x.name)).join(', ')}</p>`:''}`;
   f.querySelectorAll('tr[data-u]').forEach(r=>r.onclick=()=>person(+r.dataset.u));
   f.querySelectorAll('[data-nt]').forEach(b=>b.onclick=e=>{e.stopPropagation();noteEd(+b.dataset.nt)});
 }
@@ -266,14 +272,14 @@ function draft(x,rt){
   const r=x.rep,nm=(x.name||'').trim().split(/\s+/)[0],neg=r.neg||0;
   const strong=r.subjects.filter(y=>y.band==='strong').map(y=>y.name),top=r.clusters.filter(c=>c.n>=4&&c.band==='weak').slice(0,3);
   const L=[];
-  L.push(`${nm?nm+', ':''}আপনার ${bn(r.doneParts)} দিনের অবস্থা-যাচাই দেখলাম। ${bn(r.total.n)}টি প্রশ্নে নম্বর ${nb(r.total.net!=null?r.total.net:r.total.ok)}।`);
+  L.push(`${nm?nm+', ':''}আপনার ${bn(r.doneParts)} দিনের অবস্থা-যাচাই দেখলাম। ${bn(r.total.n)}টি প্রশ্নে নম্বর ${nbs(r.total.net!=null?r.total.net:r.total.ok)}।`);
   if(strong.length)L.push(`${strong.join(', ')}-এ আপনি ভালো আছেন; এগুলো ধরে রাখুন।`);
   if(top.length){L.push('কোথায় ফোকাস করবেন:');
     top.forEach((c,i)=>{const D=rt?rt.days.filter(d=>d.cluster===c.id&&d.kind==='study').map(d=>dlong(d.date)):[];
       L.push(`${bn(i+1)}. ${c.name} (${bn(c.n)}টিতে ${bn(c.ok)}টি ঠিক)${D.length?': রুটিনে '+D.join(' ও ')+'। এই দিনগুলো বাদ দেবেন না, আগে শিট পড়ে তারপর পরীক্ষা।':'।'}`)})}
   const g=r.guess;
   if(g&&g.n>=8){const net=g.ok-g.no*neg;
-    L.push(net<0?`আন্দাজে ${bn(g.n)}টি দিয়ে ${nb(g.lost)} নম্বর কাটা গেছে, পেয়েছেন ${bn(g.ok)}। অচেনা প্রশ্ন বাদ দিন; দুটো অপশন বাদ দিতে পারলে তবেই দাগান।`
+    L.push(net<0?`আন্দাজে ${bn(g.n)}টি দিয়ে ${nbs(g.lost)} নম্বর কাটা গেছে, পেয়েছেন ${bn(g.ok)}। অচেনা প্রশ্ন বাদ দিন; দুটো অপশন বাদ দিতে পারলে তবেই দাগান।`
       :`আন্দাজে ${bn(g.n)}টির মধ্যে ${bn(g.ok)}টি ঠিক, তাই আন্দাজে লাভ হয়েছে। তবে একেবারে অচেনা প্রশ্নে দাগাবেন না।`)}
   if(r.sure&&r.sure.no>=5)L.push(`"নিশ্চিত" বলে ${bn(r.sure.no)}টি ভুল হয়েছে; মানে কিছু তথ্য ভুলভাবে মনে আছে। ব্যাখ্যাগুলো আবার পড়ে নিন।`);
   if(r.blank>=5)L.push(`সময় শেষে ${bn(r.blank)}টি প্রশ্ন দেখা হয়নি। কঠিন প্রশ্নে আটকে না থেকে বাদ দিয়ে এগোন।`);
@@ -283,19 +289,19 @@ function draft(x,rt){
 async function noteEd(uid){
   const x=RP.people.find(y=>y.uid===uid);if(!x)return;
   const box=$('ned'),n=x.note||{};
-  box.innerHTML=`<div class="card compose" style="margin-top:12px"><b>${esc(x.name)}-এর জন্য পরামর্শ</b>
-    <p class="sub" style="margin:4px 0 6px">প্রকাশ করলে তাঁর সমস্যার তালিকা আর PDF রিপোর্টে "লিয়ানা বুকস থেকে আপনার জন্য" হিসেবে দেখাবে। খালি করে সেভ করলে মুছে যায়।</p>
-    <div class="row" style="margin-bottom:6px"><button class="btn ghost" id="nd">সংখ্যা থেকে খসড়া</button><a class="btn ghost" href="/plan/pb/?as=${uid}" target="_blank" rel="noopener">তাঁর রিপোর্ট দেখুন</a></div>
+  box.innerHTML=`<div class="card compose" style="margin-top:12px"><b>Note for ${esc(x.name)}</b>
+    <p class="sub" style="margin:4px 0 6px">If published, it shows in their weak-spot list and PDF report under the heading "লিয়ানা বুকস থেকে আপনার জন্য". Saving it empty deletes it.</p>
+    <div class="row" style="margin-bottom:6px"><button class="btn ghost" id="nd">Draft from numbers</button><a class="btn ghost" href="/plan/pb/?as=${uid}" target="_blank" rel="noopener">View their report</a></div>
     <textarea id="nx" maxlength="4000" rows="10" style="width:100%">${esc(n.txt||'')}</textarea>
-    <label style="display:flex;gap:6px;margin:6px 0;color:var(--ink)"><input type="checkbox" id="np"${n.pub?' checked':''}> প্রকাশ (শিক্ষার্থী দেখবেন)</label>
-    <div class="row"><button class="btn" id="ns">সেভ</button>${x.email?'<a class="btn ghost" id="nm">মেইলে জানান</a>':''}<span id="no" class="dim"></span></div></div>`;
+    <label style="display:flex;gap:6px;margin:6px 0;color:var(--ink)"><input type="checkbox" id="np"${n.pub?' checked':''}> Publish (learner can see it)</label>
+    <div class="row"><button class="btn" id="ns">Save</button>${x.email?'<a class="btn ghost" id="nm">Notify by e-mail</a>':''}<span id="no" class="dim"></span></div></div>`;
   box.scrollIntoView({behavior:'smooth'});
-  $('nd').onclick=async()=>{const t=$('nx');if(t.value.trim()&&!confirm('লেখা ঘরটা খসড়া দিয়ে বদলাবে?'))return;t.value=draft(x,await rtn())};
+  $('nd').onclick=async()=>{const t=$('nx');if(t.value.trim()&&!confirm('Replace the text box with a draft?'))return;t.value=draft(x,await rtn())};
   $('ns').onclick=async()=>{$('ns').disabled=true;
     try{const r=await api('diag/note',{s:S(),uid,txt:$('nx').value,pub:$('np').checked?1:0});
-      x.note=r.del?null:{txt:$('nx').value.trim(),pub:$('np').checked?1:0,ts:r.ts};$('no').textContent=r.del?'মুছে গেছে।':$('np').checked?'সেভ ও প্রকাশ হয়েছে।':'সেভ হয়েছে (লুকানো)।';
-      const b=document.querySelector(`[data-nt="${uid}"]`);if(b)b.textContent=x.note?(x.note.pub?'প্রকাশিত ✓':'খসড়া'):'লিখুন'}
-    catch(e){$('no').textContent='সেভ হয়নি: '+e.message}$('ns').disabled=false};
+      x.note=r.del?null:{txt:$('nx').value.trim(),pub:$('np').checked?1:0,ts:r.ts};$('no').textContent=r.del?'Deleted.':$('np').checked?'Saved and published.':'Saved (hidden).';
+      const b=document.querySelector(`[data-nt="${uid}"]`);if(b)b.textContent=x.note?(x.note.pub?'Published ✓':'Draft'):'Write'}
+    catch(e){$('no').textContent='Not saved: '+e.message}$('ns').disabled=false};
   if($('nm'))$('nm').onclick=()=>{const nm=(x.name||'').trim().split(/\s+/)[0];
     const body=`${nm?nm+', ':''}আপনার অবস্থা-যাচাইয়ের রিপোর্ট তৈরি। লগইন করে দেখুন, সেখান থেকেই রেজাল্ট কার্ড আর PDF নামানো যায়:\nhttps://lyannabooks.com/plan/pb/\n\n${$('nx').value.trim()}\n\nলিয়ানা বুকস`;
     location.href='mailto:'+encodeURIComponent(x.email)+'?subject='+encodeURIComponent('লিয়ানা বুকস · আপনার অবস্থা-যাচাইয়ের রিপোর্ট')+'&body='+encodeURIComponent(body)};
@@ -303,8 +309,8 @@ async function noteEd(uid){
 // ---- সেট তোলা ----
 async function setsum(){
   try{const r=await api('diag?s='+encodeURIComponent(S()));const L=new Map(r.loaded.map(x=>[x.part,x.n]));
-    $('setsum').innerHTML=r.set.parts.length?r.set.parts.map(p=>`ভাগ ${bn(p.no)} (${esc(p.title)}): ${bn(L.get(p.no)||0)} / ${bn(p.qs.length)} প্রশ্ন তোলা, ${bn(p.mins)} মিনিট`).join('<br>'):'সেট এখনো তোলা হয়নি।'}
-  catch(e){$('setsum').textContent=e.message==='no set'?'সেট এখনো তোলা হয়নি।':''}
+    $('setsum').innerHTML=r.set.parts.length?r.set.parts.map(p=>`Part ${en(p.no)} (${esc(p.title)}): ${en(L.get(p.no)||0)} / ${en(p.qs.length)} questions uploaded, ${en(p.mins)} min`).join('<br>'):'Set not uploaded yet.'}
+  catch(e){$('setsum').textContent=e.message==='no set'?'Set not uploaded yet.':''}
 }
 let SET=null;
 // LY Quiz & Sheets-এর ফাইল দুই ধাঁচে আসে: subjects তালিকা বা {id:{name,weight}}; ভাগে qs বা প্রশ্নে part। এক ছাঁচে আনা।
@@ -320,54 +326,54 @@ function norm(c){
 }
 function check(c){
   const err=[],warn=[];
-  if(!c||!c.id||!Array.isArray(c.subjects)||!Array.isArray(c.parts)||!c.questions)return {err:['ফাইলে id, subjects, parts, questions লাগবে'],warn};
+  if(!c||!c.id||!Array.isArray(c.subjects)||!Array.isArray(c.parts)||!c.questions)return {err:['File needs id, subjects, parts, questions'],warn};
   const Sb=new Set(c.subjects.map(s=>s.id));
   for(const p of c.parts){
     const qs=p.qs||[],cnt={};let run=1,best=0,prev=null;
     for(const id of qs){const q=c.questions[id];
-      if(!q){err.push('ভাগ '+p.no+': প্রশ্ন নেই '+id);continue}
-      if(!Sb.has(q.s))err.push(id+': অচেনা বিষয় '+q.s);
-      if(q.part!=null&&q.part!==p.no)err.push(id+': part '+q.part+' কিন্তু আছে ভাগ '+p.no+'-এ');
-      if(!Array.isArray(q.o)||q.o.length<2||!Number.isInteger(q.a)||q.a<0||q.a>=q.o.length)err.push(id+': o/a ঠিক নয়');
-      if(!q.e)warn.push(id+': ব্যাখ্যা নেই');
+      if(!q){err.push('Part '+p.no+': question missing '+id);continue}
+      if(!Sb.has(q.s))err.push(id+': unknown subject '+q.s);
+      if(q.part!=null&&q.part!==p.no)err.push(id+': part '+q.part+' but sits in part '+p.no);
+      if(!Array.isArray(q.o)||q.o.length<2||!Number.isInteger(q.a)||q.a<0||q.a>=q.o.length)err.push(id+': o/a invalid');
+      if(!q.e)warn.push(id+': no explanation');
       cnt[q.a]=(cnt[q.a]||0)+1;run=q.a===prev?run+1:1;best=Math.max(best,run);prev=q.a}
-    if(best>4)warn.push('ভাগ '+p.no+': একই সঠিক অপশন পরপর '+best+'বার (৪-এর বেশি নয়)');
-    for(const [k,v] of Object.entries(cnt)){const r=v/qs.length;if(qs.length>=20&&(r<.2||r>.3))warn.push('ভাগ '+p.no+': সঠিক অপশন '+('কখগঘঙ'[k]||k)+' '+Math.round(r*100)+'% (২০-৩০% ভালো)')}
+    if(best>4)warn.push('Part '+p.no+': same correct option '+best+' times in a row (max 4)');
+    for(const [k,v] of Object.entries(cnt)){const r=v/qs.length;if(qs.length>=20&&(r<.2||r>.3))warn.push('Part '+p.no+': correct option '+('কখগঘঙ'[k]||k)+' '+Math.round(r*100)+'% (20-30% is good)')}
   }
   return {err,warn};
 }
 $('f').onchange=async()=>{
   SET=null;$('upb').disabled=true;const t=await $('f').files[0].text();
-  let c;try{c=norm(JSON.parse(t))}catch(e){$('chk').innerHTML='<p class="bad">JSON পড়া যায়নি।</p>';return}
+  let c;try{c=norm(JSON.parse(t))}catch(e){$('chk').innerHTML='<p class="bad">Could not read JSON.</p>';return}
   const {err,warn}=check(c),n=c.parts?c.parts.reduce((a,p)=>a+(p.qs||[]).length,0):0;
-  $('chk').innerHTML=`<p>${esc(c.title||c.id)} · ${bn(n)} প্রশ্ন · ${bn((c.parts||[]).length)} ভাগ</p>`+(err.length?'<p class="bad">ভুল:</p><pre>'+esc(err.slice(0,40).join('\n'))+'</pre>':'<p class="ok">ছাঁচ ঠিক আছে।</p>')+(warn.length?'<p class="dim">খেয়াল করুন (অপশনের ক্রম প্রতিজনের জন্য এলোমেলো হয়, তাই এগুলো আটকায় না):</p><pre>'+esc(warn.slice(0,40).join('\n'))+'</pre>':'');
+  $('chk').innerHTML=`<p>${esc(c.title||c.id)} · ${en(n)} questions · ${en((c.parts||[]).length)} parts</p>`+(err.length?'<p class="bad">Errors:</p><pre>'+esc(err.slice(0,40).join('\n'))+'</pre>':'<p class="ok">Format OK.</p>')+(warn.length?'<p class="dim">Note (option order is shuffled per learner, so these do not block upload):</p><pre>'+esc(warn.slice(0,40).join('\n'))+'</pre>':'');
   if(!err.length){SET=c;$('upb').disabled=false;$('sid').value=c.exam==='petrobangla'&&c.id==='bcs-start'?'pb-start':c.id}
 };
 $('upb').onclick=async()=>{
-  if(!SET)return;$('upb').disabled=true;const log=$('log');log.hidden=false;log.textContent='সেট তোলা হচ্ছে…\n';
+  if(!SET)return;$('upb').disabled=true;const log=$('log');log.hidden=false;log.textContent='Uploading set…\n';
   try{
     SET.id=S();const cfg={id:SET.id,title:SET.title,subjects:SET.subjects,parts:SET.parts};
     for(const k of ['neg','bands','conf','pin','report','clusters'])if(SET[k]!=null)cfg[k]=SET[k];
-    const sr=await api('diag/set',{cfg});if(sr.moved)log.textContent+='এই সেটে আগের '+bn(sr.moved)+'টি ভাগ-দেওয়া অন্য প্রশ্নে ছিল; সেগুলো "'+sr.arch+'" নামে সরানো হলো (মোছা নয়)।\n';
+    const sr=await api('diag/set',{cfg});if(sr.moved)log.textContent+='This set had '+en(sr.moved)+' earlier part submissions on different questions; moved to "'+sr.arch+'" (not deleted).\n';
     const all=SET.parts.flatMap(p=>p.qs).map(id=>({id,...SET.questions[id]}));
-    for(let i=0;i<all.length;i+=40){const r=await api('diag/q',{s:SET.id,qs:all.slice(i,i+40)});log.textContent+=bn(Math.min(i+40,all.length))+' / '+bn(all.length)+(r.bad.length?' · বাদ: '+r.bad.join(', '):'')+'\n'}
-    log.textContent+='শেষ।';load();
-  }catch(e){log.textContent+='থেমে গেছে: '+(e.j&&e.j.list?e.j.list.join('\n'):e.message)}
+    for(let i=0;i<all.length;i+=40){const r=await api('diag/q',{s:SET.id,qs:all.slice(i,i+40)});log.textContent+=en(Math.min(i+40,all.length))+' / '+en(all.length)+(r.bad.length?' · skipped: '+r.bad.join(', '):'')+'\n'}
+    log.textContent+='Done.';load();
+  }catch(e){log.textContent+='Stopped: '+(e.j&&e.j.list?e.j.list.join('\n'):e.message)}
   $('upb').disabled=false;
 };
-async function ukLoad(){try{const r=await api('upkey');$('ukst').textContent=r.has?'চাবি আছে, বানানো '+new Date(r.created).toLocaleString('bn-BD'):'এখনো কোনো চাবি নেই।'}catch(e){$('ukst').textContent=''}}
+async function ukLoad(){try{const r=await api('upkey');$('ukst').textContent=r.has?'Key exists, created '+new Date(r.created).toLocaleString('en-GB'):'No key yet.'}catch(e){$('ukst').textContent=''}}
 $('ukb').onclick=async()=>{
-  try{const had=/আছে/.test($('ukst').textContent);if(had&&!confirm('নতুন চাবি বানালে পুরোনোটা আর কাজ করবে না। GitHub-এ নতুনটা বসাতে হবে। বানাবেন?'))return;
-    const r=await api('upkey',{});$('ukv').value=r.key;$('ukout').hidden=false;ukLoad()}catch(e){$('ukst').textContent='বানানো যায়নি: '+e.message}
+  try{const had=/exists/.test($('ukst').textContent);if(had&&!confirm('Making a new key stops the old one from working. You must put the new one in GitHub. Continue?'))return;
+    const r=await api('upkey',{});$('ukv').value=r.key;$('ukout').hidden=false;ukLoad()}catch(e){$('ukst').textContent='Could not create: '+e.message}
 };
-$('ukc').onclick=async()=>{const v=$('ukv');try{await navigator.clipboard.writeText(v.value)}catch(e){v.select();document.execCommand('copy')}$('ukc').textContent='কপি হয়েছে ✓'};
-async function xkLoad(){try{const r=await api('exkey');$('xkst').textContent=r.has?'চাবি আছে, বানানো '+new Date(r.created).toLocaleString('bn-BD'):'এখনো কোনো চাবি নেই।'}catch(e){$('xkst').textContent=''}}
+$('ukc').onclick=async()=>{const v=$('ukv');try{await navigator.clipboard.writeText(v.value)}catch(e){v.select();document.execCommand('copy')}$('ukc').textContent='Copied ✓'};
+async function xkLoad(){try{const r=await api('exkey');$('xkst').textContent=r.has?'Key exists, created '+new Date(r.created).toLocaleString('en-GB'):'No key yet.'}catch(e){$('xkst').textContent=''}}
 $('xkb').onclick=async()=>{
-  try{const had=/আছে/.test($('xkst').textContent);if(had&&!confirm('নতুন চাবি বানালে পুরোনোটা আর কাজ করবে না। GitHub-এ নতুনটা বসাতে হবে। বানাবেন?'))return;
-    const r=await api('exkey',{});$('xkv').value=r.key;$('xkout').hidden=false;xkLoad()}catch(e){$('xkst').textContent='বানানো যায়নি: '+e.message}
+  try{const had=/exists/.test($('xkst').textContent);if(had&&!confirm('Making a new key stops the old one from working. You must put the new one in GitHub. Continue?'))return;
+    const r=await api('exkey',{});$('xkv').value=r.key;$('xkout').hidden=false;xkLoad()}catch(e){$('xkst').textContent='Could not create: '+e.message}
 };
-$('xkc').onclick=async()=>{const v=$('xkv');try{await navigator.clipboard.writeText(v.value)}catch(e){v.select();document.execCommand('copy')}$('xkc').textContent='কপি হয়েছে ✓'};
-$('load').onclick=load;load();ukLoad();xkLoad();
+$('xkc').onclick=async()=>{const v=$('xkv');try{await navigator.clipboard.writeText(v.value)}catch(e){v.select();document.execCommand('copy')}$('xkc').textContent='Copied ✓'};
+$('load').onclick=load;load();if(location.hash.length>1)route();ukLoad();xkLoad();
 </script>
 </body>
 </html>

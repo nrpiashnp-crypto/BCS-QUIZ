@@ -15,6 +15,8 @@ import collect  # noqa: E402
 import common  # noqa: E402
 import pick  # noqa: E402
 import run_daily  # noqa: E402
+import quality  # noqa: E402
+import verify  # noqa: E402
 from verify import check_item, norm, numbers, shared_run  # noqa: E402
 
 RSS = """<?xml version="1.0"?><rss><channel>
@@ -76,6 +78,41 @@ class Verify(unittest.TestCase):
         t[1]["domain"] = "a.com"
         self.assertFalse(check_item(self.item(), t)[0])
 
+    def test_trusted_single_source_passes(self):
+        """বিশ্বস্ত পত্রিকা (প্রথম আলো) একাই — তথ্য সেই পাতায় হুবহু থাকলে চলে।"""
+        t = [{"domain": "prothomalo.com", "text": "অক্টোবরে প্রবাসীরা ২৮৭ কোটি ডলার পাঠিয়েছেন বলে বাংলাদেশ ব্যাংক জানায়।"}]
+        it = self.item()
+        it["facts"][0]["evidence"] = [{"src": 0, "quote": "২৮৭ কোটি ডলার পাঠিয়েছেন"}]
+        ok, why = check_item(it, t)
+        self.assertTrue(ok, why)
+
+    def test_trusted_single_source_invented_quote_fails(self):
+        t = [{"domain": "ittefaq.com.bd", "text": "অক্টোবরে প্রবাসীরা ২৮৭ কোটি ডলার পাঠিয়েছেন।"}]
+        it = self.item()
+        it["facts"][0]["evidence"] = [{"src": 0, "quote": "২৯০ কোটি ডলার এসেছে"}]
+        self.assertFalse(check_item(it, t)[0])
+
+    def test_untrusted_single_source_fails(self):
+        t = [{"domain": "a.com", "text": "অক্টোবরে প্রবাসীরা ২৮৭ কোটি ডলার পাঠিয়েছেন।"}]
+        it = self.item()
+        it["facts"][0]["evidence"] = [{"src": 0, "quote": "২৮৭ কোটি ডলার পাঠিয়েছেন"}]
+        self.assertFalse(check_item(it, t)[0])
+
+    def test_trusted_fact_in_multi_source(self):
+        """দুই উৎসের ঘটনায় শুধু ডেইলি স্টারে থাকা তথ্যও টেকে, অচেনা এক উৎসের তথ্য নয়।"""
+        t = self.texts()
+        t[0]["domain"] = "thedailystar.net"
+        it = self.item()
+        it["facts"].append({"label": "সূত্র", "value": "বাংলাদেশ ব্যাংক", "evidence": [{"src": 0, "quote": "Bangladesh Bank said"}]})
+        it["facts"].append({"label": "অন্য", "value": "প্রবাসী", "evidence": [{"src": 1, "quote": "প্রবাসীরা"}]})
+        check_item(it, t)
+        self.assertEqual([f["label"] for f in it["facts"]], ["অক্টোবরের রেমিট্যান্স", "সূত্র"])
+
+    def test_politics_words_excluded(self):
+        self.assertTrue(quality.excluded("দুই দলের পাল্টাপাল্টি কর্মসূচি"))
+        self.assertTrue(quality.excluded("সারা দেশে হরতাল"))
+        self.assertIsNone(quality.excluded("সংবিধান সংস্কার কমিশনের সুপারিশ জমা"))
+
     def test_copy_detected(self):
         src = "এক দুই তিন চার পাঁচ ছয় সাত আট নয়"
         self.assertTrue(shared_run("শুরু এক দুই তিন চার পাঁচ ছয় সাত আট", src))
@@ -135,10 +172,14 @@ class Pages(unittest.TestCase):
     def test_landing_and_month(self):
         build_pages.build_all(self.nd)
         h = (self.root / "news/index.html").read_text(encoding="utf-8")
-        self.assertIn("৫ নভেম্বর ২০২৬, বৃহস্পতিবার", h)                 # সর্বশেষ দিন
+        self.assertIn("<b>৫ নভেম্বর ২০২৬</b>, বৃহস্পতিবার", h)          # সর্বশেষ দিন
+        self.assertIn("<h1>আজকের গুরুত্বপূর্ণ সংবাদ</h1>", h)
+        self.assertIn("পূর্বের গুরুত্বপূর্ণ সংবাদ", h)
+        self.assertIn("২টি গুরুত্বপূর্ণ সংবাদ", h)
+        self.assertNotIn("ঘটনা", h)
         self.assertIn('href="/news/2026/11/05/#2026-11-05-01"', h)
         self.assertIn('href="/news/2026/11/04/"', h)                    # আগের দিন
-        self.assertIn("শীঘ্রই", h)                                       # /circular/ নেই → লিংকহীন ঘর
+        self.assertTrue("শীঘ্রই" in h or "চলমান নিয়োগ বিজ্ঞপ্তি" in h)   # /circular/ না থাকলে লিংকহীন ঘর
         m = (self.root / "news/2026/11/index.html").read_text(encoding="utf-8")
         self.assertIn('href="/news/2026/11/04/#2026-11-04-01"', m)
 
@@ -278,8 +319,10 @@ class EndToEnd(unittest.TestCase):
     def test_run(self):
         p = "Wed, 04 Nov 2026 10:00:00 +0600"
         pages = {
-            "https://a.com/r": "<p>Remittance stood at $2.87 billion in October, Bangladesh Bank data showed on Sunday.</p>",
-            "https://b.com/r": "<p>অক্টোবরে প্রবাসীরা ২৮৭ কোটি ডলার পাঠিয়েছেন বলে বাংলাদেশ ব্যাংকের হালনাগাদ তথ্যে দেখা যায়।</p>",
+            "https://a.com/r": "<p>Remittance stood at $2.87 billion in October, Bangladesh Bank data showed on Sunday. "
+                               "In September inflow was $2.76 billion.</p>",
+            "https://b.com/r": "<p>অক্টোবরে প্রবাসীরা ২৮৭ কোটি ডলার পাঠিয়েছেন বলে বাংলাদেশ ব্যাংকের হালনাগাদ তথ্যে দেখা যায়। "
+                               "সেপ্টেম্বরে এসেছিল ২৭৬ কোটি ডলার।</p>",
         }
         feeds = {"https://feed/a": RSS.format(t="Remittance $2.87b", u="https://a.com/r", d="d", p=p),
                  "https://feed/b": RSS.format(t="রেমিট্যান্স ২৮৭ কোটি", u="https://b.com/r", d="d", p=p)}
@@ -295,16 +338,25 @@ class EndToEnd(unittest.TestCase):
             raise OSError("no")
 
         def fake_gemini(prompt, models, **kw):
+            if "প্রুফ-রিডার" in prompt:
+                return {"fixes": [{"wrong": "দাড়িয়েছে", "right": "দাঁড়িয়েছে"}]}
             if "শিরোনাম (JSON" in prompt:
                 return {"groups": [{"items": [0, 1], "topic": "অক্টোবরের রেমিট্যান্স", "category": "economy",
                                     "score": 8, "section": "bd"}]}
             assert "[ঘটনা 1]" in prompt
             return {"items": [{"event": 1, "title": "অক্টোবরে রেমিট্যান্স ২৮৭ কোটি ডলার", "short": "গত মাসে প্রবাসী আয় ২৮৭ কোটি ডলার।",
-                    "detail": "বাংলাদেশ ব্যাংকের হিসাবে অক্টোবরে প্রবাসী আয় দাঁড়িয়েছে ২৮৭ কোটি ডলারে।",
-                    "why_exam": "অর্থনীতির সংখ্যা।", "category": "economy", "score": 8, "section": "bd",
+                    "detail": "বাংলাদেশ ব্যাংকের হিসাবে অক্টোবরে প্রবাসী আয় দাড়িয়েছে ২৮৭ কোটি ডলারে। আগের মাসে ছিল ২৭৬ কোটি ডলার।",
+                    "exam_point": "অক্টোবরে রেমিট্যান্স ২৮৭ কোটি ডলার, সেপ্টেম্বরে ২৭৬ কোটি। হিসাব বাংলাদেশ ব্যাংকের।",
+                    "category": "economy", "score": 8, "section": "bd",
                     "facts": [{"label": "রেমিট্যান্স", "value": "২৮৭ কোটি ডলার",
                                "evidence": [{"src": 0, "quote": "$2.87 billion in October"},
-                                            {"src": 1, "quote": "প্রবাসীরা ২৮৭ কোটি ডলার পাঠিয়েছেন"}]}]}]}
+                                            {"src": 1, "quote": "প্রবাসীরা ২৮৭ কোটি ডলার পাঠিয়েছেন"}]},
+                              {"label": "সেপ্টেম্বরে", "value": "২৭৬ কোটি ডলার",
+                               "evidence": [{"src": 0, "quote": "$2.76 billion"},
+                                            {"src": 1, "quote": "সেপ্টেম্বরে এসেছিল ২৭৬ কোটি ডলার"}]},
+                              {"label": "তথ্যের উৎস", "value": "বাংলাদেশ ব্যাংক",
+                               "evidence": [{"src": 0, "quote": "Bangladesh Bank data"},
+                                            {"src": 1, "quote": "বাংলাদেশ ব্যাংকের হালনাগাদ"}]}]}]}
 
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
@@ -328,6 +380,95 @@ class EndToEnd(unittest.TestCase):
             self.assertEqual(json.loads((tmp / "index.json").read_text())["latest"], "2026-11-04")
             self.assertIn("প্রকাশ: **1টা**", (tmp / "s.md").read_text())
             self.assertEqual(day["top"][0]["section_bn"], "বাংলাদেশ")
+            self.assertIn("দাঁড়িয়েছে", day["top"][0]["detail"])        # বানান-ধাপ (AI) বসেছে
+            self.assertEqual(len(day["top"][0]["facts"]), 3)
+            self.assertEqual(day["qc"]["spell"], "dict+ai")
+            self.assertEqual(quality.check_day(day), [])
+
+
+class Rewrite(unittest.TestCase):
+    """লেখায় নিষেধ করা কথা → একবার আবার লেখানো → পেরোলে প্রকাশ।"""
+
+    def test_rewrite_path(self):
+        texts = [{"domain": "a.com", "name": "a", "url": "https://a.com/1",
+                  "text": "Parliament passed the Tax Act on Monday. It sets VAT at 15 percent. Finance minister Rahman placed it."},
+                 {"domain": "b.com", "name": "b", "url": "https://b.com/1",
+                  "text": "সংসদে কর আইন পাস হয়েছে। ভ্যাট হার ১৫ শতাংশ। বিলটি তোলেন অর্থমন্ত্রী রহমান।"}]
+        ev = lambda a, b: [{"src": 0, "quote": a}, {"src": 1, "quote": b}]
+        res = {"title": "সংসদে কর আইন পাস", "short": "নতুন কর আইন পাস।", "detail": "সংসদে কর আইন পাস হলো। ভ্যাট ১৫ শতাংশ।",
+               "exam_point": "অর্থনীতি বিষয়ক প্রশ্নে আসার সুযোগ রয়েছে।", "category": "law", "score": 8, "section": "bd",
+               "facts": [{"label": "আইন", "value": "কর আইন", "evidence": ev("Tax Act", "কর আইন পাস")},
+                         {"label": "ভ্যাট", "value": "১৫ শতাংশ", "evidence": ev("VAT at 15 percent", "ভ্যাট হার ১৫ শতাংশ")},
+                         {"label": "উত্থাপক", "value": "অর্থমন্ত্রী রহমান", "evidence": ev("minister Rahman", "অর্থমন্ত্রী রহমান")}]}
+        res["sources"] = run_daily.sources_of(res, texts)
+        ok, why = run_daily.finish(res, texts, set())
+        self.assertFalse(ok)
+        with mock.patch.object(pick, "gemini_json", return_value={"items": [{"event": 1, "title": "সংসদে কর আইন পাস",
+                               "short": "নতুন কর আইন পাস হয়েছে।", "detail": "সংসদে কর আইন পাস হলো। ভ্যাট ১৫ শতাংশ। বিল তোলেন অর্থমন্ত্রী রহমান।",
+                               "exam_point": "কর আইনে ভ্যাট ১৫ শতাংশ; বিল তোলেন অর্থমন্ত্রী রহমান।"}]}):
+            new = pick.rewrite_batch([(res, why)])[0]
+        ok, why = run_daily.finish(new, texts, set())
+        self.assertTrue(ok, why)
+
+
+class Quality(unittest.TestCase):
+    """LY Sites-এর নির্দেশনা (২০২৬-১১-১০): পরীক্ষার জন্য গুরুত্বপূর্ণ, ছক, বানান, বাদের বিষয়।"""
+
+    def good(self, **kw):
+        it = {"id": "x", "title": "চেক ডিজঅনার মামলার নতুন এখতিয়ার", "short": "হাইকোর্টের আদেশ।", "detail": "বিস্তারিত।",
+              "exam_point": "৫ লাখ টাকা পর্যন্ত চেক ডিজঅনারের মামলা ম্যাজিস্ট্রেট আদালতে।",
+              "facts": [{"label": "সীমা", "value": "৫ লাখ টাকা"}, {"label": "আদালত", "value": "ম্যাজিস্ট্রেট আদালত"},
+                        {"label": "আইন", "value": "নেগোশিয়েবল ইনস্ট্রুমেন্টস অ্যাক্ট"}],
+              "sources": [{"name": "ক", "url": "https://a.com/1"}, {"name": "খ", "url": "https://b.com/2"}]}
+        it.update(kw)
+        return it
+
+    def test_good_item_passes(self):
+        self.assertEqual(quality.item_problems(self.good()), [])
+
+    def test_banned_phrase(self):
+        p = quality.item_problems(self.good(exam_point="আইন বিষয়ক প্রশ্নে আসার সুযোগ রয়েছে।"))
+        self.assertTrue(any("নিষেধ" in x for x in p))
+        self.assertTrue(any("নাম বা সংখ্যা নেই" in x for x in p))
+
+    def test_table_rows(self):
+        self.assertTrue(any("ছকে" in x for x in quality.item_problems(self.good(facts=[{"label": "a", "value": "১"}]))))
+
+    def test_crime_excluded(self):
+        p = quality.item_problems(self.good(title="এনভিডিয়া সিইও-কে নিয়ে অভ্যন্তরীণ তদন্ত"))
+        self.assertTrue(any("বাদের বিষয়" in x for x in p))
+        self.assertIsNone(quality.excluded("চেক ডিজঅনার মামলার বিচার ম্যাজিস্ট্রেট আদালতে"))
+        self.assertIsNone(quality.excluded("পর্তুগালের তারকা রোনালদোর অবসর", "ভারতের অধিনায়ক"))
+
+    def test_spelling_and_digits(self):
+        it = self.good(detail="কোম্পানিটি অভ্যন্তরিণ নীতি বদলেছে; লিড ৩15 রান।")
+        self.assertTrue(any("বানান" in x for x in quality.item_problems(it)))
+        quality.polish(it)
+        self.assertIn("অভ্যন্তরীণ", it["detail"])
+        self.assertIn("৩১৫", it["detail"])
+        self.assertEqual(quality.bn_digits("COP31 সম্মেলন (COP31) 2026"), "COP31 সম্মেলন (COP31) ২০২৬")
+        self.assertEqual(quality.fix_spelling("পুরনো সূক্ষ্ম")[0], "পুরনো সূক্ষ্ম")      # ঠিক শব্দ বদলায় না
+
+    def test_check_day(self):
+        self.assertEqual(quality.check_day({"date": "2026-11-09", "top": [self.good()], "more": []}), [])
+        self.assertTrue(quality.check_day({"date": "2026-11-09", "top": [], "more": []}))
+        self.assertTrue(quality.check_day([]))
+
+
+class Prune(unittest.TestCase):
+    def test_drops_sentence_with_unverified_number(self):
+        texts = [{"domain": "a.com", "text": "Hridoy made 242 not out."}, {"domain": "b.com", "text": "হৃদয় ২৪২ রানে অপরাজিত।"}]
+        it = {"title": "হৃদয়ের অপরাজিত ২৪২", "short": "হৃদয় ২৪২ রান করেছেন।",
+              "detail": "তাওহীদ হৃদয় অপরাজিত ২৪২ রান করেছেন। আগের রেকর্ড ছিল ২০১৮ সালের। এটা টেস্টে বাংলাদেশের নতুন রেকর্ড।",
+              "exam_point": "হৃদয়ের ২৪২ রান।",
+              "facts": [{"label": "রান", "value": "২৪২", "evidence": [{"src": 0, "quote": "242 not out"},
+                                                                     {"src": 1, "quote": "২৪২ রানে অপরাজিত"}]}]}
+        ok, why = verify.check_item(it, texts)
+        self.assertFalse(ok)
+        self.assertTrue(verify.prune(it, texts))
+        ok, why = verify.check_item(it, texts)
+        self.assertTrue(ok, why)
+        self.assertNotIn("২০১৮", it["detail"])
 
 
 if __name__ == "__main__":

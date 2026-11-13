@@ -11,14 +11,14 @@
   'use strict';
   // লক্ষ্যের পরীক্ষা: বিষয়ের নম্বর আর ভুলে কাটা (বিসিএস: SUBJECT-PLAN.md §১; পেট্রোবাংলা: pilot/custom-plan pb-start-এর weight)
   var TARGETS = {
-    bcs: {name: 'বিসিএস প্রিলি', neg: 0.5, marks: {bn: 30, eng: 30, bd: 25, intl: 25, math: 20, sci: 15, ict: 15, mental: 15, ethics: 15, geo: 10}},
-    pb: {name: 'পেট্রোবাংলা (সহকারী ব্যবস্থাপক)', neg: 0.25, marks: {math: 27, eng: 26, bn: 16, bd: 11, intl: 9, ict: 5}},
+    bcs: {name: 'BCS Prelim', neg: 0.5, marks: {bn: 30, eng: 30, bd: 25, intl: 25, math: 20, sci: 15, ict: 15, mental: 15, ethics: 15, geo: 10}},
+    pb: {name: 'Petrobangla (Assistant Manager)', neg: 0.25, marks: {math: 27, eng: 26, bn: 16, bd: 11, intl: 9, ict: 5}},
     // সাব-রেজিস্ট্রার (পিএসসি, ৯ম গ্রেড): বাংলা ২৫, ইংরেজি ২৫, সাধারণ জ্ঞান ২৫, গণিত ও বিজ্ঞান ২৫; ভেতরের ভাগ /running/sub-registrar/-এর নকশা থেকে
-    subreg: {name: 'সাব-রেজিস্ট্রার (পিএসসি)', neg: 0.5, marks: {bn: 25, eng: 25, bd: 15, intl: 10, math: 17, sci: 6, ict: 2},
+    subreg: {name: 'Sub-Registrar (PSC)', neg: 0.5, marks: {bn: 25, eng: 25, bd: 15, intl: 10, math: 17, sci: 6, ict: 2},
       fold: {ca: 'intl', geo: 'bd', econ: 'bd', gk: 'bd'}},
     // ব্যাংক (ব্যাংকার্স সিলেকশন কমিটি, অফিসার/সিনিয়র অফিসার প্রিলি): বিজ্ঞপ্তি ০৭/২০২৪ (Lyanna_data sources/live-written-syllabus); ভুলে −০.২৫
-    bank: {name: 'ব্যাংক (সমন্বিত অফিসার)', neg: 0.25, marks: {bn: 25, eng: 25, math: 20, gk: 20, ict: 10},
-      names: {math: 'গণিত ও Quantitative Skills', gk: 'সাধারণ জ্ঞান (বাংলাদেশ, আন্তর্জাতিক, অর্থনীতি, সাম্প্রতিক)'},
+    bank: {name: 'Bank (Combined Officer)', neg: 0.25, marks: {bn: 25, eng: 25, math: 20, gk: 20, ict: 10},
+      names: {math: 'Math and Quantitative Skills', gk: 'General knowledge (Bangladesh, international, economy, current affairs)'},
       fold: {bd: 'gk', intl: 'gk', ca: 'gk', econ: 'gk', geo: 'gk', mental: 'math'}}
   };
   // fold = কোন বিষয়ের প্রশ্ন লক্ষ্যের কোন ভাগে গোনা হবে (যেমন ব্যাংকে বাংলাদেশ + আন্তর্জাতিক = সাধারণ জ্ঞান)
@@ -79,7 +79,7 @@
         return {qid: id, pos: i, pick: x[0], skip: x[0] < 0, ms: x[2] || null, topic: q ? q[0] : -1, subj: q ? q[1] : -1, k: q ? q[3] || 4 : 4, ok: x[0] < 0 ? null : x[1] ? 1 : 0, shuffled: true};
       });
       // ভাগের না-ছোঁয়া প্রশ্নও ফাঁকা হিসেবে আছে res-এ; এখানে শুধু দাগানো/ফাঁকা পাঠানোগুলো
-      exams.push({src: 'diag', k: d.sid + '#' + d.part, c: 'diag', ts: d.ts, title: 'অবস্থা-যাচাই ' + d.sid + ' · ভাগ ' + d.part, n: d.res.n, rows: rows,
+      exams.push({src: 'diag', k: d.sid + '#' + d.part, c: 'diag', ts: d.ts, title: 'Diagnostic ' + d.sid + ' · part ' + d.part, n: d.res.n, rows: rows,
         trust: true, timed: true, m: {hid: d.hid || 0, hn: d.hn || 0}, skipChose: 0, skipTail: 0, timeOut: false});
     });
     exams.sort(function (x, y) { return x.ts - y.ts; });
@@ -130,7 +130,7 @@
       if (r.topic >= 0) (byTopic[r.topic] = byTopic[r.topic] || []).push(r);
     });
     var subjects = Object.keys(bySubj).map(function (k) {
-      var o = tally(bySubj[k]); o.code = k === 'x' ? '' : S[k][0]; o.name = k === 'x' ? 'অজানা বিষয়' : S[k][1]; return o;
+      var o = tally(bySubj[k]); o.code = k === 'x' ? '' : S[k][0]; o.name = k === 'x' ? 'Unknown subject' : S[k][1]; return o;
     }).sort(function (a, b) { return b.n - a.n; });
     // টপিকের বড় ভাগ (sci-light-refraction → sci-light): পাতার টপিকে প্রশ্ন কম থাকলে বড় ভাগে মিলিয়ে দেখা (Fable)
     var tid = {}; T.forEach(function (t, i) { tid[t[0]] = i; });

@@ -6,6 +6,7 @@
       ব্যাখ্যার নিচে "✎ ছাত্রের কথায় বদলানো, <মাস>"; এই ফোনে আগের লেখায় "বুঝিনি" দেওয়া থাকলে প্রশ্নটা "এবার বুঝলেন?"।
    (🎤 কথা বলে মতামত ২০২৬-১১-০৪-এ তুলে দেওয়া হয়েছে; ভালো সমাধান পেলে আবার ভাবা হবে।)
    প্রশ্ন চেনা: কাছের [data-id] থেকে প্রশ্নের id; না পেলে পাতার Q তালিকায় লেখা মিলিয়ে; তাও না পেলে প্রশ্নের লেখা।
+   ৪. ঠিকানার শেষে #id=q… বা #t=… থাকলে সেই প্রশ্নে নিয়ে যায় (অ্যাডমিনের রিপোর্ট পাতার "প্রশ্নটা খুলুন" লিংক)।
    পাতায় একবার: <script src="/js/report.js" defer></script> (account.js নিজে থেকেই এটা লোড করে)। */
 (function(){
   if(window.LBR)return;window.LBR=1;
@@ -42,7 +43,8 @@
   function qText(box,exp){
     if(!box)return '';
     var t=box.querySelector('.qt,.qq,.tqq,h3,.q-t');
-    if(t)return clean(t.textContent).slice(0,400);
+    // প্রশ্নের নম্বর (.n) আর উৎস-লেখা (.src, যেমন "২৮তম বিসিএস · বইয়ের অনুচ্ছেদ …") বাদ, শুধু প্রশ্নটা
+    if(t){var tc=t.cloneNode(true);tc.querySelectorAll('.n,.src').forEach(function(n){n.remove()});return clean(tc.textContent).slice(0,400)}
     var c=box.cloneNode(true);c.querySelectorAll('.exp,.tqe,.rq,.rqf,.opts,button').forEach(function(n){n.remove()});
     return clean(c.textContent).slice(0,400);
   }
@@ -71,7 +73,7 @@
     f.querySelector('.x').onclick=function(){f.replaceWith(make())};
     go.onclick=function(){
       go.disabled=true;go.textContent='পাঠানো হচ্ছে…';
-      var body={qid:id,page:location.pathname+location.search,q:text,kind:kind||'other',note:f.querySelector('textarea').value};
+      var body={qid:id,page:location.pathname+location.search+location.hash,q:text,kind:kind||'other',note:f.querySelector('textarea').value};
       fetch('/api/report',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify(body)})
       .then(function(r){if(!r.ok)throw r.status;mark(key);
         f.outerHTML='<div class="rqd">✓ ধন্যবাদ! আপনার কথা পৌঁছেছে। যাচাই করে প্রশ্নটা ঠিক বা আরও সহজ করা হবে, যাতে পরের সবাই উপকার পায়।</div>'})
@@ -148,7 +150,7 @@
         var note=ta.value.trim();if(!note){done(0);return}
         var go=d.querySelector('.go');go.disabled=true;go.textContent='পাঠানো হচ্ছে…';
         fetch('/api/report',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',
-          body:JSON.stringify({qid:id,page:location.pathname+location.search,q:text,kind:'hard',note:note,h:h})})
+          body:JSON.stringify({qid:id,page:location.pathname+location.search+location.hash,q:text,kind:'hard',note:note,h:h})})
         .then(function(){done(0)},function(){done(0)});
       };
     }});
@@ -168,4 +170,27 @@
     if(m.target.classList&&(m.target.classList.contains('exp')||m.target.classList.contains('tqe')))add(m.target);
   })}).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});
   if(document.readyState!=='loading')scan(document.body);else document.addEventListener('DOMContentLoaded',function(){scan(document.body)});
+
+  // ---- রিপোর্ট থেকে সরাসরি প্রশ্নে (অ্যাডমিনের /admin/reports/ পাতার লিংক) ----
+  /* ঠিকানার শেষে #id=q… (প্রশ্নের id) বা #t=<প্রশ্নের লেখার শুরু> থাকলে প্রশ্নটা খুঁজে সেখানে নিয়ে যায়, গোলাপি দাগে চিহ্নিত করে।
+     প্রশ্ন পরে আঁকা হলেও (কুইজ পাতা) ৮ সেকেন্ড পর্যন্ত খোঁজে। tools/build_qloc.py বলে দেয় কোন id কোন পাতায়। */
+  (function(){
+    var m=/^#(id|t)=(.+)$/.exec(location.hash);if(!m)return;
+    var want=m[1]==='id'?m[2]:'',txt='';try{txt=m[1]==='t'?clean(decodeURIComponent(m[2])).slice(0,60):''}catch(e){}
+    if(want&&!/^q[0-9a-f]{10}$/.test(want))return;if(!want&&txt.length<6)return;
+    function find(){
+      if(want)return document.querySelector('[data-id="'+want+'"]');
+      var bs=document.querySelectorAll('section.q,li.q,.q,.tq');
+      for(var i=0;i<bs.length;i++)if(qText(bs[i]).indexOf(txt)>=0||clean(bs[i].textContent).indexOf(txt)>=0)return bs[i];
+      return null;
+    }
+    var n=0,iv=setInterval(function(){
+      var el=find();if(!el&&++n<32)return;clearInterval(iv);
+      if(!el){var w=document.createElement('div');w.style.cssText='position:fixed;left:12px;right:12px;bottom:12px;z-index:99;padding:10px 14px;border:1.3px solid #c8326a;border-radius:3px;background:#fffdf7;color:#1d1f21;font:400 14px/1.5 "Noto Sans Bengali",sans-serif';
+        w.textContent='এই পাতায় রিপোর্টের প্রশ্নটা পাওয়া গেল না (প্রশ্নটা হয়তো সরানো বা বদলানো হয়েছে)।';document.body.appendChild(w);return}
+      el.style.outline='3px solid #c8326a';el.style.outlineOffset='3px';el.style.scrollMarginTop='80px';
+      var exp=el.querySelector('.exp,.tqe');if(exp&&exp.hidden)exp.hidden=false;
+      el.scrollIntoView({block:'start'});
+    },250);
+  })();
 })();

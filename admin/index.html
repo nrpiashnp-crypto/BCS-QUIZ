@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="theme-color" content="#13294b">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Admin · Lyanna Books</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+:root{--paper:#f8f5ee;--ink:#1d1f21;--muted:#5f6366;--rule:#d9d6cf;--card:#fff;--navy:#13294b;--pink:#c8326a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 'Noto Sans Bengali',system-ui,sans-serif}
+.wrap{max-width:720px;margin:0 auto;padding:20px 16px 80px}
+h1{font:400 28px/1.3 'Tiro Bangla',Georgia,serif;margin:0 0 4px;color:var(--navy)}
+.sub{color:var(--muted);margin:0 0 18px;font-size:14.5px}
+h2{font:400 18px/1.3 'Tiro Bangla',Georgia,serif;margin:22px 0 6px;color:var(--muted)}
+ul.go{list-style:none;margin:0;padding:0;border-top:1px solid var(--rule)}
+ul.go li{border-bottom:1px solid var(--rule)}
+ul.go a{display:block;padding:12px 4px 12px 14px;border-left:3px solid transparent;color:inherit;text-decoration:none}
+ul.go a:hover,ul.go a:focus-visible{border-left-color:var(--pink);background:#fff}
+ul.go b{display:flex;align-items:center;gap:8px;color:var(--navy);font-size:17px;font-weight:600}
+ul.go b::after{content:"→";margin-left:auto;color:var(--muted);font-weight:400}
+ul.go span{display:block;color:var(--muted);font-size:14px;line-height:1.5}
+.n{background:var(--pink);color:#fff;font-size:13px;font-weight:600;border-radius:3px;padding:0 7px;line-height:1.6}
+.n:empty{display:none}
+#msg{background:#fff;border:1px solid var(--rule);border-radius:3px;padding:12px 14px;margin:0 0 14px}
+#msg:empty{display:none}
+.foot{margin-top:28px;font-size:14px;color:var(--muted)}
+.foot a{color:var(--navy)}
+</style>
+<link rel="stylesheet" href="/css/omr.css">
+<link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body>
+<div class="adbar"><a class="adback" href="/" aria-label="Lyanna Books home">← Site</a><span class="adname">Admin</span></div>
+<main class="wrap">
+<h1>Admin</h1>
+<p class="sub">Pick a task. Tap "← Admin" at the top of any page to come back here.</p>
+<div id="msg"></div>
+
+<h2>Learners</h2>
+<ul class="go">
+<li><a href="/admin/learners/"><b>Learner results <i class="n" id="nL"></i></b><span>Who took which test, every answer. Tap a name to see that learner's review too.</span></a></li>
+<li><a href="/admin/diag/"><b>Diagnostic</b><span>The starting test for custom plans: who took it, how each question went, who to message.</span></a></li>
+<li><a href="/admin/pilot/"><b>Pilot batch</b><span>Upload batch sets, start date, member approval and attendance.</span></a></li>
+</ul>
+
+<h2>Questions &amp; content</h2>
+<ul class="go">
+<li><a href="/admin/reports/"><b>Question error reports <i class="n" id="nR" title="New reports"></i></b><span>Questions learners flagged as wrong, and explanations they didn't understand.</span></a></li>
+<li><a href="/admin/library/"><b>Topic library</b><span>Find a topic's passages across all sources and download them together.</span></a></li>
+<li><a href="/admin/wm/"><b>Copy check</b><span>Found our sheet somewhere else? Give a screenshot; the hidden dot pattern shows which download it came from.</span></a></li>
+</ul>
+
+<h2>Jobs</h2>
+<ul class="go">
+<li><a href="/admin/jobs/"><b>Job circulars</b><span>Add, edit, open or close the posts on the "My jobs" page.</span></a></li>
+</ul>
+
+<p class="foot"><a href="/account/">My account</a></p>
+</main>
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const bn=n=>String(n);
+async function api(p){const r=await fetch('/api/'+p,{credentials:'same-origin',cache:'no-store'});
+  if(r.status===401)throw 'login';if(r.status===403)throw 'admin';if(!r.ok)throw 'err';return r.json()}
+function fail(e){
+  if(e==='login')$('msg').innerHTML='Please <a href="/account/">log in</a> first (with an admin email).';
+  else if(e==='admin')$('msg').textContent='This email is not on the admin list.';
+}
+// নতুন অভিযোগ কয়টা, আর মোট কতজন শিক্ষার্থী: পাতা খোলার সময় একবার
+api('admin/reports?st=new').then(j=>{if(j.rows&&j.rows.length)$('nR').textContent=bn(j.rows.length)}).catch(fail);
+api('admin/learners').then(j=>{if(j.users)$('nL').textContent=j.users.length+(j.users.length===1?' learner':' learners');$('nL').style.background='#13294b'}).catch(()=>{});
+})();
+</script>
+</body>

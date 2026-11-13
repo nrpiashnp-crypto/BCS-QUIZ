@@ -2,12 +2,12 @@
    পাতা (HTML) আর প্রশ্নের JSON: আগে নেটওয়ার্ক, না পেলে ক্যাশ, তাই অনলাইনে সবসময় নতুন প্রশ্ন আসে।
    ফন্ট, ছবি: ক্যাশ থেকে সাথে সাথে, পেছনে নতুন কপি এনে রাখে। js/css: আগে নেটওয়ার্ক, না পেলে ক্যাশ (নতুন পাতার সাথে পুরোনো স্ক্রিপ্ট যেন না মেলে)। অন্য ডোমেইনের কিছু (যেমন analytics) ছোঁয়া হয় না।
    কিছু বদলালে VERSION বাড়ান, পুরোনো ক্যাশ মুছে যাবে। */
-const VERSION='v13';
-const CORE = 'core-' + VERSION, PAGES = 'pages-' + VERSION, DATA = 'data-' + VERSION;
+const VERSION='v14';
+const CORE = 'core-' + VERSION, PAGES = 'pages-' + VERSION, DATA = 'data-' + VERSION, SAMPLE = 'sample-' + VERSION;
 const PRECACHE = ['/', '/exams/', '/science/', '/fonts/fonts.css',
   '/fonts/AnekBangla-bengali.woff2', '/fonts/AnekBangla-latin.woff2', '/fonts/LyannaWordmark.woff2',
   '/img/logo/li-mark.svg', '/img/logo/final-icon.svg', '/css/omr.css', '/js/omr.js', '/js/wrong.js'];
-const LIMIT = {[PAGES]: 40, [DATA]: 80};
+const LIMIT = {[PAGES]: 40, [DATA]: 80, [SAMPLE]: 120};
 
 const OFFLINE = `<!doctype html><html lang="bn"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ইন্টারনেট নেই · লিয়ানা বুকস</title><link rel="stylesheet" href="/fonts/fonts.css">
@@ -21,7 +21,7 @@ self.addEventListener('install', e => {
   e.waitUntil(caches.open(CORE).then(c => Promise.all(PRECACHE.map(u => c.add(u).catch(() => {})))).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
-  const keep = [CORE, PAGES, DATA];
+  const keep = [CORE, PAGES, DATA, SAMPLE];
   e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => !keep.includes(k)).map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
@@ -32,7 +32,8 @@ async function trim(name) {
 }
 async function networkFirst(req, name) {
   try {
-    const res = await fetch(req);
+    // ফোনের HTTP-ক্যাশের পুরোনো কপি নয়, সার্ভারে মিলিয়ে নেওয়া (বদল না থাকলে ছোট 304)
+    const res = await fetch(req, {cache: 'no-cache'});
     if (res.ok) { const c = await caches.open(name); await c.put(req, res.clone()); trim(name); }
     return res;
   } catch (err) {
@@ -58,5 +59,7 @@ self.addEventListener('fetch', e => {
   if (req.mode === 'navigate' || req.destination === 'document') return e.respondWith(networkFirst(req, PAGES));
   if (url.pathname.endsWith('.json')) return e.respondWith(networkFirst(req, DATA));
   if (/^\/(js|css)\//.test(url.pathname)) return e.respondWith(networkFirst(req, CORE));
+  // নমুনা অধ্যায়ের পাতা-ছবি/PDF: অধ্যায় বদলালে সাথে সাথে নতুনটা দেখাতে আগে নেটওয়ার্ক
+  if (url.pathname.startsWith('/sample/')) return e.respondWith(networkFirst(req, SAMPLE));
   if (/^\/(fonts|img)\//.test(url.pathname) || req.destination === 'image') return e.respondWith(staleWhileRevalidate(req, e));
 });
