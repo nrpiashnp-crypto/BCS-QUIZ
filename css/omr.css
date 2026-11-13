@@ -24,6 +24,9 @@ body{background:#f8f5ee!important;color:#1d1f21;position:relative;overflow-x:hid
 .sitebar nav a:nth-child(3)::before,body>.bar nav.sec a:nth-child(3)::before{content:"গ"}
 .sitebar nav a:nth-child(4)::before,body>.bar nav.sec a:nth-child(4)::before{content:"ঘ"}
 .sitebar nav a:nth-child(5)::before,body>.bar nav.sec a:nth-child(5)::before{content:"ঙ"}
+.sitebar nav a:nth-child(6)::before,body>.bar nav.sec a:nth-child(6)::before{content:"চ"}
+@media (max-width:600px){.sitebar nav .n2,body>.bar nav.sec .n2{display:none}}
+@media (max-width:420px){.sitebar nav .n1,body>.bar nav.sec .n1{display:none}}
 .sitebar nav a[aria-current]::before,.sitebar nav a:hover::before,body>.bar nav.sec a[aria-current]::before,body>.bar nav.sec a:hover::before{background:#1d1d1f;border-color:#1d1d1f;color:#f8f5ee}
 @media (max-width:420px){.sitebar>a:first-child img,body>.bar>a:first-child img{height:38px!important}.sitebar nav,.sitebar nav.sec,body>.bar nav.sec{gap:4px 7px;flex-shrink:1;min-width:0}
   .sitebar nav a,body>.bar nav.sec a{font-size:13.5px;gap:3px}.sitebar nav a::before,body>.bar nav.sec a::before{width:18px;height:18px;font-size:10px}}
@@ -156,3 +159,6 @@ a:not([class]):hover,p a:hover,li a:hover,.exp a:hover,.sub a:hover,.crumb a:hov
 /* পরীক্ষায় প্রশ্ন বদলের হালকা মিলিয়ে যাওয়া (plan.js) */
 #view{transition:opacity .15s ease}#view.qout{opacity:0}
 @media (prefers-reduced-motion:reduce){#view{transition:none}}
+/* ছয় লিংক (বিষয়ভিত্তিক যোগের পরে) ফোনে এক সারিতে: বাবল আর ফাঁক একটু ছোট */
+@media (max-width:420px){.sitebar nav,.sitebar nav.sec,body>.bar nav.sec{gap:4px 4px}.sitebar nav a,body>.bar nav.sec a{gap:2px}.sitebar nav a::before,body>.bar nav.sec a::before{width:16px;height:16px;font-size:9.5px}}
+@media (max-width:374px){.sitebar nav,.sitebar nav.sec,body>.bar nav.sec{gap:4px 3px}.sitebar nav a,body>.bar nav.sec a{font-size:12.5px}.sitebar nav a::before,body>.bar nav.sec a::before{width:15px;height:15px;font-size:9px}}

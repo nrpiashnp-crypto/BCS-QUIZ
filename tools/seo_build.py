@@ -91,7 +91,17 @@ ul.list{padding-left:18px}ul.list li{margin:3px 0}.cols{columns:2 240px;column-g
 .book{margin:28px 0 0;padding:12px 14px;border:1px solid var(--rule);border-radius:12px;background:var(--soft);font-size:14.5px}
 footer{text-align:center;font-size:13px;color:var(--muted);padding:20px 16px 30px}footer a{color:var(--muted)}"""
 
-SEC = [('/bcs/', 'বিসিএস'), ('/jobs/', 'চাকরি'), ('/science/', 'বিজ্ঞান'), ('/running/', 'চলমান'), ('/news/', 'খবর')]
+# "বিষয়ভিত্তিক প্রস্তুতি": ৬০০px-এর নিচে "বিষয়ভিত্তিক", ৪২০px-এর নিচে শুধু "বিষয়" (.n1/.n2, css/omr.css), যাতে ফোনে ছয়টা লিংক এক সারিতে থাকে
+SUBJ_T = 'বিষয়<span class="n1">ভিত্তিক</span><span class="n2"> প্রস্তুতি</span>'
+SEC = [('/bcs/', 'বিসিএস'), ('/jobs/', 'চাকরি'), ('/science/', 'বিজ্ঞান'), ('/subject/', SUBJ_T), ('/running/', 'চলমান'), ('/news/', 'খবর')]
+
+
+def nav_subject(s, cur=False):
+    """হাতে-বানানো বা অন্য যন্ত্রের পাতার nav.sec-এ বিজ্ঞানের পরে /subject/ (না থাকলে); পরের বিল্ডেও থাকে।"""
+    m = re.search(r'<nav class="sec"[^>]*>.*?</nav>', s, flags=re.S)
+    if not m or 'href="/subject/"' in m.group(0): return s
+    nav = re.sub(r'(<a href="/science/"[^>]*>বিজ্ঞান</a>)', lambda x: x.group(1) + '<a href="/subject/"' + (' aria-current="page"' if cur else '') + ' aria-label="বিষয়ভিত্তিক প্রস্তুতি">' + SUBJ_T + '</a>', m.group(0), count=1)
+    return s[:m.start()] + nav + s[m.end():]
 
 
 SUF = ' · লিয়ানা বুকস'
@@ -123,7 +133,7 @@ def page(path, title, desc, crumbs, body, current=None, img='/img/og.png', ld_ex
     # long titles get cut in search results; the brand is already in og:site_name, so drop the suffix when the title is long
     if len(title) > 62 and title.endswith(SUF): title = title[:-len(SUF)]
     body = fix_imgs(body)
-    nav = ''.join(f'<a href="{h}"{" aria-current=\"page\"" if h == current else ""}>{t}</a>' for h, t in SEC)
+    nav = ''.join(f'<a href="{h}"{" aria-current=\"page\"" if h == current else ""}{" aria-label=\"বিষয়ভিত্তিক প্রস্তুতি\"" if h == "/subject/" else ""}>{t}</a>' for h, t in SEC)
     trail = [('/', 'হোম')] + crumbs
     crumb_html = '<nav class="crumb" aria-label="অবস্থান">' + ''.join(
         (f'<span><a href="{h}">{esc(t)}</a></span>' if h else f'<span>{esc(t)}</span>') if i else f'<a href="{h}">{esc(t)}</a>'
@@ -445,6 +455,12 @@ for slug, no, name, Q in ch_links:
                                       ld_extra=[quiz_ld(f'{name}: বিজ্ঞান MCQ', Q, path, f'সাধারণ বিজ্ঞান: {name}')]))
     generated.append((path, f'{slug}/index.html'))
 
+# ---------- বিষয়ভিত্তিক প্রস্তুতি: নাম আর লিংক subject/index.html থেকে (হাতে নয়) ----------
+SUBJECTS = [(h, re.sub(r'<[^>]+>', '', n).strip()) for h, n in re.findall(
+    r'<a class="tile[^"]*" href="(/subject/[a-z0-9-]+/)"[^>]*>.*?<b>(.*?)</b>', rd('subject/index.html'), flags=re.S)]
+subj_line = (f'<p>বিষয় ধরে পড়তে চাইলে: <a href="/subject/"><b>বিষয়ভিত্তিক প্রস্তুতি →</b></a> '
+             f'({bn(len(SUBJECTS))}টি বিষয়, প্রতিটি টপিক ধরে পরীক্ষা)</p>\n') if SUBJECTS else ''
+
 # ---------- /questions/ : everything in one list ----------
 grp = {}
 for e in jobs_ok: grp.setdefault(e['cat'], []).append(e)
@@ -461,7 +477,7 @@ for c in CAT_ORDER:
 nall = len(bcs_links) + len(ch_links) + len(jobs_ok)
 qbody = f"""<h1>সব প্রশ্ন ও সমাধান</h1>
 <p class="lead">বিসিএস প্রিলিমিনারি, ব্যাংক জব, সরকারি চাকরি আর পিএসসি নন-ক্যাডারের বিগত প্রশ্ন: সঠিক উত্তর আর ব্যাখ্যাসহ {bn(nall)}টি প্রশ্নপত্র। প্রতিটি প্রশ্নপত্র দিয়ে সময় ধরে ফ্রি মডেল টেস্টও দেওয়া যায়।</p>
-<ul class="toc"><li><a href="#bcs">বিসিএস</a></li><li><a href="#science">বিজ্ঞান</a></li><li><a href="#series">সব বছর একসঙ্গে</a></li><li><a href="#gb">সরকারি ব্যাংক</a></li><li><a href="#pb">বেসরকারি ব্যাংক</a></li><li><a href="#gov">সরকারি চাকরি</a></li><li><a href="#psc">পিএসসি</a></li><li><a href="#teacher">শিক্ষক নিবন্ধন</a></li></ul>
+{subj_line}<ul class="toc"><li><a href="#bcs">বিসিএস</a></li><li><a href="#science">বিজ্ঞান</a></li><li><a href="#series">সব বছর একসঙ্গে</a></li><li><a href="#gb">সরকারি ব্যাংক</a></li><li><a href="#pb">বেসরকারি ব্যাংক</a></li><li><a href="#gov">সরকারি চাকরি</a></li><li><a href="#psc">পিএসসি</a></li><li><a href="#teacher">শিক্ষক নিবন্ধন</a></li></ul>
 {''.join(sec)}"""
 wr('questions/index.html', page('/questions/', 'বিসিএস, ব্যাংক জব ও সরকারি চাকরির প্রশ্ন ও সমাধান · লিয়ানা বুকস',
    'বিসিএস প্রিলি (১০ম-৫০তম), ব্যাংক জব, সরকারি চাকরি আর পিএসসি নন-ক্যাডারের বিগত প্রশ্ন, সঠিক উত্তর আর ব্যাখ্যা। ফ্রি এমসিকিউ মডেল টেস্ট।',
@@ -490,6 +506,32 @@ for f in sorted(glob.glob(os.path.join(R, '**', 'index.html'), recursive=True)):
     hand.append(d)
 
 chap_names = {s: nm for s, _, nm, _ in ch_links}
+# হোমের নিচে বড় দুই বাটন (সব প্রশ্ন ও সমাধান, বিষয়ভিত্তিক প্রস্তুতি); ১৩/১১-এর বিল্ডে সাধারণ লিংক হয়ে গিয়েছিল, তাই এখানে
+_HB = 'display:inline-block;color:#13294b;font-weight:600;font-size:16px;background:#fffdf7;border:1.4px solid #13294b;border-radius:3px;padding:8px 18px;text-decoration:none;margin:4px 5px'
+HOME_LINKS = ('<!--seo-links--><nav style="max-width:760px;margin:24px auto 0;padding:0 16px 24px;text-align:center;font:13px/1.8 \'Noto Sans Bengali\',system-ui,sans-serif">'
+              f'<a href="/questions/" style="{_HB}">সব প্রশ্ন ও সমাধান →</a><a href="/subject/" style="{_HB}">বিষয়ভিত্তিক প্রস্তুতি →</a>{{fb}}</nav><!--/seo-links-->')
+
+SUBJ_CSS = ('.sbj{max-width:640px}.sbj .sbd{font-size:14.5px;color:var(--ink2);margin:2px 0 10px}'
+            '.sbg{display:grid;grid-template-columns:1fr 1fr;gap:8px}'
+            '.sbg a{display:flex;align-items:center;gap:9px;min-height:52px;padding:8px 10px;border:1.4px solid #13294b;border-radius:3px;background:#fffdf7;'
+            'color:#13294b;text-decoration:none;font:600 15px/1.35 \'Noto Sans Bengali\',sans-serif}'
+            '.sbg a i{flex:none;width:26px;height:26px;border:1.4px solid #c8326a;border-radius:50%;display:grid;place-items:center;'
+            'font:500 12px/1 \'Noto Sans Bengali\',sans-serif;font-style:normal;color:#c8326a}'
+            '.sbg a:active{background:#13294b;color:#fff}@media(hover:hover){.sbg a:hover{background:#13294b;color:#fff}}'
+            '.sbm{display:block;margin:12px 0 0;text-align:right;font-weight:600;color:#c8326a}'
+            '@media(min-width:700px){.sbg{grid-template-columns:repeat(3,1fr)}}')
+
+
+def home_subjects(s):
+    """হোমে বিষয়ভিত্তিক প্রস্তুতির অংশ (subject/index.html-এর বিষয় থেকে), খবরের অংশের পরে, বইয়ের আগে।"""
+    tiles = ''.join(f'<a href="{h}"><i aria-hidden="true">{bn(k)}</i>{esc(n)}</a>' for k, (h, n) in enumerate(SUBJECTS, 1))
+    blk = ('<!--subject-home--><section class="hs sbj" id="subjects" aria-label="বিষয়ভিত্তিক প্রস্তুতি"><h2>বিষয়ভিত্তিক প্রস্তুতি</h2>'
+           f'<p class="sbd">বিষয় বেছে নিন, তারপর টপিক ধরে পরীক্ষা দিন।</p><div class="sbg">{tiles}</div>'
+           f'<a class="sbm" href="/subject/">বিষয়ভিত্তিক প্রস্তুতির পাতা →</a></section><style>{SUBJ_CSS}</style><!--/subject-home-->\n')
+    if '<!--subject-home-->' in s:
+        return re.sub(r'<!--subject-home-->.*?<!--/subject-home-->\n?', lambda m: blk, s, count=1, flags=re.S)
+    return s.replace('<div class="row2">', blk + '\n<div class="row2">', 1)
+
 LINKS = ('<!--seo-links--><nav style="max-width:760px;margin:24px auto 0;padding:0 16px 24px;text-align:center;font:13px/1.8 \'Noto Sans Bengali\',system-ui,sans-serif">'
          '{extra}<a href="/questions/" style="color:inherit;opacity:.75">সব প্রশ্ন ও সমাধান</a>{fb}</nav><!--/seo-links-->')
 FB_LINK = (' · <a href="' + FB + '" target="_blank" rel="noopener" style="color:inherit;opacity:.75">'
@@ -497,11 +539,16 @@ FB_LINK = (' · <a href="' + FB + '" target="_blank" rel="noopener" style="color
 for d in hand:
     p = (d + '/index.html') if d else 'index.html'
     s = rd(p)
+    if d.split('/')[0] != 'news':  # /news/-এর মেনু scripts/news/build_pages.py-র ছাঁচে
+        t = nav_subject(s, cur=d.split('/')[0] == 'subject')
+        if t != s: wr(p, t); s = t
     if 'name="robots" content="noindex"' in s: continue
     url = f'{SITE}/{d + "/" if d else ""}'
     o = s
     slug = d.split('/')[0]
     if slug == 'news': continue  # /news/ pages are generated by scripts/news/build_pages.py (LY News): sitemap only, never edited here
+    if d == '' and SUBJECTS:
+        s = home_subjects(s)
     if d in chap_names and 'লিয়ানা' not in s.split('</title>')[0]:
         s = re.sub(r'<title>[^<]*</title>', f'<title>{esc(chap_names[d])}: বিসিএস বিজ্ঞান MCQ ও ফ্রি অনলাইন পরীক্ষা · লিয়ানা বুকস</title>', s, count=1)
     if 'rel="canonical"' not in s:
@@ -527,7 +574,7 @@ for d in hand:
     s = re.sub(r'\n?<footer>\s*(?:<p>)?[^<]*(?:<a href="/">)?lyannabooks\.com(?:</a>)?[^<]*(?:</p>)?\s*</footer>', '', s)
     if not re.search(r'<footer\b[^>]*>(?:(?!</footer>).)*lyannabooks\.com', s, flags=re.S):
         extra = '<a href="/" style="color:inherit;opacity:.75">লিয়ানা বুকস</a> · ' + extra
-    block = LINKS.format(extra=extra, fb='' if FB in s else FB_LINK)
+    block = (HOME_LINKS if d == '' else LINKS).format(extra=extra, fb='' if FB in s else FB_LINK)
     s = s.replace('</body>', block + '\n</body>', 1)
     if s != o: wr(p, s)
 
