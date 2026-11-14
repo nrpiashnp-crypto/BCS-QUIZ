@@ -39,3 +39,25 @@ jobs:
           fi
           echo "::error::মার্জ করবেন না! Mac থেকে সরাসরি তোলা কাজ (কমিট ${commit:0:8}) এখনো GitHub-এ ওঠেনি। এখন মার্জ করলে সেই কাজ সাইট থেকে মুছে যাবে। আগে Mac থেকে GitHub-এ push হোক, তারপর এই যাচাই আবার চালান।"
           exit 1
+
+  # বটের জায়গা (PIASH, ২০২৬-১১-১৫; scripts/bot_lane.py): news/ আর circular/ শুধু খবর ও নিয়োগ-বটের।
+  # বট Mac থেকে সরাসরি GitHub-এর main-এ এই দুই ফোল্ডার পাঠায়। কোনো PR এখানে হাত দিলে বটের কাজ মুছে যেতে পারে,
+  # তাই এমন PR লাল। মেনু বা চেহারা বদলাতে: scripts/news/build_pages.py বা scripts/jobs/jbuild.py-র ছাঁচ বদলান,
+  # বট পরের প্রকাশে পাতাগুলো নিজে নতুন করে বানাবে।
+  bot-lane:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: PR বটের ফোল্ডারে (news/, circular/) হাত দিয়েছে কি না
+        run: |
+          files=$(git diff --name-only HEAD^1 HEAD -- news circular | head -20)
+          if [ -n "$files" ]; then
+            echo "::error::এই PR বটের ফোল্ডারে (news/ বা circular/) হাত দিয়েছে। এগুলো শুধু বট বানায় (scripts/bot_lane.py)। PR থেকে এই ফাইলগুলোর বদল সরান; মেনু/চেহারা বদলাতে build_pages.py বা jbuild.py-র ছাঁচ বদলান।"
+            echo "$files"
+            exit 1
+          fi
+          echo "ঠিক আছে ✓ PR বটের ফোল্ডারে হাত দেয়নি।"

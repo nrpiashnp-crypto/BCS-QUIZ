@@ -45,6 +45,12 @@ state.json, news-bot.log)। Gemini চাবি `~/.lyanna/gemini.key`-এ, র
 পাবলিক ফাইলে শুধু আমাদের লেখা আর মূল লিংক; উৎসের লেখা বা উদ্ধৃতি নয়।
 হাতে বানানো দিনের ফাইল (`"method": "manual-…"`) রাতের ধারা বদলায় না (`--force` ছাড়া)।
 
+## বটের আলাদা রাস্তা (PIASH, ২০২৬-১১-১৫; `scripts/bot_lane.py`)
+- `news/` আর `circular/` শুধু বটের। বট GitHub-এর সর্বশেষ main-এর ওপর শুধু এই দুই ফোল্ডার বসিয়ে একটা কমিট push করে (rebase/merge নয়), তাই PR-এর সঙ্গে conflict হয় না, বট পুরোনো সাইটও তুলতে পারে না। PR নয়, তাই দিনের মার্জ-সীমায় গোনা হয় না।
+- কোনো PR এই দুই ফোল্ডারে হাত দিলে live-guard-এর `bot-lane` যাচাই লাল। মেনু/চেহারা বদলাতে `build_pages.py` বা `jobs/jbuild.py`-র ছাঁচ বদলান; `tools/seo_build.py` এই দুই ফোল্ডার ছোঁয় না (শুধু sitemap)।
+- নতুন Mac-এ চালু: Terminal-এ `curl -fsSL https://raw.githubusercontent.com/nrpiashnp-crypto/BCS-QUIZ/main/scripts/news/mac/install.command -o /tmp/lyanna-bot.command && bash /tmp/lyanna-bot.command` (Gemini চাবি + শুধু BCS-QUIZ-এ লেখার GitHub চাবি `~/.lyanna/github.token`)।
+- সাইটে না থাকা শেষ ৩ দিন (`LOOKBACK`) বট নিজে খোঁজে।
+
 ## প্রকাশের নিরাপত্তা (Mac, `mac/mac_daily.py`)
 - প্রকাশের আগে `quality.check_day()`; কিছু না মিললে বা পাতা বানানো মাঝপথে ভাঙলে কিছুই যায় না — `news/` আগের অবস্থায়,
   সাইটে আগের দিনের পাতা, লগে কারণ আর Mac-এর বার্তা। সকাল ১১টার পরেও গতকালের সংবাদ না থাকলে দিনে একবার বার্তা।
