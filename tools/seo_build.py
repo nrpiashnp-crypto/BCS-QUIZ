@@ -506,28 +506,29 @@ for f in sorted(glob.glob(os.path.join(R, '**', 'index.html'), recursive=True)):
     hand.append(d)
 
 chap_names = {s: nm for s, _, nm, _ in ch_links}
-# হোমের নিচে বড় দুই বাটন (সব প্রশ্ন ও সমাধান, বিষয়ভিত্তিক প্রস্তুতি); ১৩/১১-এর বিল্ডে সাধারণ লিংক হয়ে গিয়েছিল, তাই এখানে
+# হোমের নিচে বড় বাটন (সব প্রশ্ন ও সমাধান; বিষয়ভিত্তিক প্রস্তুতি এখন ওপরের বড় বাটনে); ১৩/১১-এর বিল্ডে সাধারণ লিংক হয়ে গিয়েছিল, তাই এখানে
 _HB = 'display:inline-block;color:#13294b;font-weight:600;font-size:16px;background:#fffdf7;border:1.4px solid #13294b;border-radius:3px;padding:8px 18px;text-decoration:none;margin:4px 5px'
 HOME_LINKS = ('<!--seo-links--><nav style="max-width:760px;margin:24px auto 0;padding:0 16px 24px;text-align:center;font:13px/1.8 \'Noto Sans Bengali\',system-ui,sans-serif">'
-              f'<a href="/questions/" style="{_HB}">সব প্রশ্ন ও সমাধান →</a><a href="/subject/" style="{_HB}">বিষয়ভিত্তিক প্রস্তুতি →</a>{{fb}}</nav><!--/seo-links-->')
+              f'<a href="/questions/" style="{_HB}">সব প্রশ্ন ও সমাধান →</a>{{fb}}</nav><!--/seo-links-->')
 
-SUBJ_CSS = ('.sbj{max-width:640px}.sbj .sbd{font-size:14.5px;color:var(--ink2);margin:2px 0 10px}'
-            '.sbg{display:grid;grid-template-columns:1fr 1fr;gap:8px}'
-            '.sbg a{display:flex;align-items:center;gap:9px;min-height:52px;padding:8px 10px;border:1.4px solid #13294b;border-radius:3px;background:#fffdf7;'
-            'color:#13294b;text-decoration:none;font:600 15px/1.35 \'Noto Sans Bengali\',sans-serif}'
-            '.sbg a i{flex:none;width:26px;height:26px;border:1.4px solid #c8326a;border-radius:50%;display:grid;place-items:center;'
-            'font:500 12px/1 \'Noto Sans Bengali\',sans-serif;font-style:normal;color:#c8326a}'
-            '.sbg a:active{background:#13294b;color:#fff}@media(hover:hover){.sbg a:hover{background:#13294b;color:#fff}}'
-            '.sbm{display:block;margin:12px 0 0;text-align:right;font-weight:600;color:#c8326a}'
-            '@media(min-width:700px){.sbg{grid-template-columns:repeat(3,1fr)}}')
+SUBJ_CSS = ('.sbj{max-width:640px;padding:0 16px 0 14px;box-sizing:border-box}'
+            '.sbb{display:flex;align-items:center;gap:14px;padding:16px 16px 16px 18px;border:1.6px solid #13294b;border-radius:4px;'
+            'background:#fffdf7;color:#13294b;text-decoration:none;box-shadow:3px 3px 0 #13294b}'
+            '.sbb b{display:block;font:700 19px/1.35 \'Noto Sans Bengali\',sans-serif}'
+            '.sbb small{display:block;margin-top:3px;font:500 14px/1.45 \'Noto Sans Bengali\',sans-serif;color:var(--ink2)}'
+            '.sbb .so{display:flex;gap:4px;margin-top:9px}'
+            '.sbb .so i{width:15px;height:15px;border:1.3px solid #c8326a;border-radius:50%}.sbb .so i:first-child{background:#c8326a}'
+            '.sbb .sa{flex:none;margin-left:auto;width:40px;height:40px;border-radius:50%;background:#13294b;color:#fff;display:grid;place-items:center;font:600 20px/1 sans-serif}'
+            '.sbb:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #13294b}'
+            '@media(hover:hover){.sbb:hover{background:#f4efe2}}')
 
 
 def home_subjects(s):
-    """হোমে বিষয়ভিত্তিক প্রস্তুতির অংশ (subject/index.html-এর বিষয় থেকে), খবরের অংশের পরে, বইয়ের আগে।"""
-    tiles = ''.join(f'<a href="{h}"><i aria-hidden="true">{bn(k)}</i>{esc(n)}</a>' for k, (h, n) in enumerate(SUBJECTS, 1))
-    blk = ('<!--subject-home--><section class="hs sbj" id="subjects" aria-label="বিষয়ভিত্তিক প্রস্তুতি"><h2>বিষয়ভিত্তিক প্রস্তুতি</h2>'
-           f'<p class="sbd">বিষয় বেছে নিন, তারপর টপিক ধরে পরীক্ষা দিন।</p><div class="sbg">{tiles}</div>'
-           f'<a class="sbm" href="/subject/">বিষয়ভিত্তিক প্রস্তুতির পাতা →</a></section><style>{SUBJ_CSS}</style><!--/subject-home-->\n')
+    """হোমে বিষয়ভিত্তিক প্রস্তুতির একটাই বড় বাটন (PIASH, ১৪/১১): বিষয়গুলোর বাটন /subject/ পাতায়। খবরের অংশের পরে, বইয়ের আগে।"""
+    blk = ('<!--subject-home--><section class="hs sbj" id="subjects" aria-label="বিষয়ভিত্তিক প্রস্তুতি">'
+           f'<a class="sbb" href="/subject/"><span><b>বিষয়ভিত্তিক প্রস্তুতি</b><small>{bn(len(SUBJECTS))}টি বিষয় · টপিক ধরে পরীক্ষা</small>'
+           '<span class="so" aria-hidden="true"><i></i><i></i><i></i><i></i></span></span><span class="sa" aria-hidden="true">→</span></a>'
+           f'</section><style>{SUBJ_CSS}</style><!--/subject-home-->\n')
     if '<!--subject-home-->' in s:
         return re.sub(r'<!--subject-home-->.*?<!--/subject-home-->\n?', lambda m: blk, s, count=1, flags=re.S)
     return s.replace('<div class="row2">', blk + '\n<div class="row2">', 1)
