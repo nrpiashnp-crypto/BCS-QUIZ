@@ -3,7 +3,7 @@
 দিনে তিন খেপ সংগ্রহ (সকাল ৮টা, দুপুর ২টা, রাত ৯টার পরের প্রথম চালানোয়):
   collect → মূল বিজ্ঞপ্তি নামানো → দুইবার পড়া (দুই মডেল) → যাচাই →
   মিললে circular/data-তে + /circular/ পাতা (Mac-এর কপিতে কমিট); না মিললে আটকে রাখা (অ্যাডমিনের তালিকা)।
-সাইটে তোলা (দুই দিক মিলিয়ে GitHub push; Cloudflare সেখান থেকে): নতুন বিজ্ঞপ্তি এলে সেই খেপেই (দিনে সর্বোচ্চ তিনবার), নইলে রাতের খেপে একবার।
+সাইটে তোলা (বটের আলাদা রাস্তা scripts/bot_lane.py: শুধু circular/ আর news/ GitHub-এর সর্বশেষ main-এর ওপর; Cloudflare সেখান থেকে): নতুন বিজ্ঞপ্তি এলে সেই খেপেই (দিনে সর্বোচ্চ তিনবার), নইলে রাতের খেপে একবার।
 নিজে থেকে প্রকাশ, সন্দেহজনক শুধু PIASH-এর কাছে (২০২৬-১১-০৭)।
 
 ফাইল (~/Lyanna-Backup/news-bot/): jobs-state.json (কোনটা দেখা হয়েছে), jobs-held/ (আটকে থাকা, হুবহু অংশসহ),
@@ -163,7 +163,7 @@ def run_slot(st: dict, today: dt.date) -> tuple[int, int]:
 
 
 def ship(st: dict, today: dt.date) -> str:
-    """সাইটে তোলা, দুই দিক মিলিয়ে (mac_daily.deploy_cloudflare → scripts/deploy_guard.py)।"""
+    """সাইটে তোলা: mac_daily.deploy_cloudflare → scripts/bot_lane.py (PR-এর সঙ্গে conflict ছাড়া)।"""
     ok, where = M.deploy_cloudflare()
     if not ok:
         log(f"সাইটে তোলা থামানো হলো: {where}")

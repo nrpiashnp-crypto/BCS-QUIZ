@@ -5,10 +5,10 @@ launchd প্রতি ঘণ্টায় এটা চালায় (Mac 
 2. দিনটা আগে তৈরি না হলে run_daily.py চালিয়ে খসড়া বানায় (Gemini চাবি ~/.lyanna/gemini.key থেকে, রিপোর বাইরে)।
 3. **নিজে থেকে প্রকাশ** (PIASH, ২০২৬-১১-০৭): যাচাই পেরোনো খবর সাইটে যায়; দুই উৎসে না মেলা খবর
    আটকে থাকে, সেগুলোর কথা Mac-এর বিজ্ঞপ্তিতে আর drafts/<দিন>/preview.html-এ।
-4. প্রকাশ মানে: রিপোর কপিতে এক কমিট → scripts/deploy_guard.py দুই দিক মিলিয়ে GitHub-এ push, Cloudflare সেখান
-   থেকে নিজে তোলে (PIASH, ২০২৬-১১-১৩; আগের "push না হলেও সরাসরি Cloudflare" বাতিল, কারণ তাতে GitHub পিছিয়ে
-   পড়ে আর পরের PR মার্জে সাইট পুরোনো হয়ে যায়)। GitHub না গেলে সরাসরি Cloudflare শুধু PIASH-এর
-   ~/Lyanna-Backup/allow-direct-deploy ফাইল থাকলে।
+4. প্রকাশ মানে: রিপোর কপিতে এক কমিট → scripts/bot_lane.py GitHub-এর সর্বশেষ main-এর ওপর শুধু news/ আর circular/
+   বসিয়ে push (PR-এর সঙ্গে conflict অসম্ভব; PIASH, ২০২৬-১১-১৫), Cloudflare সেখান থেকে নিজে তোলে। GitHub না গেলে
+   কাজ Mac-এ জমা থাকে, পরের চালানোয় যায়। Mac থেকে সরাসরি Cloudflare-এ তোলা আর নেই (১৩/১১-এর মতো পুরোনো সাইট
+   ওঠার ভয় নেই)।
 5. GitHub থেকে নতুন কোড আনা না গেলে Mac-এর কপি দিয়েই চলে (আটকে যায় না)।
 
 নিরাপত্তা (LY Sites-এর নির্দেশনা, ২০২৬-১১-১০):
@@ -56,7 +56,7 @@ TRIAL_DAYS = 3               # নতুন নিয়মের প্রথ�
 ALERT_HOUR = 11              # এর পরেও গতকালের সংবাদ না থাকলে বার্তা
 BACKFILL = ["2026-11-05", "2026-11-06", "2026-11-07", "2026-11-08", "2026-11-09"]
 RETRY_EMPTY_H = 3            # কিছু না পেলে কত ঘণ্টা পরে আবার চেষ্টা
-DEPLOY_TIMEOUT = 900         # Cloudflare-এ তোলার সর্বোচ্চ সময় (সেকেন্ড)
+LOOKBACK = 3                 # সাইটে না থাকা কত দিন পেছন পর্যন্ত খোঁজা (Mac বন্ধ বা বট আটকে থাকার দিন)
 
 
 def log(*a):
@@ -124,46 +124,34 @@ def save_state(s: dict) -> None:
     STATE.write_text(json.dumps(s, ensure_ascii=False, indent=1), encoding="utf-8")
 
 
-def sync_repo() -> None:
-    """আলাদা কপিটা GitHub-এর main-এর সঙ্গে মেলানো।
+def _lane():
+    if str(REPO / "scripts") not in sys.path:
+        sys.path.insert(0, str(REPO / "scripts"))
+    import bot_lane  # noqa: E402  (রিপোর নিজের কোড: বটের আলাদা রাস্তা)
+    return bot_lane
 
-    - GitHub না পেলে (অ্যাকাউন্ট আটকে, ইন্টারনেট নেই): Mac-এর কপি যেমন আছে তেমন দিয়েই চলে।
-    - Mac-এ এমন কমিট থাকলে যা GitHub-এ নেই (GitHub আটকে থাকার সময়ের খবর বা কোড): সেগুলো রেখে
-      GitHub-এর নতুন কাজের ওপর বসানো (rebase); না বসলে আগের মতো রেখে দেওয়া, হারায় না।
-    - news/-এর কমিট না হওয়া আধা-কাজ সবসময় মুছে পরিষ্কার।
+
+def sync_repo() -> None:
+    """বটের কপি GitHub-এর সর্বশেষ main-এ (scripts/bot_lane.py-র fresh; PIASH, ২০২৬-১১-১৫)।
+
+    rebase বা merge নেই, তাই PR-এর সঙ্গে conflict-ও নেই। না-পাঠানো খবর/বিজ্ঞপ্তি থাকলে সেটুকু ওপরে বসানো থাকে।
+    GitHub না পেলে বটের কপি যেমন আছে তেমন দিয়েই চলে।
     """
     if not (REPO / ".git").exists():
         log("রিপোর কপি নামানো হচ্ছে…")
         sh("git", "clone", "-q", "--depth", "20", REMOTE, str(REPO))
     sh("git", "config", "user.name", "lyanna-news-bot", cwd=REPO)
     sh("git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com", cwd=REPO)
-    sh("git", "checkout", "-q", "--", "news", cwd=REPO, check=False)
-    sh("git", "clean", "-qfd", "news", cwd=REPO, check=False)
-    sh("git", "rebase", "--abort", cwd=REPO, check=False)
-    r = sh("git", "fetch", "-q", "--depth", "50", "origin", "+refs/heads/main:refs/remotes/origin/main",
-           cwd=REPO, check=False, timeout=120)
-    if r.returncode:
-        log(f"GitHub থেকে আনা গেল না, Mac-এর কপি দিয়েই চলছে ({(r.stderr or '').strip()[:120]})")
-        if sh("git", "symbolic-ref", "-q", "HEAD", cwd=REPO, check=False).returncode:
-            sh("git", "checkout", "-q", "-B", "main", cwd=REPO, check=False)
-        return
-    ahead = sh("git", "rev-list", "--count", "origin/main..main", cwd=REPO, check=False).stdout.strip()
-    if ahead in ("", "0"):
-        sh("git", "checkout", "-q", "-B", "main", "origin/main", cwd=REPO)
-        sh("git", "reset", "-q", "--hard", "origin/main", cwd=REPO)
-        return
-    sh("git", "checkout", "-q", "main", cwd=REPO, check=False)
-    rb = sh("git", "rebase", "-q", "origin/main", cwd=REPO, check=False)
-    if rb.returncode:
-        sh("git", "rebase", "--abort", cwd=REPO, check=False)
-        log(f"Mac-এর {ahead}টা কমিট GitHub-এর ওপর বসানো গেল না; আগের মতো রাখা হলো (Claude-কে জানান)")
-    else:
-        log(f"Mac-এর {ahead}টা কমিট GitHub-এর নতুন কাজের ওপর বসানো হলো")
+    lane = _lane()
+    try:
+        lane.fresh(REPO, log=log)
+    except lane.LaneError as e:
+        log(f"বটের কপি মেলানো গেল না: {e}")
 
 
 def targets(now: dt.datetime, state: dict) -> list[str]:
     today = now.date()
-    days = [today - dt.timedelta(days=1)]
+    days = [today - dt.timedelta(days=k) for k in range(LOOKBACK, 0, -1)]
     if now.hour >= EVENING:
         days.append(today)
     out = []
@@ -258,39 +246,17 @@ h1{{font-size:22px}} .c{{background:#fff;border-left:4px solid #1E5B4A;padding:1
     return out
 
 
-def _wrangler(repo: Path) -> tuple[bool, str]:
-    """Mac থেকে সরাসরি Cloudflare Pages-এ তোলা। শুধু deploy_guard.direct_deploy() ডাকে (জরুরি পথ)।"""
-    env = dict(os.environ, PATH="/opt/homebrew/bin:/usr/local/bin:" + os.environ.get("PATH", "/usr/bin:/bin"))
-    head = sh("git", "rev-parse", "HEAD", cwd=repo, check=False).stdout.strip() or "local"
-    msg = (sh("git", "log", "-1", "--format=%s", cwd=repo, check=False).stdout.strip() or "Mac deploy")[:200]
-    r = sh("npx", "--yes", "wrangler", "pages", "deploy", ".", "--project-name", PAGES_PROJECT,
-           "--branch", "main", "--commit-hash", head, "--commit-message", msg,
-           cwd=repo, env=env, check=False, timeout=DEPLOY_TIMEOUT)
-    tail = ((r.stdout or "") + (r.stderr or "")).strip()[-600:]
-    return r.returncode == 0, tail
-
-
-def _guard():
-    if str(REPO / "scripts") not in sys.path:
-        sys.path.insert(0, str(REPO / "scripts"))
-    import deploy_guard  # noqa: E402  (রিপোর নিজের কোড)
-    return deploy_guard
-
-
 def deploy_cloudflare() -> tuple[bool, str]:
-    """সাইটে তোলা, দুই দিক মিলিয়ে (scripts/deploy_guard.py; PIASH, ২০২৬-১১-১৩)।
-    সাধারণ পথ: GitHub আর Mac মিলিয়ে push, Cloudflare GitHub থেকে নিজে তোলে।
-    GitHub না গেলে: শুধু PIASH-এর অনুমতি-ফাইল থাকলে সরাসরি Cloudflare, নইলে কোথাও না (কাজ Mac-এ জমা)।
+    """সাইটে তোলা: বটের আলাদা রাস্তা (scripts/bot_lane.py; PIASH, ২০২৬-১১-১৫)।
+    GitHub-এর সর্বশেষ main-এর ওপর শুধু news/ আর circular/ বসিয়ে push; Cloudflare GitHub থেকে নিজে তোলে।
+    PR-এর সঙ্গে conflict হয় না, PR-এর দিনের মার্জ-সীমায়ও গোনা হয় না।
+    GitHub না গেলে কাজ Mac-এ জমা থাকে, পরের চালানোয় আবার চেষ্টা।
     ফেরত: (হলো কি না, কোথায় গেল বা কেন থামল)।"""
-    g = _guard()
+    lane = _lane()
     try:
-        return True, g.ship(REPO)
-    except g.GuardError as e:
-        first = str(e)
-    try:
-        return True, g.direct_deploy(REPO, _wrangler)
-    except g.GuardError as e:
-        return False, f"{first} | {e}"
+        return True, lane.ship(REPO, log=log)
+    except lane.LaneError as e:
+        return False, str(e)
 
 
 def day_errors(day) -> list[str]:
@@ -451,10 +417,13 @@ def main() -> int:
     except RuntimeError as e:
         log(f"রিপোর কপি তৈরি হলো না: {e}")
         return 1
-    src = REPO / "scripts/news/mac/approve.command"            # অনুমোদনের ফাইল সবসময় নতুন রাখা
-    if src.exists():
-        shutil.copy2(src, BOT / "approve.command")
-        os.chmod(BOT / "approve.command", 0o755)
+    for name in ("approve.command", "run.sh"):                # অনুমোদনের ফাইল আর run.sh সবসময় সর্বশেষ main-এর
+        src = REPO / "scripts/news/mac" / name
+        if src.exists():
+            tmp = BOT / f".{name}.new"
+            shutil.copy2(src, tmp)
+            os.chmod(tmp, 0o755)
+            os.replace(tmp, BOT / name)                        # চলমান run.sh-এর ক্ষতি নেই (নতুন ফাইল, পুরোনোটা খোলা থাকে)
     if "_trial" not in state:                                # নতুন নিয়ম চালুর পরে প্রথম ৩ দিন হাতে দেখে
         state["_trial"] = {"left": TRIAL_DAYS, "since": now.date().isoformat()}
         save_state(state)
