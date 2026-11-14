@@ -498,6 +498,8 @@ for mk in glob.glob(os.path.join(R, '*', '.seo')) + glob.glob(os.path.join(R, '*
 
 # ---------- tags on the hand-made pages ----------
 gen_dirs = keep
+# বিষয়ভিত্তিক প্রস্তুতির পাতা: টপিক নয়, শুধু সেট (Lyanna_data-র build_subject.py নতুন ডেটা লিখলেও প্রতি বিল্ডে ঠিক থাকে)
+subprocess.run([sys.executable, os.path.join(R, 'tools', 'subject_sets.py')], check=True, stdout=subprocess.DEVNULL)
 hand = []
 for f in sorted(glob.glob(os.path.join(R, '**', 'index.html'), recursive=True)):
     d = os.path.relpath(os.path.dirname(f), R)
