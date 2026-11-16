@@ -871,7 +871,7 @@ async function admin(path, url, env, db, u, req) {
   if (path === 'admin/jobs' || path.startsWith('admin/jobs/')) return jobsAdmin(path, req, db, u);
   if (path === 'admin/upkey') return upkeyAdmin(req, db);
   if (path === 'admin/exkey') return exkeyAdmin(req, db);
-  if (path === 'admin/diag' || path.startsWith('admin/diag/')) return diagAdmin(path, url, req, db);
+  if (path === 'admin/diag' || path.startsWith('admin/diag/')) return diagAdmin(path, url, req, db, env);
   await attqTable(db);
   if (path === 'admin/learners') {
     const {results} = await db.prepare(`SELECT u.id, u.name, u.email, u.created, u.seen,
@@ -1466,7 +1466,9 @@ const DIAG_SCHEMA = [
   // রাতের ছোট মতামত (site-needs.md §৬): একটা ভাগ (দিনের পরীক্ষা) শেষে, অ্যাকাউন্টের সঙ্গে জোড়া; d = {ease, mins, txt}
   'CREATE TABLE IF NOT EXISTS diag_fb(sid TEXT NOT NULL, uid INTEGER NOT NULL, part INTEGER NOT NULL, ts INTEGER NOT NULL, d TEXT NOT NULL, PRIMARY KEY(sid, uid, part))',
   // পরীক্ষক (PIASH আর দু-একজন বন্ধু): সব ভাগ তারিখ বা আগের পরীক্ষার অপেক্ষা ছাড়া খোলা; অবস্থান আর উপস্থিতিতে গোনা হয় না; পরে /admin/diag/ থেকে তাঁদের দাগ মোছা যায়
-  'CREATE TABLE IF NOT EXISTS diag_tester(uid INTEGER PRIMARY KEY, ts INTEGER NOT NULL)'
+  'CREATE TABLE IF NOT EXISTS diag_tester(uid INTEGER PRIMARY KEY, ts INTEGER NOT NULL)',
+  // শিটের PDF-লিংক (Drive), শুধু লগইন করা শিক্ষার্থী পান; id = শিট (যেমন pbg-math-1)। PIASH-এর অনুমতি ২০২৬-১১-১৬।
+  'CREATE TABLE IF NOT EXISTS diag_sheet(id TEXT PRIMARY KEY, url TEXT NOT NULL, ts INTEGER NOT NULL)'
 ];
 let diagReady = false;
 async function diagSetup(db) {
@@ -1503,21 +1505,25 @@ const DIAG_DEF = {'pb-start': {neg: 0.25, bands: [60, 80], conf: 1, pin: 1, repo
 // রোজকার পরীক্ষা (site-needs.md §৫): সপ্তাহ ধরে সেট pb-w1…pb-w8 (LY Course বানায়, ছাঁচ pb-start-এর মতো, প্রতিটি দিন এক ভাগ, ভাগে date)।
 // নিয়ম pb-start-এর (−০.২৫, নিশ্চিত/আন্দাজ, None শেষে), শুধু "সমস্যার তালিকা" নয়। পাতা /plan/pb/?w=<সপ্তাহ>।
 const PB_WEEK = /^pb-w([1-9]|1[0-2])$/;
-const diagDef = id => DIAG_DEF[id] || (PB_WEEK.test(id) ? (({report, ...x}) => x)(DIAG_DEF['pb-start']) : {});
-const diagKnown = id => DIAG_KNOWN[id] || (PB_WEEK.test(id) ? 'পেট্রোবাংলা · সপ্তাহ ' + id.slice(4) : '');
+// pb-x = মেরিটোর বাড়তি মডেল টেস্ট (৯-১৩ জানুয়ারি), নিয়ম সপ্তাহের সেটের মতোই
+const diagDef = id => DIAG_DEF[id] || (PB_WEEK.test(id) || id === 'pb-x' ? (({report, ...x}) => x)(DIAG_DEF['pb-start']) : {});
+const diagKnown = id => DIAG_KNOWN[id] || (PB_WEEK.test(id) ? 'পেট্রোবাংলা · সপ্তাহ ' + id.slice(4) : id === 'pb-x' ? 'পেট্রোবাংলা · বাড়তি মডেল টেস্ট' : '');
 // সেট → পাইলট ব্যাচ (উপস্থিতি আর CSV-তে কোড P01… দেখাতে; নাম নয়)
 const diagPilot = id => /^pb-/.test(id) ? 'petrobangla-1' : '';
 const DAYRE = /^\d{4}-\d{2}-\d{2}$/;
 /* আগের দিনের পরীক্ষা (PIASH, ২০২৬-১১-০৬): একটা ভাগ খোলে তার তারিখ এলে আর আগের দিনের পরীক্ষা শেষ হলে (সময় শেষে বন্ধ হলেও শেষ ধরা)।
    সেটের ভেতরে আগের ভাগ; সপ্তাহের প্রথম ভাগের আগেরটা আগের সপ্তাহের শেষ ভাগ (pb-w1-এর আগে pb-start)। আগের সেট না থাকলে শর্ত নেই। */
 const prevSet = id => { const w = PB_WEEK.exec(id); return w ? (w[1] === '1' ? 'pb-start' : 'pb-w' + (+w[1] - 1)) : ''; };
-async function diagPrev(db, c, p, uid) {
-  const L = [...c.parts].sort((a, b) => a.no - b.no), i = L.findIndex(x => x.no === p.no);
+// sch = মেরিটোর সূচি: শুধু-নতুনদের ভাগ (only) পাইলটের "আগের দিনের পরীক্ষা"-র হিসাবে আসে না
+async function diagPrev(db, c, p, uid, sch) {
+  const skip = cc => sch ? meritoMap(cc, sch).only : new Set();
+  const sk = skip(c), L = [...c.parts].filter(x => !sk.has(x.no)).sort((a, b) => a.no - b.no), i = L.findIndex(x => x.no === p.no);
   let sid = c.id, no = i > 0 ? L[i - 1].no : 0;
   if (!no) {
     sid = prevSet(c.id); if (!sid) return null;
     const pc = await diagCfg(db, sid); if (!pc || !pc.parts.length) return null;
-    no = Math.max(...pc.parts.map(x => x.no));
+    const ps = skip(pc), nos = pc.parts.map(x => x.no).filter(n => !ps.has(n)); if (!nos.length) return null;
+    no = Math.max(...nos);
   }
   return {sid, no, done: !!(await db.prepare('SELECT 1 FROM diag_att WHERE sid = ? AND uid = ? AND part = ? AND res IS NOT NULL').bind(sid, uid, no).first())};
 }
@@ -1709,6 +1715,82 @@ function diagStatus(c, done) {
 }
 
 // শিক্ষার্থীর কাছে যায় শুধু নম্বর; চিহ্ন (তাড়াহুড়া ইত্যাদি) অ্যাডমিনের
+/* ---- পেট্রোবাংলা ব্যাচের দুই দল (PIASH, ২০২৬-১১-১৬; Lyanna_data pilot/petrobangla-1/sheet-plan.md §২, §৬) ----
+   পাইলট: আগের মতোই (অবস্থা-যাচাই, তারপর ভাগের নিজের তারিখ + আগের দিনের পরীক্ষা শেষ হলে)।
+   মেরিটো জবসের নতুনরা: দল = pilot_mem-এ pilot 'pb-merito' (নতুন টেবিল বা ঘর নয়), যোগ /plan/pb/?g=merito বা অ্যাডমিন থেকে।
+   তাঁদের অবস্থা-যাচাই নেই; প্রতিটি পরীক্ষা খোলে plan/pb/merito.json-এর তারিখে (tools/pb_merito.py), তারপর খোলাই থাকে;
+   আগের পরীক্ষার শর্ত নেই। merito.json-এ only = শুধু নতুনদের ভাগ (যেমন pb-w1-এর সংখ্যা পদ্ধতি): পাইলট এগুলো দেখেন না,
+   তাঁদের "আগের দিনের পরীক্ষা"-র হিসাবেও এগুলো নেই। একই সেট, একই প্রশ্ন; অবস্থান প্রতিটি পরীক্ষায় আলাদা (diag/rank)। */
+const MERITO = 'pb-merito';
+const isPb = id => id === 'pb-start' || id === 'pb-x' || PB_WEEK.test(id);
+/* সূচি-ফাইল LY Course-এর (Lyanna_data pilot/petrobangla-1/make_merito_routine.py, হুবহু কপি): প্রতিটি পরীক্ষায় set, set_part,
+   date, pilot_date (পাইলটের একই পরীক্ষা); pilot_date না থাকলে শুধু নতুনদের (m1a, pb-x)। এখানে এক রূপে আনা হয়: s, p, pd, only। */
+const meritoNorm = j => ({...j, exams: (j.exams || []).map(e => {
+  const s = e.s || e.set || '', p = e.p || e.set_part || 0, pd = e.pd || e.pilot_date || '';
+  return {...e, s, p, pd, only: e.only || !pd ? 1 : 0};
+})});
+let MSCHED = null, MSCHED_AT = 0;
+// সূচি না পেলে (নতুন isolate-এ ফাইল আনা ব্যর্থ) পাইলটের নিরাপত্তায় অন্তত শুধু-নতুনদের ভাগগুলো জানা থাকে
+const MERITO_ONLY_FALLBACK = {exams: [{no: 1, s: 'pb-w1', p: 7, only: 1, date: '2026-11-18', title: ''}], fallback: 1};
+async function meritoSched(env, req) {
+  if (MSCHED && Date.now() - MSCHED_AT < 300e3) return MSCHED;
+  try {
+    const r = env && env.ASSETS ? await env.ASSETS.fetch(new Request(new URL('/plan/pb/merito.json', req.url).href)) : null;
+    if (r && r.ok) { const j = await r.json(); if (Array.isArray(j.exams) && j.exams.length) { MSCHED = meritoNorm(j); MSCHED_AT = Date.now(); } }
+  } catch (e) { /* ফাইল না পেলে আগেরটাই */ }
+  return MSCHED || MERITO_ONLY_FALLBACK;
+}
+// একটা সেটের কোন ভাগ কোন পরীক্ষা: পাইলটের পরীক্ষা পাইলটের তারিখ (pd) দিয়ে, শুধু-নতুনদের ভাগ বাকি ভাগগুলো থেকে ক্রমে
+function meritoMap(c, sch) {
+  const L = (sch.exams || []).filter(e => e.s === c.id), by = new Map(), used = new Set(), only = new Set();
+  const parts = [...c.parts].sort((a, b) => a.no - b.no);
+  for (const e of L) if (!e.only) {
+    const p = e.p ? parts.find(x => x.no === e.p) : parts.find(x => x.date === e.pd && !used.has(x.no));
+    if (p && !used.has(p.no)) { used.add(p.no); by.set(p.no, e); }
+  }
+  const rest = parts.filter(x => !used.has(x.no));
+  // শুধু-নতুনদের ভাগ: merito.json-এ ভাগ-নম্বর (p) থাকলে শুধু সেটাই; না থাকলে পাইলটের সব মেলানো ভাগের পরের নম্বরগুলো থেকে
+  const top = Math.max(0, ...used);
+  for (const e of L) if (e.only) {
+    const p = e.p ? rest.find(x => x.no === e.p) : rest.find(x => !used.has(x.no) && x.no > top);
+    if (p && !used.has(p.no)) { used.add(p.no); by.set(p.no, e); only.add(p.no); }
+  }
+  return {by, only};
+}
+async function diagGrp(db, u) {
+  if (!u) return '';
+  await pilotSetup(db);
+  return (await db.prepare("SELECT 1 FROM pilot_mem WHERE pilot = ? AND uid = ? AND st = 'ok'").bind(MERITO, u.id).first()) ? 'merito' : '';
+}
+// মেরিটোর সব পরীক্ষা এক তালিকায় (মূল পাতা আর রুটিনের জন্য): প্রতিটির সেট, ভাগ আর নিজের অবস্থা
+async function meritoMine(db, sch, uid, today) {
+  const sids = [...new Set((sch.exams || []).map(e => e.s).filter(Boolean))], M = new Map();
+  for (const sid of sids) { const c = await diagCfg(db, sid); if (c && c.parts.length) M.set(sid, meritoMap(c, sch)); }
+  const A = new Map((await db.prepare("SELECT sid, part, dl, done, res FROM diag_att WHERE uid = ? AND (sid LIKE 'pb-w%' OR sid = 'pb-x')").bind(uid).all()).results.map(r => [r.sid + ':' + r.part, r]));
+  const now = Date.now();
+  return (sch.exams || []).map(e => {
+    const m = e.s && M.get(e.s), no = m ? [...m.by].find(([, x]) => x === e)?.[0] : null;
+    const o = {no: e.no, date: e.date, wd: e.wd || '', title: e.title, kind: e.kind, n: e.n, min: e.min, ...(e.sheet ? {sheet: e.sheet} : {}), ...(e.s ? {w: e.s === 'pb-x' ? 'x' : +e.s.slice(4)} : {})};
+    if (!no) return {...o, st: 'soon'};
+    o.part = no;
+    const r = A.get(e.s + ':' + no);
+    if (r && r.res) { const x = JSON.parse(r.res); return {...o, st: 'done', score: x.net != null ? x.net : x.ok}; }
+    if (r && !r.done && now < r.dl + GRACE) return {...o, st: 'going'};
+    if (r) return {...o, st: 'closing'};
+    return {...o, st: e.date > today ? 'locked' : 'todo'};
+  });
+}
+async function meritoAdd(db, uid) {
+  await db.prepare("INSERT INTO pilot_mem(pilot, uid, code, st, ts) VALUES(?,?,NULL,'ok',?) ON CONFLICT(pilot, uid) DO UPDATE SET st = 'ok'").bind(MERITO, uid, Date.now()).run();
+  // কোড M01, M02 … (উপস্থিতি আর CSV-তে নামের বদলে); এক বাক্যে, যাতে একসঙ্গে যোগ দিলেও দুজন একই কোড না পান
+  await db.prepare("UPDATE pilot_mem SET code = 'M' || printf('%02d', (SELECT COUNT(*) FROM pilot_mem WHERE pilot = ?1 AND code IS NOT NULL) + 1) WHERE pilot = ?1 AND uid = ?2 AND code IS NULL")
+    .bind(MERITO, uid).run();
+}
+async function diagSheets(db) {
+  return Object.fromEntries((await db.prepare('SELECT id, url FROM diag_sheet').all()).results.map(r => [r.id, r.url]));
+}
+const SHEET_URL = /^https:\/\/(drive|docs)\.google\.com\/[^\s"'<>]{5,400}$/;
+
 const resPub = r => r && {part: r.part, n: r.n, ok: r.ok, no: r.no, skip: r.skip, by: r.by, ...(r.neg ? {neg: r.neg, net: r.net} : {})};
 const statusPub = st => st && {...st, subjects: st.subjects.map(({unsure, few, gain, ...x}) => x)};
 async function diag(path, req, url, env, db, u) {
@@ -1721,15 +1803,36 @@ async function diag(path, req, url, env, db, u) {
   const now = Date.now(), today = dhakaDay(now);
   // ভাগ খোলে তার দিনে (ঢাকা) আর আগের দিনের পরীক্ষা শেষ হলে; পরে দেওয়া চলে (পিছিয়ে পড়া)। পরীক্ষকের জন্য সব খোলা।
   const tester = await isTester(db, u);
-  const shutDate = p => !tester && !!p.date && p.date > today;
-  const partsPub = c.parts.map(p => ({no: p.no, title: p.title, subjects: p.subjects, n: p.qs.length, mins: p.mins, ...(p.date ? {date: p.date} : {})}));
+  // পেট্রোবাংলার সেটে দল: মেরিটো হলে ভাগ, তারিখ আর শিরোনাম নতুনদের সূচি থেকে (ওপরের "দুই দল" অংশ)
+  const pb = isPb(sid), sch = pb ? await meritoSched(env, req) : null;
+  const mm = pb && c.parts.length ? meritoMap(c, sch) : {by: new Map(), only: new Set()};
+  let grp, vis, partsPub;
+  const pdate = p => grp === 'merito' ? mm.by.get(p.no).date : p.date;
+  const shutDate = p => !tester && !!pdate(p) && pdate(p) > today;
+  const view = async who => {
+    grp = pb ? await diagGrp(db, who) : '';
+    vis = c.parts.filter(p => grp === 'merito' ? mm.by.has(p.no) : !mm.only.has(p.no));
+    if (grp === 'merito') vis.sort((a, b) => pdate(a).localeCompare(pdate(b)) || mm.by.get(a.no).no - mm.by.get(b.no).no);
+    partsPub = vis.map(p => ({no: p.no, title: grp === 'merito' ? mm.by.get(p.no).title : p.title, subjects: p.subjects, n: p.qs.length, mins: p.mins,
+      ...(pdate(p) ? {date: pdate(p)} : {})}));
+  };
+  await view(u);
+  // মেরিটোর যোগদান-লিংক (/plan/pb/?g=merito): অবস্থা-যাচাই দেওয়া পাইলটরা আগের মতোই থাকেন
+  if (path === 'diag/join' && m === 'POST') {
+    if (!u) return json({error: 'login'}, 401);
+    if (!pb || body.g !== 'merito') return json({error: 'bad'}, 400);
+    if (grp === 'merito') return json({ok: true, grp});
+    if (await db.prepare("SELECT 1 FROM diag_att WHERE sid = 'pb-start' AND uid = ?").bind(u.id).first()) return json({error: 'pilot'}, 409);
+    await meritoAdd(db, u.id);
+    return json({ok: true, grp: 'merito'});
+  }
   if (path === 'diag/me' && m === 'GET') {
     // অ্যাডমিন কারও রিপোর্ট তাঁর চোখে দেখতে/PDF করতে: ?as=<uid> (শুধু দেখা, কিছু লেখা হয় না)
     let as = parseInt(url.searchParams.get('as') || '', 10) || 0;
     if (as && isAdmin(u, env)) {
       const w = await db.prepare('SELECT id, name, email, pic FROM users WHERE id = ?').bind(as).first();
       if (!w) return json({error: 'no user'}, 404);
-      u = w;
+      u = w; await view(u);
     } else as = 0;
     const out = {s: sid, title: c.title, now, today, subjects: c.subjects.map(s => ({id: s.id, name: s.name, marks: s.marks})), parts: partsPub,
       ready: !!c.parts.length, user: u ? pub(u) : null, neg: c.neg || 0, conf: c.conf ? 1 : 0, report: c.report || null};
@@ -1740,9 +1843,9 @@ async function diag(path, req, url, env, db, u) {
     if (tester && !as) out.tester = 1;
     // আগের দিনের পরীক্ষা: সেটের ভেতরে এই তালিকা থেকে, সপ্তাহের প্রথম ভাগে আগের সেট থেকে
     const firstNo = Math.min(...partsPub.map(p => p.no)), sorted = [...partsPub].sort((a, b) => a.no - b.no);
-    const pv = tester || !partsPub.length ? null : await diagPrev(db, c, c.P.get(firstNo), u.id);
+    const pv = tester || grp === 'merito' || !partsPub.length ? null : await diagPrev(db, c, c.P.get(firstNo), u.id, sch);
     const prevOk = p => {
-      if (tester) return true;
+      if (tester || grp === 'merito') return true;
       const i = sorted.findIndex(x => x.no === p.no);
       if (i > 0) { const r = A.get(sorted[i - 1].no); return !!(r && r.res); }
       return !pv || pv.done;
@@ -1756,9 +1859,14 @@ async function diag(path, req, url, env, db, u) {
       return {...p, st: 'done', res: resPub(res)};
     });
     out.status = finished.length ? statusPub(diagStatus(c, finished)) : null;
-    out.all = !!c.parts.length && finished.length === c.parts.length;
+    out.all = !!partsPub.length && finished.length === partsPub.length;
     if (c.report && finished.length && (out.all || today >= c.report)) out.rep = diagReport(c, finished);
     if (as) out.as = as;
+    if (grp) out.grp = grp;
+    // মেরিটোর মূল পাতা (অবস্থা-যাচাইয়ের সেট খোলা হলে): সব পরীক্ষা এক তালিকায়, নিজের তারিখ আর অবস্থাসহ
+    if (grp === 'merito' && sid === 'pb-start') out.mx = await meritoMine(db, sch, u.id, today);
+    // শিটের লিংক শুধু লগইন করা শিক্ষার্থীর জন্য
+    if (pb) out.sheets = await diagSheets(db);
     if (out.rep) {
       const nt = await db.prepare('SELECT txt, pub, ts FROM diag_note WHERE sid = ? AND uid = ?').bind(sid, u.id).first();
       if (nt && (nt.pub || as)) out.note = {txt: nt.txt, ts: nt.ts, pub: nt.pub};
@@ -1776,13 +1884,13 @@ async function diag(path, req, url, env, db, u) {
     return json({ok: true});
   }
   if (!c.parts.length) return json({error: 'soon'}, 403);
-  const no = parseInt(url.searchParams.get('part') || body.part, 10), p = c.P.get(no);
+  const no = parseInt(url.searchParams.get('part') || body.part, 10), p = vis.find(x => x.no === no);
   if (!p) return json({error: 'bad'}, 400);
   let att = await db.prepare('SELECT ts, dl, ans, done, res, hid, hn, meta FROM diag_att WHERE sid = ? AND uid = ? AND part = ?').bind(sid, u.id, no).first();
 
   if (path === 'diag/start' && m === 'POST') {
-    if (!att && shutDate(p)) return json({error: 'locked', why: 'date', date: p.date}, 403);
-    if (!att && !tester) { const pv = await diagPrev(db, c, p, u.id); if (pv && !pv.done) return json({error: 'locked', why: 'prev', date: p.date || null}, 403); }
+    if (!att && shutDate(p)) return json({error: 'locked', why: 'date', date: pdate(p)}, 403);
+    if (!att && !tester && grp !== 'merito') { const pv = await diagPrev(db, c, p, u.id, sch); if (pv && !pv.done) return json({error: 'locked', why: 'prev', date: p.date || null}, 403); }
     if (!att) {
       await db.prepare("INSERT OR IGNORE INTO diag_att(sid, uid, part, ts, dl, ans, done, res, hid, hn, meta) VALUES(?,?,?,?,?,'{}',NULL,NULL,0,0,?)")
         .bind(sid, u.id, no, now, now + p.mins * 60e3, JSON.stringify({...diagMeta(req, body), opens: 1})).run();
@@ -1927,9 +2035,34 @@ async function upkeyAdmin(req, db) {
   const r = await db.prepare('SELECT created FROM upkey WHERE id = 1').first();
   return json({has: !!r, created: r ? r.created : null}, 200, {'Cache-Control': 'no-store'});
 }
-async function diagAdmin(path, url, req, db) {
+async function diagAdmin(path, url, req, db, env) {
   await diagSetup(db);
   const m = req.method, body = m === 'POST' ? await req.json().catch(() => ({})) : {};
+  // মেরিটো দল: GET তালিকা · POST {add: ইমেইল} (আগে একবার লগইন) · POST {del: uid} (পাইলট/সাধারণে ফেরত; দাগ যেমন ছিল)
+  if (path === 'admin/diag/grp') {
+    await pilotSetup(db);
+    if (m === 'POST' && body.add) {
+      const w = await db.prepare('SELECT id FROM users WHERE lower(email) = lower(?)').bind(String(body.add).trim()).first();
+      if (!w) return json({error: 'no user'}, 404);
+      // অবস্থা-যাচাই দেওয়া পাইলটকে ভুল করে মেরিটোতে নয় (force দিলে তবেই)
+      if (!body.force && await db.prepare("SELECT 1 FROM diag_att WHERE sid = 'pb-start' AND uid = ?").bind(w.id).first()) return json({error: 'pilot'}, 409);
+      await meritoAdd(db, w.id);
+    } else if (m === 'POST' && body.del) await db.prepare("UPDATE pilot_mem SET st = 'out' WHERE pilot = ? AND uid = ?").bind(MERITO, parseInt(body.del, 10) || 0).run();
+    const {results} = await db.prepare(`SELECT m.uid, m.code, m.ts, u.name, u.email FROM pilot_mem m LEFT JOIN users u ON u.id = m.uid
+      WHERE m.pilot = ? AND m.st = 'ok' ORDER BY m.code`).bind(MERITO).all();
+    return json({people: results}, 200, {'Cache-Control': 'no-store'});
+  }
+  // শিটের লিংক: GET {sheets} · POST {id, url} (url ফাঁকা = মুছুন)। শুধু Drive/Docs-এর https লিংক
+  if (path === 'admin/diag/sheets') {
+    if (m === 'POST') {
+      const id = String(body.id || ''), u2 = String(body.url || '').trim();
+      if (!TID.test(id)) return json({error: 'bad id'}, 400);
+      if (!u2) await db.prepare('DELETE FROM diag_sheet WHERE id = ?').bind(id).run();
+      else if (!SHEET_URL.test(u2)) return json({error: 'url'}, 400);
+      else await db.prepare('INSERT INTO diag_sheet(id, url, ts) VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET url = excluded.url, ts = excluded.ts').bind(id, u2, Date.now()).run();
+    }
+    return json({sheets: await diagSheets(db)}, 200, {'Cache-Control': 'no-store'});
+  }
   // পরীক্ষক: GET তালিকা · POST {add: ইমেইল} (আগে একবার সাইটে লগইন করা চাই) · POST {del: uid} · POST admin/diag/testclear {s?} = পরীক্ষকদের দাগ মোছা
   if (path === 'admin/diag/testers') {
     if (m === 'POST' && body.add) {
@@ -2125,30 +2258,43 @@ async function diagAdmin(path, url, req, db) {
   if (path === 'admin/diag/att' && m === 'GET') {
     const today = dhakaDay(Date.now()), pl = diagPilot(sid);
     const code = new Map(pl ? (await db.prepare('SELECT uid, code FROM pilot_mem WHERE pilot = ?').bind(pl).all()).results.map(r => [r.uid, r.code]) : []);
+    // দুই দল (পাইলট / মেরিটো): মেরিটোর কোড M01…, তারিখ নতুনদের সূচি থেকে; শুধু-নতুনদের ভাগ পাইলটের হিসাবে নয়
+    const isP = isPb(sid);
+    if (isP) await pilotSetup(db);
+    const MG = new Map(isP ? (await db.prepare("SELECT m.uid, m.code, u.name FROM pilot_mem m LEFT JOIN users u ON u.id = m.uid WHERE m.pilot = ? AND m.st = 'ok'").bind(MERITO).all()).results.map(r => [r.uid, r]) : []);
+    const mm = isP && c.parts.length ? meritoMap(c, await meritoSched(env, req)) : {by: new Map(), only: new Set()};
     const fb = (await db.prepare('SELECT uid, part, ts, d FROM diag_fb WHERE sid = ? ORDER BY ts DESC LIMIT 5000').bind(sid).all()).results.map(r => ({...r, d: JSON.parse(r.d)}));
     const F = new Map(fb.map(r => [r.uid + ':' + r.part, r.d]));
     const by = new Map();
     for (const r of await rows()) {
-      const x = by.get(r.uid) || {uid: r.uid, name: r.name || '', code: code.get(r.uid) || '', parts: {}};
+      const x = by.get(r.uid) || {uid: r.uid, name: r.name || '', code: MG.has(r.uid) ? MG.get(r.uid).code || '' : code.get(r.uid) || '', grp: MG.has(r.uid) ? 'merito' : 'pilot', parts: {}};
       by.set(r.uid, x);
       const p = c.P.get(r.part) || {};
-      x.parts[r.part] = {st: r.res ? 'done' : 'going', at: r.done || r.ts, late: !!(r.res && p.date && dhakaDay(r.done) > p.date),
+      const pdt = x.grp === 'merito' ? (mm.by.get(r.part) || {}).date : p.date;
+      x.parts[r.part] = {st: r.res ? 'done' : 'going', at: r.done || r.ts, late: !!(r.res && pdt && dhakaDay(r.done) > pdt),
         ...(r.res ? {score: r.res.net != null ? r.res.net : r.res.ok, n: r.res.n} : {}), fb: F.get(r.uid + ':' + r.part) || null};
     }
     // ব্যাচের যাঁরা এখনো কিছুই শুরু করেননি, তাঁরাও তালিকায় (পাইলটের সদস্য-তালিকা থেকে)
     if (pl) for (const r of (await db.prepare("SELECT m.uid, m.code, u.name FROM pilot_mem m LEFT JOIN users u ON u.id = m.uid WHERE m.pilot = ? AND m.st = 'ok'").bind(pl).all()).results)
-      if (!by.has(r.uid)) by.set(r.uid, {uid: r.uid, name: r.name || '', code: r.code || '', parts: {}});
-    const due = c.parts.filter(p => !p.date || p.date <= today);
+      if (!by.has(r.uid) && !MG.has(r.uid)) by.set(r.uid, {uid: r.uid, name: r.name || '', code: r.code || '', grp: 'pilot', parts: {}});
+    for (const [uid, r] of MG) if (!by.has(uid)) by.set(uid, {uid, name: r.name || '', code: r.code || '', grp: 'merito', parts: {}});
+    // কার কোন ভাগ আর কোন তারিখ: মেরিটো = নতুনদের সূচিতে থাকা ভাগ, তাঁদের তারিখে; পাইলট = শুধু-নতুনদের ভাগ বাদে
+    const pdOf = (g, p) => g === 'merito' ? (mm.by.get(p.no) || {}).date || null : p.date || null;
+    const mine = g => c.parts.filter(p => g === 'merito' ? mm.by.has(p.no) : !mm.only.has(p.no));
+    const due = g => mine(g).filter(p => !pdOf(g, p) || pdOf(g, p) <= today);
     // পরীক্ষকেরা উপস্থিতিতে গোনা হন না
     for (const r of (await db.prepare('SELECT uid FROM diag_tester').all()).results) by.delete(r.uid);
-    const people = [...by.values()].map(x => ({...x, behind: due.filter(p => !(x.parts[p.no] && x.parts[p.no].st === 'done')).length}))
-      .sort((a, b) => (a.code || 'zz' + a.name).localeCompare(b.code || 'zz' + b.name));
-    const parts = c.parts.map(p => ({no: p.no, date: p.date || null, title: p.title, n: p.qs.length}));
+    const people = [...by.values()].map(x => ({...x, grp: x.grp || 'pilot', behind: due(x.grp || 'pilot').filter(p => !(x.parts[p.no] && x.parts[p.no].st === 'done')).length}))
+      .sort((a, b) => (a.grp === b.grp ? 0 : a.grp === 'pilot' ? -1 : 1) || (a.code || 'zz' + a.name).localeCompare(b.code || 'zz' + b.name));
+    const parts = c.parts.map(p => ({no: p.no, date: p.date || null, title: p.title, n: p.qs.length,
+      ...(mm.by.has(p.no) ? {mdate: mm.by.get(p.no).date} : {}), ...(mm.only.has(p.no) ? {only: 1} : {})}));
+    const grpOk = (x, p) => x.grp === 'merito' ? !!p.mdate : !p.only;
     if (url.searchParams.get('csv') === '1') {
-      const L = [['code', 'part', 'date', 'status', 'finished', 'late', 'score', 'n', 'ease', 'study_mins', 'note'].join(',')];
+      const L = [['code', 'group', 'part', 'date', 'status', 'finished', 'late', 'score', 'n', 'ease', 'study_mins', 'note'].join(',')];
       for (const x of people) for (const p of parts) {
-        const a = x.parts[p.no], f = a && a.fb;
-        L.push([x.code || 'u' + x.uid, p.no, p.date || '', a ? a.st : (p.date && p.date > today ? 'locked' : 'missed'), a && a.st === 'done' ? dhakaIso(a.at) : '', a && a.late ? 1 : 0,
+        if (!grpOk(x, p)) continue;
+        const a = x.parts[p.no], f = a && a.fb, dt = x.grp === 'merito' ? p.mdate : p.date;
+        L.push([x.code || 'u' + x.uid, x.grp, p.no, dt || '', a ? a.st : (dt && dt > today ? 'locked' : 'missed'), a && a.st === 'done' ? dhakaIso(a.at) : '', a && a.late ? 1 : 0,
           a && a.score != null ? a.score : '', a && a.n || '', f && f.ease || '', f && f.mins != null ? f.mins : '', f && f.txt || ''].map(csvCell).join(','));
       }
       return new Response('\ufeff' + L.join('\n') + '\n', {headers: {'Content-Type': 'text/csv; charset=utf-8', 'Cache-Control': 'no-store',
@@ -2430,7 +2576,7 @@ export async function onRequest({request: req, env}) {
     // তোলার চাবি (Lyanna_data-র GitHub Actions): শুধু সেট আর প্রশ্ন তোলা, আর কিছু নয়
     if ((path === 'admin/diag/set' || path === 'admin/diag/q') && m === 'POST' && /^Bearer /.test(req.headers.get('Authorization') || '')) {
       if (!(await upkeyOk(req, db))) return json({error: 'key'}, 403);
-      return await diagAdmin(path, url, req, db);
+      return await diagAdmin(path, url, req, db, env);
     }
     // শিক্ষকের সাপ্তাহিক রপ্তানি (Lyanna_data-র GitHub Action): রপ্তানির চাবি দিয়ে শুধু পড়া
     if (path.startsWith('export/') && m === 'GET') return await teacherExport(path, url, req, db);
