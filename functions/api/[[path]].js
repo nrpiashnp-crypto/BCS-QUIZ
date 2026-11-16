@@ -1757,10 +1757,27 @@ function meritoMap(c, sch) {
   }
   return {by, only};
 }
+/* দল কে ঠিক করে (PIASH, ২০২৬-১১-১৬ রাত): পাইলট শুধু যাঁরা অবস্থা-যাচাই (pb-start) দিয়েছেন (৩-৪ জন); পাইলট ব্যাচের বাকিরা আর নতুনরা সবাই
+   মেরিটোর রুটিনে। অ্যাডমিন হাতে বদলালে pilot_mem-এর 'pb-merito' সারিতে st = 'ok' (মেরিটো) বা 'pilot' (পাইলট), সেটাই আগে। */
 async function diagGrp(db, u) {
   if (!u) return '';
   await pilotSetup(db);
-  return (await db.prepare("SELECT 1 FROM pilot_mem WHERE pilot = ? AND uid = ? AND st = 'ok'").bind(MERITO, u.id).first()) ? 'merito' : '';
+  const [m, s] = await db.batch([
+    db.prepare('SELECT st, code FROM pilot_mem WHERE pilot = ? AND uid = ?').bind(MERITO, u.id),
+    db.prepare("SELECT 1 x FROM diag_att WHERE sid = 'pb-start' AND uid = ? LIMIT 1").bind(u.id)]);
+  const row = m.results[0];
+  if (row && row.st === 'ok') return 'merito';
+  if (row && row.st === 'pilot') return '';
+  return s.results.length ? '' : 'merito';
+}
+// উপস্থিতির জন্য সবার দল একবারে
+async function pbGroups(db) {
+  await pilotSetup(db); await diagSetup(db);
+  const [m, s] = await db.batch([
+    db.prepare("SELECT m.uid, m.code, m.st, u.name FROM pilot_mem m LEFT JOIN users u ON u.id = m.uid WHERE m.pilot = ?").bind(MERITO),
+    db.prepare("SELECT DISTINCT uid FROM diag_att WHERE sid = 'pb-start'")]);
+  const R = new Map(m.results.map(r => [r.uid, r])), PS = new Set(s.results.map(r => r.uid));
+  return {R, of: uid => { const r = R.get(uid); return r && r.st === 'ok' ? 'merito' : r && r.st === 'pilot' ? 'pilot' : PS.has(uid) ? 'pilot' : 'merito'; }};
 }
 // মেরিটোর সব পরীক্ষা এক তালিকায় (মূল পাতা আর রুটিনের জন্য): প্রতিটির সেট, ভাগ আর নিজের অবস্থা
 async function meritoMine(db, sch, uid, today) {
@@ -1782,6 +1799,7 @@ async function meritoMine(db, sch, uid, today) {
 }
 async function meritoAdd(db, uid) {
   await db.prepare("INSERT INTO pilot_mem(pilot, uid, code, st, ts) VALUES(?,?,NULL,'ok',?) ON CONFLICT(pilot, uid) DO UPDATE SET st = 'ok'").bind(MERITO, uid, Date.now()).run();
+  await db.prepare("UPDATE pilot_mem SET st = 'ok' WHERE pilot = ? AND uid = ?").bind(MERITO, uid).run();
   // কোড M01, M02 … (উপস্থিতি আর CSV-তে নামের বদলে); এক বাক্যে, যাতে একসঙ্গে যোগ দিলেও দুজন একই কোড না পান
   await db.prepare("UPDATE pilot_mem SET code = 'M' || printf('%02d', (SELECT COUNT(*) FROM pilot_mem WHERE pilot = ?1 AND code IS NOT NULL) + 1) WHERE pilot = ?1 AND uid = ?2 AND code IS NULL")
     .bind(MERITO, uid).run();
@@ -1863,6 +1881,8 @@ async function diag(path, req, url, env, db, u) {
     if (c.report && finished.length && (out.all || today >= c.report)) out.rep = diagReport(c, finished);
     if (as) out.as = as;
     if (grp) out.grp = grp;
+    // নিজে থেকে মেরিটো (অবস্থা-যাচাই দেননি): প্রথম বার পাতায় এলে দলের সারি আর কোড (M01…) বসে, যাতে উপস্থিতিতে আসেন
+    if (grp === 'merito' && !as && !(await db.prepare("SELECT 1 FROM pilot_mem WHERE pilot = ? AND uid = ?").bind(MERITO, u.id).first())) await meritoAdd(db, u.id);
     // মেরিটোর মূল পাতা (অবস্থা-যাচাইয়ের সেট খোলা হলে): সব পরীক্ষা এক তালিকায়, নিজের তারিখ আর অবস্থাসহ
     if (grp === 'merito' && sid === 'pb-start') out.mx = await meritoMine(db, sch, u.id, today);
     // শিটের লিংক শুধু লগইন করা শিক্ষার্থীর জন্য
@@ -2047,7 +2067,10 @@ async function diagAdmin(path, url, req, db, env) {
       // অবস্থা-যাচাই দেওয়া পাইলটকে ভুল করে মেরিটোতে নয় (force দিলে তবেই)
       if (!body.force && await db.prepare("SELECT 1 FROM diag_att WHERE sid = 'pb-start' AND uid = ?").bind(w.id).first()) return json({error: 'pilot'}, 409);
       await meritoAdd(db, w.id);
-    } else if (m === 'POST' && body.del) await db.prepare("UPDATE pilot_mem SET st = 'out' WHERE pilot = ? AND uid = ?").bind(MERITO, parseInt(body.del, 10) || 0).run();
+    } else if (m === 'POST' && body.del) { // পাইলটের রুটিনে ফেরত (দাগ যেমন ছিল)
+      const id = parseInt(body.del, 10) || 0;
+      await db.prepare("INSERT INTO pilot_mem(pilot, uid, code, st, ts) VALUES(?,?,NULL,'pilot',?) ON CONFLICT(pilot, uid) DO UPDATE SET st = 'pilot'").bind(MERITO, id, Date.now()).run();
+    }
     const {results} = await db.prepare(`SELECT m.uid, m.code, m.ts, u.name, u.email FROM pilot_mem m LEFT JOIN users u ON u.id = m.uid
       WHERE m.pilot = ? AND m.st = 'ok' ORDER BY m.code`).bind(MERITO).all();
     return json({people: results}, 200, {'Cache-Control': 'no-store'});
@@ -2261,13 +2284,15 @@ async function diagAdmin(path, url, req, db, env) {
     // দুই দল (পাইলট / মেরিটো): মেরিটোর কোড M01…, তারিখ নতুনদের সূচি থেকে; শুধু-নতুনদের ভাগ পাইলটের হিসাবে নয়
     const isP = isPb(sid);
     if (isP) await pilotSetup(db);
-    const MG = new Map(isP ? (await db.prepare("SELECT m.uid, m.code, u.name FROM pilot_mem m LEFT JOIN users u ON u.id = m.uid WHERE m.pilot = ? AND m.st = 'ok'").bind(MERITO).all()).results.map(r => [r.uid, r]) : []);
+    const PG = isP ? await pbGroups(db) : {R: new Map(), of: () => 'pilot'};
+    const MG = new Map([...PG.R].filter(([, r]) => r.st === 'ok'));
     const mm = isP && c.parts.length ? meritoMap(c, await meritoSched(env, req)) : {by: new Map(), only: new Set()};
     const fb = (await db.prepare('SELECT uid, part, ts, d FROM diag_fb WHERE sid = ? ORDER BY ts DESC LIMIT 5000').bind(sid).all()).results.map(r => ({...r, d: JSON.parse(r.d)}));
     const F = new Map(fb.map(r => [r.uid + ':' + r.part, r.d]));
     const by = new Map();
     for (const r of await rows()) {
-      const x = by.get(r.uid) || {uid: r.uid, name: r.name || '', code: MG.has(r.uid) ? MG.get(r.uid).code || '' : code.get(r.uid) || '', grp: MG.has(r.uid) ? 'merito' : 'pilot', parts: {}};
+      const g = isP ? PG.of(r.uid) : 'pilot';
+      const x = by.get(r.uid) || {uid: r.uid, name: r.name || '', code: g === 'merito' && PG.R.has(r.uid) ? PG.R.get(r.uid).code || '' : code.get(r.uid) || '', grp: g, parts: {}};
       by.set(r.uid, x);
       const p = c.P.get(r.part) || {};
       const pdt = x.grp === 'merito' ? (mm.by.get(r.part) || {}).date : p.date;
@@ -2276,7 +2301,7 @@ async function diagAdmin(path, url, req, db, env) {
     }
     // ব্যাচের যাঁরা এখনো কিছুই শুরু করেননি, তাঁরাও তালিকায় (পাইলটের সদস্য-তালিকা থেকে)
     if (pl) for (const r of (await db.prepare("SELECT m.uid, m.code, u.name FROM pilot_mem m LEFT JOIN users u ON u.id = m.uid WHERE m.pilot = ? AND m.st = 'ok'").bind(pl).all()).results)
-      if (!by.has(r.uid) && !MG.has(r.uid)) by.set(r.uid, {uid: r.uid, name: r.name || '', code: r.code || '', grp: 'pilot', parts: {}});
+      if (!by.has(r.uid) && !MG.has(r.uid)) { const g = isP ? PG.of(r.uid) : 'pilot'; by.set(r.uid, {uid: r.uid, name: r.name || '', code: g === 'merito' && PG.R.has(r.uid) ? PG.R.get(r.uid).code || '' : r.code || '', grp: g, parts: {}}); }
     for (const [uid, r] of MG) if (!by.has(uid)) by.set(uid, {uid, name: r.name || '', code: r.code || '', grp: 'merito', parts: {}});
     // কার কোন ভাগ আর কোন তারিখ: মেরিটো = নতুনদের সূচিতে থাকা ভাগ, তাঁদের তারিখে; পাইলট = শুধু-নতুনদের ভাগ বাদে
     const pdOf = (g, p) => g === 'merito' ? (mm.by.get(p.no) || {}).date || null : p.date || null;

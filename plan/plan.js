@@ -85,6 +85,8 @@ async function home(){
     GJ='';try{const q=new URLSearchParams(location.search);q.delete('g');history.replaceState(null,'',HOME+(q.toString()?'?'+q:''))}catch(e){}
     if(!PNOTE)return home();
   }
+  // অ্যাকাউন্ট পাতায় (/account/) "আমার রুটিন" লিংক দেখাতে
+  if(V.dataset.week&&!ME.as)set('lb:pb',1);
   if(ME.grp==='merito'&&!W&&!ME.as)return meritoDash();
   // অ্যাডমিন অন্যের রিপোর্ট দেখছেন: শুধু রিপোর্ট, পরীক্ষা নয়
   if(ME.as){if(ME.rep)return problems(true);V.innerHTML='<div class="card">এঁর এখনো কোনো ভাগ শেষ হয়নি।</div>';return}
@@ -192,11 +194,11 @@ async function routineView(){
     if(d.week&&d.date<=today)return `<a class="btn${d.date===today?'':' ghost'}" href="${HOME}?w=${d.week}">${d.date===today?'আজ':'দিন'}</a>`;
     return `<span class="st">শিগগির</span>`};
   const sheet=d=>d.sheet?`<small>শিট: ${sheetLink(d.sheet,rt.sheets[d.sheet],d.sheet_new)}</small>`:'';
-  let h=back+`<h1 style="margin-top:12px">${esc(NAME)} · ${bn(rt.days.length)} দিনের রুটিন</h1><p class="sub">${dday(rt.start)} থেকে ${dday(rt.end)}। শনি-বৃহস্পতি রোজ একটি পড়া ও ${bn(30)} প্রশ্নের পরীক্ষা, শুক্রবার রিভিশন।</p>`;
+  let h=back+` <button class="btn ghost" id="pdf">রুটিন PDF</button><h1 style="margin-top:12px">${esc(NAME)} · ${bn(rt.days.length)} দিনের রুটিন</h1><p class="sub">${dday(rt.start)} থেকে ${dday(rt.end)}। শনি-বৃহস্পতি রোজ একটি পড়া ও ${bn(30)} প্রশ্নের পরীক্ষা, শুক্রবার রিভিশন।</p>`;
   for(const [k,L] of G){const open=L.some(d=>d.date===today)||(k==='অবস্থা-যাচাই'&&today<L[0].date);
     h+=`<details class="card wk"${open?' open':''}><summary>${k} · ${dday(L[0].date)} – ${dday(L[L.length-1].date)}</summary>${L.map(d=>
       `<div class="day${d.date===today?' today':''}"><div><b>${esc(d.wd)}, ${dday(d.date)}</b> · ${esc(d.title)}<small>${KIND[d.kind]||''}${d.n?' · '+bn(d.n)+' প্রশ্ন, '+bn(d.min)+' মিনিট':''}</small>${sheet(d)}</div>${state(d)}</div>`).join('')}</details>`}
-  V.innerHTML=h;wire();scrollTo(0,0);
+  V.innerHTML=h;wire();scrollTo(0,0);if($('pdf'))$('pdf').onclick=()=>routinePdf(rt.days,routineView);
   V.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const p=ME.parts.find(x=>x.no===+b.dataset.go);p.st==='going'?part(p.no):ready(p)});
   V.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>status(false));
 }
@@ -232,21 +234,28 @@ async function meritoDash(){
     `<div class="card">${X.length&&T<X[0].date?'প্রথম পরীক্ষা '+dday(X[0].date)+'। ততক্ষণ রুটিন দেখে নিন।':'আজ কোনো পরীক্ষা নেই।'}</div>`;
   if(miss.length)h+=`<h2>বাকি আছে (${bn(miss.length)})</h2><div class="card">${miss.map(e=>mRow(e,T)).join('')}</div>`;
   if(next&&!now.length)h+=`<div class="card ex"><div><b>পরের পরীক্ষা</b><small>${dday(next.date)} · ${esc(next.title)}</small></div></div>`;
-  h+=`<div class="card"><b>${bn(X.length)}টি পরীক্ষার ${bn(done)}টি শেষ</b><div class="prog"><i style="width:${X.length?Math.round(done/X.length*100):0}%"></i></div></div>
-  <div class="card ex"><div><b>পুরো রুটিন</b><small>${RT?dday(RT.start)+' থেকে '+dday(RT.end):''} · কোন দিন কী, শিটের লিংক</small></div><button class="btn ghost" id="rt">রুটিন</button></div>
-  <details class="card"><summary>পরীক্ষার নিয়ম</summary>${rules()}</details>`;
-  V.innerHTML=h;$('rt').onclick=meritoRoutine;scrollTo(0,0);
-}
-async function meritoRoutine(){
-  const rt=await routine(),X=ME.mx||[],T=ME.today;
-  if(!rt){V.innerHTML=back+'<div class="card" style="margin-top:12px">রুটিন খোলা যায়নি। নেট দেখে আবার চেষ্টা করুন।</div>';wire();return}
+  // পুরো রুটিন এই পাতাতেই (PIASH, ১৬/১১ রাত): মোট কতটি পরীক্ষা, কবে কী; সপ্তাহ ধরে ভাঁজ, আজকের সপ্তাহ খোলা
   const G=new Map();for(const e of X){const k=e.w&&e.w!=='x'?'সপ্তাহ '+bn(e.w):'বাড়তি মডেল টেস্ট';if(!G.has(k))G.set(k,[]);G.get(k).push(e)}
-  const two=new Set(X.map(e=>e.date).filter((d,i,a)=>a.indexOf(d)!==i));
-  let h=`<button class="btn ghost" id="bk">← ${esc(NAME)} পাতা</button><h1 style="margin-top:12px">${esc(NAME)} · ${bn(X.length)} পরীক্ষার রুটিন</h1>
-  <p class="sub">${dday(rt.start)} থেকে ${dday(rt.end)}। রোজ একটি পরীক্ষা${two.size?'; '+[...two].map(dday).join(', ')+' দিনে দুটি':''}।</p>`;
-  for(const [k,L] of G){const open=L.some(e=>e.date===T)||(T<L[0].date&&k==='সপ্তাহ ১');
+  const two=[...new Set(X.map(e=>e.date).filter((d,i,a)=>a.indexOf(d)!==i))];
+  h+=`<h2>আপনার রুটিন</h2><div class="card"><b>মোট ${bn(X.length)}টি পরীক্ষা, ${bn(done)}টি শেষ</b><div class="prog"><i style="width:${X.length?Math.round(done/X.length*100):0}%"></i></div>
+    <small class="dim" style="display:block">${RT?dday(RT.start)+' থেকে '+dday(RT.end):''}। রোজ একটি পরীক্ষা${two.length?'; '+two.map(dday).join(', ')+' দিনে দুটি':''}।</small>
+    <button class="btn ghost" id="pdf" style="margin-top:8px">রুটিন PDF</button></div>`;
+  let first=true;
+  for(const [k,L] of G){const open=L.some(e=>e.date===T)||(first&&T<L[0].date);first=false;
     h+=`<details class="card wk"${open?' open':''}><summary>${k} · ${dday(L[0].date)} – ${dday(L[L.length-1].date)}</summary>${L.map(e=>mRow(e,T)).join('')}</details>`}
-  V.innerHTML=h;$('bk').onclick=meritoDash;scrollTo(0,0);
+  h+=`<details class="card"><summary>পরীক্ষার নিয়ম</summary>${rules()}</details>`;
+  V.innerHTML=h;$('pdf').onclick=()=>routinePdf(X.map(e=>({...e,stx:e.st==='done'?'✓'+(e.score!=null?' '+nb(e.score):''):''})),meritoDash);scrollTo(0,0);
+}
+// ---------- রুটিন PDF (ব্রাউজারের প্রিন্ট → "PDF হিসেবে সেভ"): নাম, মোট পরীক্ষা, প্রতিটি দিন এক সারিতে ----------
+function routinePdf(L,ret){
+  const ex=L.filter(d=>d.n),u=ME&&ME.user||{},MR=ME&&ME.grp==='merito';
+  V.innerHTML=`<p class="no-print"><button class="btn ghost" id="bk">← ফিরে যান</button> <button class="btn" id="pr">PDF নামান / প্রিন্ট</button></p>
+  <div class="rep"><div class="rp-h"><div><b>${esc(NAME)} প্রস্তুতি · রুটিন</b><span>${MR?'মেরিটো জবস ব্যাচ':'পাইলট ব্যাচ'} · মোট ${bn(ex.length)}টি পরীক্ষা · ${dday(L[0].date)} থেকে ${dday(L[L.length-1].date)}</span></div>
+  <div class="rp-who">${esc(u.name||'')}<span>lyannabooks.com/plan/pb/</span></div></div>
+  <table class="rp-t"><thead><tr><th>#</th><th>তারিখ</th><th>বিষয়</th><th style="white-space:nowrap">প্রশ্ন · মিনিট</th><th>শিট</th><th></th></tr></thead><tbody>${(()=>{let k=0;return L.map(d=>{const n=d.n?bn(++k):'';
+    return `<tr><td>${n}</td><td>${esc(d.wd||'')}, ${dday(d.date)}</td><td>${esc(d.title)}<br><small class="dim">${KIND[d.kind]||''}</small></td><td style="white-space:nowrap">${d.n?bn(d.n)+' · '+bn(d.min)+' মি.':''}</td><td><small>${d.sheet?esc(((RT&&RT.sheets)||{})[d.sheet]||d.sheet):''}</small></td><td>${d.stx||''}</td></tr>`}).join('')})()}</tbody></table>
+  <p class="rp-f">ভুলে ০.২৫ নম্বর কাটা। প্রতিটি পরীক্ষা নিজের তারিখে খোলে${MR?', তারপর খোলাই থাকে':''}। লিয়ানা বুকস · lyannabooks.com</p></div>`;
+  $('bk').onclick=ret;$('pr').onclick=()=>print();scrollTo(0,0);
 }
 
 // ---------- একটা ভাগ ----------
