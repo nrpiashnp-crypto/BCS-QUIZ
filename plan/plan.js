@@ -8,8 +8,10 @@
 (function(){
 const V=document.getElementById('view'),Q0=new URLSearchParams(location.search),NAME=V.dataset.name||'';
 // রোজকার পরীক্ষা (site-needs.md §৫): ?w=<সপ্তাহ> হলে সেই সপ্তাহের সেট (data-week + সপ্তাহ, যেমন pb-w1), নইলে অবস্থা-যাচাই
-const W=V.dataset.week?(/^([1-9]|1[0-2])$/.exec(Q0.get('w')||'')||[''])[0]:'';
-const S=W?V.dataset.week+W:V.dataset.set,HOME=location.pathname;
+// x = মেরিটোর বাড়তি মডেল টেস্ট (সেট pb-x)
+const W=V.dataset.week?(/^([1-9]|1[0-2]|x)$/.exec(Q0.get('w')||'')||[''])[0]:'';
+const S=W==='x'?'pb-x':W?V.dataset.week+W:V.dataset.set,HOME=location.pathname;
+const WT=()=>W==='x'?'বাড়তি মডেল টেস্ট':'সপ্তাহ '+bn(W)+' · রোজকার পরীক্ষা';
 const AS=(/^\d+$/.exec(Q0.get('as')||'')||[''])[0];
 // বিষয়ের ওজনের লেখা: বিসিএসে সিলেবাসের নম্বর, পেট্রোবাংলায় আগের পরীক্ষায় প্রশ্নের ভাগ (data-mk-এ {n})
 const MK=V.dataset.mk||'সিলেবাসে {n} নম্বর';
@@ -115,8 +117,8 @@ function intro(login){
 }
 // সপ্তাহের সেট এখনো ওঠেনি: রুটিন থেকে সেই সপ্তাহের দিনগুলো, সঙ্গে "শিগগির"
 async function weekSoon(){
-  const rt=await routine(),L=rt?ME&&ME.grp==='merito'?rt.days.filter(d=>d.w===+W):rt.days.filter(d=>d.week===+W):[];
-  V.innerHTML=`<p><a class="btn ghost" href="${HOME}">← ${esc(NAME)} পাতা</a></p><h1>সপ্তাহ ${bn(W)} · রোজকার পরীক্ষা</h1>
+  const rt=await routine(),L=rt?ME&&ME.grp==='merito'?rt.days.filter(d=>String(d.w)===W):rt.days.filter(d=>d.week===+W):[];
+  V.innerHTML=`<p><a class="btn ghost" href="${HOME}">← ${esc(NAME)} পাতা</a></p><h1>${WT()}</h1>
   <div class="card">এই সপ্তাহের প্রশ্ন এখনো তোলা হয়নি। প্রথম দিনের আগেই খুলবে।</div>
   ${L.length?'<div class="card">'+L.map(d=>`<div class="day"><div><b>${esc(d.wd)}, ${dday(d.date)}</b> · ${esc(d.title)}<small>${KIND[d.kind]||''}${d.n?' · '+bn(d.n)+' প্রশ্ন, '+bn(d.min)+' মিনিট':''}</small></div></div>`).join('')+'</div>':''}`;
 }
@@ -135,7 +137,7 @@ function loginBtn(){
 
 function dash(){
   const t=total(),left=ME.parts.filter(p=>p.st!=='done').reduce((a,p)=>a+p.n,0),done=ME.parts.filter(p=>p.st==='done').length;
-  let h=W?`<p><a class="btn ghost" href="${HOME}">← ${esc(NAME)} পাতা</a></p><h1>সপ্তাহ ${bn(W)} · রোজকার পরীক্ষা</h1>`:`<h1>${esc(NAME)} · নিজের পরিকল্পনা</h1>`;
+  let h=W?`<p><a class="btn ghost" href="${HOME}">← ${esc(NAME)} পাতা</a></p><h1>${WT()}</h1>`:`<h1>${esc(NAME)} · নিজের পরিকল্পনা</h1>`;
   if(PNOTE)h+='<div class="card"><b>আপনি পাইলট ব্যাচে আছেন</b><small class="dim" style="display:block">আপনার অবস্থা-যাচাই দেওয়া আছে, তাই রুটিন আগের মতোই থাকল।</small></div>';
   if(ME.tester)h+='<div class="card"><b>পরীক্ষক হিসেবে দেখছেন</b><small class="dim" style="display:block">সব ভাগ এখনই খোলা। আপনার ফল অবস্থান আর উপস্থিতিতে গোনা হয় না।</small></div>';
   if(V.dataset.routine)h+='<div id="today"></div>';
@@ -238,7 +240,7 @@ async function meritoDash(){
 async function meritoRoutine(){
   const rt=await routine(),X=ME.mx||[],T=ME.today;
   if(!rt){V.innerHTML=back+'<div class="card" style="margin-top:12px">রুটিন খোলা যায়নি। নেট দেখে আবার চেষ্টা করুন।</div>';wire();return}
-  const G=new Map();for(const e of X){const k=e.w?'সপ্তাহ '+bn(e.w):'বাড়তি মডেল টেস্ট';if(!G.has(k))G.set(k,[]);G.get(k).push(e)}
+  const G=new Map();for(const e of X){const k=e.w&&e.w!=='x'?'সপ্তাহ '+bn(e.w):'বাড়তি মডেল টেস্ট';if(!G.has(k))G.set(k,[]);G.get(k).push(e)}
   const two=new Set(X.map(e=>e.date).filter((d,i,a)=>a.indexOf(d)!==i));
   let h=`<button class="btn ghost" id="bk">← ${esc(NAME)} পাতা</button><h1 style="margin-top:12px">${esc(NAME)} · ${bn(X.length)} পরীক্ষার রুটিন</h1>
   <p class="sub">${dday(rt.start)} থেকে ${dday(rt.end)}। রোজ একটি পরীক্ষা${two.size?'; '+[...two].map(dday).join(', ')+' দিনে দুটি':''}।</p>`;
@@ -439,7 +441,7 @@ const pc=(a,b)=>b?Math.round(a/b*100):0;
 let RT=null;
 const routine=async()=>{if(RT)return RT;const mr=ME&&ME.grp==='merito';try{const r=await fetch(location.pathname.replace(/[^/]*$/,'')+(mr?'merito.json':'routine.json'),{cache:'no-cache'});if(r.ok)RT=await r.json()}catch(e){}
   // মেরিটোর সূচি পাইলটের রুটিনের রূপে (days), সপ্তাহের সেট w ধরে
-  if(RT&&mr&&!RT.days)RT.days=(RT.exams||[]).map(e=>({...e,w:e.s?+e.s.slice(4):0}));return RT};
+  if(RT&&mr&&!RT.days)RT.days=(RT.exams||[]).map(e=>{const s=e.s||e.set||'';return {...e,w:s==='pb-x'?'x':s?+s.slice(4):0}});return RT};
 // কোথায় ফোকাস করবেন (টপিক): ঠিকের হার সবচেয়ে কম, অন্তত ৪টি প্রশ্ন থেকে (কম প্রশ্নে এক-দুটো ভুলেই হার নেমে যায়)
 const focusList=R=>R.clusters.filter(x=>x.n>=4&&x.band==='weak').slice(0,5);
 // একটা টপিক রুটিনের কোন কোন দিনে পড়ানো হবে

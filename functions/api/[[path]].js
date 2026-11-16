@@ -1505,8 +1505,9 @@ const DIAG_DEF = {'pb-start': {neg: 0.25, bands: [60, 80], conf: 1, pin: 1, repo
 // রোজকার পরীক্ষা (site-needs.md §৫): সপ্তাহ ধরে সেট pb-w1…pb-w8 (LY Course বানায়, ছাঁচ pb-start-এর মতো, প্রতিটি দিন এক ভাগ, ভাগে date)।
 // নিয়ম pb-start-এর (−০.২৫, নিশ্চিত/আন্দাজ, None শেষে), শুধু "সমস্যার তালিকা" নয়। পাতা /plan/pb/?w=<সপ্তাহ>।
 const PB_WEEK = /^pb-w([1-9]|1[0-2])$/;
-const diagDef = id => DIAG_DEF[id] || (PB_WEEK.test(id) ? (({report, ...x}) => x)(DIAG_DEF['pb-start']) : {});
-const diagKnown = id => DIAG_KNOWN[id] || (PB_WEEK.test(id) ? 'পেট্রোবাংলা · সপ্তাহ ' + id.slice(4) : '');
+// pb-x = মেরিটোর বাড়তি মডেল টেস্ট (৯-১৩ জানুয়ারি), নিয়ম সপ্তাহের সেটের মতোই
+const diagDef = id => DIAG_DEF[id] || (PB_WEEK.test(id) || id === 'pb-x' ? (({report, ...x}) => x)(DIAG_DEF['pb-start']) : {});
+const diagKnown = id => DIAG_KNOWN[id] || (PB_WEEK.test(id) ? 'পেট্রোবাংলা · সপ্তাহ ' + id.slice(4) : id === 'pb-x' ? 'পেট্রোবাংলা · বাড়তি মডেল টেস্ট' : '');
 // সেট → পাইলট ব্যাচ (উপস্থিতি আর CSV-তে কোড P01… দেখাতে; নাম নয়)
 const diagPilot = id => /^pb-/.test(id) ? 'petrobangla-1' : '';
 const DAYRE = /^\d{4}-\d{2}-\d{2}$/;
@@ -1721,7 +1722,13 @@ function diagStatus(c, done) {
    আগের পরীক্ষার শর্ত নেই। merito.json-এ only = শুধু নতুনদের ভাগ (যেমন pb-w1-এর সংখ্যা পদ্ধতি): পাইলট এগুলো দেখেন না,
    তাঁদের "আগের দিনের পরীক্ষা"-র হিসাবেও এগুলো নেই। একই সেট, একই প্রশ্ন; অবস্থান প্রতিটি পরীক্ষায় আলাদা (diag/rank)। */
 const MERITO = 'pb-merito';
-const isPb = id => id === 'pb-start' || PB_WEEK.test(id);
+const isPb = id => id === 'pb-start' || id === 'pb-x' || PB_WEEK.test(id);
+/* সূচি-ফাইল LY Course-এর (Lyanna_data pilot/petrobangla-1/make_merito_routine.py, হুবহু কপি): প্রতিটি পরীক্ষায় set, set_part,
+   date, pilot_date (পাইলটের একই পরীক্ষা); pilot_date না থাকলে শুধু নতুনদের (m1a, pb-x)। এখানে এক রূপে আনা হয়: s, p, pd, only। */
+const meritoNorm = j => ({...j, exams: (j.exams || []).map(e => {
+  const s = e.s || e.set || '', p = e.p || e.set_part || 0, pd = e.pd || e.pilot_date || '';
+  return {...e, s, p, pd, only: e.only || !pd ? 1 : 0};
+})});
 let MSCHED = null, MSCHED_AT = 0;
 // সূচি না পেলে (নতুন isolate-এ ফাইল আনা ব্যর্থ) পাইলটের নিরাপত্তায় অন্তত শুধু-নতুনদের ভাগগুলো জানা থাকে
 const MERITO_ONLY_FALLBACK = {exams: [{no: 1, s: 'pb-w1', p: 7, only: 1, date: '2026-11-18', title: ''}], fallback: 1};
@@ -1729,7 +1736,7 @@ async function meritoSched(env, req) {
   if (MSCHED && Date.now() - MSCHED_AT < 300e3) return MSCHED;
   try {
     const r = env && env.ASSETS ? await env.ASSETS.fetch(new Request(new URL('/plan/pb/merito.json', req.url).href)) : null;
-    if (r && r.ok) { const j = await r.json(); if (Array.isArray(j.exams) && j.exams.length) { MSCHED = j; MSCHED_AT = Date.now(); } }
+    if (r && r.ok) { const j = await r.json(); if (Array.isArray(j.exams) && j.exams.length) { MSCHED = meritoNorm(j); MSCHED_AT = Date.now(); } }
   } catch (e) { /* ফাইল না পেলে আগেরটাই */ }
   return MSCHED || MERITO_ONLY_FALLBACK;
 }
@@ -1759,11 +1766,11 @@ async function diagGrp(db, u) {
 async function meritoMine(db, sch, uid, today) {
   const sids = [...new Set((sch.exams || []).map(e => e.s).filter(Boolean))], M = new Map();
   for (const sid of sids) { const c = await diagCfg(db, sid); if (c && c.parts.length) M.set(sid, meritoMap(c, sch)); }
-  const A = new Map((await db.prepare("SELECT sid, part, dl, done, res FROM diag_att WHERE uid = ? AND sid LIKE 'pb-w%'").bind(uid).all()).results.map(r => [r.sid + ':' + r.part, r]));
+  const A = new Map((await db.prepare("SELECT sid, part, dl, done, res FROM diag_att WHERE uid = ? AND (sid LIKE 'pb-w%' OR sid = 'pb-x')").bind(uid).all()).results.map(r => [r.sid + ':' + r.part, r]));
   const now = Date.now();
   return (sch.exams || []).map(e => {
     const m = e.s && M.get(e.s), no = m ? [...m.by].find(([, x]) => x === e)?.[0] : null;
-    const o = {no: e.no, date: e.date, wd: e.wd || '', title: e.title, kind: e.kind, n: e.n, min: e.min, ...(e.sheet ? {sheet: e.sheet} : {}), ...(e.s ? {w: +e.s.slice(4)} : {})};
+    const o = {no: e.no, date: e.date, wd: e.wd || '', title: e.title, kind: e.kind, n: e.n, min: e.min, ...(e.sheet ? {sheet: e.sheet} : {}), ...(e.s ? {w: e.s === 'pb-x' ? 'x' : +e.s.slice(4)} : {})};
     if (!no) return {...o, st: 'soon'};
     o.part = no;
     const r = A.get(e.s + ':' + no);
