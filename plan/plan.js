@@ -50,10 +50,12 @@ const dday=d=>{const x=String(d||'').split('-');return x.length===3?bn(+x[2])+' 
 const nb=x=>bn(String(Math.round(x*100)/100));
 const mins=m=>m>=60?bn(Math.floor(m/60))+' ঘণ্টা'+(m%60?' '+bn(m%60)+' মিনিট':''):bn(m)+' মিনিট';
 let ME=null,EX=null,tick=null,CH0=0;
+// মেরিটোর নতুনরা (পেট্রোবাংলা): যোগদান-লিংক ?g=merito; PNOTE = পাইলট হওয়ায় যোগ হয়নি
+let GJ=Q0.get('g')==='merito'&&V.dataset.week?'merito':'',PNOTE=0;
 // পরীক্ষার নিয়ম: ভূমিকায় আর প্রতিটা ভাগ শুরুর আগে একই কথা
 const rules=()=>`<ul class="rules">
   <li>শান্ত পরিবেশে, ঠান্ডা মাথায় একটানা পরীক্ষা দিন। একবার শুরু করলে টাইমার চলতেই থাকবে; ব্রাউজার বন্ধ হয়ে গেলেও থামবে না।</li>
-  ${ME&&ME.parts&&ME.parts.some(p=>p.date)?'<li>প্রতিদিন একটি করে পরীক্ষা খুলবে: নিজের দিন এলে, আর আগের দিনের পরীক্ষা শেষ হলে। কোনো দিন না পারলে পরে দেওয়া যাবে, তারপর পরেরটা খুলবে।</li>':''}
+  ${(ME&&ME.grp==='merito')||GJ?'<li>প্রতিটি পরীক্ষা রুটিনের তারিখে খুলবে, তারপর খোলাই থাকবে। কোনো দিন না পারলে পরে দিয়ে দিন।</li>':ME&&ME.parts&&ME.parts.some(p=>p.date)?'<li>প্রতিদিন একটি করে পরীক্ষা খুলবে: নিজের দিন এলে, আর আগের দিনের পরীক্ষা শেষ হলে। কোনো দিন না পারলে পরে দেওয়া যাবে, তারপর পরেরটা খুলবে।</li>':''}
   <li>একবার পূরণ করলে উত্তর আর পরিবর্তন করা যাবে না।</li>
   ${ME&&ME.conf?'<li>প্রতিটি উত্তরের পরে চাপুন: <b>নিশ্চিত</b>, না <b>আন্দাজ</b>। এতে বোঝা যাবে কোথায় জানা, কোথায় আন্দাজ।</li>':''}
   ${ME&&ME.neg?'<li>আসল পরীক্ষার মতো প্রতিটি ভুলে '+nb(ME.neg)+' নম্বর কাটা যাবে।</li>':''}
@@ -74,7 +76,14 @@ async function home(){
     const go=offlineParts();
     V.innerHTML='<div class="card">নেট নেই, পাতা খোলা যায়নি। নেট এলে আবার খুলুন।</div>'+go.map(x=>`<div class="card ex"><div><b>ভাগ ${bn(x.part)} চলছে</b><small>প্রশ্ন ফোনে আছে, নেট ছাড়াই দেওয়া যাবে</small></div><button class="btn" data-off="${x.part}">চালিয়ে যান</button></div>`).join('');
     V.querySelectorAll('[data-off]').forEach(b=>b.onclick=()=>part(+b.dataset.off));return}
-  if(!ME.user)return intro(true);
+  if(!ME.user)return GJ?meritoIntro():intro(true);
+  // মেরিটোর যোগদান-লিংক (?g=merito): একবার যোগ, তারপর ঠিকানা থেকে g সরানো
+  if(GJ&&ME.grp!=='merito'&&!ME.as){
+    try{await api('join',{g:'merito'})}catch(e){if(e.message==='pilot')PNOTE=1}
+    GJ='';try{const q=new URLSearchParams(location.search);q.delete('g');history.replaceState(null,'',HOME+(q.toString()?'?'+q:''))}catch(e){}
+    if(!PNOTE)return home();
+  }
+  if(ME.grp==='merito'&&!W&&!ME.as)return meritoDash();
   // অ্যাডমিন অন্যের রিপোর্ট দেখছেন: শুধু রিপোর্ট, পরীক্ষা নয়
   if(ME.as){if(ME.rep)return problems(true);V.innerHTML='<div class="card">এঁর এখনো কোনো ভাগ শেষ হয়নি।</div>';return}
   if(!ME.ready)return W?weekSoon():intro(false);
@@ -82,7 +91,11 @@ async function home(){
   const closing=ME.parts.filter(p=>p.st==='closing');
   if(closing.length){for(const p of closing)await sendPart(p.no,true).catch(()=>{});return home()}
   dash();
+  // মেরিটোর মূল পাতা থেকে সরাসরি একটা পরীক্ষা (?w=N&p=ভাগ): শুরুর পর্দা বা চলতি ভাগ
+  const pq=+(Q0.get('p')||0),pp=pq&&ME.parts.find(x=>x.no===pq);
+  if(pp&&!OPENED){OPENED=1;if(pp.st==='going')part(pp.no);else if(pp.st==='todo')ready(pp)}
 }
+let OPENED=0;
 function total(){const n=ME.parts.reduce((a,p)=>a+p.n,0),m=ME.parts.reduce((a,p)=>a+p.mins,0);return {n,m}}
 function intro(login){
   const t=total();
@@ -102,7 +115,7 @@ function intro(login){
 }
 // সপ্তাহের সেট এখনো ওঠেনি: রুটিন থেকে সেই সপ্তাহের দিনগুলো, সঙ্গে "শিগগির"
 async function weekSoon(){
-  const rt=await routine(),L=rt?rt.days.filter(d=>d.week===+W):[];
+  const rt=await routine(),L=rt?ME&&ME.grp==='merito'?rt.days.filter(d=>d.w===+W):rt.days.filter(d=>d.week===+W):[];
   V.innerHTML=`<p><a class="btn ghost" href="${HOME}">← ${esc(NAME)} পাতা</a></p><h1>সপ্তাহ ${bn(W)} · রোজকার পরীক্ষা</h1>
   <div class="card">এই সপ্তাহের প্রশ্ন এখনো তোলা হয়নি। প্রথম দিনের আগেই খুলবে।</div>
   ${L.length?'<div class="card">'+L.map(d=>`<div class="day"><div><b>${esc(d.wd)}, ${dday(d.date)}</b> · ${esc(d.title)}<small>${KIND[d.kind]||''}${d.n?' · '+bn(d.n)+' প্রশ্ন, '+bn(d.min)+' মিনিট':''}</small></div></div>`).join('')+'</div>':''}`;
@@ -123,6 +136,7 @@ function loginBtn(){
 function dash(){
   const t=total(),left=ME.parts.filter(p=>p.st!=='done').reduce((a,p)=>a+p.n,0),done=ME.parts.filter(p=>p.st==='done').length;
   let h=W?`<p><a class="btn ghost" href="${HOME}">← ${esc(NAME)} পাতা</a></p><h1>সপ্তাহ ${bn(W)} · রোজকার পরীক্ষা</h1>`:`<h1>${esc(NAME)} · নিজের পরিকল্পনা</h1>`;
+  if(PNOTE)h+='<div class="card"><b>আপনি পাইলট ব্যাচে আছেন</b><small class="dim" style="display:block">আপনার অবস্থা-যাচাই দেওয়া আছে, তাই রুটিন আগের মতোই থাকল।</small></div>';
   if(ME.tester)h+='<div class="card"><b>পরীক্ষক হিসেবে দেখছেন</b><small class="dim" style="display:block">সব ভাগ এখনই খোলা। আপনার ফল অবস্থান আর উপস্থিতিতে গোনা হয় না।</small></div>';
   if(V.dataset.routine)h+='<div id="today"></div>';
   const msgs=(ME.msgs||[]).filter(x=>!x.seen||Date.now()-x.seen<3*864e5);
@@ -149,13 +163,14 @@ function dash(){
 }
 // আজকের কাজ (§৫): রুটিনের আজকের দিন। পড়া/রিভিশন/মডেলের দিনে শিট আর সেই সপ্তাহের পরীক্ষার পথ; অবস্থা-যাচাইয়ের দিনে কিছু নয় (ভাগ নিচেই)
 async function todayCard(){
+  if(ME.grp==='merito')return;
   const rt=await routine(),el=$('today');if(!rt||!el)return;
   const today=ME.today,d=rt.days.find(x=>x.date===today);if(!d||d.kind==='diag')return;
   if(d.kind==='rest'){el.innerHTML=`<div class="card"><b>আজ বিশ্রাম</b><small class="dim" style="display:block">কাল থেকে আবার।</small></div>`;return}
   if(d.kind==='result')return;
   const wk=d.week&&!(W&&+W===d.week)?`<a class="btn" href="${HOME}?w=${d.week}">আজকের পরীক্ষা</a>`:'';
   el.innerHTML=`<div class="card today"><small class="dim">আজকের কাজ · ${esc(d.wd)}, ${dday(d.date)}</small><b style="display:block">${esc(d.title)}</b>
-    ${d.sheet?`<p style="margin:4px 0">১. শিট: ${esc(rt.sheets[d.sheet]||d.sheet)} <span class="dim">· শিগগির আসছে</span></p>`:''}
+    ${d.sheet?`<p style="margin:4px 0">১. শিট: ${sheetLink(d.sheet,rt.sheets[d.sheet])}</p>`:''}
     ${d.n?`<p style="margin:4px 0">${d.sheet?'২. ':''}পরীক্ষা: ${bn(d.n)} প্রশ্ন, ${bn(d.min)} মিনিট</p>`:''}${wk}</div>`;
 }
 
@@ -174,7 +189,7 @@ async function routineView(){
     if(d.kind==='rest')return '';
     if(d.week&&d.date<=today)return `<a class="btn${d.date===today?'':' ghost'}" href="${HOME}?w=${d.week}">${d.date===today?'আজ':'দিন'}</a>`;
     return `<span class="st">শিগগির</span>`};
-  const sheet=d=>d.sheet?`<small>শিট: ${esc(rt.sheets[d.sheet]||d.sheet)}${d.sheet_new?' · নতুন':''} · শিগগির আসছে</small>`:'';
+  const sheet=d=>d.sheet?`<small>শিট: ${sheetLink(d.sheet,rt.sheets[d.sheet],d.sheet_new)}</small>`:'';
   let h=back+`<h1 style="margin-top:12px">${esc(NAME)} · ${bn(rt.days.length)} দিনের রুটিন</h1><p class="sub">${dday(rt.start)} থেকে ${dday(rt.end)}। শনি-বৃহস্পতি রোজ একটি পড়া ও ${bn(30)} প্রশ্নের পরীক্ষা, শুক্রবার রিভিশন।</p>`;
   for(const [k,L] of G){const open=L.some(d=>d.date===today)||(k==='অবস্থা-যাচাই'&&today<L[0].date);
     h+=`<details class="card wk"${open?' open':''}><summary>${k} · ${dday(L[0].date)} – ${dday(L[L.length-1].date)}</summary>${L.map(d=>
@@ -182,6 +197,54 @@ async function routineView(){
   V.innerHTML=h;wire();scrollTo(0,0);
   V.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const p=ME.parts.find(x=>x.no===+b.dataset.go);p.st==='going'?part(p.no):ready(p)});
   V.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>status(false));
+}
+
+// শিটের PDF (Drive), শুধু লগইন করা শিক্ষার্থী ME.sheets পান; না থাকলে "শিগগির আসছে"
+const sheetLink=(id,nm,nw)=>{const u=ME&&ME.sheets&&ME.sheets[id];return esc(nm||id)+(nw?' · নতুন':'')+(u&&/^https:\/\/(drive|docs)\.google\.com\//.test(u)?` · <a href="${esc(u)}" target="_blank" rel="noopener">PDF খুলুন</a>`:' <span class="dim">· শিগগির আসছে</span>')};
+
+// ---------- মেরিটোর নতুনরা (sheet-plan.md §২): অবস্থা-যাচাই নেই, প্রতিটি পরীক্ষা নিজের তারিখে খোলে আর খোলাই থাকে ----------
+function meritoIntro(){
+  V.innerHTML=`<h1>${esc(NAME)} · প্রস্তুতি</h1>
+  <p class="sub">রোজ একটি পড়া আর ছোট পরীক্ষা, শেষে মডেল টেস্ট। শুরু ১৮ নভেম্বর।</p>
+  <div class="card">${rules()}</div>
+  <div class="card"><p style="margin:0 0 8px">যোগ দিতে Google দিয়ে লগইন করুন। পাসওয়ার্ড লাগে না।</p><div id="g"></div></div>`;
+  loginBtn();
+}
+const MST={done:'দেওয়া ✓',locked:'খুলবে',soon:'শিগগির'};
+const mBtn=(e,today)=>{
+  if(e.st==='done')return `<a class="st ok" href="${HOME}?w=${e.w}">${e.score!=null?'নম্বর '+nb(e.score)+' ✓':'দেওয়া ✓'}</a>`;
+  if(e.st==='soon')return '<span class="st">শিগগির</span>';
+  if(e.st==='locked')return '<span class="st">খুলবে</span>';
+  return `<a class="btn${e.date===today||e.st==='going'||e.st==='closing'?'':' ghost'}" href="${HOME}?w=${e.w}${e.st==='closing'?'':'&p='+e.part}">${e.st==='going'?'চালিয়ে যান':e.st==='closing'?'ফল দেখুন':'শুরু করুন'}</a>`};
+const mRow=(e,today,big)=>`<div class="${big?'card ex today':'day ex'+(e.date===today?' today':'')}"><div>${big?'':`<b>${esc(e.wd||'')}, ${dday(e.date)}</b> · `}${big?`<b>${esc(e.title)}</b>`:esc(e.title)}
+  <small>${KIND[e.kind]||''}${e.n?' · '+bn(e.n)+' প্রশ্ন, '+bn(e.min)+' মিনিট':''}</small>${e.sheet&&e.kind==='study'?`<small>শিট: ${sheetLink(e.sheet,(RT&&RT.sheets||{})[e.sheet])}</small>`:''}</div>${mBtn(e,today)}</div>`;
+async function meritoDash(){
+  await routine();
+  const X=ME.mx||[],T=ME.today,done=X.filter(e=>e.st==='done').length;
+  const now=X.filter(e=>e.date===T),miss=X.filter(e=>e.date<T&&e.st!=='done'&&e.st!=='soon'),next=X.find(e=>e.date>T);
+  let h=`<h1>${esc(NAME)} · প্রস্তুতি</h1>`;
+  const msgs=(ME.msgs||[]).filter(x=>!x.seen||Date.now()-x.seen<3*864e5);
+  if(msgs.length)h+=msgs.map(x=>`<div class="card msg"><b>লিয়ানা বুকস থেকে</b><p>${esc(x.text).replace(/\n/g,'<br>')}</p></div>`).join('');
+  const unseen=(ME.msgs||[]).filter(x=>!x.seen).map(x=>x.id);if(unseen.length)api('seen',{ids:unseen}).catch(()=>{});
+  h+=now.length?`<h2>আজ · ${dday(T)}${now.length>1?' · দুটি পরীক্ষা':''}</h2>`+now.map(e=>mRow(e,T,1)).join(''):
+    `<div class="card">${X.length&&T<X[0].date?'প্রথম পরীক্ষা '+dday(X[0].date)+'। ততক্ষণ রুটিন দেখে নিন।':'আজ কোনো পরীক্ষা নেই।'}</div>`;
+  if(miss.length)h+=`<h2>বাকি আছে (${bn(miss.length)})</h2><div class="card">${miss.map(e=>mRow(e,T)).join('')}</div>`;
+  if(next&&!now.length)h+=`<div class="card ex"><div><b>পরের পরীক্ষা</b><small>${dday(next.date)} · ${esc(next.title)}</small></div></div>`;
+  h+=`<div class="card"><b>${bn(X.length)}টি পরীক্ষার ${bn(done)}টি শেষ</b><div class="prog"><i style="width:${X.length?Math.round(done/X.length*100):0}%"></i></div></div>
+  <div class="card ex"><div><b>পুরো রুটিন</b><small>${RT?dday(RT.start)+' থেকে '+dday(RT.end):''} · কোন দিন কী, শিটের লিংক</small></div><button class="btn ghost" id="rt">রুটিন</button></div>
+  <details class="card"><summary>পরীক্ষার নিয়ম</summary>${rules()}</details>`;
+  V.innerHTML=h;$('rt').onclick=meritoRoutine;scrollTo(0,0);
+}
+async function meritoRoutine(){
+  const rt=await routine(),X=ME.mx||[],T=ME.today;
+  if(!rt){V.innerHTML=back+'<div class="card" style="margin-top:12px">রুটিন খোলা যায়নি। নেট দেখে আবার চেষ্টা করুন।</div>';wire();return}
+  const G=new Map();for(const e of X){const k=e.w?'সপ্তাহ '+bn(e.w):'বাড়তি মডেল টেস্ট';if(!G.has(k))G.set(k,[]);G.get(k).push(e)}
+  const two=new Set(X.map(e=>e.date).filter((d,i,a)=>a.indexOf(d)!==i));
+  let h=`<button class="btn ghost" id="bk">← ${esc(NAME)} পাতা</button><h1 style="margin-top:12px">${esc(NAME)} · ${bn(X.length)} পরীক্ষার রুটিন</h1>
+  <p class="sub">${dday(rt.start)} থেকে ${dday(rt.end)}। রোজ একটি পরীক্ষা${two.size?'; '+[...two].map(dday).join(', ')+' দিনে দুটি':''}।</p>`;
+  for(const [k,L] of G){const open=L.some(e=>e.date===T)||(T<L[0].date&&k==='সপ্তাহ ১');
+    h+=`<details class="card wk"${open?' open':''}><summary>${k} · ${dday(L[0].date)} – ${dday(L[L.length-1].date)}</summary>${L.map(e=>mRow(e,T)).join('')}</details>`}
+  V.innerHTML=h;$('bk').onclick=meritoDash;scrollTo(0,0);
 }
 
 // ---------- একটা ভাগ ----------
@@ -374,7 +437,9 @@ const WD=['রবি','সোম','মঙ্গল','বুধ','বৃহস্
 const pc=(a,b)=>b?Math.round(a/b*100):0;
 // রুটিন (plan/pb/routine.json, LY Course-এর plan.json থেকে কাটা): শুধু রিপোর্ট বা রুটিন খুললে নামে
 let RT=null;
-const routine=async()=>{if(RT)return RT;try{const r=await fetch(location.pathname.replace(/[^/]*$/,'')+'routine.json',{cache:'no-cache'});if(r.ok)RT=await r.json()}catch(e){}return RT};
+const routine=async()=>{if(RT)return RT;const mr=ME&&ME.grp==='merito';try{const r=await fetch(location.pathname.replace(/[^/]*$/,'')+(mr?'merito.json':'routine.json'),{cache:'no-cache'});if(r.ok)RT=await r.json()}catch(e){}
+  // মেরিটোর সূচি পাইলটের রুটিনের রূপে (days), সপ্তাহের সেট w ধরে
+  if(RT&&mr&&!RT.days)RT.days=(RT.exams||[]).map(e=>({...e,w:e.s?+e.s.slice(4):0}));return RT};
 // কোথায় ফোকাস করবেন (টপিক): ঠিকের হার সবচেয়ে কম, অন্তত ৪টি প্রশ্ন থেকে (কম প্রশ্নে এক-দুটো ভুলেই হার নেমে যায়)
 const focusList=R=>R.clusters.filter(x=>x.n>=4&&x.band==='weak').slice(0,5);
 // একটা টপিক রুটিনের কোন কোন দিনে পড়ানো হবে
