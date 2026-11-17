@@ -1758,25 +1758,32 @@ function meritoMap(c, sch) {
   return {by, only};
 }
 /* দল কে ঠিক করে (PIASH, ২০২৬-১১-১৬ রাত): পাইলট শুধু যাঁরা অবস্থা-যাচাই (pb-start) দিয়েছেন (৩-৪ জন); পাইলট ব্যাচের বাকিরা আর নতুনরা সবাই
-   মেরিটোর রুটিনে। অ্যাডমিন হাতে বদলালে pilot_mem-এর 'pb-merito' সারিতে st = 'ok' (মেরিটো) বা 'pilot' (পাইলট), সেটাই আগে। */
+   মেরিটোর রুটিনে। অ্যাডমিন হাতে বদলালে pilot_mem-এর 'pb-merito' সারিতে st = 'ok' (মেরিটো) বা 'pilot' (পাইলট), সেটাই আগে।
+   "দিয়েছেন" মানে (PIASH, ২০২৬-১১-১৭): অবস্থা-যাচাইয়ে মোট অন্তত PILOT_MIN প্রশ্নের উত্তর। শুধু "শুরু করুন" চেপে ফিরে যাওয়া
+   (বা দু-একটা দাগিয়ে ছেড়ে দেওয়া) পাইলট নয়; আগে এঁরাও পাইলটে আটকে যাচ্ছিলেন, আগের পরীক্ষা না দেওয়ায় পরেরগুলো খুলছিল না। */
+const PILOT_MIN = 15;
+// দাগানো উত্তর গোনা; "বাদ" (pick −১) নয়
+const ansN = s => { try { return Object.values(JSON.parse(s || '{}')).filter(a => Array.isArray(a) && a[0] >= 0).length; } catch (e) { return 0; } };
+// অবস্থা-যাচাই সত্যিই দিয়েছেন কারা (uid দিলে শুধু তিনি)
+async function pbTook(db, uid) {
+  const q = uid ? db.prepare("SELECT uid, ans FROM diag_att WHERE sid = 'pb-start' AND uid = ?").bind(uid) : db.prepare("SELECT uid, ans FROM diag_att WHERE sid = 'pb-start'");
+  const n = new Map();
+  for (const r of (await q.all()).results) n.set(r.uid, (n.get(r.uid) || 0) + ansN(r.ans));
+  return new Set([...n].filter(([, k]) => k >= PILOT_MIN).map(([id]) => id));
+}
 async function diagGrp(db, u) {
   if (!u) return '';
   await pilotSetup(db);
-  const [m, s] = await db.batch([
-    db.prepare('SELECT st, code FROM pilot_mem WHERE pilot = ? AND uid = ?').bind(MERITO, u.id),
-    db.prepare("SELECT 1 x FROM diag_att WHERE sid = 'pb-start' AND uid = ? LIMIT 1").bind(u.id)]);
-  const row = m.results[0];
+  const row = await db.prepare('SELECT st, code FROM pilot_mem WHERE pilot = ? AND uid = ?').bind(MERITO, u.id).first();
   if (row && row.st === 'ok') return 'merito';
   if (row && row.st === 'pilot') return '';
-  return s.results.length ? '' : 'merito';
+  return (await pbTook(db, u.id)).size ? '' : 'merito';
 }
 // উপস্থিতির জন্য সবার দল একবারে
 async function pbGroups(db) {
   await pilotSetup(db); await diagSetup(db);
-  const [m, s] = await db.batch([
-    db.prepare("SELECT m.uid, m.code, m.st, u.name FROM pilot_mem m LEFT JOIN users u ON u.id = m.uid WHERE m.pilot = ?").bind(MERITO),
-    db.prepare("SELECT DISTINCT uid FROM diag_att WHERE sid = 'pb-start'")]);
-  const R = new Map(m.results.map(r => [r.uid, r])), PS = new Set(s.results.map(r => r.uid));
+  const m = await db.prepare("SELECT m.uid, m.code, m.st, u.name FROM pilot_mem m LEFT JOIN users u ON u.id = m.uid WHERE m.pilot = ?").bind(MERITO).all();
+  const R = new Map(m.results.map(r => [r.uid, r])), PS = await pbTook(db);
   return {R, of: uid => { const r = R.get(uid); return r && r.st === 'ok' ? 'merito' : r && r.st === 'pilot' ? 'pilot' : PS.has(uid) ? 'pilot' : 'merito'; }};
 }
 // মেরিটোর সব পরীক্ষা এক তালিকায় (মূল পাতা আর রুটিনের জন্য): প্রতিটির সেট, ভাগ আর নিজের অবস্থা
@@ -1840,7 +1847,7 @@ async function diag(path, req, url, env, db, u) {
     if (!u) return json({error: 'login'}, 401);
     if (!pb || body.g !== 'merito') return json({error: 'bad'}, 400);
     if (grp === 'merito') return json({ok: true, grp});
-    if (await db.prepare("SELECT 1 FROM diag_att WHERE sid = 'pb-start' AND uid = ?").bind(u.id).first()) return json({error: 'pilot'}, 409);
+    if ((await pbTook(db, u.id)).size) return json({error: 'pilot'}, 409);
     await meritoAdd(db, u.id);
     return json({ok: true, grp: 'merito'});
   }
@@ -2065,7 +2072,7 @@ async function diagAdmin(path, url, req, db, env) {
       const w = await db.prepare('SELECT id FROM users WHERE lower(email) = lower(?)').bind(String(body.add).trim()).first();
       if (!w) return json({error: 'no user'}, 404);
       // অবস্থা-যাচাই দেওয়া পাইলটকে ভুল করে মেরিটোতে নয় (force দিলে তবেই)
-      if (!body.force && await db.prepare("SELECT 1 FROM diag_att WHERE sid = 'pb-start' AND uid = ?").bind(w.id).first()) return json({error: 'pilot'}, 409);
+      if (!body.force && (await pbTook(db, w.id)).size) return json({error: 'pilot'}, 409);
       await meritoAdd(db, w.id);
     } else if (m === 'POST' && body.del) { // পাইলটের রুটিনে ফেরত (দাগ যেমন ছিল)
       const id = parseInt(body.del, 10) || 0;
