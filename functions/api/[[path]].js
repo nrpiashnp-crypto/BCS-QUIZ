@@ -1759,17 +1759,14 @@ function meritoMap(c, sch) {
 }
 /* দল কে ঠিক করে (PIASH, ২০২৬-১১-১৬ রাত): পাইলট শুধু যাঁরা অবস্থা-যাচাই (pb-start) দিয়েছেন (৩-৪ জন); পাইলট ব্যাচের বাকিরা আর নতুনরা সবাই
    মেরিটোর রুটিনে। অ্যাডমিন হাতে বদলালে pilot_mem-এর 'pb-merito' সারিতে st = 'ok' (মেরিটো) বা 'pilot' (পাইলট), সেটাই আগে।
-   "দিয়েছেন" মানে (PIASH, ২০২৬-১১-১৭): অবস্থা-যাচাইয়ে মোট অন্তত PILOT_MIN প্রশ্নের উত্তর। শুধু "শুরু করুন" চেপে ফিরে যাওয়া
-   (বা দু-একটা দাগিয়ে ছেড়ে দেওয়া) পাইলট নয়; আগে এঁরাও পাইলটে আটকে যাচ্ছিলেন, আগের পরীক্ষা না দেওয়ায় পরেরগুলো খুলছিল না। */
-const PILOT_MIN = 15;
-// দাগানো উত্তর গোনা; "বাদ" (pick −১) নয়
-const ansN = s => { try { return Object.values(JSON.parse(s || '{}')).filter(a => Array.isArray(a) && a[0] >= 0).length; } catch (e) { return 0; } };
-// অবস্থা-যাচাই সত্যিই দিয়েছেন কারা (uid দিলে শুধু তিনি)
+   "দিয়েছেন" মানে (PIASH, ২০২৬-১১-১৭): অবস্থা-যাচাইয়ের সব ভাগ শেষ করেছেন। এক-দুই ভাগ দিয়ে বা শুধু শুরু করে ছেড়ে দেওয়ারা
+   পাইলট নয়, মেরিটো; নইলে বাকি ভাগ না দেওয়ায় রোজকার পরীক্ষা "আগেরটা শেষ হলে খুলবে"-তে আটকে থাকে। দাগ মোছা হয় না। */
+// অবস্থা-যাচাই পুরো দিয়েছেন কারা (uid দিলে শুধু তিনি)
 async function pbTook(db, uid) {
-  const q = uid ? db.prepare("SELECT uid, ans FROM diag_att WHERE sid = 'pb-start' AND uid = ?").bind(uid) : db.prepare("SELECT uid, ans FROM diag_att WHERE sid = 'pb-start'");
-  const n = new Map();
-  for (const r of (await q.all()).results) n.set(r.uid, (n.get(r.uid) || 0) + ansN(r.ans));
-  return new Set([...n].filter(([, k]) => k >= PILOT_MIN).map(([id]) => id));
+  const pc = await diagCfg(db, 'pb-start'), need = pc && pc.parts.length ? pc.parts.length : 4;
+  const q = uid ? db.prepare("SELECT uid, COUNT(*) k FROM diag_att WHERE sid = 'pb-start' AND uid = ? AND res IS NOT NULL GROUP BY uid").bind(uid)
+    : db.prepare("SELECT uid, COUNT(*) k FROM diag_att WHERE sid = 'pb-start' AND res IS NOT NULL GROUP BY uid");
+  return new Set((await q.all()).results.filter(r => r.k >= need).map(r => r.uid));
 }
 async function diagGrp(db, u) {
   if (!u) return '';
