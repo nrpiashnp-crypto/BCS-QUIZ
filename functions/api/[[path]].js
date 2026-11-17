@@ -43,6 +43,7 @@
    পাইলট ব্যাচ (/pilot/<id>/, /admin/pilot/): নিচে "পাইলট ব্যাচ" অংশের মাথায় সব পথ।
    নিজের পরিকল্পনা, অবস্থা-যাচাই (/plan/<সেট>/, /admin/diag/): নিচে "নিজের পরিকল্পনা" অংশের মাথায় সব পথ।
    আমার চাকরি (/myjobs/, /admin/jobs/): নিচে "আমার চাকরি" অংশের মাথায় সব পথ।
+   "আজ" পাতা, সাইটে কাজের সময় আর জুটি (/today/, GET /api/today, POST /api/here, /api/pair/*; D1 sday, pair, pinv, nudge): নিচে "আজ" অংশে।
    শিক্ষকের সাপ্তাহিক রপ্তানি (GET /api/export/teacher, রপ্তানির চাবি দিয়ে): নিচে "শিক্ষকের সাপ্তাহিক রপ্তানি" অংশে। */
 const COOKIE = 'lb_s', AGE = 180 * 86400;
 const MAX_BATCH = 300, MAX_ROWS = 3000;
@@ -2773,6 +2774,162 @@ async function readAdmin(path, req, db) {
   return json({error: 'not found'}, 404);
 }
 
+// ── "আজ" পাতা আর সাইটে কাজের সময় (social-review ঙ-১, ঙ-২; পাতা /today/) ──
+// PR #147-এ লাইভ হয়েছিল, পরে main থেকে হারিয়ে যায় (১৩/১১-এর ঘটনা); ১৮/১১ ফেরানো, সঙ্গে জুটি।
+// GET  /api/today → লগইনের পরের প্রথম স্ক্রিনের সব কিছু একবারে: আজকের পরীক্ষা, শেষ ৭ দিনের গতি, আমার চাকরির পরের শেষ তারিখ, জুটি
+// POST /api/here {s} → "আছি": js/here.js প্রতি ৫ মিনিটে (আর পাতা ছাড়ার সময়) জানায় কত সেকেন্ড পাতা সামনে ছিল আর ছোঁয়া/স্ক্রল হয়েছে।
+//   সার্ভার মানে min(s, ৩০০, আগের "আছি"-র পর যত সময় গেছে), তাই কয়েকটা ট্যাব খুলে রাখলেও সময় দ্বিগুণ হয় না; দিনে ১৪ ঘণ্টার ওপরে নয়।
+// sday: প্রতিজনের দিনে (ঢাকার তারিখ) এক সারি। sec = পাতায় সক্রিয় সময়, paras = পড়ার পাতার অনুচ্ছেদ, last = শেষ "আছি"।
+//   পরীক্ষার সময় att.sec আর diag_att থেকে; দিনের কাজের সময় = দুটোর বড়টা। সময় কাউকে দেখানো হয় না, শুধু নিজেকে (social-review ক-৩)।
+const SDAY_SQL = 'CREATE TABLE IF NOT EXISTS sday(uid INTEGER NOT NULL, d TEXT NOT NULL, sec INTEGER NOT NULL DEFAULT 0, paras INTEGER NOT NULL DEFAULT 0, last INTEGER, PRIMARY KEY(uid, d))';
+let sdayReady = false;
+async function sdaySetup(db) { if (!sdayReady) { await db.prepare(SDAY_SQL).run(); sdayReady = true; } }
+const HERE_MAX = 300, DAY_MAX = 14 * 3600, TEST_MAX = 3 * 3600;
+async function here(req, db, u) {
+  const b = await req.json().catch(() => ({}));
+  const s = Math.max(0, Math.min(Math.round(num(b.s) || 0), HERE_MAX));
+  if (s < 5) return json({ok: true});
+  await sdaySetup(db);
+  const now = Date.now();
+  await db.prepare('INSERT INTO sday(uid, d, sec, paras, last) VALUES(?,?,?,0,?) ON CONFLICT(uid, d) DO UPDATE SET ' +
+    'sec = MIN(' + DAY_MAX + ', sec + MIN(excluded.sec, MAX(0, (excluded.last - COALESCE(last, 0)) / 1000))), last = excluded.last')
+    .bind(u.id, dhakaDay(now), s, now).run();
+  return json({ok: true});
+}
+// সেটের পাতা: pb-start → /plan/pb/, pb-w3 → /plan/pb/?w=3
+const setUrl = sid => { const w = /^([a-z0-9]+)-w(\d+)$/.exec(sid); if (w) return '/plan/' + w[1] + '/?w=' + w[2]; const st = /^([a-z0-9]+)-start$/.exec(sid); return st ? '/plan/' + st[1] + '/' : '/plan/'; };
+const nextSet = sid => { if (sid === 'pb-start') return 'pb-w1'; const w = PB_WEEK.exec(sid); return w ? 'pb-w' + (+w[1] + 1) : ''; };
+// নিজের সর্বশেষ সেটে আজ কোন ভাগ দেওয়ার আছে (diag/me-র তালার নিয়মেই; পরীক্ষক নয়, সাধারণ নিয়ম)
+async function todayPart(db, u, now) {
+  const last = await db.prepare('SELECT sid FROM diag_att WHERE uid = ? ORDER BY ts DESC LIMIT 1').bind(u.id).first();
+  if (!last) return null;
+  const today = dhakaDay(now);
+  for (let sid = last.sid, hop = 0; sid && hop < 2; sid = nextSet(sid), hop++) {
+    const c = await diagCfg(db, sid);
+    if (!c || !c.parts.length) return hop ? {sid, url: setUrl(last.sid), wait: 1} : null;
+    const {results} = await db.prepare('SELECT part, dl, done, res FROM diag_att WHERE sid = ? AND uid = ?').bind(sid, u.id).all();
+    const A = new Map(results.map(r => [r.part, r])), L = [...c.parts].sort((a, b) => a.no - b.no);
+    for (let i = 0; i < L.length; i++) {
+      const p = L[i], r = A.get(p.no), base = {sid, url: setUrl(sid), set: c.title || '', no: p.no, title: p.title || '', n: p.qs.length, mins: p.mins || 0};
+      if (r && r.res) continue;
+      if (r) return {...base, st: 'going'}; // চলছে, বা সময় শেষে ফল গোনা বাকি: পাতা খুললেই বন্ধ হয়
+      if (p.date && p.date > today) return {...base, st: 'later', date: p.date};
+      if (i === 0 && hop === 0) { const pv = await diagPrev(db, c, p, u.id); if (pv && !pv.done) return {...base, st: 'later'}; }
+      return {...base, st: 'todo'};
+    }
+  }
+  return {sid: last.sid, url: setUrl(last.sid), st: 'all'};
+}
+
+// ── লিংকে জুটি (কাজের ক্রমের ধাপ ৫; social-review ক-১, ক-৩, ক-৬, ক-৯, ঘ-২, ঘ-৩) ──
+// একজনের একটাই জুটি। লিংক /today/?t=<টোকেন> (৭ দিন, একজনের একটাই খোলা লিংক; নতুন বানালে পুরোনোটা বাতিল)।
+// জুটি দেখে শুধু কাজের ভালো খবর ("আজ ২টি পরীক্ষা দিয়েছেন"), নম্বর বা সময় নয়; কিছু না করলে কিছু দেখায় না।
+// "ডাক দিন" (দিনে একবার, সাইটের বাঁধা লাইন) আর "আজ ব্যস্ত" (দিনে একবার)। কেউ ছাড়লে অন্যজন একা চলেন; নতুন জুটির প্রস্তাব নয়।
+// POST /api/pair/invite → {t}; GET /api/pair/inv?t= → {name} (লগইন ছাড়াও); POST /api/pair/join {t}; POST /api/pair/leave; POST /api/pair/nudge {k: 'n'|'b'}
+const PAIR_SCHEMA = [
+  'CREATE TABLE IF NOT EXISTS pinv(tok TEXT PRIMARY KEY, uid INTEGER UNIQUE NOT NULL, exp INTEGER NOT NULL)',
+  'CREATE TABLE IF NOT EXISTS pair(uid INTEGER PRIMARY KEY, pid INTEGER NOT NULL, ts INTEGER NOT NULL)',
+  'CREATE TABLE IF NOT EXISTS nudge(uid INTEGER NOT NULL, d TEXT NOT NULL, k TEXT NOT NULL, ts INTEGER NOT NULL, PRIMARY KEY(uid, d, k))'
+];
+let pairReady = false;
+async function pairSetup(db) { if (!pairReady) { await db.batch(PAIR_SCHEMA.map(x => db.prepare(x))); pairReady = true; } }
+const INV_AGE = 7 * 86400e3;
+const firstName = n => (String(n || '').trim().split(/\s+/)[0] || 'বন্ধু').slice(0, 24);
+async function pairRoute(path, req, url, db, u) {
+  const m = req.method;
+  await pairSetup(db);
+  if (path === 'pair/inv' && m === 'GET') {
+    const t = str(url.searchParams.get('t') || '', 20) || '';
+    const r = t && await db.prepare('SELECT i.uid, i.exp, us.name FROM pinv i JOIN users us ON us.id = i.uid WHERE i.tok = ?').bind(t).first();
+    if (!r || r.exp < Date.now()) return json({error: 'gone'}, 404);
+    return json({name: firstName(r.name), mine: !!(u && u.id === r.uid)}, 200, {'Cache-Control': 'no-store'});
+  }
+  if (!u) return json({error: 'login'}, 401);
+  if (m !== 'POST') return json({error: 'not found'}, 404);
+  const mine = await db.prepare('SELECT pid FROM pair WHERE uid = ?').bind(u.id).first();
+  if (path === 'pair/invite') {
+    if (mine) return json({error: 'paired'}, 409);
+    const t = chId() + chId().slice(0, 4);
+    await db.prepare('INSERT INTO pinv(tok, uid, exp) VALUES(?,?,?) ON CONFLICT(uid) DO UPDATE SET tok = excluded.tok, exp = excluded.exp')
+      .bind(t, u.id, Date.now() + INV_AGE).run();
+    return json({t});
+  }
+  if (path === 'pair/join') {
+    const b = await req.json().catch(() => ({})), t = str(b.t, 20) || '';
+    const r = t && await db.prepare('SELECT uid, exp FROM pinv WHERE tok = ?').bind(t).first();
+    if (!r || r.exp < Date.now()) return json({error: 'gone'}, 404);
+    if (r.uid === u.id) return json({error: 'self'}, 400);
+    if (mine) return json({error: mine.pid === r.uid ? 'already' : 'paired'}, 409);
+    if (await db.prepare('SELECT 1 FROM pair WHERE uid = ?').bind(r.uid).first()) return json({error: 'taken'}, 409);
+    const now = Date.now();
+    await db.batch([
+      db.prepare('INSERT INTO pair(uid, pid, ts) VALUES(?,?,?)').bind(u.id, r.uid, now),
+      db.prepare('INSERT INTO pair(uid, pid, ts) VALUES(?,?,?)').bind(r.uid, u.id, now),
+      db.prepare('DELETE FROM pinv WHERE uid IN (?, ?)').bind(u.id, r.uid)
+    ]);
+    return json({ok: true});
+  }
+  if (path === 'pair/leave') {
+    if (mine) await db.prepare('DELETE FROM pair WHERE uid IN (?, ?)').bind(u.id, mine.pid).run();
+    return json({ok: true});
+  }
+  if (path === 'pair/nudge') {
+    const b = await req.json().catch(() => ({})), k = b.k === 'b' ? 'b' : b.k === 'n' ? 'n' : '';
+    if (!k) return json({error: 'bad'}, 400);
+    if (k === 'n' && !mine) return json({error: 'alone'}, 409);
+    await db.prepare('INSERT OR IGNORE INTO nudge(uid, d, k, ts) VALUES(?,?,?,?)').bind(u.id, dhakaDay(Date.now()), k, Date.now()).run();
+    return json({ok: true});
+  }
+  return json({error: 'not found'}, 404);
+}
+// জুটির আজকের খবর: শুধু কাজ (পরীক্ষার সংখ্যা আর শেষটার নাম), নম্বর-সময় নয়; আজ কিছু না থাকলে গতকালের ভালো খবর
+async function pairNews(db, u, now) {
+  await pairSetup(db);
+  const p = await db.prepare('SELECT p.pid, p.ts, us.name FROM pair p JOIN users us ON us.id = p.pid WHERE p.uid = ?').bind(u.id).first();
+  if (!p) {
+    const inv = await db.prepare('SELECT tok, exp FROM pinv WHERE uid = ?').bind(u.id).first();
+    return {none: 1, t: inv && inv.exp > now ? inv.tok : ''};
+  }
+  const d = dhakaDay(now), t0 = Date.parse(d + 'T00:00:00+06:00'), y0 = t0 - DAY;
+  const [a, g, n] = await db.batch([
+    db.prepare('SELECT ts, t FROM att WHERE uid = ? AND ts >= ? ORDER BY ts DESC LIMIT 50').bind(p.pid, y0),
+    db.prepare('SELECT done FROM diag_att WHERE uid = ? AND done IS NOT NULL AND done >= ?').bind(p.pid, y0),
+    db.prepare('SELECT uid, k FROM nudge WHERE uid IN (?, ?) AND d = ?').bind(u.id, p.pid, d)
+  ]);
+  const cnt = from => a.results.filter(r => r.ts >= from && r.ts < from + DAY).length + g.results.filter(r => r.done >= from && r.done < from + DAY).length;
+  const last = a.results.find(r => r.ts >= t0);
+  const has = (who, k) => n.results.some(r => r.uid === who && r.k === k);
+  return {name: firstName(p.name), since: dhakaDay(p.ts), today: cnt(t0), yday: cnt(y0), what: last && last.t ? String(last.t).slice(0, 60) : '',
+    called: has(p.pid, 'n') ? 1 : 0, busy: has(p.pid, 'b') ? 1 : 0, iCalled: has(u.id, 'n') ? 1 : 0, iBusy: has(u.id, 'b') ? 1 : 0};
+}
+
+async function today(db, u) {
+  await sdaySetup(db); await diagSetup(db); await jobsSetup(db);
+  const now = Date.now(), d0 = dhakaDay(now - 6 * DAY), t0 = Date.parse(d0 + 'T00:00:00+06:00');
+  const [a, g, s, j] = await db.batch([
+    db.prepare('SELECT ts, sec FROM att WHERE uid = ? AND ts >= ?').bind(u.id, t0),
+    db.prepare('SELECT ts, done FROM diag_att WHERE uid = ? AND done IS NOT NULL AND done >= ?').bind(u.id, t0),
+    db.prepare('SELECT d, sec, paras FROM sday WHERE uid = ? AND d >= ?').bind(u.id, d0),
+    db.prepare("SELECT j.data FROM myjob m JOIN jobs j ON j.id = m.jid WHERE m.uid = ? AND j.st = 'live' AND j.ae >= ? ORDER BY j.ae LIMIT 3").bind(u.id, dhakaDay(now))
+  ]);
+  const D = new Map();
+  for (let i = 0; i < 7; i++) D.set(dhakaDay(now - (6 - i) * DAY), {tests: 0, tsec: 0, sec: 0});
+  for (const r of a.results) { const x = D.get(dhakaDay(r.ts)); if (x) { x.tests++; x.tsec += Math.min(Math.max(r.sec || 0, 0), TEST_MAX); } }
+  for (const r of g.results) { const x = D.get(dhakaDay(r.done)); if (x) { x.tests++; x.tsec += Math.min(Math.max(Math.round((r.done - r.ts) / 1000), 0), TEST_MAX); } }
+  for (const r of s.results) { const x = D.get(r.d); if (x) x.sec = r.sec || 0; }
+  // একটা দিন "কাজের দিন" = অন্তত একটা পরীক্ষা, বা ৫ মিনিট সক্রিয় থাকা
+  const days = [...D].map(([d, x]) => { const sec = Math.min(Math.max(x.sec, x.tsec), DAY_MAX); return {d, tests: x.tests, sec, on: x.tests > 0 || sec >= 300 ? 1 : 0}; });
+  let lastTs = 0;
+  if (!days.some(x => x.on)) {
+    const r = await db.prepare('SELECT MAX(ts) t FROM att WHERE uid = ?').bind(u.id).first();
+    lastTs = r && r.t || 0;
+  }
+  return json({today: dhakaDay(now), name: u.name || '', days, last: lastTs || null,
+    part: await todayPart(db, u, now).catch(() => null),
+    pair: await pairNews(db, u, now).catch(() => null),
+    jobs: j.results.map(r => { try { const x = JSON.parse(r.data); return {post: x.post, org: x.org, ae: x.ae, exam: x.exam || '', est: x.est || 0}; } catch (e) { return null; } }).filter(Boolean)
+  }, 200, {'Cache-Control': 'no-store'});
+}
 export async function onRequest({request: req, env}) {
   const url = new URL(req.url), path = url.pathname.replace(/^\/api\/?/, '').replace(/\/+$/, ''), m = req.method;
   if (m === 'POST') {
@@ -2817,10 +2974,13 @@ export async function onRequest({request: req, env}) {
     // শিক্ষকের সাপ্তাহিক রপ্তানি (Lyanna_data-র GitHub Action): রপ্তানির চাবি দিয়ে শুধু পড়া
     if (path.startsWith('export/') && m === 'GET') return await teacherExport(path, url, req, db);
     if (path.startsWith('jobs/')) return await jobs(path, req, db, u);
+    if (path.startsWith('pair/')) return await pairRoute(path, req, url, db, u);
     if (!u) return json({error: 'login'}, 401);
 
     if (path.startsWith('admin/')) return await admin(path, url, env, db, u, req);
     if (path === 'goal') return await goal(req, db, u);
+    if (path === 'today' && m === 'GET') return await today(db, u);
+    if (path === 'here' && m === 'POST') return await here(req, db, u);
     if (path === 'fb/mine' && m === 'GET') return await fbMine(db, u);
     // একটা পরীক্ষার ফল আর প্রতিটি উত্তর (নিজের উত্তরপত্র দেখার পাতা /account/script/)
     if (path === 'att/one' && m === 'GET') {
@@ -2869,8 +3029,12 @@ export async function onRequest({request: req, env}) {
       return json({ok: true, saved: rows.length, qs, qd: qds.length});
     }
     if (path === 'delete' && m === 'POST') {
-      await attqTable(db); await diagSetup(db); await jobsSetup(db);
+      await attqTable(db); await diagSetup(db); await jobsSetup(db); await sdaySetup(db); await pairSetup(db);
       await db.batch([
+        db.prepare('DELETE FROM sday WHERE uid = ?').bind(u.id),
+        db.prepare('DELETE FROM pair WHERE uid = ? OR pid = ?').bind(u.id, u.id),
+        db.prepare('DELETE FROM pinv WHERE uid = ?').bind(u.id),
+        db.prepare('DELETE FROM nudge WHERE uid = ?').bind(u.id),
         db.prepare('DELETE FROM jprof WHERE uid = ?').bind(u.id),
         db.prepare('DELETE FROM myjob WHERE uid = ?').bind(u.id),
         db.prepare('DELETE FROM attq WHERE uid = ?').bind(u.id),
