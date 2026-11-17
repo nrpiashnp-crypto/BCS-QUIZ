@@ -5,7 +5,7 @@
 const VERSION='v17'; // ২০২৬-১১-১৮: js/css-এর নিয়ম বদলেছে কিন্তু ক্যাশের জিনিস একই, তাই ইচ্ছা করে v17 রাখা (বাড়ালে সবার ফোনে ফন্ট আবার নামত)
 const CORE = 'core-' + VERSION, PAGES = 'pages-' + VERSION, DATA = 'data-' + VERSION, SAMPLE = 'sample-' + VERSION;
 const PRECACHE = ['/', '/exams/', '/science/', '/fonts/fonts.css',
-  '/fonts/AnekBangla-bengali.woff2', '/fonts/AnekBangla-latin.woff2', '/fonts/LyannaWordmark.woff2',
+  '/fonts/lite.css', '/fonts/LyannaWordmark.woff2', // বড় ফন্ট আগাম নয়: হালকা রূপের ফোনে লাগেই না, পুরো রূপে প্রথম ব্যবহারে ক্যাশ হয়
   '/img/logo/li-mark.svg', '/img/logo/final-icon.svg', '/css/omr.css', '/js/omr.js', '/js/wrong.js'];
 const LIMIT = {[PAGES]: 40, [DATA]: 80, [SAMPLE]: 120};
 
