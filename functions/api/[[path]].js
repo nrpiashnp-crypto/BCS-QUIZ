@@ -1926,7 +1926,7 @@ async function diag(path, req, url, env, db, u) {
     const Q = await diagQs(db, sid, p.qs), ans = JSON.parse(att.ans);
     const qs = p.qs.filter(id => Q.has(id)).map(id => {
       const q = Q.get(id), ord = qOrd(c, q, u.id, id);
-      return {id, s: q.s, q: q.q, o: ord.map(i => q.o[i])};
+      return {id, s: q.s, q: q.q, o: ord.map(i => q.o[i]), ...(q.mk ? {mk: 1} : {})};
     });
     return json({part: no, title: p.title, mins: p.mins, left: att.dl - now, qs, done: Object.entries(ans).map(([id, a]) => [id, a[0]]), conf: c.conf ? 1 : 0, neg: c.neg || 0});
   }
@@ -1990,7 +1990,7 @@ async function diag(path, req, url, env, db, u) {
     const Q = await diagQs(db, sid, p.qs), ans = JSON.parse(att.ans);
     return json({part: no, title: p.title, res: resPub(JSON.parse(att.res)), qs: p.qs.filter(id => Q.has(id)).map(id => {
       const q = Q.get(id), ord = qOrd(c, q, u.id, id), a = ans[id];
-      return {id, s: q.s, q: q.q, o: ord.map(i => q.o[i]), a: ord.indexOf(q.a), pick: a ? a[0] : -1, e: q.e || '', ...(q.ref ? {ref: q.ref} : {})};
+      return {id, s: q.s, q: q.q, o: ord.map(i => q.o[i]), a: ord.indexOf(q.a), pick: a ? a[0] : -1, e: q.e || '', ...(q.ref ? {ref: q.ref} : {}), ...(q.mk ? {mk: 1} : {})};
     })}, 200, {'Cache-Control': 'no-store'});
   }
   return json({error: 'not found'}, 404);
@@ -2150,6 +2150,8 @@ async function diagAdmin(path, url, req, db, env) {
       const d = {q: nfc(q.q).slice(0, 2000), o, a: q.a, e: nfc(q.e || '').slice(0, 6000), t: str(q.t, 80) || '', lvl};
       // তথ্যসূত্র (memory/common.md ৩/১১): ব্যাখ্যার নিচে আলাদা ঘরে; শুধু নির্ভরযোগ্য উৎসের নাম, প্রশ্নের "ref"
       const ref = str(nfc(q.ref || ''), 300); if (ref) d.ref = ref;
+      // নিজেদের বানানো প্রশ্ন (LY Course, ১৭/১১): পাতায় পাশে "লিয়ানার অনুশীলনী প্রশ্ন"
+      if (q.mk === 1 || q.mk === true) d.mk = 1;
       rows.push(st.bind(sid, q.id, where.get(q.id), q.s, JSON.stringify(d))); vl.push([q.id, d]);
     }
     const changed = await qverLog(db, 'diag:' + sid, 'diag_q', 'sid', vl);
