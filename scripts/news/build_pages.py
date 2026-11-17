@@ -18,6 +18,9 @@ import html
 from pathlib import Path
 
 from common import NEWS_DIR, ROOT, SECTIONS, read_json
+import sys as _sys
+_sys.path.insert(0, str(ROOT / "tools"))
+from font_mode import SNIPPET as FONT_HEAD  # কম দামি ফোনে হালকা ফন্ট (tools/font_mode.py)
 from quality import fix_spelling
 
 SITE = "https://lyannabooks.com"
@@ -124,8 +127,7 @@ def head(title: str, desc: str, path: str) -> str:
 <link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/img/logo/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="preload" href="/fonts/AnekBangla-bengali.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/fonts/fonts.css">
+{FONT_HEAD}
 <style>{CSS}</style>
 <script src="/js/app.js" defer></script>
 <script src="/js/account.js" defer></script>

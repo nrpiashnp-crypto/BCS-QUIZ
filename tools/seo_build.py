@@ -23,6 +23,7 @@ It also
 
 Generated folders carry a .seo marker file; never edit their index.html by hand.
 """
+from font_mode import SNIPPET as FONT_HEAD  # কম দামি ফোনে হালকা ফন্ট
 import glob, html, json, os, re, subprocess, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from theme import apply as theme_apply  # site theme: logo, /css/omr.css, /js/omr.js
@@ -160,8 +161,7 @@ def page(path, title, desc, crumbs, body, current=None, img='/img/og.png', ld_ex
 <link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/img/logo/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="preload" href="/fonts/AnekBangla-bengali.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/fonts/fonts.css">
+{FONT_HEAD}
 <script type="application/ld+json">{json.dumps(ld, ensure_ascii=False)}</script>
 {''.join(f'<script type="application/ld+json">{json.dumps(x, ensure_ascii=False)}</script>' + chr(10) for x in ld_extra)}<style>{CSS}</style>
 </head>
