@@ -493,7 +493,7 @@ async function chDay(db, kind, cap) {
 // এক আইপি থেকে ঘণ্টায় ৩০টা আর দিনে ৬০টা চ্যালেঞ্জ; একটা চ্যালেঞ্জে এক আইপির ৩টা আর মোট ১০০০টা চেষ্টা বোর্ডে ওঠে
 const CH_MAX_Q = 200, CH_MAX_BYTES = 600000, CH_PER_HOUR = 30, CH_PER_DAY_IP = 60, CH_IP_TRIES = 3, CH_MAX_TRIES = 1000;
 // দলের পরীক্ষা: একই হোস্টেল/কোচিংয়ের ওয়াইফাই বা মোবাইল নেটে অনেকে একই আইপিতে থাকেন, তাই এক আইপির সীমা বেশি; বোর্ডে সেরা ৩০ জন
-const CH_GRP_IP_TRIES = 40, CH_GRP_TOP = 30;
+const CH_GRP_IP_TRIES = 40, CH_GRP_TOP = 30, CH_GRP_PER_DAY_IP = 15;
 const chGrp = c => c.ok < 0;
 // সব আইপি মিলিয়ে দিনে এতগুলোর বেশি চ্যালেঞ্জ জমা হয় না, যাতে আইপি বদলে বদলে কেউ D1-এর দৈনিক লেখার কোটা শেষ করতে না পারে।
 // এক আইপির দৈনিক সীমা আলাদা থাকায় একজন একা এই মোট সীমা শেষ করে অন্যদের আটকাতে পারে না
@@ -522,7 +522,12 @@ const ipKey = s => {
   return [...h, ...Array(Math.max(0, 8 - h.length - t.length)).fill('0'), ...t].slice(0, 4).map(x => x.replace(/^0+(?=.)/, '')).join(':') + '::/64';
 };
 const chIp = async req => (await sha(ipKey(req.headers.get('CF-Connecting-IP') || '') + '|lb-ch-ip')).slice(0, 20);
-const chIph = async req => (await sha((req.headers.get('CF-Connecting-IP') || '') + '|' + (req.headers.get('User-Agent') || '').slice(0, 80) + '|lb-ch')).slice(0, 20);
+// নতুন পাতা ফোনের নিজের এলোমেলো চিহ্ন (X-Lb-Dev) পাঠায়: একই ওয়াইফাইয়ে একই ব্রাউজারের দুই ফোন আলাদা গোনা হয়
+// (নইলে দ্বিতীয়জন প্রথমজনের ফল পেত)। চিহ্ন না পাঠানো পুরোনো পাতার জন্য আগের হিসাবই থাকে
+const chIph = async req => {
+  const d = (req.headers.get('X-Lb-Dev') || '').replace(/[^\w-]/g, '').slice(0, 40);
+  return (await sha((req.headers.get('CF-Connecting-IP') || '') + '|' + (req.headers.get('User-Agent') || '').slice(0, 80) + (d ? '|' + d : '') + '|lb-ch')).slice(0, 20);
+};
 const chPicks = (p, qs) => qs.map((q, i) => { const v = Array.isArray(p) ? p[i] : -1; return Number.isInteger(v) && v >= 0 && v < q.o.length ? v : -1; });
 const chScore = (p, qs) => qs.reduce((s, q, i) => s + (p[i] === q.a ? 1 : 0), 0);
 const chSrc = s => /^\/(?!\/)[\w\-./#?=&%]*$/.test(s) ? s : '';
@@ -604,7 +609,9 @@ async function challenge(path, req, db, env) {
       qs = cl.qs; picks = chPicks(cl.picks, qs); ok = chScore(picks, qs); idx = JSON.stringify(ids);
       sec = Math.max(0, Math.min(chMins(qs.length) * 60, Math.round(num(body.sec) || 0)));
     } else if (body.grp) {
-      // দলের পরীক্ষা: বানানো দাগ দেন না; ok = -1 মানে দলের পরীক্ষা
+      // দলের পরীক্ষা: বানানো দাগ দেন না; ok = -1 মানে দলের পরীক্ষা। পুরো প্রশ্ন-ব্যাখ্যা জমা হয়, তাই এক আইপি দিনে ১৫টা
+      const g = await db.prepare('SELECT COUNT(*) AS n FROM ch WHERE iph = ? AND ts > ? AND ok < 0').bind(ip, now - 86400e3).first();
+      if (g && g.n >= CH_GRP_PER_DAY_IP) return json({error: 'slow'}, 429);
       const cl = chClean(body.qs, null);
       if (!cl) return json({error: 'bad'}, 400);
       qs = cl.qs; picks = []; ok = -1; sec = 0;

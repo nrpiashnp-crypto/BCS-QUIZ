@@ -45,7 +45,10 @@ function share(box,id,text){var u=link(id),msg=text+'\n'+u;
    if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(msg).then(done,old);else old()};
   var mo=box.querySelector('.mo');if(mo)mo.onclick=function(){navigator.share({title:'লিয়ানা বুকস চ্যালেঞ্জ',text:text,url:u}).catch(function(){})};
   box.hidden=false}
-function post(body){return fetch('/api/ch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json().catch(function(){return {error:'http'+r.status}}).then(function(j){if(!r.ok||!j.id)throw j;return j})})}
+/* এই ফোনের এলোমেলো চিহ্ন: সার্ভার একই নেটের আলাদা ফোন চেনে (X-Lb-Dev) */
+function dev(){var d=ls('ch:dev');if(!d){d='';var a=new Uint8Array(12);(window.crypto||{getRandomValues:function(x){for(var i=0;i<x.length;i++)x[i]=Math.random()*256|0;return x}}).getRandomValues(a);for(var i=0;i<a.length;i++)d+=('0'+a[i].toString(16)).slice(-2);ls('ch:dev',d)}return d||'x'}
+function hdr(j){var h={'X-Lb-Dev':dev()};if(j)h['Content-Type']='application/json';return h}
+function post(body){return fetch('/api/ch',{method:'POST',headers:hdr(1),body:JSON.stringify(body)}).then(function(r){return r.json().catch(function(){return {error:'http'+r.status}}).then(function(j){if(!r.ok||!j.id)throw j;return j})})}
 function fail(e){return e&&e.error==='slow'?'এক ঘণ্টায় অনেকগুলো চ্যালেঞ্জ হয়ে গেছে, একটু পরে আবার চেষ্টা করুন।':e&&e.error==='bad'?'এই পরীক্ষা থেকে চ্যালেঞ্জ বানানো গেল না।':e&&e.error==='first'?'আগে চ্যালেঞ্জটা নিজে দিয়ে নিন, তারপর পাল্টা চ্যালেঞ্জ বানানো যাবে।':e&&e.error==='big'?'পরীক্ষাটা খুব বড়, লিংক বানানো গেল না।':e&&e.error?'সার্ভারে সমস্যা হচ্ছে ('+String(e.error).slice(0,20)+'), একটু পরে আবার চেষ্টা করুন।':'ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।'}
 
 function card(list){var el=document.createElement('div');el.className='chx';
@@ -77,5 +80,5 @@ function scan(){if(document.body.hasAttribute('data-noch'))return;
    c=card(list);c.dataset.k=k;var sec=(sb.textContent.match(/([০-৯\d]+)\s*মিনিট\s*(?:([০-৯\d]+)\s*সেকেন্ড)?/)||[]);
    if(sec[1]){var en=function(x){return +String(x||0).replace(/[০-৯]/g,function(d){return B.indexOf(d)})};c.dataset.sec=en(sec[1])*60+en(sec[2])}
    var j=sb.nextElementSibling&&sb.nextElementSibling.classList.contains('exp-jump')?sb.nextElementSibling:sb;j.insertAdjacentElement('afterend',c)})}
-window.LBC={scan:scan,share:share,post:post,fail:fail,safe:safe,name:myName,store:ls,bn:bn};
+window.LBC={scan:scan,share:share,post:post,fail:fail,safe:safe,name:myName,store:ls,bn:bn,hdr:hdr};
 scan();})();
