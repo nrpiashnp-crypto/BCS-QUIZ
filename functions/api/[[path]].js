@@ -32,6 +32,8 @@
    GET  /api/ch/<id>      → প্রশ্ন (উত্তর ছাড়া), চ্যালেঞ্জদাতার নম্বর, সেরা তিনজন, আগে দিয়ে থাকলে নিজের র‍্যাংক (mine)
    POST /api/ch/<id>/start → পরীক্ষা শুরুর সময় (সময় সার্ভারে গোনা হয়)
    POST /api/ch/<id>/try {name,picks,sec} → নম্বর, উত্তর-ব্যাখ্যা, র‍্যাংক
+   দলের পরীক্ষা (/make/ পাতা): POST /api/ch {grp:1,name,title,qs} → বানানো নিজে পরীক্ষা দেন না; ch.ok = -1 চিহ্ন।
+     তখন বোর্ডে বানানো থাকেন না, সেরা ৩০ জন দেখায় (g:1), আর এক নেটের (একই আইপি) ৪০ জন পর্যন্ত বোর্ডে ওঠেন
    প্রশ্নে ভুল জানানো (লগইন লাগে না; বোতাম js/report.js):
    POST /api/report {qid?, page, q, kind: ans|exp|q|other, note?} → {ok}
    অ্যাডমিন: GET /api/admin/reports?st=new|sent|done|no|all → তালিকা (পাতা /admin/reports/); POST /api/admin/reports {ids:[…], st}
@@ -490,6 +492,9 @@ async function chDay(db, kind, cap) {
 }
 // এক আইপি থেকে ঘণ্টায় ৩০টা আর দিনে ৬০টা চ্যালেঞ্জ; একটা চ্যালেঞ্জে এক আইপির ৩টা আর মোট ১০০০টা চেষ্টা বোর্ডে ওঠে
 const CH_MAX_Q = 200, CH_MAX_BYTES = 600000, CH_PER_HOUR = 30, CH_PER_DAY_IP = 60, CH_IP_TRIES = 3, CH_MAX_TRIES = 1000;
+// দলের পরীক্ষা: একই হোস্টেল/কোচিংয়ের ওয়াইফাই বা মোবাইল নেটে অনেকে একই আইপিতে থাকেন, তাই এক আইপির সীমা বেশি; বোর্ডে সেরা ৩০ জন
+const CH_GRP_IP_TRIES = 40, CH_GRP_TOP = 30;
+const chGrp = c => c.ok < 0;
 // সব আইপি মিলিয়ে দিনে এতগুলোর বেশি চ্যালেঞ্জ জমা হয় না, যাতে আইপি বদলে বদলে কেউ D1-এর দৈনিক লেখার কোটা শেষ করতে না পারে।
 // এক আইপির দৈনিক সীমা আলাদা থাকায় একজন একা এই মোট সীমা শেষ করে অন্যদের আটকাতে পারে না
 const CH_PER_DAY_ALL = 3000;
@@ -557,8 +562,11 @@ function chClean(list, picks) {
 
 // সেরা তিনজন (চ্যালেঞ্জদাতাসহ): বেশি সঠিক আগে, সমান হলে কম সময়
 async function chBoard(db, c) {
-  const {results} = await db.prepare('SELECT name, ok, sec FROM ch_try WHERE cid = ? ORDER BY ok DESC, sec ASC LIMIT 3').bind(c.id).all();
+  const g = chGrp(c);
+  const {results} = await db.prepare('SELECT name, ok, sec FROM ch_try WHERE cid = ? ORDER BY ok DESC, sec ASC LIMIT ?').bind(c.id, g ? CH_GRP_TOP : 3).all();
   const cnt = await db.prepare('SELECT COUNT(*) AS n FROM ch_try WHERE cid = ?').bind(c.id).first();
+  // দলের পরীক্ষায় বানানো নিজে বোর্ডে নেই
+  if (g) return {top: results, count: cnt && cnt.n || 0, g: 1};
   const all = [{name: c.name, ok: c.ok, sec: c.sec, host: 1}, ...results].sort((x, y) => y.ok - x.ok || x.sec - y.sec || (y.host || 0) - (x.host || 0)).slice(0, 3);
   return {top: all, count: (cnt && cnt.n || 0) + 1};
 }
@@ -595,6 +603,11 @@ async function challenge(path, req, db, env) {
       if (!cl || cl.qs.length !== ids.length) return json({error: 'bad'}, 400);
       qs = cl.qs; picks = chPicks(cl.picks, qs); ok = chScore(picks, qs); idx = JSON.stringify(ids);
       sec = Math.max(0, Math.min(chMins(qs.length) * 60, Math.round(num(body.sec) || 0)));
+    } else if (body.grp) {
+      // দলের পরীক্ষা: বানানো দাগ দেন না; ok = -1 মানে দলের পরীক্ষা
+      const cl = chClean(body.qs, null);
+      if (!cl) return json({error: 'bad'}, 400);
+      qs = cl.qs; picks = []; ok = -1; sec = 0;
     } else {
       const cl = chClean(body.qs, body.picks);
       if (!cl) return json({error: 'bad'}, 400);
@@ -607,7 +620,7 @@ async function challenge(path, req, db, env) {
       const id = chId();
       const r = await db.prepare('INSERT OR IGNORE INTO ch(id, ts, name, title, src, n, mins, ok, sec, picks, qs, iph, parent, ref, idx) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
         .bind(id, now, chName(body.name), title, src, qs.length, chMins(qs.length), ok, sec, JSON.stringify(picks), ref ? '' : JSON.stringify(qs), ip, parent, ref || null, ref ? idx : null).run();
-      if (r.meta && r.meta.changes) return json({id, ok, n: qs.length});
+      if (r.meta && r.meta.changes) return json({id, ok, n: qs.length, mins: chMins(qs.length)});
     }
     return json({error: 'server'}, 500);
   }
@@ -650,7 +663,7 @@ async function challenge(path, req, db, env) {
       const n = await db.prepare('SELECT COUNT(*) AS n, SUM(ip = ?) AS mine FROM ch_try WHERE cid = ?').bind(ip, id).first();
       // সব চ্যালেঞ্জ মিলিয়ে এক আইপির ঘণ্টার সীমা আর সবার দৈনিক সীমা; পার হলে নম্বর দেখায়, বোর্ডে ওঠে না
       const h = await db.prepare('SELECT COUNT(*) AS n FROM ch_try WHERE ip = ? AND ts > ?').bind(ip, now - 3600e3).first();
-      if ((n && n.n || 0) < CH_MAX_TRIES && (n && n.mine || 0) < CH_IP_TRIES && (h && h.n || 0) < CH_TRY_PER_HOUR && await chDay(db, 'try', CH_TRY_PER_DAY_ALL))
+      if ((n && n.n || 0) < CH_MAX_TRIES && (n && n.mine || 0) < (chGrp(c) ? CH_GRP_IP_TRIES : CH_IP_TRIES) && (h && h.n || 0) < CH_TRY_PER_HOUR && await chDay(db, 'try', CH_TRY_PER_DAY_ALL))
         await db.prepare('INSERT OR IGNORE INTO ch_try(cid, ts, name, ok, sec, picks, iph, ip) VALUES(?,?,?,?,?,?,?,?)')
           .bind(id, now, me.name, me.ok, me.sec, JSON.stringify(me.picks), iph, ip).run();
       else me.off = 1;
