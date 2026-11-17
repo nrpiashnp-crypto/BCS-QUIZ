@@ -309,11 +309,13 @@ function fresh(){const h=document.documentElement;h.classList.add('nohov');
   if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
   const mv=e=>{if(e.pointerType==='mouse'&&(e.movementX||e.movementY)){h.classList.remove('nohov');removeEventListener('pointermove',mv)}};
   removeEventListener('pointermove',fresh.mv||mv);fresh.mv=mv;addEventListener('pointermove',mv,{passive:true})}
+// নিজেদের বানানো প্রশ্ন (সেটে "mk": 1; Lyanna_data handover/made-questions/PLAN.md): কখনো কোনো পরীক্ষার নাম নয়
+const MKT='<p class="tag" title="লিয়ানার নিজের বানানো, যাচাই করা প্রশ্ন; কোনো পরীক্ষায় আসা প্রশ্ন নয়">লিয়ানার অনুশীলনী প্রশ্ন</p>';
 function show(){
   const L=local(EX.part),id=EX.queue[0],q=EX.qs.find(x=>x.id===id),answered=Object.values(L.a).filter(x=>x[0]>=0).length;
   const again=L.skip.includes(id);let t0=Date.now(),busy=false;
   V.innerHTML=`<div class="qh"><span>ভাগ ${bn(EX.part)} · ${esc(SUB(q.s))}</span><span>${bn(answered)} / ${bn(EX.qs.length)} উত্তর</span></div>
-    ${again?'<p class="tag">আগে বাদ দিয়েছিলেন</p>':''}<div class="qt">${rich(q.q)}</div>
+    ${again?'<p class="tag">আগে বাদ দিয়েছিলেন</p>':''}${q.mk?MKT:''}<div class="qt">${rich(q.q)}</div>
     ${q.o.map((o,k)=>`<button class="opt" data-o="${k}"><span class="k">${K[k]}</span><span>${rich(o)}</span></button>`).join('')}
     ${EX.conf?'<p class="hint" id="cfh" hidden>উত্তরটা কেমন দিলেন?</p><div class="conf" id="cf" hidden><button data-c="1">নিশ্চিত</button><button data-c="0">আন্দাজ</button></div>':''}
     <p class="net" id="net">${navigator.onLine?'':'নেট নেই। পরীক্ষা চলছে, উত্তর ফোনে জমছে।'}</p>
@@ -412,7 +414,7 @@ async function review(no){
   $('rv').dataset.ok=1;
   const wrong=r.qs.filter(q=>q.pick!==q.a),ok=r.qs.filter(q=>q.pick===q.a);
   window.LBQ=window.LBQ||{};for(const q of r.qs)if(q.id)LBQ[q.id]=q; // js/report.js এখান থেকে ব্যাখ্যার ছাপ (ev) নেয়
-  const card=q=>`<div class="card rv"${q.id?` data-id="${esc(q.id)}"`:''}><div class="qh"><span>${esc(SUB(q.s))}</span><span>${q.pick<0?'বাদ':q.pick===q.a?'ঠিক':'ভুল'}</span></div><div class="qt">${rich(q.q)}</div>${q.o.map((o,k)=>`<div class="opt${k===q.a?' right':k===q.pick?' wrong':''}"><span class="k">${K[k]}</span><span>${rich(o)}</span></div>`).join('')}${q.e?`<div class="exp">${md(q.e)}${q.ref?`<p class="src">তথ্যসূত্র: ${esc(q.ref)}</p>`:''}</div>`:''}</div>`;
+  const card=q=>`<div class="card rv"${q.id?` data-id="${esc(q.id)}"`:''}><div class="qh"><span>${esc(SUB(q.s))}</span><span>${q.pick<0?'বাদ':q.pick===q.a?'ঠিক':'ভুল'}</span></div>${q.mk?MKT:''}<div class="qt">${rich(q.q)}</div>${q.o.map((o,k)=>`<div class="opt${k===q.a?' right':k===q.pick?' wrong':''}"><span class="k">${K[k]}</span><span>${rich(o)}</span></div>`).join('')}${q.e?`<div class="exp">${md(q.e)}${q.ref?`<p class="src">তথ্যসূত্র: ${esc(q.ref)}</p>`:''}</div>`:''}</div>`;
   $('rvb').innerHTML=(wrong.length?wrong.map(card).join(''):'<p>এই ভাগে কোনো ভুল নেই।</p>')+(ok.length?`<details><summary>ঠিকগুলো (${bn(ok.length)})</summary>${ok.map(card).join('')}</details>`:'');
   if(window.LBMath)try{LBMath(V)}catch(e){}
 }
