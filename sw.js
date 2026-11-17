@@ -2,7 +2,7 @@
    পাতা (HTML) আর প্রশ্নের JSON: আগে নেটওয়ার্ক, না পেলে ক্যাশ, তাই অনলাইনে সবসময় নতুন প্রশ্ন আসে।
    ফন্ট, ছবি: ক্যাশ থেকে সাথে সাথে, পেছনে নতুন কপি এনে রাখে। js/css: আগে নেটওয়ার্ক, না পেলে ক্যাশ (নতুন পাতার সাথে পুরোনো স্ক্রিপ্ট যেন না মেলে)। অন্য ডোমেইনের কিছু (যেমন analytics) ছোঁয়া হয় না।
    কিছু বদলালে VERSION বাড়ান, পুরোনো ক্যাশ মুছে যাবে। */
-const VERSION='v17';
+const VERSION='v17'; // ২০২৬-১১-১৮: js/css-এর নিয়ম বদলেছে কিন্তু ক্যাশের জিনিস একই, তাই ইচ্ছা করে v17 রাখা (বাড়ালে সবার ফোনে ফন্ট আবার নামত)
 const CORE = 'core-' + VERSION, PAGES = 'pages-' + VERSION, DATA = 'data-' + VERSION, SAMPLE = 'sample-' + VERSION;
 const PRECACHE = ['/', '/exams/', '/science/', '/fonts/fonts.css',
   '/fonts/AnekBangla-bengali.woff2', '/fonts/AnekBangla-latin.woff2', '/fonts/LyannaWordmark.woff2',
@@ -30,10 +30,11 @@ async function trim(name) {
   const c = await caches.open(name), ks = await c.keys();
   for (let i = 0; i < ks.length - LIMIT[name]; i++) await c.delete(ks[i]);
 }
-async function networkFirst(req, name) {
+async function networkFirst(req, name, fresh = true) {
   try {
-    // ফোনের HTTP-ক্যাশের পুরোনো কপি নয়, সার্ভারে মিলিয়ে নেওয়া (বদল না থাকলে ছোট 304)
-    const res = await fetch(req, {cache: 'no-cache'});
+    // পাতা আর JSON: ফোনের HTTP-ক্যাশের পুরোনো কপি নয়, সার্ভারে মিলিয়ে নেওয়া (বদল না থাকলে ছোট 304)।
+    // js/css (fresh=false): _headers-এর ১ ঘণ্টার ক্যাশ মানা, প্রতি পাতায় সার্ভারে আলাদা ঘোরা নয় (কম দামি ফোনে ধীর নেটে প্রথম স্ক্রিন আগে আসে)।
+    const res = await fetch(req, fresh ? {cache: 'no-cache'} : {});
     if (res.ok) { const c = await caches.open(name); await c.put(req, res.clone()); trim(name); }
     return res;
   } catch (err) {
@@ -58,7 +59,7 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET' || url.origin !== location.origin) return;
   if (req.mode === 'navigate' || req.destination === 'document') return e.respondWith(networkFirst(req, PAGES));
   if (url.pathname.endsWith('.json')) return e.respondWith(networkFirst(req, DATA));
-  if (/^\/(js|css)\//.test(url.pathname)) return e.respondWith(networkFirst(req, CORE));
+  if (/^\/(js|css)\//.test(url.pathname)) return e.respondWith(networkFirst(req, CORE, false));
   // নমুনা অধ্যায়ের পাতা-ছবি/PDF: অধ্যায় বদলালে সাথে সাথে নতুনটা দেখাতে আগে নেটওয়ার্ক
   if (url.pathname.startsWith('/sample/')) return e.respondWith(networkFirst(req, SAMPLE));
   if (/^\/(fonts|img)\//.test(url.pathname) || req.destination === 'image') return e.respondWith(staleWhileRevalidate(req, e));
