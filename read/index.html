@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta name="robots" content="noindex">
+<meta charset="utf-8">
+<meta name="theme-color" content="#13294b">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>আমার শিট · লিয়ানা বুকস</title>
+<meta name="description" content="লিয়ানা বুকসের লেকচার শিট, সাইটেই পড়ার জন্য।">
+<link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+/* পড়ার পাতা: শিটের লেখা আসে /api/read থেকে, একবারে এক অংশ; এই ফাইলে কোনো লেখা নেই (রিপো পাবলিক)।
+   ঠিকানা: /read/ = আমার শিট, /read/<শিট>/ = সূচি, /read/<শিট>/<অংশ> = এক অংশ (_redirects সব /read/*-কে এই পাতায় আনে)। */
+:root{--paper:#f8f5ee;--ink:#1d1f21;--muted:#5d5a55;--rule:#e6d3d9;--card:#fffdf7;--navy:#13294b;--pink:#c8326a;--soft:#f4ede3;--good:#1e7a46;--good-bg:#e5f3ea;--bad:#b3261e;--bad-bg:#fbe9e7;
+  --display:'Tiro Bangla',Georgia,serif;--body:'Noto Sans Bengali',system-ui,sans-serif;--fs:17px}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink)}
+body{font:var(--fs)/1.75 var(--body)}
+.wrap{max-width:720px;margin:0 auto;padding:12px 16px 40px}
+a{color:var(--navy)}
+.dim{color:var(--muted)}
+h1{font:600 24px/1.4 var(--display);color:var(--navy);margin:6px 0 4px}
+.rd-head{font-size:13.5px;color:var(--muted);margin:0}
+/* উপরের স্থির বার: সূচি, কোথায় আছেন, লেখার মাপ */
+.rd-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:8px;background:var(--paper);border-bottom:1px solid var(--rule);padding:6px 0;margin:0 0 10px}
+.rd-bar .t{flex:1;min-width:0;font-size:13.5px;line-height:1.35;color:var(--muted)}
+.rd-bar .t b{display:block;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rd-bar button,.rd-bar a.b{font:600 15px/1 var(--body);border:1px solid var(--rule);background:var(--card);color:var(--navy);border-radius:3px;padding:9px 10px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.rd-bar button[disabled]{opacity:.4;cursor:default}
+.rd-bar .pg{position:absolute;left:0;bottom:-1px;height:2px;background:var(--pink);transition:width .3s}
+/* জলছাপ: লেখার ঘরের ওপরে একটা ::before, চাপ ধরে না; ছবিতে বসে না */
+.rd-text{position:relative;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.rd-text::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:var(--wm,none);background-size:300px 170px;z-index:3}
+.rd-text img{position:relative;z-index:4;max-width:100%;height:auto}
+.rd-title{font:600 22px/1.45 var(--display);color:var(--navy);margin:2px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--pink)}
+.rd-text p{margin:0 0 10px}
+.rd-text ul{margin:0 0 12px;padding-left:22px}.rd-text li{margin:0 0 4px}
+.rule{background:var(--soft);border-left:3px solid var(--navy);padding:10px 12px 2px;margin:0 0 14px;border-radius:0 3px 3px 0}
+.cap{font-weight:600;color:var(--navy);margin:6px 0 4px!important}
+.tb{overflow-x:auto;margin:0 0 14px;-webkit-overflow-scrolling:touch}
+.tb table{border-collapse:collapse;width:100%;font-size:.84em;line-height:1.5;background:var(--card)}
+.tb th,.tb td{border:1px solid var(--rule);padding:5px 7px;text-align:left;vertical-align:top}
+.tb th{background:var(--navy);color:#fff;font-weight:600}
+/* সমাধান করা অঙ্ক */
+.qa{background:var(--card);border:1px solid var(--rule);border-radius:3px;padding:10px 12px 4px;margin:0 0 12px}
+.qa .q{font-weight:500;border:0}.qa .q>b:first-child{color:var(--pink)}
+.an{background:var(--good-bg);color:var(--good);display:inline-block;padding:1px 8px;border-radius:3px}
+.an b,.so b{color:inherit}
+.so b:first-child{color:var(--navy)}
+.tag{display:block;font-size:.78em;line-height:1.5;color:var(--muted);font-weight:400;margin-top:2px}
+.opl{display:grid;grid-template-columns:1fr 1fr;gap:2px 14px;margin:0 0 10px;color:#33363a}
+.opl.one{grid-template-columns:1fr}
+.opl span b{color:var(--muted);font-weight:500;margin-right:4px}
+/* অনুশীলনী: OMR-এর মতো, প্রথম ট্যাপেই লক */
+.ex{margin:0 0 12px}
+.xq{background:var(--card);border:1px solid var(--rule);border-radius:3px;padding:10px 12px 12px;margin:0 0 10px}
+.xq .q{margin:0 0 8px;font-weight:500}.xq .q b{color:var(--pink)}
+.ops{display:grid;gap:6px}.ops.two{grid-template-columns:1fr 1fr}
+.op{display:flex;gap:10px;align-items:flex-start;text-align:left;width:100%;font:inherit;font-size:.95em;line-height:1.5;color:var(--ink);background:#fff;border:1px solid var(--rule);border-radius:3px;padding:7px 10px;cursor:pointer;position:relative;z-index:4}
+.op i{font-style:normal;flex:none;width:24px;height:24px;border:1.4px solid var(--pink);border-radius:50%;display:grid;place-items:center;font-size:12.5px;color:var(--pink);margin-top:1px}
+.op.ok{border-color:var(--good);background:var(--good-bg)}.op.ok i{background:var(--good);border-color:var(--good);color:#fff}
+.op.no{border-color:var(--bad);background:var(--bad-bg)}.op.no i{background:var(--bad);border-color:var(--bad);color:#fff}
+.xq.done .op{cursor:default}
+.xq .op:disabled{opacity:1}
+.xs{background:var(--card);border:1.4px solid var(--pink);border-radius:3px;padding:10px 12px;margin:0 0 12px;font-weight:500}
+.ex>p,.ex .wq{background:var(--card);border:1px dashed var(--navy);border-radius:3px;padding:10px 12px;margin:0 0 10px}
+details.key{margin:6px 0 12px}details.key summary{cursor:pointer;color:var(--navy);font-weight:600;padding:4px 0}
+details.key p{margin:6px 0 0}
+/* আগের/পরের */
+.rd-nav{display:flex;gap:10px;margin:22px 0 0}
+.rd-nav a{flex:1;display:block;border:1px solid var(--rule);background:var(--card);border-radius:3px;padding:10px 12px;text-decoration:none;color:var(--ink);font-size:14px;line-height:1.5}
+.rd-nav a small{display:block;color:var(--muted)}
+.rd-nav a.nx{text-align:right;background:var(--navy);border-color:var(--navy);color:#fff}
+.rd-nav a.nx small{color:#d9dfea}
+.btn{display:inline-block;background:var(--navy);color:#fff!important;text-decoration:none;font-weight:600;padding:11px 18px;border-radius:3px;border:0;font-size:16px;cursor:pointer;line-height:1.5}
+/* অগ্রগতির সরু দাগ */
+.bar{height:6px;background:#efe6dc;border-radius:3px;overflow:hidden;margin:6px 0 4px}.bar i{display:block;height:100%;background:var(--good)}
+.pgt{font-size:14px;color:var(--muted);margin:0}
+/* সূচি: ভাগগুলো ভাঁজে, পড়া অংশে ভরা বাবল */
+.toc{margin:16px 0 0}
+details.sec{border-top:1px solid var(--rule)}
+details.sec:last-child{border-bottom:1px solid var(--rule)}
+details.sec summary{list-style:none;cursor:pointer;display:flex;gap:10px;align-items:baseline;padding:11px 0;font:600 16.5px/1.5 var(--display);color:var(--navy)}
+details.sec summary::-webkit-details-marker{display:none}
+details.sec summary::after{content:"+";margin-left:auto;font:400 20px/1 var(--body);color:var(--pink)}
+details.sec[open] summary::after{content:"−"}
+details.sec summary small{font:13px/1.4 var(--body);color:var(--muted);white-space:nowrap}
+.toc a{display:flex;gap:10px;align-items:flex-start;padding:7px 0;text-decoration:none;color:var(--ink);font-size:15.5px;line-height:1.5}
+.toc a:last-child{padding-bottom:12px}
+.toc a i{flex:none;width:14px;height:14px;border:1.4px solid var(--pink);border-radius:50%;margin-top:5px}
+.toc a.r i{background:var(--ink);border-color:var(--ink)}
+.toc a.k{color:var(--muted)}
+.toc a.c{font-weight:600}
+details.how{font-size:15px;color:#33363a;margin:12px 0}
+details.how summary{cursor:pointer;color:var(--navy);font-weight:500}
+details.how p{margin:6px 0 0}
+/* আমার শিট */
+.sh{display:block;background:var(--card);border:1px solid rgba(200,50,106,.45);border-radius:3px;padding:12px 14px;margin:12px 0;text-decoration:none;color:var(--ink)}
+.sh b{display:block;font:600 18px/1.45 var(--display);color:var(--navy)}
+.sh .go{display:block;color:var(--pink);font-weight:600;font-size:15px;margin-top:4px}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:3px;padding:14px;margin:14px 0}
+.note{font-size:13px;color:var(--muted);margin:22px 0 0;text-align:center}
+@media(min-width:900px){.wrap{padding-top:20px}}
+@media(prefers-reduced-motion:reduce){.rd-bar .pg{transition:none}}
+/* প্রিন্ট বন্ধ: ছাপলে শুধু এই লাইন */
+@media print{body *{display:none!important}body::after{content:"এই শিট ছাপা যায় না। lyannabooks.com-এ পড়ুন।";display:block;font:16px/1.6 sans-serif;padding:40px}}
+</style>
+<link rel="stylesheet" href="/css/omr.css">
+</head>
+<body>
+<div class="sitebar"><a href="/" aria-label="লিয়ানা বুকস"><img src="/img/logo/li-mark.svg" alt="" width="34" height="44"><span class="lgn-n">লিয়ানা বুকস</span></a></div>
+<main class="wrap" id="view"><p class="dim">লোড হচ্ছে…</p></main>
+<script>
+(function(){
+const $=id=>document.getElementById(id),V=$('view');
+const BN='০১২৩৪৫৬৭৮৯',bn=n=>String(n).replace(/\d/g,d=>BN[d]),en=s=>String(s).replace(/[০-৯]/g,d=>BN.indexOf(d));
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const get=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}};
+const put=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const seg=location.pathname.split('/').filter(Boolean);
+let SID=/^[a-z0-9-]{1,60}$/.test(seg[1]||'')?seg[1]:'',TOC=null,PID=/^[a-z0-9-]{1,40}$/.test(seg[2]||'')?seg[2]:'';
+const base=()=>'/read/'+SID+'/';
+
+// লেখার মাপ: তিন ধাপ, এই ফোনে মনে থাকে
+const FS=[15,17,20];let fs=get('rd:fs',1);if(!(fs>=0&&fs<3))fs=1;
+const setFs=()=>document.documentElement.style.setProperty('--fs',FS[fs]+'px');setFs();
+
+// জলছাপ: দুই লাইনের লেখা কাত করে SVG টালি
+function wm(lines){
+  const t=lines.filter(Boolean).map((l,i)=>`<text x="150" y="${78+i*22}" text-anchor="middle">${esc(l)}</text>`).join('');
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="300" height="170"><g transform="rotate(-22 150 85)" fill="#13294b" fill-opacity=".075" font-family="Noto Sans Bengali,sans-serif" font-size="15">${t}</g></svg>`;
+  document.documentElement.style.setProperty('--wm',`url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}")`);
+}
+
+// মার্কডাউন (শিটে যা থাকে: অনুচ্ছেদ, **গাঢ়**, "- " তালিকা, | ছক |, "ছক:" শিরোনাম)। আগে সব escape, তারপর ট্যাগ
+const inl=s=>esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\s*(\[[^\]\n]{2,160}\])\s*$/,'<span class="tag">$1</span>');
+// "(ক) ৯১ (খ) ৮৭ …" → [[ক, ৯১], …]; দুটোর কম হলে null
+function opts(t){
+  const m=t.split(/\s*\(([কখগঘঙ])\)\s*/);if(m.length<5)return null;
+  const head=m[0],L=[];for(let i=1;i<m.length;i+=2)L.push([m[i],(m[i+1]||'').trim()]);
+  return {head,L};
+}
+const optList=L=>`<div class="opl${L.some(x=>x[1].length>22)?' one':''}">${L.map(([k,v])=>`<span><b>(${k})</b>${inl(v)}</span>`).join('')}</div>`;
+function md(src,kind){
+  const blocks=src.replace(/\r/g,'').split(/\n{2,}/).map(b=>b.trim()).filter(Boolean);
+  if(kind==='ex')return exMd(blocks);
+  let h='',qa=null,rule=null;
+  const flushQa=()=>{if(qa){h+='<div class="qa">'+qa+'</div>';qa=null}};
+  const flushRule=()=>{if(rule!=null){h+='<div class="rule">'+rule+'</div>';rule=null}};
+  for(const b of blocks){
+    const L=b.split('\n');
+    let html=null;
+    if(L.every(l=>/^\|/.test(l))){
+      const rows=L.filter(l=>!/^\|\s*:?-{2,}/.test(l)).map(l=>l.replace(/^\||\|$/g,'').split('|').map(c=>c.trim()));
+      html='<div class="tb"><table>'+rows.map((r,i)=>'<tr>'+r.map(c=>i?`<td>${inl(c)}</td>`:`<th>${inl(c)}</th>`).join('')+'</tr>').join('')+'</table></div>';
+    }else if(L.every(l=>/^[-*] /.test(l)))html='<ul>'+L.map(l=>'<li>'+inl(l.slice(2))+'</li>').join('')+'</ul>';
+    const p=b.replace(/\n/g,' ');
+    // সমাধান করা অঙ্ক: প্রশ্ন (**১.** বা **সমস্যা ১.**) থেকে পরের প্রশ্নের আগ পর্যন্ত এক কার্ডে
+    if(!html&&/^\*\*(সমস্যা\s*)?[০-৯0-9]+\.\*\*/.test(p)){flushRule();flushQa();qa=`<p class="q">${inl(p)}</p>`;continue}
+    if(qa!=null){
+      if(!html&&/^\([কখগঘঙ]\)/.test(p)){const o=opts(p);qa+=o?optList(o.L):`<p>${inl(p)}</p>`;continue}
+      if(!html&&/^\*\*উত্তর[:ঃ]?\*\*/.test(p)){qa+=`<p><span class="an">${inl(p)}</span></p>`;continue}
+      if(!html&&/^\*\*সমাধান[:ঃ]?\*\*/.test(p)){qa+=`<p class="so">${inl(p)}</p>`;continue}
+      if(!/^ছক[:ঃ]/.test(p)&&!/^\*\*/.test(p)){qa+=html||`<p>${inl(p)}</p>`;continue}
+      flushQa();
+    }
+    if(!html&&/^উত্তরমালা[:ঃ]/.test(p)){h+=key(p);continue}
+    if(!html&&/^ছক[:ঃ]/.test(p)){flushRule();h+=`<p class="cap">${inl(p.replace(/^ছক[:ঃ]\s*/,''))}</p>`;continue}
+    // টাইপের শুরুর নিয়ম আর সূত্র (প্রথম অঙ্কের আগ পর্যন্ত) একটা শান্ত বাক্সে
+    const out=html||`<p>${inl(p)}</p>`;
+    if(kind==='type'&&!h.includes('class="qa"')&&!/^<div class="tb"/.test(out)){rule=(rule||'')+out;continue}
+    flushRule();h+=out;
+  }
+  flushRule();flushQa();
+  return h;
+}
+const key=p=>`<details class="key"><summary>উত্তরমালা দেখুন</summary><p>${inl(p.replace(/^উত্তরমালা[:ঃ]\s*/,''))}</p></details>`;
+// অনুশীলনী: "(১) প্রশ্ন (ক) … (খ) …" আর "উত্তরমালা: ১-খ, ২-ক" → ছোট পরীক্ষা, প্রথম ট্যাপেই লক
+function exMd(blocks){
+  const kb=blocks.find(b=>/^উত্তরমালা[:ঃ]/.test(b)),K={};
+  if(kb)for(const m of kb.matchAll(/([০-৯0-9]+)\s*[-–]\s*([কখগঘঙ])/g))K[en(m[1])]=m[2];
+  let h='',mcq=0;
+  for(const b of blocks){
+    if(b===kb)continue;
+    const p=b.replace(/\n/g,' '),m=p.match(/^\(([০-৯0-9]+)\)\s*(.+)$/),o=m&&opts(m[2]),k=m&&K[en(m[1])];
+    if(m&&o&&k&&o.L.some(x=>x[0]===k)){
+      mcq++;
+      h+=`<div class="xq" data-k="${k}"><p class="q"><b>${bn(en(m[1]))}.</b> ${inl(o.head)}</p><div class="ops${o.L.every(x=>x[1].length<=14)?' two':''}">${o.L.map(([a,v])=>`<button type="button" class="op" data-o="${a}"><i>${a}</i><span>${inl(v)}</span></button>`).join('')}</div></div>`;
+    }else if(m)h+=`<p class="wq"><b>${bn(en(m[1]))}.</b> ${inl(m[2])}</p>`;
+    else h+=`<p>${inl(p)}</p>`;
+  }
+  return `<div class="ex" data-n="${mcq}">${mcq?'<p class="pgt" style="margin:0 0 8px;background:none;border:0;padding:0">নিজে করে দেখুন: অপশনে চাপ দিলেই উত্তর লক হবে।</p>':''}${h}<div id="xs"></div>${kb?key(kb.replace(/\n/g,' ')):''}</div>`;
+}
+function exWire(){
+  const box=V.querySelector('.ex[data-n]');if(!box||!+box.dataset.n)return;
+  let done=0,ok=0;const n=+box.dataset.n;
+  box.querySelectorAll('.xq').forEach(q=>q.querySelectorAll('.op').forEach(b=>b.onclick=()=>{
+    if(q.classList.contains('done'))return;
+    q.classList.add('done');done++;
+    const k=q.dataset.k,mine=b.dataset.o;
+    q.querySelectorAll('.op').forEach(x=>{if(x.dataset.o===k)x.classList.add('ok')});
+    if(mine===k)ok++;else b.classList.add('no');
+    if(done===n)$('xs').innerHTML=`<div class="xs">${bn(n)}টির মধ্যে ${bn(ok)}টি ঠিক।${ok===n?' চমৎকার!':ok*2>=n?' ভুলগুলোর টাইপ আরেকবার দেখে নিন।':' টাইপগুলো আরেকবার পড়ে তারপর আবার করুন।'}</div>`;
+  }));
+}
+
+const api=p=>fetch('/api/read/'+p,{credentials:'same-origin',cache:'no-store'}).then(r=>r.json().then(j=>({st:r.status,j})));
+
+function deny(st,j){
+  const t=j&&j.title?`<h1>${esc(j.title)}</h1>`:'';
+  if(st===401){V.innerHTML=`${t}<div class="card"><p style="margin:0 0 10px">এই শিট পড়তে Google দিয়ে লগইন করুন। পাসওয়ার্ড লাগে না।</p><div id="g"></div></div>`;login();return}
+  if(st===403){V.innerHTML=`${t}<div class="card"><p style="margin:0 0 8px">এই শিট পেট্রোবাংলা ব্যাচের শিক্ষার্থীদের জন্য।</p><p style="margin:0">ব্যাচে থাকলে আগে <a href="/plan/pb/">ব্যাচের পাতা</a> একবার খুলুন, তারপর এখানে ফিরুন। অন্য Google অ্যাকাউন্টে লগইন থাকলে <a href="/account/">অ্যাকাউন্ট</a> দেখুন।</p></div>`;return}
+  if(st===429){V.innerHTML=`<div class="card">খুব দ্রুত অনেক অংশ খোলা হয়েছে। কয়েক মিনিট পরে আবার চেষ্টা করুন।</div>`;return}
+  if(st===404){V.innerHTML=`<div class="card">শিটটি পাওয়া যায়নি। <a href="/read/">আমার শিট</a></div>`;return}
+  V.innerHTML=`<div class="card"><p style="margin:0 0 10px">লোড হয়নি। ইন্টারনেট দেখে আবার চেষ্টা করুন।</p><button class="btn" onclick="location.reload()">আবার চেষ্টা</button></div>`;
+}
+function login(){
+  fetch('/api/me',{credentials:'same-origin'}).then(r=>r.json()).then(j=>{
+    if(!j.cid){$('g').innerHTML='<a href="/account/">লগইন করুন →</a>';return}
+    const go=()=>{google.accounts.id.initialize({client_id:j.cid,ux_mode:'popup',context:'signin',callback:res=>{
+      $('g').textContent='লগইন হচ্ছে…';
+      fetch('/api/login',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({credential:res.credential})})
+        .then(r=>r.json()).then(x=>{if(x.user)put('lb:u',x.user);TOC=null;route()}).catch(()=>{$('g').textContent='লগইন হয়নি, আবার চেষ্টা করুন।'})}});
+      google.accounts.id.renderButton($('g'),{theme:'filled_blue',size:'large',shape:'pill',text:'continue_with',locale:'bn',width:260})};
+    const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.async=true;s.onload=go;
+    s.onerror=()=>{$('g').innerHTML='<a href="/account/">লগইন করুন →</a>'};document.head.appendChild(s);
+  }).catch(()=>{$('g').innerHTML='<a href="/account/">লগইন করুন →</a>'});
+}
+
+const bar=(a,n)=>`<div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${a}"><i style="width:${n?Math.round(a*100/n):0}%"></i></div>`;
+const short=t=>String(t).replace(/^টাইপ\s*[০-৯]+:\s*/,'');
+
+// /read/ : যে শিটগুলো পড়তে পারেন
+async function shelf(){
+  document.title='আমার শিট · লিয়ানা বুকস';
+  const {st,j}=await api('list').catch(()=>({st:0}));
+  if(st!==200)return deny(st,j);
+  let h='<h1>আমার শিট</h1>';
+  if(!j.list.length){
+    h+=j.me?`<div class="card"><p style="margin:0 0 8px">এখনো আপনার জন্য কোনো শিট খোলা হয়নি।</p><p style="margin:0">পেট্রোবাংলা ব্যাচে থাকলে শিটের লিংক <a href="/plan/pb/">রুটিনের পাতায়</a> প্রতিদিনের পরীক্ষার পাশে পাবেন।</p></div>`
+      :`<div class="card"><p style="margin:0 0 10px">আপনার শিট দেখতে Google দিয়ে লগইন করুন।</p><div id="g"></div></div>`;
+    V.innerHTML=h;if(!j.me)login();return;
+  }
+  for(const s of j.list){
+    const go=s.last?`<span class="go">যেখানে থেমেছিলেন, সেখান থেকে →</span>`:`<span class="go">পড়া শুরু করুন →</span>`;
+    h+=`<a class="sh" href="/read/${esc(s.id)}/${s.last?esc(s.last):''}">${s.label?`<span class="rd-head">${esc(s.label)}</span>`:''}<b>${esc(s.title)}</b>
+      ${s.seen?bar(s.seen,s.n)+`<p class="pgt">${bn(s.n)}টি অংশের ${bn(s.seen)}টি পড়েছেন</p>`:`<p class="pgt">${bn(s.n)}টি অংশ</p>`}${go}</a>`;
+  }
+  V.innerHTML=h;scrollTo(0,0);
+}
+
+async function loadToc(){
+  if(TOC)return true;
+  const {st,j}=await api('toc?s='+SID).catch(()=>({st:0}));
+  if(st!==200){deny(st,j);return false}
+  TOC=j;wm(j.wm);return true;
+}
+async function route(){
+  if(!SID)return shelf();
+  if(!(await loadToc()))return;
+  PID?part():toc();
+}
+function toc(){
+  const T=TOC,S=T.s,seen=new Set(T.seen),loc=get('rd:last:'+SID,null),last=T.last||loc,B=base();
+  document.title=S.title+' · লিয়ানা বুকস';
+  const lastT=last&&T.toc.find(x=>x[0]===last);
+  // যে ভাগ খোলা থাকবে: শেষ পড়া অংশের, নইলে প্রথম না-পড়া অংশের
+  const cur=lastT||T.toc.find(x=>!seen.has(x[0]))||T.toc[0],openSec=cur?cur[1]:0;
+  let h=`${S.label?`<p class="rd-head">${esc(S.label)}</p>`:''}<h1>${esc(S.title)}</h1>${S.sub?`<p class="dim" style="margin:0;font-size:15px">${esc(S.sub)}</p>`:''}
+  ${seen.size?`<div style="margin:12px 0 0">${bar(seen.size,T.toc.length)}<p class="pgt">${bn(T.toc.length)}টি অংশের ${bn(seen.size)}টি পড়েছেন</p></div>`:''}
+  <p style="margin:14px 0">${lastT?`<a class="btn" href="${B}${esc(lastT[0])}">চালিয়ে যান: ${esc(short(lastT[3]))} →</a>`:`<a class="btn" href="${B}${esc(T.toc[0][0])}">পড়া শুরু করুন →</a>`}</p>
+  ${S.howto?`<details class="how"><summary>শিটটি কীভাবে সাজানো</summary><p>${esc(S.howto)}</p></details>`:''}<div class="toc">`;
+  for(const sec of S.secs){
+    const L=T.toc.filter(x=>x[1]===sec.no);if(!L.length)continue;
+    const r=L.filter(x=>seen.has(x[0])).length;
+    h+=`<details class="sec"${sec.no===openSec?' open':''}><summary><span>${bn(sec.no)}. ${esc(sec.title)}</span><small>${r?bn(r)+'/'+bn(L.length):bn(L.length)+'টি অংশ'}</small></summary>`+
+      L.map(x=>`<a href="${B}${esc(x[0])}" class="${seen.has(x[0])?'r':''}${x[2]==='type'||x[2]==='text'?'':' k'}${cur&&x[0]===cur[0]?' c':''}"><i aria-hidden="true"></i><span>${esc(x[3])}${seen.has(x[0])?'<span class="sr" style="position:absolute;left:-9999px"> (পড়েছেন)</span>':''}</span></a>`).join('')+'</details>';
+  }
+  h+=`</div>${!T.me?'<p class="note">লগইন করলে কোন অংশ পড়েছেন তা সব ফোনে মনে থাকে।</p>':''}${S.copy&&S.copy.length?`<p class="note">${esc(S.copy[0])}${S.by?' '+esc(S.by):''}</p>`:''}`;
+  V.innerHTML=h;scrollTo(0,0);
+}
+async function part(){
+  const B=base();
+  V.innerHTML='<p class="dim">লোড হচ্ছে…</p>';
+  const {st,j}=await api('p?s='+SID+'&p='+PID).catch(()=>({st:0}));
+  if(st!==200){if(st===404){PID='';history.replaceState(null,'',B);return toc()}return deny(st,j)}
+  put('rd:last:'+SID,PID);if(!TOC.seen.includes(PID))TOC.seen.push(PID);TOC.last=PID;
+  const sec=TOC.s.secs.find(x=>x.no===j.sec),i=TOC.toc.findIndex(x=>x[0]===PID)+1,n=TOC.toc.length;
+  document.title=j.title+' · '+TOC.s.title;
+  V.innerHTML=`<div class="rd-bar"><a class="b" href="${B}" aria-label="সূচি">☰ সূচি</a><span class="t"><b>${esc(TOC.s.title)}</b>অংশ ${bn(i)} / ${bn(n)}</span>
+    <button id="sm" aria-label="লেখা ছোট"${fs===0?' disabled':''}>অ−</button><button id="lg" aria-label="লেখা বড়"${fs===2?' disabled':''}>অ+</button><span class="pg" style="width:${Math.round(i*100/n)}%"></span></div>
+  <article class="rd-text">${sec?`<p class="rd-head">${bn(sec.no)}. ${esc(sec.title)}</p>`:''}<h1 class="rd-title">${esc(j.title)}</h1>${md(j.body,j.kind)}</article>
+  <nav class="rd-nav">${j.prev?`<a href="${B}${esc(j.prev.pid)}" rel="prev"><small>← আগের</small>${esc(short(j.prev.title))}</a>`:''}${j.next?`<a class="nx" href="${B}${esc(j.next.pid)}" rel="next"><small>পরের →</small>${esc(short(j.next.title))}</a>`:`<a class="nx" href="${B}"><small>শিট শেষ</small>সূচিতে ফিরুন</a>`}</nav>
+  ${TOC.s.copy&&TOC.s.copy.length?`<p class="note">${esc(TOC.s.copy[0])}</p>`:''}`;
+  $('sm').onclick=()=>{if(fs>0){fs--;put('rd:fs',fs);setFs();$('sm').disabled=fs===0;$('lg').disabled=false}};
+  $('lg').onclick=()=>{if(fs<2){fs++;put('rd:fs',fs);setFs();$('lg').disabled=fs===2;$('sm').disabled=false}};
+  exWire();scrollTo(0,0);
+}
+// পাতার ভেতরের লিংক: পুরো পাতা আবার নয়, শুধু অংশ বদল
+function go(path){const s=path.split('/').filter(Boolean);if(s[1]!==SID){SID=s[1]||'';TOC=null}PID=s[2]||'';history.pushState(null,'',path);route()}
+document.addEventListener('click',e=>{
+  const a=e.target.closest&&e.target.closest('a[href]');if(!a||e.ctrlKey||e.metaKey||e.shiftKey)return;
+  const u=new URL(a.href,location.href);if(u.origin!==location.origin||!/^\/read\//.test(u.pathname))return;
+  e.preventDefault();go(u.pathname);
+});
+// কম্পিউটারে ← → দিয়ে আগের/পরের অংশ
+document.addEventListener('keydown',e=>{
+  if(e.altKey||e.ctrlKey||e.metaKey||/INPUT|TEXTAREA/.test((e.target||{}).tagName||''))return;
+  const a=V.querySelector(e.key==='ArrowRight'?'a[rel=next],.rd-nav a.nx':e.key==='ArrowLeft'?'a[rel=prev]':null);
+  if(a){e.preventDefault();a.click()}
+});
+addEventListener('popstate',()=>{const s=location.pathname.split('/').filter(Boolean);if((s[1]||'')!==SID){SID=s[1]||'';TOC=null}PID=s[2]||'';route()});
+route();
+})();
+</script>
+</body>
+</html>

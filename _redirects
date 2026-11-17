@@ -9,3 +9,5 @@
 # পেট্রোবাংলার ৫০ টাস্কের কোর্স আপাতত বন্ধ (PIASH, ২০২৬-১১-০৩): পুরোনো লিংক ব্যাচের পাতায়। নতুন ব্যাচের রুটিন LY Course বসাবে, তখন এটা বদলাবে
 /running/petrobangla/*  /pilot/petrobangla-1/  302
 /running/petrobangla  /pilot/petrobangla-1/  302
+# /read/<শিট>/ আর /read/<শিট>/<অংশ> পড়ার পাতা (লেখা আসে /api/read থেকে, D1-এ থাকে)
+/read/*  /read/  200

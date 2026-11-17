@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="theme-color" content="#13294b">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Sheets read · Admin · Lyanna Books</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+:root{--paper:#f8f5ee;--ink:#1d1f21;--muted:#5f6366;--rule:#d9d6cf;--card:#fff;--navy:#13294b;--pink:#c8326a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 'Noto Sans Bengali',system-ui,sans-serif}
+.wrap{max-width:860px;margin:0 auto;padding:20px 16px 80px}
+h1{font:400 28px/1.3 'Tiro Bangla',Georgia,serif;margin:0 0 4px;color:var(--navy)}
+.sub{color:var(--muted);margin:0 0 18px;font-size:14.5px}
+.sh{background:var(--card);border:1px solid var(--rule);border-radius:3px;padding:12px 14px;margin:0 0 12px}
+.sh b{color:var(--navy);font-size:17px}
+.sh .m{font-size:14px;color:var(--muted);margin:2px 0 6px}
+.sh button{font:inherit;font-size:14px;background:none;border:1px solid var(--rule);border-radius:3px;padding:4px 10px;color:var(--navy);cursor:pointer}
+table{border-collapse:collapse;width:100%;font-size:14px;margin-top:8px}
+th,td{border-bottom:1px solid var(--rule);padding:5px 6px;text-align:left}
+th{color:var(--muted);font-weight:500}
+</style>
+<link rel="stylesheet" href="/css/omr.css">
+<link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body>
+<div class="adbar"><a class="adback" href="/admin/">← Admin</a><span class="adname">Sheets read</span></div>
+<main class="wrap">
+<h1>Sheets read</h1>
+<p class="sub">Lecture sheets on the reading page (/read/). Text lives in D1; the master copy stays in Lyanna_data sheets/. Upload: GitHub Actions → upload-sheets.</p>
+<div id="out">Loading…</div>
+</main>
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const when=t=>t?new Date(t).toLocaleString('en-GB',{timeZone:'Asia/Dhaka',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'-';
+const ACC={all:'everyone',login:'any login',pb:'Petrobangla batch'};
+fetch('/api/admin/read',{credentials:'same-origin'}).then(r=>r.json()).then(j=>{
+  if(!j.sheets){$('out').textContent=j.error==='login'?'Log in as admin first.':'Not allowed.';return}
+  if(!j.sheets.length){$('out').textContent='No sheets uploaded yet.';return}
+  $('out').innerHTML=j.sheets.map(s=>`<div class="sh"><b>${esc(s.title)}</b><div class="m"><a href="/read/${esc(s.id)}/">/read/${esc(s.id)}/</a> · for ${esc(ACC[s.acc]||s.acc)}${s.fr?' · routine '+esc(s.fr):''}<br>${s.parts} parts, ${Math.round(s.len/1000)}k characters · uploaded ${when(s.ts)} · ${s.who} readers, last read ${when(s.last)}</div>${s.who?`<button data-s="${esc(s.id)}">Show readers</button><div></div>`:''}</div>`).join('');
+  document.querySelectorAll('button[data-s]').forEach(b=>b.onclick=()=>{
+    b.disabled=true;
+    fetch('/api/admin/read/who?s='+encodeURIComponent(b.dataset.s),{credentials:'same-origin'}).then(r=>r.json()).then(x=>{
+      b.nextElementSibling.innerHTML='<table><tr><th>Learner</th><th>Parts</th><th>Opens</th><th>Last part</th><th>Last read</th></tr>'+x.who.map(w=>`<tr><td><a href="/admin/review/#${w.uid}">${esc(w.name||'#'+w.uid)}</a></td><td>${w.parts}</td><td>${w.opens}</td><td>${esc(w.at)}</td><td>${when(w.last)}</td></tr>`).join('')+'</table>';
+    });
+  });
+}).catch(()=>{$('out').textContent='Could not load.'});
+})();
+</script>
+</body>
+</html>
