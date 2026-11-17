@@ -43,7 +43,7 @@
    পাইলট ব্যাচ (/pilot/<id>/, /admin/pilot/): নিচে "পাইলট ব্যাচ" অংশের মাথায় সব পথ।
    নিজের পরিকল্পনা, অবস্থা-যাচাই (/plan/<সেট>/, /admin/diag/): নিচে "নিজের পরিকল্পনা" অংশের মাথায় সব পথ।
    আমার চাকরি (/myjobs/, /admin/jobs/): নিচে "আমার চাকরি" অংশের মাথায় সব পথ।
-   "আজ" পাতা, সাইটে কাজের সময় আর জুটি (/today/, GET /api/today, POST /api/here, /api/pair/*; D1 sday, pair, pinv, nudge): নিচে "আজ" অংশে।
+   "আজ" পাতা, সাইটে কাজের সময় আর জুটি (/today/, GET /api/today, POST /api/here, /api/pair/*; D1 sday, pair, pinv, nudge), দল (/group/, /api/grp*; D1 grp, gmem, gmsg): নিচে "আজ" অংশে।
    শিক্ষকের সাপ্তাহিক রপ্তানি (GET /api/export/teacher, রপ্তানির চাবি দিয়ে): নিচে "শিক্ষকের সাপ্তাহিক রপ্তানি" অংশে। */
 const COOKIE = 'lb_s', AGE = 180 * 86400;
 const MAX_BATCH = 300, MAX_ROWS = 3000;
@@ -2903,6 +2903,137 @@ async function pairNews(db, u, now) {
     called: has(p.pid, 'n') ? 1 : 0, busy: has(p.pid, 'b') ? 1 : 0, iCalled: has(u.id, 'n') ? 1 : 0, iBusy: has(u.id, 'b') ? 1 : 0};
 }
 
+// ── লিংকে দল আর লাইভ ঘর (কাজের ক্রমের ধাপ ৬; social-review ঙ-৬/৭, জ-১..৩) ──
+// একজন একটাই দলে; দলে ১০ জন পর্যন্ত। দলের লিংক /group/?t=<টোকেন> (দলের যে কেউ পাঠাতে পারেন; মালিক নতুন টোকেন বানালে পুরোনোটা বাতিল)।
+// তালিকা কাজে সাজানো (এই সপ্তাহে কটা পরীক্ষা, কত দিন); নম্বর বা সময় কারও নয়। শূন্য কাজ হলে কিছু লেখা হয় না (পিছিয়ে পড়া দেখায় না)।
+// "এখন পড়ছেন" = শেষ ৬ মিনিটে "আছি" (sday.last) বা পরীক্ষা জমা। বার্তা শুধু বাঁধা বোতাম (GMSG), ৭ দিন পরে মোছে, জনপ্রতি দিনে ১০টা।
+// মালিক কাউকে বাদ দিতে পারেন; মালিক চলে গেলে সবচেয়ে পুরোনো সদস্য মালিক; শেষ জন গেলে দল মোছে।
+// GET /api/grp → আমার দল; GET /api/grp/inv?t= (লগইন ছাড়াও); POST /api/grp/new {name}, /join {t}, /leave, /kick {m}, /msg {k}, /link (নতুন লিংক, শুধু মালিক)
+const GRP_SCHEMA = [
+  'CREATE TABLE IF NOT EXISTS grp(id INTEGER PRIMARY KEY, owner INTEGER NOT NULL, name TEXT NOT NULL, tok TEXT UNIQUE NOT NULL, ts INTEGER NOT NULL)',
+  'CREATE TABLE IF NOT EXISTS gmem(id INTEGER PRIMARY KEY, gid INTEGER NOT NULL, uid INTEGER UNIQUE NOT NULL, nick TEXT NOT NULL, ts INTEGER NOT NULL)',
+  'CREATE INDEX IF NOT EXISTS gmem_g ON gmem(gid)',
+  'CREATE TABLE IF NOT EXISTS gmsg(id INTEGER PRIMARY KEY, gid INTEGER NOT NULL, uid INTEGER NOT NULL, ts INTEGER NOT NULL, k TEXT NOT NULL)',
+  'CREATE INDEX IF NOT EXISTS gmsg_g ON gmsg(gid, ts)'
+];
+let grpReady = false;
+async function grpSetup(db) { if (!grpReady) { await db.batch(GRP_SCHEMA.map(x => db.prepare(x))); grpReady = true; } }
+const GRP_MAX = 10, GMSG_DAY = 10, GMSG_AGE = 7 * 86400e3, LIVE_MS = 6 * 60e3;
+const GMSG = {done: 'আজ পড়লাম ✔', go: 'সবাই এগিয়ে চলুন', now: 'এখন পরীক্ষা দিচ্ছি, আসুন', night: 'রাত ৯টায় একসাথে পরীক্ষা?', busy: 'আজ ব্যস্ত', thx: 'ধন্যবাদ'};
+// দলের নামে লিংক, ইমেইল বা ফোন নম্বর নয় (সার্ভারের সহজ ছাঁকনি)
+const grpName = v => { const n = (str(v, 40) || '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 30);
+  return !n || /https?:|www\.|\.(com|net|org|bd)\b|@|[0-9০-৯]{6,}/i.test(n) ? '' : n; };
+async function grpFixOwner(db, gid) {
+  const g = await db.prepare('SELECT owner FROM grp WHERE id = ?').bind(gid).first();
+  if (!g) return;
+  const m = await db.prepare('SELECT uid FROM gmem WHERE gid = ? ORDER BY ts LIMIT 1').bind(gid).first();
+  if (!m) { await db.batch([db.prepare('DELETE FROM grp WHERE id = ?').bind(gid), db.prepare('DELETE FROM gmsg WHERE gid = ?').bind(gid)]); return; }
+  if (!(await db.prepare('SELECT 1 FROM gmem WHERE gid = ? AND uid = ?').bind(gid, g.owner).first()))
+    await db.prepare('UPDATE grp SET owner = ? WHERE id = ?').bind(m.uid, gid).run();
+}
+async function grpMine(db, u) {
+  return db.prepare('SELECT g.id, g.owner, g.name, g.tok, g.ts FROM gmem m JOIN grp g ON g.id = m.gid WHERE m.uid = ?').bind(u.id).first();
+}
+async function grpView(db, u, g) {
+  const now = Date.now(), d0 = dhakaDay(now - 6 * DAY), t0 = Date.parse(d0 + 'T00:00:00+06:00'), td = dhakaDay(now);
+  const mem = (await db.prepare('SELECT id, uid, nick, ts FROM gmem WHERE gid = ? ORDER BY ts').bind(g.id).all()).results;
+  const ids = mem.map(x => x.uid), qs = ids.map(() => '?').join(',');
+  await sdaySetup(db);
+  const [a, dg, s, ms] = await db.batch([
+    db.prepare(`SELECT uid, ts FROM att WHERE uid IN (${qs}) AND ts >= ?`).bind(...ids, t0),
+    db.prepare(`SELECT uid, done FROM diag_att WHERE uid IN (${qs}) AND done IS NOT NULL AND done >= ?`).bind(...ids, t0),
+    db.prepare(`SELECT uid, d, sec, last FROM sday WHERE uid IN (${qs}) AND d >= ?`).bind(...ids, d0),
+    db.prepare('SELECT uid, ts, k FROM gmsg WHERE gid = ? AND ts >= ? ORDER BY ts DESC LIMIT 40').bind(g.id, now - GMSG_AGE)
+  ]);
+  const W = new Map(mem.map(x => [x.uid, {tests: 0, days: new Set(), today: 0, live: 0}]));
+  const hit = (uid, ts) => { const w = W.get(uid); if (!w) return; w.tests++; const d = dhakaDay(ts); w.days.add(d); if (d === td) w.today++; if (now - ts < LIVE_MS) w.live = 1; };
+  for (const r of a.results) hit(r.uid, r.ts);
+  for (const r of dg.results) hit(r.uid, r.done);
+  for (const r of s.results) { const w = W.get(r.uid); if (!w) continue; if ((r.sec || 0) >= 300) w.days.add(r.d); if (r.last && now - r.last < LIVE_MS) w.live = 1; }
+  const nick = new Map(mem.map(x => [x.uid, x.nick]));
+  const list = mem.map(x => { const w = W.get(x.uid); return {m: x.id, nick: x.nick, me: x.uid === u.id ? 1 : 0, owner: x.uid === g.owner ? 1 : 0,
+    tests: w.tests, days: w.days.size, today: w.today, live: w.live}; })
+    .sort((p, q) => q.tests - p.tests || q.days - p.days || q.me - p.me);
+  // নিজের ছাড়া অন্যদের শূন্য কাজ পাঠানো হয় না
+  for (const x of list) if (!x.me && !x.tests && !x.days) { delete x.tests; delete x.days; delete x.today; }
+  return {id: g.id, name: g.name, t: g.tok, own: g.owner === u.id ? 1 : 0, max: GRP_MAX, live: list.filter(x => x.live).length, list,
+    msgs: ms.results.filter(r => nick.has(r.uid) && GMSG[r.k]).map(r => ({nick: nick.get(r.uid), me: r.uid === u.id ? 1 : 0, ts: r.ts, text: GMSG[r.k]})),
+    keys: Object.entries(GMSG).map(([k, text]) => ({k, text}))};
+}
+async function grpRoute(path, req, url, db, u) {
+  const m = req.method;
+  await grpSetup(db);
+  if (path === 'grp/inv' && m === 'GET') {
+    const t = str(url.searchParams.get('t') || '', 20) || '';
+    const g = t && await db.prepare('SELECT g.id, g.name, us.name owner FROM grp g JOIN users us ON us.id = g.owner WHERE g.tok = ?').bind(t).first();
+    if (!g) return json({error: 'gone'}, 404);
+    const n = await db.prepare('SELECT COUNT(*) n FROM gmem WHERE gid = ?').bind(g.id).first();
+    return json({name: g.name, owner: firstName(g.owner), n: n.n, full: n.n >= GRP_MAX ? 1 : 0}, 200, {'Cache-Control': 'no-store'});
+  }
+  if (!u) return json({error: 'login'}, 401);
+  const g = await grpMine(db, u);
+  if (path === 'grp' && m === 'GET') return json({g: g ? await grpView(db, u, g) : null}, 200, {'Cache-Control': 'no-store'});
+  if (m !== 'POST') return json({error: 'not found'}, 404);
+  const b = await req.json().catch(() => ({})), now = Date.now();
+  if (path === 'grp/new') {
+    if (g) return json({error: 'ingroup'}, 409);
+    const name = grpName(b.name);
+    if (!name) return json({error: 'name'}, 400);
+    const r = await db.prepare('INSERT INTO grp(owner, name, tok, ts) VALUES(?,?,?,?)').bind(u.id, name, chId() + chId().slice(0, 4), now).run();
+    await db.prepare('INSERT INTO gmem(gid, uid, nick, ts) VALUES(?,?,?,?)').bind(r.meta.last_row_id, u.id, firstName(u.name), now).run();
+    return json({ok: true});
+  }
+  if (path === 'grp/join') {
+    const t = str(b.t, 20) || '';
+    const x = t && await db.prepare('SELECT id FROM grp WHERE tok = ?').bind(t).first();
+    if (!x) return json({error: 'gone'}, 404);
+    if (g) return json({error: g.id === x.id ? 'already' : 'ingroup'}, 409);
+    const n = await db.prepare('SELECT COUNT(*) n FROM gmem WHERE gid = ?').bind(x.id).first();
+    if (n.n >= GRP_MAX) return json({error: 'full'}, 409);
+    await db.prepare('INSERT INTO gmem(gid, uid, nick, ts) VALUES(?,?,?,?)').bind(x.id, u.id, firstName(u.name), now).run();
+    return json({ok: true});
+  }
+  if (!g) return json({error: 'nogroup'}, 409);
+  if (path === 'grp/leave') { await db.prepare('DELETE FROM gmem WHERE uid = ?').bind(u.id).run(); await grpFixOwner(db, g.id); return json({ok: true}); }
+  if (path === 'grp/kick') {
+    if (g.owner !== u.id) return json({error: 'owner'}, 403);
+    const mid = Math.round(num(b.m) || 0);
+    await db.prepare('DELETE FROM gmem WHERE id = ? AND gid = ? AND uid != ?').bind(mid, g.id, u.id).run();
+    return json({ok: true});
+  }
+  if (path === 'grp/link') {
+    if (g.owner !== u.id) return json({error: 'owner'}, 403);
+    await db.prepare('UPDATE grp SET tok = ? WHERE id = ?').bind(chId() + chId().slice(0, 4), g.id).run();
+    return json({ok: true});
+  }
+  if (path === 'grp/msg') {
+    const k = typeof b.k === 'string' && GMSG[b.k] ? b.k : '';
+    if (!k) return json({error: 'bad'}, 400);
+    const t0 = Date.parse(dhakaDay(now) + 'T00:00:00+06:00');
+    const c = await db.prepare('SELECT COUNT(*) n FROM gmsg WHERE uid = ? AND ts >= ?').bind(u.id, t0).first();
+    if (c.n >= GMSG_DAY) return json({error: 'many'}, 429);
+    await db.batch([
+      db.prepare('INSERT INTO gmsg(gid, uid, ts, k) VALUES(?,?,?,?)').bind(g.id, u.id, now, k),
+      db.prepare('DELETE FROM gmsg WHERE gid = ? AND ts < ?').bind(g.id, now - GMSG_AGE)
+    ]);
+    return json({ok: true});
+  }
+  return json({error: 'not found'}, 404);
+}
+// "আজ" পাতার এক লাইন: দলের নাম আর এখন কতজন পড়ছেন (নিজে বাদে)
+async function grpLine(db, u) {
+  await grpSetup(db);
+  const g = await grpMine(db, u);
+  if (!g) return null;
+  await sdaySetup(db);
+  const now = Date.now();
+  const [n, l] = await db.batch([
+    db.prepare('SELECT COUNT(*) n FROM gmem WHERE gid = ?').bind(g.id),
+    db.prepare('SELECT COUNT(DISTINCT s.uid) n FROM sday s JOIN gmem m ON m.uid = s.uid WHERE m.gid = ? AND s.uid != ? AND s.d = ? AND s.last > ?').bind(g.id, u.id, dhakaDay(now), now - LIVE_MS)
+  ]);
+  return {name: g.name, n: n.results[0].n, live: l.results[0].n};
+}
+
 async function today(db, u) {
   await sdaySetup(db); await diagSetup(db); await jobsSetup(db);
   const now = Date.now(), d0 = dhakaDay(now - 6 * DAY), t0 = Date.parse(d0 + 'T00:00:00+06:00');
@@ -2927,6 +3058,7 @@ async function today(db, u) {
   return json({today: dhakaDay(now), name: u.name || '', days, last: lastTs || null,
     part: await todayPart(db, u, now).catch(() => null),
     pair: await pairNews(db, u, now).catch(() => null),
+    grp: await grpLine(db, u).catch(() => null),
     jobs: j.results.map(r => { try { const x = JSON.parse(r.data); return {post: x.post, org: x.org, ae: x.ae, exam: x.exam || '', est: x.est || 0}; } catch (e) { return null; } }).filter(Boolean)
   }, 200, {'Cache-Control': 'no-store'});
 }
@@ -2975,6 +3107,7 @@ export async function onRequest({request: req, env}) {
     if (path.startsWith('export/') && m === 'GET') return await teacherExport(path, url, req, db);
     if (path.startsWith('jobs/')) return await jobs(path, req, db, u);
     if (path.startsWith('pair/')) return await pairRoute(path, req, url, db, u);
+    if (path === 'grp' || path.startsWith('grp/')) return await grpRoute(path, req, url, db, u);
     if (!u) return json({error: 'login'}, 401);
 
     if (path.startsWith('admin/')) return await admin(path, url, env, db, u, req);
@@ -3029,8 +3162,11 @@ export async function onRequest({request: req, env}) {
       return json({ok: true, saved: rows.length, qs, qd: qds.length});
     }
     if (path === 'delete' && m === 'POST') {
-      await attqTable(db); await diagSetup(db); await jobsSetup(db); await sdaySetup(db); await pairSetup(db);
+      await attqTable(db); await diagSetup(db); await jobsSetup(db); await sdaySetup(db); await pairSetup(db); await grpSetup(db);
+      const gm = await grpMine(db, u);
       await db.batch([
+        db.prepare('DELETE FROM gmem WHERE uid = ?').bind(u.id),
+        db.prepare('DELETE FROM gmsg WHERE uid = ?').bind(u.id),
         db.prepare('DELETE FROM sday WHERE uid = ?').bind(u.id),
         db.prepare('DELETE FROM pair WHERE uid = ? OR pid = ?').bind(u.id, u.id),
         db.prepare('DELETE FROM pinv WHERE uid = ?').bind(u.id),
@@ -3044,6 +3180,7 @@ export async function onRequest({request: req, env}) {
         db.prepare('DELETE FROM sessions WHERE uid = ?').bind(u.id),
         db.prepare('DELETE FROM users WHERE id = ?').bind(u.id)
       ]);
+      if (gm) await grpFixOwner(db, gm.id).catch(() => {});
       return json({ok: true}, 200, {'Set-Cookie': cookie('', 0)});
     }
     return json({error: 'not found'}, 404);
