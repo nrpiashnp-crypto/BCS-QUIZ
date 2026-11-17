@@ -872,6 +872,7 @@ async function admin(path, url, env, db, u, req) {
   if (path === 'admin/upkey') return upkeyAdmin(req, db);
   if (path === 'admin/exkey') return exkeyAdmin(req, db);
   if (path === 'admin/diag' || path.startsWith('admin/diag/')) return diagAdmin(path, url, req, db, env);
+  if (path === 'admin/read' || path.startsWith('admin/read/')) return readAdmin(path, req, db);
   await attqTable(db);
   if (path === 'admin/learners') {
     const {results} = await db.prepare(`SELECT u.id, u.name, u.email, u.created, u.seen,
@@ -1808,8 +1809,10 @@ async function meritoAdd(db, uid) {
   await db.prepare("UPDATE pilot_mem SET code = 'M' || printf('%02d', (SELECT COUNT(*) FROM pilot_mem WHERE pilot = ?1 AND code IS NOT NULL) + 1) WHERE pilot = ?1 AND uid = ?2 AND code IS NULL")
     .bind(MERITO, uid).run();
 }
-async function diagSheets(db) {
-  return Object.fromEntries((await db.prepare('SELECT id, url FROM diag_sheet').all()).results.map(r => [r.id, r.url]));
+// read = true হলে পড়ার পাতায় তোলা শিট Drive-এর লিংকের বদলে (/read/<শিট>/); অ্যাডমিনের লিংক-ঘরে শুধু Drive
+async function diagSheets(db, read) {
+  const o = Object.fromEntries((await db.prepare('SELECT id, url FROM diag_sheet').all()).results.map(r => [r.id, r.url]));
+  return read ? {...o, ...await rdLinks(db)} : o;
 }
 const SHEET_URL = /^https:\/\/(drive|docs)\.google\.com\/[^\s"'<>]{5,400}$/;
 
@@ -1890,7 +1893,7 @@ async function diag(path, req, url, env, db, u) {
     // মেরিটোর মূল পাতা (অবস্থা-যাচাইয়ের সেট খোলা হলে): সব পরীক্ষা এক তালিকায়, নিজের তারিখ আর অবস্থাসহ
     if (grp === 'merito' && sid === 'pb-start') out.mx = await meritoMine(db, sch, u.id, today);
     // শিটের লিংক শুধু লগইন করা শিক্ষার্থীর জন্য
-    if (pb) out.sheets = await diagSheets(db);
+    if (pb) out.sheets = await diagSheets(db, true);
     if (out.rep) {
       const nt = await db.prepare('SELECT txt, pub, ts FROM diag_note WHERE sid = ? AND uid = ?').bind(sid, u.id).first();
       if (nt && (nt.pub || as)) out.note = {txt: nt.txt, ts: nt.ts, pub: nt.pub};
@@ -2572,6 +2575,167 @@ async function teacherExport(path, url, req, db) {
   return json({error: 'part'}, 400);
 }
 
+/* ---- পড়ার পাতা (/read/<শিট>/<অংশ>): শিটের লেখা D1-এ, পাবলিক রিপোতে নয় (claude.ai প্রজেক্ট "LY Sites"-এর
+   claude/protected-reader-plan.md; Lyanna_data memory/lyanna-site.md ২০২৬-১১-০৪) ----
+   একক = অংশ (pid, যেমন t5 = টাইপ ৫); একবারে একটা অংশ, Cache-Control: no-store। লেখা তোলে Lyanna_data-র tools/upload_sheet.py
+   (BCS-QUIZ-এর Action upload-sheets, তোলার চাবি দিয়ে)।
+   GET  /api/read/toc?s=        → {s: শিটের তথ্য আর অনুচ্ছেদ, toc: [[pid, sec, kind, title]], wm: জলছাপের লেখা, me, seen, last}
+   GET  /api/read/p?s=&p=       → {pid, sec, kind, title, body (মার্কডাউন), prev, next}
+   কে পড়বে (rd_sheet.acc): all = সবাই; login = লগইন; pb = লগইন করা পেট্রোবাংলা ব্যাচ (পাইলট বা মেরিটো), পরীক্ষক আর অ্যাডমিন।
+   যন্ত্রে টেনে নামানো ধরতে (লগইন ছাড়া পাঠক আর IP দুটোই গোনা, উদার সীমা): ১০ মিনিটে আর দিনে কয়টা অংশ (RD_LIM)।
+   পড়ার হিসাব (লগইন থাকলে): rd_read(uid, s, pid, n, first, last) → শেষ জায়গা আর পড়া অংশে টিক; শিক্ষার্থীর পর্যালোচনায় যাবে।
+   তোলা (তোলার চাবি বা অ্যাডমিন):
+   POST /api/admin/read/sheet {sheet, pids: [[pid, ছাপ]]} → শিট হালনাগাদ, তালিকায় নেই এমন অংশ মোছা; {need: যে অংশ পাঠাতে হবে, removed}
+   POST /api/admin/read/parts {s, parts: [{pid, ord, sec, kind, title, body, h, no?}]} (এক বারে ১০টা)
+   GET  /api/admin/read          → সব শিট, অংশের সংখ্যা, কতজন পড়েছেন (শুধু অ্যাডমিন)
+   রুটিনের শিট-লিংক: rd_sheet.fr-এ রুটিনের শিট-আইডি (যেমন pbg-math-1) থাকলে diagSheets সেখানে Drive-এর বদলে /read/<শিট>/ দেয়। */
+const RD_SCHEMA = [
+  'CREATE TABLE IF NOT EXISTS rd_sheet(id TEXT PRIMARY KEY, meta TEXT NOT NULL, acc TEXT NOT NULL, fr TEXT, ts INTEGER NOT NULL)',
+  'CREATE TABLE IF NOT EXISTS rd_part(s TEXT NOT NULL, pid TEXT NOT NULL, ord INTEGER NOT NULL, sec INTEGER NOT NULL, kind TEXT NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL, h TEXT NOT NULL, ts INTEGER NOT NULL, PRIMARY KEY(s, pid))',
+  'CREATE TABLE IF NOT EXISTS rd_read(uid INTEGER NOT NULL, s TEXT NOT NULL, pid TEXT NOT NULL, n INTEGER NOT NULL, first INTEGER NOT NULL, last INTEGER NOT NULL, PRIMARY KEY(uid, s, pid))',
+  'CREATE TABLE IF NOT EXISTS rd_rate(k TEXT PRIMARY KEY, win INTEGER NOT NULL, wn INTEGER NOT NULL, day INTEGER NOT NULL, dn INTEGER NOT NULL)'
+];
+// পাঠক (লগইন বা দর্শক-কুকি) আর IP: [১০ মিনিটে, দিনে]। এক অংশ পড়তে মানুষের কয়েক মিনিট লাগে; IP-তে বেশি, কারণ মোবাইলে অনেকে এক IP ভাগ করেন
+const RD_LIM = {who: [40, 300], ip: [400, 3000]}, RD_WIN = 600e3, RD_ACC = ['all', 'login', 'pb'];
+const RD_PID = /^[a-z0-9]+(-[a-z0-9]+)*$/, RD_VC = 'lb_v';
+let rdReady = false;
+async function rdSetup(db) {
+  if (rdReady) return;
+  await db.batch(RD_SCHEMA.map(s => db.prepare(s)));
+  rdReady = true;
+}
+async function rdSheet(db, id) {
+  const r = await db.prepare('SELECT id, meta, acc, fr FROM rd_sheet WHERE id = ?').bind(id).first();
+  if (!r) return null;
+  try { return {...r, meta: JSON.parse(r.meta)}; } catch (e) { return null; }
+}
+// পেট্রোবাংলা ব্যাচ: মেরিটো বা পাইলটের সারি আছে, বা অবস্থা-যাচাই দিয়েছেন
+async function rdPb(db, u) {
+  await pilotSetup(db); await diagSetup(db);
+  const [a, b] = await db.batch([
+    db.prepare("SELECT 1 x FROM pilot_mem WHERE uid = ? AND ((pilot = ? AND st IN ('ok','pilot')) OR (pilot = 'petrobangla-1' AND st = 'ok')) LIMIT 1").bind(u.id, MERITO),
+    db.prepare("SELECT 1 x FROM diag_att WHERE sid = 'pb-start' AND uid = ? LIMIT 1").bind(u.id)]);
+  return !!(a.results.length || b.results.length);
+}
+// পড়তে পারবেন কি না: null = পারবেন, নইলে কেন নয় (login | member)
+async function rdDeny(db, sh, u, env) {
+  if (sh.acc === 'all') return null;
+  if (!u) return 'login';
+  if (sh.acc === 'login' || isAdmin(u, env)) return null;
+  if (sh.acc === 'pb' && (await rdPb(db, u) || await isTester(db, u))) return null;
+  return 'member';
+}
+// জলছাপ: লগইন থাকলে নাম + ইমেইলের প্রথম অংশ (৪ অক্ষর) + তারিখ; না থাকলে সাইটের নাম + তারিখ
+function rdWm(u, now) {
+  const d = dhakaDay(now).split('-').reverse().join('.').replace(/\d/g, x => '০১২৩৪৫৬৭৮৯'[x]);
+  if (!u) return ['lyannabooks.com', d];
+  const e = String(u.email || '').split('@')[0];
+  return [(u.name || '').slice(0, 40), (e ? e.slice(0, 4) + '…' : '') + ' · ' + d];
+}
+// গোনা: আগে পড়ে দেখা, সীমার ভেতরে হলে তবেই লেখা (সীমা পার হলে কিছু লেখা হয় না)
+async function rdRate(db, keys, now) {
+  const win = Math.floor(now / RD_WIN), day = Math.floor(now / DAY);
+  const {results} = await db.prepare(`SELECT k, win, wn, day, dn FROM rd_rate WHERE k IN (${keys.map(() => '?').join(',')})`).bind(...keys.map(x => x[0])).all();
+  const R = new Map(results.map(r => [r.k, r])), up = [];
+  for (const [k, [wl, dl]] of keys) {
+    const r = R.get(k), wn = r && r.win === win ? r.wn : 0, dn = r && r.day === day ? r.dn : 0;
+    if (wn >= wl || dn >= dl) return false;
+    up.push([k, win, wn + 1, day, dn + 1]);
+  }
+  const st = db.prepare('INSERT INTO rd_rate(k, win, wn, day, dn) VALUES(?,?,?,?,?) ON CONFLICT(k) DO UPDATE SET win = excluded.win, wn = excluded.wn, day = excluded.day, dn = excluded.dn');
+  await db.batch(up.map(x => st.bind(...x)));
+  return true;
+}
+async function read(path, req, url, env, db, u) {
+  if (req.method !== 'GET') return json({error: 'not found'}, 404);
+  await rdSetup(db);
+  const sid = String(url.searchParams.get('s') || '');
+  if (!RD_PID.test(sid) || sid.length > 60) return json({error: 'bad'}, 400);
+  const sh = await rdSheet(db, sid);
+  if (!sh) return json({error: 'no sheet'}, 404);
+  const deny = await rdDeny(db, sh, u, env), now = Date.now();
+  if (deny) return json({error: deny, title: sh.meta.title}, deny === 'login' ? 401 : 403);
+  if (path === 'read/toc') {
+    const q = [db.prepare('SELECT pid, sec, kind, title FROM rd_part WHERE s = ? ORDER BY ord').bind(sid)];
+    if (u) q.push(db.prepare('SELECT pid, last FROM rd_read WHERE uid = ? AND s = ? ORDER BY last DESC').bind(u.id, sid));
+    const [t, r] = await db.batch(q);
+    const {id, title, sub, label, howto, by, copy, secs} = sh.meta;
+    return json({s: {id, title, sub, label, howto, by, copy, secs}, toc: t.results.map(x => [x.pid, x.sec, x.kind, x.title]),
+      wm: rdWm(u, now), me: !!u, seen: r ? r.results.map(x => x.pid) : [], last: r && r.results[0] ? r.results[0].pid : null});
+  }
+  if (path === 'read/p') {
+    const pid = String(url.searchParams.get('p') || '');
+    if (!RD_PID.test(pid) || pid.length > 40) return json({error: 'bad'}, 400);
+    const p = await db.prepare('SELECT pid, ord, sec, kind, title, body FROM rd_part WHERE s = ? AND pid = ?').bind(sid, pid).first();
+    if (!p) return json({error: 'no part'}, 404);
+    // দর্শক-কুকি: লগইন না থাকলে এলোমেলো চিহ্ন (শুধু /api-তে যায়); না থাকলে নতুন বসে
+    let vid = ((req.headers.get('Cookie') || '').match(new RegExp('(?:^|;\\s*)' + RD_VC + '=([A-Za-z0-9_-]{16,40})')) || [])[1], setv = null;
+    if (!u && !vid) { const raw = new Uint8Array(15); crypto.getRandomValues(raw); vid = btoa(String.fromCharCode(...raw)).replace(/\+/g, '-').replace(/\//g, '_'); setv = vid; }
+    const ip = (await sha(ipKey(req.headers.get('CF-Connecting-IP') || '') + '|lb-rd')).slice(0, 20);
+    const ok = await rdRate(db, [[u ? 'u:' + u.id : 'v:' + vid, RD_LIM.who], ['i:' + ip, RD_LIM.ip]], now);
+    const hdr = setv ? {'Set-Cookie': `${RD_VC}=${setv}; Path=/api; Max-Age=${365 * 86400}; HttpOnly; Secure; SameSite=Lax`} : {};
+    if (!ok) return json({error: 'slow'}, 429, hdr);
+    const [pv, nx] = await db.batch([
+      db.prepare('SELECT pid, title FROM rd_part WHERE s = ? AND ord < ? ORDER BY ord DESC LIMIT 1').bind(sid, p.ord),
+      db.prepare('SELECT pid, title FROM rd_part WHERE s = ? AND ord > ? ORDER BY ord LIMIT 1').bind(sid, p.ord)]);
+    if (u) await db.prepare('INSERT INTO rd_read(uid, s, pid, n, first, last) VALUES(?,?,?,1,?,?) ON CONFLICT(uid, s, pid) DO UPDATE SET n = n + 1, last = excluded.last')
+      .bind(u.id, sid, pid, now, now).run();
+    const {ord, ...out} = p;
+    return json({...out, prev: pv.results[0] || null, next: nx.results[0] || null}, 200, hdr);
+  }
+  return json({error: 'not found'}, 404);
+}
+// রুটিনের শিট-আইডি → /read/<শিট>/ (তোলা শিটে "fr" থাকলে)
+async function rdLinks(db) {
+  await rdSetup(db);
+  const out = {};
+  for (const r of (await db.prepare('SELECT id, fr FROM rd_sheet WHERE fr IS NOT NULL').all()).results)
+    for (const f of String(r.fr).split(',')) if (TID.test(f)) out[f] = '/read/' + r.id + '/';
+  return out;
+}
+const rdText = (v, n) => typeof v === 'string' ? v.normalize('NFC').slice(0, n) : '';
+async function readAdmin(path, req, db) {
+  await rdSetup(db);
+  const m = req.method, body = m === 'POST' ? await req.json().catch(() => ({})) : {}, now = Date.now();
+  if (path === 'admin/read/sheet' && m === 'POST') {
+    const s = body.sheet || {}, id = String(s.id || '');
+    if (!RD_PID.test(id) || id.length > 60 || !RD_ACC.includes(s.acc)) return json({error: 'bad sheet'}, 400);
+    const pids = (Array.isArray(body.pids) ? body.pids : []).filter(x => Array.isArray(x) && RD_PID.test(String(x[0])) && String(x[0]).length <= 40).slice(0, 500);
+    if (!pids.length) return json({error: 'no parts'}, 400);
+    const fr = (Array.isArray(s.for) ? s.for : []).map(String).filter(x => TID.test(x)).slice(0, 10).join(',') || null;
+    const meta = {id, title: rdText(s.title, 200), sub: rdText(s.sub, 300), label: rdText(s.label, 100), howto: rdText(s.howto, 2000), by: rdText(s.by, 100),
+      copy: (Array.isArray(s.copy) ? s.copy : []).map(x => rdText(x, 200)).slice(0, 3),
+      secs: (Array.isArray(s.secs) ? s.secs : []).slice(0, 60).map(x => ({no: +x.no || 0, title: rdText(x.title, 200)}))};
+    const have = new Map((await db.prepare('SELECT pid, h FROM rd_part WHERE s = ?').bind(id).all()).results.map(r => [r.pid, r.h]));
+    const keep = new Set(pids.map(x => String(x[0]))), gone = [...have.keys()].filter(p => !keep.has(p));
+    const q = [db.prepare('INSERT INTO rd_sheet(id, meta, acc, fr, ts) VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET meta = excluded.meta, acc = excluded.acc, fr = excluded.fr, ts = excluded.ts')
+      .bind(id, JSON.stringify(meta), s.acc, fr, now)];
+    for (let i = 0; i < gone.length; i += 90) q.push(db.prepare(`DELETE FROM rd_part WHERE s = ? AND pid IN (${gone.slice(i, i + 90).map(() => '?').join(',')})`).bind(id, ...gone.slice(i, i + 90)));
+    await db.batch(q);
+    return json({ok: true, need: pids.filter(([p, h]) => have.get(String(p)) !== String(h)).map(x => String(x[0])), removed: gone.length});
+  }
+  if (path === 'admin/read/parts' && m === 'POST') {
+    const id = String(body.s || '');
+    if (!(await rdSheet(db, id))) return json({error: 'no sheet'}, 404);
+    const L = (Array.isArray(body.parts) ? body.parts : []).slice(0, 10).filter(p => p && RD_PID.test(String(p.pid)) && String(p.pid).length <= 40 && typeof p.body === 'string' && p.body.length <= 60000);
+    if (!L.length) return json({error: 'bad parts'}, 400);
+    const st = db.prepare('INSERT INTO rd_part(s, pid, ord, sec, kind, title, body, h, ts) VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(s, pid) DO UPDATE SET ord = excluded.ord, sec = excluded.sec, kind = excluded.kind, title = excluded.title, body = excluded.body, h = excluded.h, ts = excluded.ts');
+    await db.batch(L.map(p => st.bind(id, String(p.pid), +p.ord || 0, +p.sec || 0, ['type', 'ex', 'pq', 'intro', 'text'].includes(p.kind) ? p.kind : 'text',
+      rdText(p.title, 300), p.body.normalize('NFC'), rdText(p.h, 20), now)));
+    return json({ok: true, saved: L.length});
+  }
+  if (path === 'admin/read' && m === 'GET') {
+    const [a, b, c] = await db.batch([
+      db.prepare('SELECT id, meta, acc, fr, ts FROM rd_sheet ORDER BY ts DESC'),
+      db.prepare('SELECT s, COUNT(*) n, SUM(LENGTH(body)) len FROM rd_part GROUP BY s'),
+      db.prepare('SELECT s, COUNT(DISTINCT uid) who, COUNT(*) parts, MAX(last) last FROM rd_read GROUP BY s')]);
+    const P = new Map(b.results.map(r => [r.s, r])), Rr = new Map(c.results.map(r => [r.s, r]));
+    return json({sheets: a.results.map(r => ({id: r.id, title: JSON.parse(r.meta).title, acc: r.acc, fr: r.fr, ts: r.ts,
+      parts: (P.get(r.id) || {}).n || 0, len: (P.get(r.id) || {}).len || 0, who: (Rr.get(r.id) || {}).who || 0, last: (Rr.get(r.id) || {}).last || null}))});
+  }
+  return json({error: 'not found'}, 404);
+}
+
 export async function onRequest({request: req, env}) {
   const url = new URL(req.url), path = url.pathname.replace(/^\/api\/?/, '').replace(/\/+$/, ''), m = req.method;
   if (m === 'POST') {
@@ -2607,6 +2771,12 @@ export async function onRequest({request: req, env}) {
       if (!(await upkeyOk(req, db))) return json({error: 'key'}, 403);
       return await diagAdmin(path, url, req, db, env);
     }
+    // শিট তোলা (একই চাবি): শুধু পড়ার পাতার শিট আর অংশ
+    if ((path === 'admin/read/sheet' || path === 'admin/read/parts') && m === 'POST' && /^Bearer /.test(req.headers.get('Authorization') || '')) {
+      if (!(await upkeyOk(req, db))) return json({error: 'key'}, 403);
+      return await readAdmin(path, req, db);
+    }
+    if (path.startsWith('read/')) return await read(path, req, url, env, db, u);
     // শিক্ষকের সাপ্তাহিক রপ্তানি (Lyanna_data-র GitHub Action): রপ্তানির চাবি দিয়ে শুধু পড়া
     if (path.startsWith('export/') && m === 'GET') return await teacherExport(path, url, req, db);
     if (path.startsWith('jobs/')) return await jobs(path, req, db, u);

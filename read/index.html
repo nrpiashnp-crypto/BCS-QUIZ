@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta name="robots" content="noindex">
+<meta charset="utf-8">
+<meta name="theme-color" content="#13294b">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>শিট পড়ুন · লিয়ানা বুকস</title>
+<meta name="description" content="লিয়ানা বুকসের লেকচার শিট, সাইটেই পড়ার জন্য।">
+<link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/fonts/fonts.css">
+<style>
+/* পড়ার পাতা: শিটের লেখা আসে /api/read থেকে, একবারে এক অংশ; এই ফাইলে কোনো লেখা নেই (রিপো পাবলিক)।
+   ঠিকানা: /read/<শিট>/ = সূচি, /read/<শিট>/<অংশ> = এক অংশ (_redirects সব /read/*-কে এই পাতায় আনে)। */
+:root{--paper:#f8f5ee;--ink:#1d1f21;--muted:#5d5a55;--rule:#e6d3d9;--card:#fffdf7;--navy:#13294b;--pink:#c8326a;--soft:#f4ede3;--good:#1e7a46;--good-bg:#e5f3ea;
+  --display:'Tiro Bangla',Georgia,serif;--body:'Noto Sans Bengali',system-ui,sans-serif;--fs:17px}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink)}
+body{font:var(--fs)/1.75 var(--body)}
+.wrap{max-width:760px;margin:0 auto;padding:12px 16px 40px}
+a{color:var(--navy)}
+.dim{color:var(--muted)}
+h1{font:600 24px/1.4 var(--display);color:var(--navy);margin:6px 0 4px}
+.rd-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:8px;background:var(--paper);border-bottom:1px solid var(--rule);padding:6px 0;margin:0 0 10px}
+.rd-bar .t{flex:1;min-width:0;font-size:14px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rd-bar button,.rd-bar a.b{font:600 15px/1 var(--body);border:1px solid var(--rule);background:var(--card);color:var(--navy);border-radius:3px;padding:8px 10px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.rd-bar button[disabled]{opacity:.4;cursor:default}
+/* জলছাপ: লেখার ঘরের ওপরে একটা ::before, চাপ ধরে না; ছবিতে বসে না (শিটে ছবি এলে z-index দিয়ে ওপরে) */
+.rd-text{position:relative;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.rd-text::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:var(--wm,none);background-size:300px 170px;z-index:3}
+.rd-text img{position:relative;z-index:4;max-width:100%;height:auto}
+.rd-head{font-size:13.5px;color:var(--muted);margin:0}
+.rd-title{font:600 22px/1.45 var(--display);color:var(--navy);margin:2px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--pink)}
+.rd-text p{margin:0 0 10px}
+.rd-text ul{margin:0 0 12px;padding-left:22px}.rd-text li{margin:0 0 4px}
+.rule{background:var(--soft);border-left:3px solid var(--navy);padding:10px 12px 2px;margin:0 0 14px;border-radius:0 3px 3px 0}
+.cap{font-weight:600;color:var(--navy);margin:6px 0 4px!important}
+.tb{overflow-x:auto;margin:0 0 14px;-webkit-overflow-scrolling:touch}
+.tb table{border-collapse:collapse;width:100%;font-size:.84em;line-height:1.5;background:var(--card)}
+.tb th,.tb td{border:1px solid var(--rule);padding:5px 7px;text-align:left;vertical-align:top}
+.tb th{background:var(--navy);color:#fff;font-weight:600}
+.qa{background:var(--card);border:1px solid var(--rule);border-radius:3px;padding:10px 12px 4px;margin:0 0 12px}
+.qa .q{font-weight:500}.qa .q b:first-child{color:var(--pink)}
+.qa .op{color:#33363a}
+.qa .an{background:var(--good-bg);color:var(--good);display:inline-block;padding:1px 8px;border-radius:3px}
+.qa .an b,.qa .so b{color:inherit}
+.qa .so b:first-child{color:var(--navy)}
+.tag{font-size:.8em;color:var(--muted);white-space:normal}
+.ex{background:var(--card);border:1px dashed var(--navy);border-radius:3px;padding:10px 12px;margin:0 0 12px}
+.ex p{margin:0 0 8px}
+details.key{margin:6px 0 0}details.key summary{cursor:pointer;color:var(--navy);font-weight:600}
+.rd-nav{display:flex;gap:10px;margin:22px 0 0}
+.rd-nav a{flex:1;display:block;border:1px solid var(--rule);background:var(--card);border-radius:3px;padding:10px 12px;text-decoration:none;color:var(--ink);font-size:14px;line-height:1.5}
+.rd-nav a small{display:block;color:var(--muted)}
+.rd-nav a.nx{text-align:right;border-color:var(--navy)}
+.rd-nav a.nx small{color:var(--navy)}
+.btn{display:inline-block;background:var(--navy);color:#fff!important;text-decoration:none;font-weight:600;padding:11px 18px;border-radius:3px;border:0;font-size:16px;cursor:pointer}
+.toc{margin:14px 0 0}
+.toc h2{font:600 17px/1.5 var(--display);color:var(--navy);margin:18px 0 6px}
+.toc a{display:flex;gap:8px;align-items:baseline;padding:8px 0;border-bottom:1px dashed var(--rule);text-decoration:none;color:var(--ink);font-size:15.5px;line-height:1.5}
+.toc a .m{margin-left:auto;color:var(--good);font-size:13px;white-space:nowrap}
+.toc a.k{color:var(--muted)}
+.how{font-size:15px;color:#33363a;background:var(--card);border:1px solid var(--rule);border-radius:3px;padding:10px 12px;margin:12px 0}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:3px;padding:14px;margin:14px 0}
+.note{font-size:13px;color:var(--muted);margin:22px 0 0;text-align:center}
+@media(min-width:900px){.wrap{padding-top:20px}}
+/* প্রিন্ট বন্ধ: ছাপলে শুধু এই লাইন */
+@media print{body *{display:none!important}body::after{content:"এই শিট ছাপা যায় না। lyannabooks.com-এ পড়ুন।";display:block;font:16px/1.6 sans-serif;padding:40px}}
+</style>
+<link rel="stylesheet" href="/css/omr.css">
+</head>
+<body>
+<div class="sitebar"><a href="/" aria-label="লিয়ানা বুকস"><img src="/img/logo/li-mark.svg" alt="" width="34" height="44"><span class="lgn-n">লিয়ানা বুকস</span></a></div>
+<main class="wrap" id="view"><p class="dim">লোড হচ্ছে…</p></main>
+<script>
+(function(){
+const $=id=>document.getElementById(id),V=$('view');
+const BN='০১২৩৪৫৬৭৮৯',bn=n=>String(n).replace(/\d/g,d=>BN[d]);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const get=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}};
+const put=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const seg=location.pathname.split('/').filter(Boolean),SID=/^[a-z0-9-]{1,60}$/.test(seg[1]||'')?seg[1]:'';
+let TOC=null,PID=/^[a-z0-9-]{1,40}$/.test(seg[2]||'')?seg[2]:'';
+
+// লেখার মাপ: তিন ধাপ, এই ফোনে মনে থাকে
+const FS=[15,17,20];let fs=get('rd:fs',1);if(!(fs>=0&&fs<3))fs=1;
+const setFs=()=>document.documentElement.style.setProperty('--fs',FS[fs]+'px');setFs();
+
+// জলছাপ: দুই লাইনের লেখা কাত করে SVG টালি
+function wm(lines){
+  const t=lines.filter(Boolean).map((l,i)=>`<text x="150" y="${78+i*22}" text-anchor="middle">${esc(l)}</text>`).join('');
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="300" height="170"><g transform="rotate(-22 150 85)" fill="#13294b" fill-opacity=".075" font-family="Noto Sans Bengali,sans-serif" font-size="15">${t}</g></svg>`;
+  document.documentElement.style.setProperty('--wm',`url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}")`);
+}
+
+// মার্কডাউন (শিটে যা থাকে: অনুচ্ছেদ, **গাঢ়**, "- " তালিকা, | ছক |, "ছক:" শিরোনাম)। আগে সব escape, তারপর ট্যাগ
+const inl=s=>esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/(\[[^\]\n]{2,120}\])\s*$/,'<span class="tag">$1</span>');
+function md(src,kind){
+  const blocks=src.replace(/\r/g,'').split(/\n{2,}/).map(b=>b.trim()).filter(Boolean);
+  let h='',qa=null,rule=null,kids=[];
+  const flushQa=()=>{if(qa){h+='<div class="qa">'+qa+'</div>';qa=null}};
+  const flushRule=()=>{if(rule!=null){h+='<div class="rule">'+rule+'</div>';rule=null}};
+  for(const b of blocks){
+    const L=b.split('\n');
+    let html;
+    if(L.every(l=>/^\|/.test(l))){
+      const rows=L.filter(l=>!/^\|\s*:?-{2,}/.test(l)).map(l=>l.replace(/^\||\|$/g,'').split('|').map(c=>c.trim()));
+      html='<div class="tb"><table>'+rows.map((r,i)=>'<tr>'+r.map(c=>i?`<td>${inl(c)}</td>`:`<th>${inl(c)}</th>`).join('')+'</tr>').join('')+'</table></div>';
+    }else if(L.every(l=>/^[-*] /.test(l))){
+      html='<ul>'+L.map(l=>'<li>'+inl(l.slice(2))+'</li>').join('')+'</ul>';
+    }else html=null;
+    const p=b.replace(/\n/g,' ');
+    // সমাধান করা অঙ্ক: প্রশ্ন (**১.** বা **সমস্যা ১.**) থেকে পরের প্রশ্নের আগ পর্যন্ত এক কার্ডে
+    if(!html&&/^\*\*(সমস্যা\s*)?[০-৯0-9]+\.\*\*/.test(p)){flushRule();flushQa();qa=`<p class="q">${inl(p)}</p>`;continue}
+    if(qa!=null){
+      if(!html&&/^\([কখগঘঙ]\)/.test(p)){qa+=`<p class="op">${inl(p)}</p>`;continue}
+      if(!html&&/^\*\*উত্তর[:ঃ]?\*\*/.test(p)){qa+=`<p><span class="an">${inl(p)}</span></p>`;continue}
+      if(!html&&/^\*\*সমাধান[:ঃ]?\*\*/.test(p)){qa+=`<p class="so">${inl(p)}</p>`;continue}
+      if(kind!=='ex'&&!/^ছক[:ঃ]/.test(p)&&!/^\*\*/.test(p)){qa+=html||`<p>${inl(p)}</p>`;continue}
+      flushQa();
+    }
+    // অনুশীলনী: উত্তরমালা ভাঁজে
+    if(!html&&/^উত্তরমালা[:ঃ]/.test(p)){h+=`<details class="key"><summary>উত্তরমালা দেখুন</summary><p>${inl(p.replace(/^উত্তরমালা[:ঃ]\s*/,''))}</p></details>`;continue}
+    if(!html&&/^ছক[:ঃ]/.test(p)){flushRule();h+=`<p class="cap">${inl(p.replace(/^ছক[:ঃ]\s*/,''))}</p>`;continue}
+    // টাইপের শুরুর নিয়ম আর সূত্র (প্রথম অঙ্কের আগ পর্যন্ত) একটা শান্ত বাক্সে
+    const out=html||`<p>${inl(p)}</p>`;
+    if(kind==='type'&&!h.includes('class="qa"')&&!/^<div class="tb"/.test(out)){rule=(rule||'')+out;continue}
+    flushRule();h+=out;
+  }
+  flushRule();flushQa();
+  return kind==='ex'?'<div class="ex">'+h+'</div>':h;
+}
+
+const api=(p)=>fetch('/api/read/'+p,{credentials:'same-origin',cache:'no-store'}).then(r=>r.json().then(j=>({st:r.status,j})));
+
+function deny(st,j){
+  const t=j&&j.title?`<h1>${esc(j.title)}</h1>`:'';
+  if(st===401){V.innerHTML=`${t}<div class="card"><p style="margin:0 0 10px">এই শিট পড়তে Google দিয়ে লগইন করুন। পাসওয়ার্ড লাগে না।</p><div id="g"></div></div>`;login();return}
+  if(st===403){V.innerHTML=`${t}<div class="card">এই শিট পেট্রোবাংলা ব্যাচের শিক্ষার্থীদের জন্য। ব্যাচে থাকলে আগে <a href="/plan/pb/">ব্যাচের পাতা</a> একবার খুলুন, তারপর এখানে ফিরুন।</div>`;return}
+  if(st===429){V.innerHTML=`<div class="card">খুব দ্রুত অনেক অংশ খোলা হয়েছে। কয়েক মিনিট পরে আবার চেষ্টা করুন।</div>`;return}
+  if(st===404){V.innerHTML=`<div class="card">শিটটি পাওয়া যায়নি। <a href="/">হোম</a></div>`;return}
+  V.innerHTML=`<div class="card">লোড হয়নি। ইন্টারনেট দেখে আবার চেষ্টা করুন। <button class="btn" onclick="location.reload()">আবার</button></div>`;
+}
+function login(){
+  fetch('/api/me',{credentials:'same-origin'}).then(r=>r.json()).then(j=>{
+    if(!j.cid){$('g').innerHTML='<a href="/account/">লগইন করুন →</a>';return}
+    const go=()=>{google.accounts.id.initialize({client_id:j.cid,ux_mode:'popup',context:'signin',callback:res=>{
+      $('g').textContent='লগইন হচ্ছে…';
+      fetch('/api/login',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({credential:res.credential})})
+        .then(r=>r.json()).then(x=>{if(x.user)put('lb:u',x.user);TOC=null;route()}).catch(()=>{$('g').textContent='লগইন হয়নি, আবার চেষ্টা করুন।'})}});
+      google.accounts.id.renderButton($('g'),{theme:'filled_blue',size:'large',shape:'pill',text:'continue_with',locale:'bn',width:260})};
+    const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.async=true;s.onload=go;
+    s.onerror=()=>{$('g').innerHTML='<a href="/account/">লগইন করুন →</a>'};document.head.appendChild(s);
+  }).catch(()=>{$('g').innerHTML='<a href="/account/">লগইন করুন →</a>'});
+}
+
+const base='/read/'+SID+'/';
+async function loadToc(){
+  if(TOC)return true;
+  const {st,j}=await api('toc?s='+SID).catch(()=>({st:0}));
+  if(st!==200){deny(st,j);return false}
+  TOC=j;wm(j.wm);return true;
+}
+async function route(){
+  if(!SID){V.innerHTML='<div class="card">কোন শিট পড়বেন, তা ঠিকানায় নেই। <a href="/">হোম</a></div>';return}
+  if(!(await loadToc()))return;
+  PID?part():toc();
+}
+function toc(){
+  const T=TOC,S=T.s,seen=new Set(T.seen),loc=get('rd:last:'+SID,null),last=T.last||loc;
+  document.title=S.title+' · লিয়ানা বুকস';
+  const lastT=last&&T.toc.find(x=>x[0]===last);
+  let h=`${S.label?`<p class="rd-head">${esc(S.label)}</p>`:''}<h1>${esc(S.title)}</h1>${S.sub?`<p class="dim" style="margin:0">${esc(S.sub)}</p>`:''}
+  <p style="margin:14px 0">${lastT?`<a class="btn" href="${base}${esc(lastT[0])}">যেখানে থেমেছিলেন: ${esc(short(lastT[3]))} →</a>`:`<a class="btn" href="${base}${esc(T.toc[0][0])}">পড়া শুরু করুন →</a>`}</p>
+  ${S.howto?`<div class="how">${esc(S.howto)}</div>`:''}<div class="toc">`;
+  for(const sec of S.secs){
+    const L=T.toc.filter(x=>x[1]===sec.no);if(!L.length)continue;
+    h+=`<h2>${bn(sec.no)}. ${esc(sec.title)}</h2>`+L.map(x=>`<a href="${base}${esc(x[0])}"${x[2]==='type'?'':' class="k"'}>${esc(x[3])}${seen.has(x[0])?'<span class="m">✓ পড়েছেন</span>':''}</a>`).join('');
+  }
+  h+=`</div>${!T.me?'<p class="note">লগইন করলে কোন অংশ পড়েছেন তা সব ফোনে মনে থাকে।</p>':''}${S.copy&&S.copy.length?`<p class="note">${esc(S.copy[0])} ${esc(S.by||'')}</p>`:''}`;
+  V.innerHTML=h;scrollTo(0,0);
+}
+const short=t=>t.replace(/^টাইপ\s*[০-৯]+:\s*/,'');
+async function part(){
+  V.innerHTML='<p class="dim">লোড হচ্ছে…</p>';
+  const {st,j}=await api('p?s='+SID+'&p='+PID).catch(()=>({st:0}));
+  if(st!==200){if(st===404){PID='';history.replaceState(null,'',base);return toc()}return deny(st,j)}
+  put('rd:last:'+SID,PID);if(!TOC.seen.includes(PID))TOC.seen.push(PID);
+  const sec=TOC.s.secs.find(x=>x.no===j.sec);
+  document.title=j.title+' · '+TOC.s.title;
+  V.innerHTML=`<div class="rd-bar"><a class="b" href="${base}" aria-label="সূচি">☰ সূচি</a><span class="t">${esc(TOC.s.title)}</span>
+    <button id="sm" aria-label="লেখা ছোট"${fs===0?' disabled':''}>অ−</button><button id="lg" aria-label="লেখা বড়"${fs===2?' disabled':''}>অ+</button></div>
+  <article class="rd-text">${sec?`<p class="rd-head">${bn(sec.no)}. ${esc(sec.title)}</p>`:''}<h1 class="rd-title">${esc(j.title)}</h1>${md(j.body,j.kind)}</article>
+  <nav class="rd-nav">${j.prev?`<a href="${base}${esc(j.prev.pid)}"><small>← আগের</small>${esc(short(j.prev.title))}</a>`:''}${j.next?`<a class="nx" href="${base}${esc(j.next.pid)}"><small>পরের →</small>${esc(short(j.next.title))}</a>`:`<a class="nx" href="${base}"><small>শেষ</small>সূচিতে ফিরুন</a>`}</nav>
+  ${TOC.s.copy&&TOC.s.copy.length?`<p class="note">${esc(TOC.s.copy[0])}</p>`:''}`;
+  $('sm').onclick=()=>{if(fs>0){fs--;put('rd:fs',fs);setFs();$('sm').disabled=fs===0;$('lg').disabled=false}};
+  $('lg').onclick=()=>{if(fs<2){fs++;put('rd:fs',fs);setFs();$('lg').disabled=fs===2;$('sm').disabled=false}};
+  scrollTo(0,0);
+}
+// পাতার ভেতরের লিংক: পুরো পাতা আবার নয়, শুধু অংশ বদল
+document.addEventListener('click',e=>{
+  const a=e.target.closest&&e.target.closest('a[href]');if(!a||e.ctrlKey||e.metaKey||e.shiftKey)return;
+  const u=new URL(a.href,location.href);if(u.origin!==location.origin||!u.pathname.startsWith(base))return;
+  e.preventDefault();PID=u.pathname.slice(base.length).replace(/\/$/,'');history.pushState(null,'',u.pathname);route();
+});
+addEventListener('popstate',()=>{const s=location.pathname.split('/').filter(Boolean);PID=s[2]||'';route()});
+route();
+})();
+</script>
+</body>
+</html>

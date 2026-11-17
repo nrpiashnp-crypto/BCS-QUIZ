@@ -1,0 +1,44 @@
+name: upload-sheets
+# লেকচার শিট (Lyanna_data: sheets/<বিষয়>/<শিট>/) পড়ার পাতায় (lyannabooks.com/read/<শিট>/) তোলা। লেখা যায় সাইটের D1-এ,
+# এই পাবলিক রিপোতে নয়; লগে শুধু অংশের আইডি আর মাপ। শুধু হাতে চালানো হয় (PIASH-এর অনুমতির পরে):
+# Actions → upload-sheets → Run workflow → শিটের ফোল্ডার, কে পড়বে, রুটিনের কোন শিট-আইডিতে।
+# গোপন ঘর: LYANNA_DATA_TOKEN (Lyanna_data শুধু-পড়া), LY_UPLOAD_KEY (সেট তোলার একই চাবি)।
+on:
+  workflow_dispatch:
+    inputs:
+      folder:
+        description: 'শিটের ফোল্ডার, যেমন sheets/math/math-numbers-lcm'
+        required: true
+      acc:
+        description: 'কে পড়বে: pb (পেট্রোবাংলা ব্যাচ), login (যেকোনো লগইন), all (সবাই)'
+        required: true
+        default: 'pb'
+      for:
+        description: 'রুটিনের শিট-আইডি (plan/pb/merito.json-এর "sheet"), কমা দিয়ে; খালি = রুটিনে লিংক নয়'
+        required: false
+concurrency: upload-sheets
+permissions:
+  contents: read
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: nrpiashnp-crypto/Lyanna_data
+          token: ${{ secrets.LYANNA_DATA_TOKEN }}
+          path: data
+          sparse-checkout: |
+            sheets
+            tools/upload_sheet.py
+          sparse-checkout-cone-mode: false
+      - name: সাইটে তোলা
+        env:
+          LY_UPLOAD_KEY: ${{ secrets.LY_UPLOAD_KEY }}
+          FOLDER: ${{ inputs.folder }}
+          ACC: ${{ inputs.acc }}
+          FOR: ${{ inputs.for }}
+        working-directory: data
+        run: |
+          case "$FOLDER" in sheets/*) ;; *) echo "ফোল্ডার sheets/ দিয়ে শুরু হবে"; exit 1;; esac
+          python3 tools/upload_sheet.py "$FOLDER" --acc "$ACC" --for "$FOR"
