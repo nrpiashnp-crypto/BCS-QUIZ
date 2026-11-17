@@ -107,7 +107,14 @@ function pace(x){
   return `<section class="part" aria-label="শেষ ৭ দিন"><p class="big">শেষ ৭ দিনে ${bn(on)} দিন পড়েছেন</p>
     <div class="days">${cells}</div>
     <dl class="kv"><dt>পরীক্ষা</dt><dd>${bn(tests)}টি</dd><dt>সাইটে কাজের সময়</dt><dd>${dur(sec)}</dd>${t.tests||t.sec>=60?`<dt>আজ</dt><dd>${t.tests?bn(t.tests)+'টি পরীক্ষা, ':''}${dur(t.sec)}</dd>`:''}</dl>
-    <p class="goal">${goal}</p><p class="mut sm">এই হিসাব শুধু আপনি দেখেন।</p></section>`;
+    <p class="goal">${goal}</p><p class="mut sm">এই হিসাব শুধু আপনি দেখেন।</p>
+    <button class="btn line" data-a="wk">এই ৭ দিনের ছবি বানান (ফেসবুকে দিতে)</button><div id="wk" class="pair"></div></section>`;
+}
+// ৭ দিনের কাজের ছবি: চাপলে তবেই js/week-card.js আনা (প্রথম স্ক্রিন হালকা)
+function week(el){
+  const go=()=>{el.remove();const u=window.LBA&&LBA.user();LYWeek($('wk'),X,u&&u.name?String(u.name).trim().split(/\s+/)[0]:'')};
+  if(window.LYWeek)return go();
+  el.disabled=true;const s=document.createElement('script');s.src='/js/week-card.js';s.onload=go;s.onerror=()=>{el.disabled=false};document.head.appendChild(s);
 }
 
 // ৩. আমার চাকরি: যে পদগুলো "প্রস্তুতিতে রাখা", তার পরের শেষ তারিখ
@@ -152,6 +159,7 @@ async function post(path,b){const r=await fetch('/api/pair/'+path,{method:'POST'
 const ERR={gone:'লিংকটার মেয়াদ শেষ বা বাতিল। বন্ধুকে নতুন লিংক পাঠাতে বলুন।',self:'এটা আপনার নিজের লিংক। বন্ধুকে পাঠান।',paired:'আপনার আগেই একজন জুটি আছেন।',already:'আপনারা আগেই জুটি।',taken:'আপনার বন্ধু এর মধ্যে অন্য কারও জুটি হয়ে গেছেন।'};
 async function act(a,el){
   const msg=t=>{const m=$('pmsg');if(m)m.textContent=t;else if($('pr'))$('pr').insertAdjacentHTML('beforeend','<p class="sm mut">'+esc(t)+'</p>')};
+  if(a==='wk')return week(el);
   if(a==='skip'){try{localStorage.removeItem('lb:pt')}catch(e){}TOK='';return reload()}
   if(a==='join'){el.disabled=true;const r=await post('join',{t:TOK});try{localStorage.removeItem('lb:pt')}catch(e){}TOK='';
     if(!r.ok){el.disabled=false;return msg(ERR[r.j.error]||'হয়নি। একটু পরে আবার চেষ্টা করুন।')}return reload()}
