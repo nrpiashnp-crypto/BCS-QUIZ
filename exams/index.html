@@ -54,6 +54,11 @@ h1{font-family:var(--display);font-weight:400;font-size:30px;margin:4px 0 2px;te
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .tile .ic{color:#e6c97a}}
 .soon{font-size:13px;color:var(--muted);text-align:center;margin:10px 0 0}
 .free{text-align:center;margin:22px 0 0;color:var(--muted);font-size:14px}
+/* দলের পরীক্ষা বানানো (/make/): কার্ডগুলোর নিচে আলাদা, হালকা বোতাম */
+.mk{display:flex;align-items:center;gap:14px;margin:16px 0 0;padding:14px 16px;border:1.6px solid var(--navy);border-radius:3px;background:#fffdf7;color:var(--navy);text-decoration:none;box-shadow:4px 4px 0 #c8326a}
+.mk b{display:block;font-size:19px;font-weight:600;line-height:1.35}
+.mk small{display:block;color:#5d5a55;font-size:14px;line-height:1.5}
+.mk i{font-style:normal;margin-left:auto;font-size:22px;color:#c8326a}
 @keyframes lv{0%{box-shadow:0 0 0 0 #c8326acc}70%{box-shadow:0 0 0 10px #c8326a00}100%{box-shadow:0 0 0 0 #c8326a00}}
 .rn{margin-top:26px}
 .sh{display:flex;align-items:center;gap:10px;margin:0 0 10px;font-family:var(--body);font-weight:600;font-size:17px;color:#13294b}.sh::after{content:"";flex:1;border-top:1.3px dashed #13294b55}
@@ -86,6 +91,7 @@ h1{font-family:var(--display);font-weight:400;font-size:30px;margin:4px 0 2px;te
   <a class="ch2" href="/science/"><span class="ic"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6"/><path d="M10 3v6L4.5 19a1.5 1.5 0 0 0 1.3 2h12.4a1.5 1.5 0 0 0 1.3-2L14 9V3"/><path d="M7 15h10"/></svg></span><b>বিজ্ঞান</b><small>২১টি অধ্যায় · বিসিএস আর চাকরির পরীক্ষার বিজ্ঞান</small></a>
   <a class="ch2" href="/subject/"><span class="ic"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7"/><rect x="13.5" y="3.5" width="7" height="7"/><rect x="3.5" y="13.5" width="7" height="7"/><rect x="13.5" y="13.5" width="7" height="7"/></svg></span><b>বিষয়ভিত্তিক প্রস্তুতি</b><small>বাংলাদেশ, আন্তর্জাতিক, গণিতসহ সব বিষয়, টপিক ধরে</small></a>
 </div>
+<a class="mk" href="/make/"><span><b>দলের পরীক্ষা বানান</b><small>আজ যা পড়েছেন সেই টপিক বেছে লিংক বানান, গ্রুপের সবাই একই পরীক্ষা দেবে</small></span><i aria-hidden="true">→</i></a>
 
 <section class="rn" aria-label="চলমান নিয়োগের প্রস্তুতি"><h2 class="sh"><i></i>চলমান নিয়োগের প্রস্তুতি</h2><div class="rD"><a href="/petrobangla/"><span class="lv">চলছে</span><span class="ic">প</span><span class="tx"><b>পেট্রোবাংলা</b><small>পাইলট ও মেরিটো ব্যাচ</small></span></a><a href="/running/sub-registrar/"><span class="lv">চলছে</span><span class="ic">সা</span><span class="tx"><b>সাব-রেজিস্ট্রার</b><small>পিএসসি · ৯ম গ্রেড · ৫০টি ফ্রি টাস্ক</small></span></a></div></section>
 <p class="free">লগইন ছাড়াই সব পরীক্ষা দিন। চাইলে <a href="/account/">লগইন করে</a> সব ফল আর অগ্রগতি এক জায়গায় রাখুন।</p>
