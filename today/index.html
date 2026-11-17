@@ -111,6 +111,14 @@ function pace(x){
 }
 
 // ৩. আমার চাকরি: যে পদগুলো "প্রস্তুতিতে রাখা", তার পরের শেষ তারিখ
+// ৫. দল: এক লাইন, পুরোটা /group/-এ
+function grpLine(x){
+  let gt='';try{gt=localStorage.getItem('lb:gt')||''}catch(e){}
+  if(x.grp)return `<p class="note"><a href="/group/">দল “${esc(x.grp.name)}”${x.grp.live?`: এখন ${bn(x.grp.live)} জন পড়ছেন`:''} →</a></p>`;
+  if(gt)return `<p class="note"><a href="/group/">আপনাকে একটা পড়ার দলে ডাকা হয়েছে, দেখুন →</a></p>`;
+  return `<p class="note"><a href="/group/">বন্ধুদের নিয়ে পড়ার দল বানান →</a></p>`;
+}
+
 function jobs(x){
   if(!x.jobs.length)return `<section class="part"><a class="go" href="/myjobs/">আপনার বয়সে কোন সরকারি চাকরি চলছে, দেখুন →</a></section>`;
   const j=x.jobs[0],n=left(x.today,j.ae);
@@ -126,7 +134,7 @@ function pairPart(x){
     <p class="sm mut">জুটি হলে দুজনে দুজনের কাজের খবর দেখবেন: কে আজ কটা পরীক্ষা দিলেন। নম্বর বা সময় কেউ দেখে না।</p>
     <div class="row"><button class="btn" data-a="join">জুটি হোন</button><button class="btn line" data-a="skip">এখন নয়</button></div></section>`;
   if(p.none)return `<section class="part pair" id="pr"><p class="lbl">পড়ার জুটি</p><p class="note">একজন বন্ধুকে লিংক পাঠান। জুটি হলে দুজনে দুজনের কাজের খবর দেখবেন, নম্বর বা সময় নয়।</p>
-    <button class="btn line" data-a="inv">বন্ধুকে লিংক পাঠান</button><p class="sm mut" id="pmsg"></p></section>`;
+    <button class="btn line" data-a="inv">বন্ধুকে লিংক পাঠান</button><p class="sm mut" id="pmsg"></p>${grpLine(x)}</section>`;
   const nm=esc(p.name);let news;
   if(p.today)news=`${nm} আজ ${bn(p.today)}টি পরীক্ষা দিয়েছেন${p.what?', শেষটা “'+esc(p.what)+'”':''}।`;
   else if(p.busy)news=`${nm} আজ ব্যস্ত।`;
@@ -138,7 +146,7 @@ function pairPart(x){
     <div class="row">${canCall?`<button class="btn line" data-a="n"${p.iCalled?' disabled':''}>${p.iCalled?'ডাক দেওয়া হয়েছে':'ডাক দিন'}</button>`:''}
     <button class="btn line" data-a="b"${p.iBusy?' disabled':''}>${p.iBusy?'আজ ব্যস্ত জানানো হলো':'আজ ব্যস্ত'}</button></div>
     <p class="sm mut" id="pmsg">${p.iCalled&&canCall?nm+' "আজ" পাতা খুললেই আপনার ডাক দেখবেন।':''}</p>
-    <button class="lnk" data-a="leave">জুটি ছাড়ুন</button></section>`;
+    ${grpLine(x)}<button class="lnk" data-a="leave">জুটি ছাড়ুন</button></section>`;
 }
 async function post(path,b){const r=await fetch('/api/pair/'+path,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(b||{})}).catch(()=>null);return r?{ok:r.ok,j:await r.json().catch(()=>({}))}:{ok:false,j:{}}}
 const ERR={gone:'লিংকটার মেয়াদ শেষ বা বাতিল। বন্ধুকে নতুন লিংক পাঠাতে বলুন।',self:'এটা আপনার নিজের লিংক। বন্ধুকে পাঠান।',paired:'আপনার আগেই একজন জুটি আছেন।',already:'আপনারা আগেই জুটি।',taken:'আপনার বন্ধু এর মধ্যে অন্য কারও জুটি হয়ে গেছেন।'};
@@ -163,7 +171,7 @@ async function reload(){const r=await fetch('/api/today',{credentials:'same-orig
 
 function draw(x){
   X=x;
-  $('app').innerHTML=`<h1>আজ, ${WD[wd(x.today)]}</h1><p class="date">${dTxt(x.today)}</p>${first(x)}${pace(x)}${pairPart(x)}${jobs(x)}
+  $('app').innerHTML=`<h1>আজ, ${WD[wd(x.today)]}</h1><p class="date">${dTxt(x.today)}</p>${first(x)}${pace(x)}${pairPart(x)}${x.pair?'':'<section class="part pair">'+grpLine(x)+'</section>'}${jobs(x)}
     <p class="tail"><a href="/account/">রেজাল্ট কার্ড: সব পরীক্ষার ফল →</a></p>`;
   $('app').querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>act(b.dataset.a,b));
 }
