@@ -32,7 +32,7 @@ function wire(h){if(h.dataset.omrJump)return;h.dataset.omrJump=1;if(!h.id)h.id='
  var box=h.parentNode,sb=box.querySelector('#scorebox')||box.querySelector('.score');if(!sb||sb.parentNode!==box)return;
  var a=document.createElement('a');a.className='exp-jump';a.href='#'+h.id;a.innerHTML='<span aria-hidden="true">↓</span> প্রতিটি প্রশ্নের ব্যাখ্যাসহ উত্তর নিচে দেখুন';
  a.onclick=function(e){e.preventDefault();go(h)};h._j=[sb,a];sb.insertAdjacentElement('afterend',a)}
-function tick(){var hs=heads();hs.forEach(wire);hs.forEach(function(h){var j=h._j;if(j&&j[0].nextElementSibling!==j[1])j[0].insertAdjacentElement('afterend',j[1])});var h=hs.filter(function(x){return x.offsetParent})[0];
+var has=0;function tick(){var hs=heads();has=hs.length;hs.forEach(wire);hs.forEach(function(h){var j=h._j;if(j&&j[0].nextElementSibling!==j[1])j[0].insertAdjacentElement('afterend',j[1])});var h=hs.filter(function(x){return x.offsetParent})[0];
  var show=h&&h.getBoundingClientRect().top>innerHeight-40;
  var cx=document.querySelector('.chx:not([hidden])'),cr=cx&&cx.getBoundingClientRect();if(cr&&cr.top<innerHeight&&cr.bottom>0)show=false;
  if(show&&!pill){pill=document.createElement('button');pill.type='button';pill.className='exp-pill';pill.innerHTML='<span aria-hidden="true">↓</span> ব্যাখ্যা দেখুন';document.body.appendChild(pill)}
@@ -41,6 +41,7 @@ function tick(){var hs=heads();hs.forEach(wire);hs.forEach(function(h){var j=h._
 /* বন্ধুকে চ্যালেঞ্জ: ফল দেখা গেলে তবেই js/challenge.js আসে */
 var chs=0;function ch(){if(window.LBC)return LBC.scan();if(chs)return;chs=document.createElement('script');chs.src='/js/challenge.js?v=3';chs.defer=true;document.head.appendChild(chs)}
 var q=0;function later(){if(!q){q=1;requestAnimationFrame(function(){q=0;tick()})}}
-addEventListener('scroll',later,{passive:true});addEventListener('resize',later);
+/* স্ক্রলে কাজ শুধু ফলের "উত্তর ও ব্যাখ্যা" শিরোনাম থাকলে; বাকি পাতায় প্রতি স্ক্রলে খোঁজা নয় (কম দামি ফোনে স্ক্রল মসৃণ) */
+addEventListener('scroll',function(){if(has)later()},{passive:true});addEventListener('resize',later);
 if('MutationObserver' in window)new MutationObserver(later).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden']});
 tick();})();
