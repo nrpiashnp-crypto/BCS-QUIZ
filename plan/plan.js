@@ -204,7 +204,7 @@ async function routineView(){
 }
 
 // শিট: পড়ার পাতায় তোলা থাকলে "পড়ুন" (/read/<শিট>/), নইলে Drive-এর PDF; শুধু লগইন করা শিক্ষার্থী ME.sheets পান; না থাকলে "শিগগির আসছে"
-const sheetLink=(id,nm,nw)=>{const u=ME&&ME.sheets&&ME.sheets[id];return esc(nm||id)+(nw?' · নতুন':'')+(u&&/^\/read\/[a-z0-9-]+\/$/.test(u)?` · <a href="${esc(u)}">শিট পড়ুন</a>`:u&&/^https:\/\/(drive|docs)\.google\.com\//.test(u)?` · <a href="${esc(u)}" target="_blank" rel="noopener">PDF খুলুন</a>`:' <span class="dim">· শিগগির আসছে</span>')};
+const sheetLink=(id,nm,nw)=>{const u=ME&&ME.sheets&&ME.sheets[id];return esc(nm||id)+(nw?' · নতুন':'')+(u&&/^\/read\/[a-z0-9-]+\/$/.test(u)?` · <a href="${esc(u)}" style="font-weight:600">শিট পড়ুন →</a>`:u&&/^https:\/\/(drive|docs)\.google\.com\//.test(u)?` · <a href="${esc(u)}" target="_blank" rel="noopener">PDF খুলুন</a>`:' <span class="dim">· শিগগির আসছে</span>')};
 
 // ---------- মেরিটোর নতুনরা (sheet-plan.md §২): অবস্থা-যাচাই নেই, প্রতিটি পরীক্ষা নিজের তারিখে খোলে আর খোলাই থাকে ----------
 function meritoIntro(){

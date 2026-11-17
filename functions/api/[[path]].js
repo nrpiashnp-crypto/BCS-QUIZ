@@ -2649,6 +2649,7 @@ async function rdRate(db, keys, now) {
 async function read(path, req, url, env, db, u) {
   if (req.method !== 'GET') return json({error: 'not found'}, 404);
   await rdSetup(db);
+  if (path === 'read/list') return rdList(env, db, u);
   const sid = String(url.searchParams.get('s') || '');
   if (!RD_PID.test(sid) || sid.length > 60) return json({error: 'bad'}, 400);
   const sh = await rdSheet(db, sid);
@@ -2684,6 +2685,33 @@ async function read(path, req, url, env, db, u) {
     return json({...out, prev: pv.results[0] || null, next: nx.results[0] || null}, 200, hdr);
   }
   return json({error: 'not found'}, 404);
+}
+// যে শিটগুলো এই পাঠক পড়তে পারেন (/read/ পাতার তালিকা আর /account/-এর "পড়া চালিয়ে যান"):
+// {me, list: [{id, title, sub, label, n: অংশ, seen: পড়া অংশ, last: শেষ পড়া অংশ, at: কখন}]}; শুরু করা শিট আগে
+async function rdList(env, db, u) {
+  const sh = (await db.prepare('SELECT id, meta, acc FROM rd_sheet ORDER BY ts DESC').all()).results;
+  if (!sh.length) return json({me: !!u, list: []}, 200, {'Cache-Control': 'no-store'});
+  const q = [db.prepare('SELECT s, COUNT(*) n FROM rd_part GROUP BY s')];
+  if (u) q.push(db.prepare('SELECT s, COUNT(*) n, MAX(last) at FROM rd_read WHERE uid = ? GROUP BY s').bind(u.id),
+    db.prepare('SELECT s, pid FROM rd_read r WHERE uid = ? AND last = (SELECT MAX(last) FROM rd_read WHERE uid = r.uid AND s = r.s)').bind(u.id));
+  const [n, r, l] = await db.batch(q), N = new Map(n.results.map(x => [x.s, x.n]));
+  const R = new Map(r ? r.results.map(x => [x.s, x]) : []), Lp = new Map(l ? l.results.map(x => [x.s, x.pid]) : []);
+  let pb = null;
+  const list = [];
+  for (const x of sh) {
+    if (x.acc !== 'all') {
+      if (!u) continue;
+      if (x.acc === 'pb' && !isAdmin(u, env)) {
+        if (pb === null) pb = await rdPb(db, u) || await isTester(db, u);
+        if (!pb) continue;
+      }
+    }
+    let m; try { m = JSON.parse(x.meta); } catch (e) { continue; }
+    const rr = R.get(x.id);
+    list.push({id: x.id, title: m.title, sub: m.sub, label: m.label, n: N.get(x.id) || 0, seen: rr ? rr.n : 0, last: Lp.get(x.id) || null, at: rr ? rr.at : 0});
+  }
+  list.sort((a, b) => b.at - a.at);
+  return json({me: !!u, list}, 200, {'Cache-Control': 'no-store'});
 }
 // রুটিনের শিট-আইডি → /read/<শিট>/ (তোলা শিটে "fr" থাকলে)
 async function rdLinks(db) {
@@ -2723,6 +2751,15 @@ async function readAdmin(path, req, db) {
     await db.batch(L.map(p => st.bind(id, String(p.pid), +p.ord || 0, +p.sec || 0, ['type', 'ex', 'pq', 'intro', 'text'].includes(p.kind) ? p.kind : 'text',
       rdText(p.title, 300), p.body.normalize('NFC'), rdText(p.h, 20), now)));
     return json({ok: true, saved: L.length});
+  }
+  // একটা শিটের পাঠক: কে কয়টা অংশ পড়েছেন, শেষ কবে, শেষ কোন অংশ
+  if (path === 'admin/read/who' && m === 'GET') {
+    const s = String(new URL(req.url).searchParams.get('s') || '');
+    if (!RD_PID.test(s)) return json({error: 'bad'}, 400);
+    const {results} = await db.prepare(`SELECT r.uid, u.name, COUNT(*) parts, SUM(r.n) opens, MAX(r.last) last,
+      (SELECT pid FROM rd_read x WHERE x.uid = r.uid AND x.s = r.s ORDER BY x.last DESC LIMIT 1) at
+      FROM rd_read r LEFT JOIN users u ON u.id = r.uid WHERE r.s = ? GROUP BY r.uid ORDER BY last DESC LIMIT 500`).bind(s).all();
+    return json({who: results});
   }
   if (path === 'admin/read' && m === 'GET') {
     const [a, b, c] = await db.batch([
