@@ -1793,17 +1793,17 @@ async function pbTook(db, uid) {
 async function diagGrp(db, u) {
   if (!u) return '';
   await pilotSetup(db);
-  const row = await db.prepare('SELECT st, code FROM pilot_mem WHERE pilot = ? AND uid = ?').bind(MERITO, u.id).first();
-  if (row && row.st === 'ok') return 'merito';
-  if (row && row.st === 'pilot') return '';
-  return (await pbTook(db, u.id)).size ? '' : 'merito';
+  // PIASH, ২০২৬-১১-১৮: পাইলট ব্যাচের সবাই (অবস্থা-যাচাই দিয়ে থাকুন বা না থাকুন) আর মেরিটোর নতুনরা একই রুটিনে (merito.json)।
+  // আলাদা "পাইলট দল" আর নেই; অ্যাডমিনের পুরোনো 'pilot' দাগও এখন মেরিটোর রুটিনই দেয়।
+  return 'merito';
 }
 // উপস্থিতির জন্য সবার দল একবারে
 async function pbGroups(db) {
   await pilotSetup(db); await diagSetup(db);
   const m = await db.prepare("SELECT m.uid, m.code, m.st, u.name FROM pilot_mem m LEFT JOIN users u ON u.id = m.uid WHERE m.pilot = ?").bind(MERITO).all();
   const R = new Map(m.results.map(r => [r.uid, r])), PS = await pbTook(db);
-  return {R, of: uid => { const r = R.get(uid); return r && r.st === 'ok' ? 'merito' : r && r.st === 'pilot' ? 'pilot' : PS.has(uid) ? 'pilot' : 'merito'; }};
+  // সবাই এক রুটিনে (PIASH, ২০২৬-১১-১৮; ওপরের diagGrp)
+  return {R, PS, of: () => 'merito'};
 }
 // মেরিটোর সব পরীক্ষা এক তালিকায় (মূল পাতা আর রুটিনের জন্য): প্রতিটির সেট, ভাগ আর নিজের অবস্থা
 async function meritoMine(db, sch, uid, today) {
