@@ -1535,7 +1535,8 @@ const diagPilot = id => /^pb-/.test(id) ? 'petrobangla-1' : '';
 const DAYRE = /^\d{4}-\d{2}-\d{2}$/;
 /* আগের দিনের পরীক্ষা (PIASH, ২০২৬-১১-০৬): একটা ভাগ খোলে তার তারিখ এলে আর আগের দিনের পরীক্ষা শেষ হলে (সময় শেষে বন্ধ হলেও শেষ ধরা)।
    সেটের ভেতরে আগের ভাগ; সপ্তাহের প্রথম ভাগের আগেরটা আগের সপ্তাহের শেষ ভাগ (pb-w1-এর আগে pb-start)। আগের সেট না থাকলে শর্ত নেই। */
-const prevSet = id => { const w = PB_WEEK.exec(id); return w ? (w[1] === '1' ? 'pb-start' : 'pb-w' + (+w[1] - 1)) : ''; };
+// PIASH, ২০২৬-১১-১৮: সপ্তাহ ১-এর প্রথম ভাগের আগে অবস্থা-যাচাই (pb-start) আর শর্ত নয়, যাতে অবস্থা-যাচাই পুরো না দেওয়া পাইলটরাও রোজকার পরীক্ষা পান
+const prevSet = id => { const w = PB_WEEK.exec(id); return w ? (w[1] === '1' ? '' : 'pb-w' + (+w[1] - 1)) : ''; };
 // sch = মেরিটোর সূচি: শুধু-নতুনদের ভাগ (only) পাইলটের "আগের দিনের পরীক্ষা"-র হিসাবে আসে না
 async function diagPrev(db, c, p, uid, sch) {
   const skip = cc => sch ? meritoMap(cc, sch).only : new Set();
@@ -1790,20 +1791,29 @@ async function pbTook(db, uid) {
     : db.prepare("SELECT uid, COUNT(*) k FROM diag_att WHERE sid = 'pb-start' AND res IS NOT NULL GROUP BY uid");
   return new Set((await q.all()).results.filter(r => r.k >= need).map(r => r.uid));
 }
+// পাইলট ব্যাচের সদস্য (petrobangla-1-এ st = 'ok') আর অ্যাডমিনের 'pilot' দাগ (pb-merito-এ st = 'pilot'); uid দিলে শুধু তিনি
+async function pbPilotRows(db, uid) {
+  const q = "SELECT uid FROM pilot_mem WHERE ((pilot = 'petrobangla-1' AND st = 'ok') OR (pilot = ? AND st = 'pilot'))" + (uid ? ' AND uid = ?' : '');
+  const st = uid ? db.prepare(q).bind(MERITO, uid) : db.prepare(q).bind(MERITO);
+  return new Set((await st.all()).results.map(r => r.uid));
+}
+const pbIsPilot = (S, uid) => S.has(uid);
 async function diagGrp(db, u) {
   if (!u) return '';
   await pilotSetup(db);
-  // PIASH, ২০২৬-১১-১৮: পাইলট ব্যাচের সবাই (অবস্থা-যাচাই দিয়ে থাকুন বা না থাকুন) আর মেরিটোর নতুনরা একই রুটিনে (merito.json)।
-  // আলাদা "পাইলট দল" আর নেই; অ্যাডমিনের পুরোনো 'pilot' দাগও এখন মেরিটোর রুটিনই দেয়।
-  return 'merito';
+  // PIASH, ২০২৬-১১-১৮ দুপুর: দল ঠিক হয় পাইলট ব্যাচের সদস্যপদ দিয়ে, অবস্থা-যাচাই দিয়ে নয়।
+  // পাইলট ব্যাচের (petrobangla-1, st = 'ok') সবাই পাইলটের রুটিনে (routine.json), মেরিটোর সারি থাকলেও; অ্যাডমিনের 'pilot' দাগও পাইলট।
+  // বাকি সবাই মেরিটোর রুটিনে। পরে দুই ব্যাচ জোড়া লাগলে এখানেই বদল।
+  return pbIsPilot(await pbPilotRows(db, u.id), u.id) ? '' : 'merito';
 }
 // উপস্থিতির জন্য সবার দল একবারে
 async function pbGroups(db) {
   await pilotSetup(db); await diagSetup(db);
   const m = await db.prepare("SELECT m.uid, m.code, m.st, u.name FROM pilot_mem m LEFT JOIN users u ON u.id = m.uid WHERE m.pilot = ?").bind(MERITO).all();
   const R = new Map(m.results.map(r => [r.uid, r])), PS = await pbTook(db);
-  // সবাই এক রুটিনে (PIASH, ২০২৬-১১-১৮; ওপরের diagGrp)
-  return {R, PS, of: () => 'merito'};
+  // দল পাইলট ব্যাচের সদস্যপদ দিয়ে (PIASH, ২০২৬-১১-১৮; ওপরের diagGrp)
+  const PP = await pbPilotRows(db);
+  return {R, PS, of: uid => PP.has(uid) ? 'pilot' : 'merito'};
 }
 // মেরিটোর সব পরীক্ষা এক তালিকায় (মূল পাতা আর রুটিনের জন্য): প্রতিটির সেট, ভাগ আর নিজের অবস্থা
 async function meritoMine(db, sch, uid, today) {
@@ -1868,9 +1878,8 @@ async function diag(path, req, url, env, db, u) {
     if (!u) return json({error: 'login'}, 401);
     if (!pb || body.g !== 'merito') return json({error: 'bad'}, 400);
     if (grp === 'merito') return json({ok: true, grp});
-    if ((await pbTook(db, u.id)).size) return json({error: 'pilot'}, 409);
-    await meritoAdd(db, u.id);
-    return json({ok: true, grp: 'merito'});
+    // পাইলট ব্যাচের সদস্য মেরিটোতে যান না (দল সদস্যপদ দিয়ে, diagGrp)
+    return json({error: 'pilot'}, 409);
   }
   if (path === 'diag/me' && m === 'GET') {
     // অ্যাডমিন কারও রিপোর্ট তাঁর চোখে দেখতে/PDF করতে: ?as=<uid> (শুধু দেখা, কিছু লেখা হয় না)
