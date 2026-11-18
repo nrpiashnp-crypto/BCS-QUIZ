@@ -2320,7 +2320,8 @@ async function diagAdmin(path, url, req, db, env) {
     const by = new Map();
     for (const r of await rows()) {
       const g = isP ? PG.of(r.uid) : 'pilot';
-      const x = by.get(r.uid) || {uid: r.uid, name: r.name || '', code: g === 'merito' && PG.R.has(r.uid) ? PG.R.get(r.uid).code || '' : code.get(r.uid) || '', grp: g, parts: {}};
+      // কোড: পাইলট ব্যাচের নিজের কোড আগে (দুই ব্যাচ এক রুটিনে চললেও পাইলটরা নিজের কোডে চেনা যান; PIASH ১৮/১১), নইলে মেরিটোর M কোড
+      const x = by.get(r.uid) || {uid: r.uid, name: r.name || '', code: code.get(r.uid) || (g === 'merito' && PG.R.has(r.uid) ? PG.R.get(r.uid).code || '' : ''), grp: g, parts: {}};
       by.set(r.uid, x);
       const p = c.P.get(r.part) || {};
       const pdt = x.grp === 'merito' ? (mm.by.get(r.part) || {}).date : p.date;
@@ -2329,7 +2330,7 @@ async function diagAdmin(path, url, req, db, env) {
     }
     // ব্যাচের যাঁরা এখনো কিছুই শুরু করেননি, তাঁরাও তালিকায় (পাইলটের সদস্য-তালিকা থেকে)
     if (pl) for (const r of (await db.prepare("SELECT m.uid, m.code, u.name FROM pilot_mem m LEFT JOIN users u ON u.id = m.uid WHERE m.pilot = ? AND m.st = 'ok'").bind(pl).all()).results)
-      if (!by.has(r.uid) && !MG.has(r.uid)) { const g = isP ? PG.of(r.uid) : 'pilot'; by.set(r.uid, {uid: r.uid, name: r.name || '', code: g === 'merito' && PG.R.has(r.uid) ? PG.R.get(r.uid).code || '' : r.code || '', grp: g, parts: {}}); }
+      if (!by.has(r.uid) && !MG.has(r.uid)) { const g = isP ? PG.of(r.uid) : 'pilot'; by.set(r.uid, {uid: r.uid, name: r.name || '', code: r.code || (g === 'merito' && PG.R.has(r.uid) ? PG.R.get(r.uid).code || '' : ''), grp: g, parts: {}}); }
     for (const [uid, r] of MG) if (!by.has(uid)) by.set(uid, {uid, name: r.name || '', code: r.code || '', grp: 'merito', parts: {}});
     // কার কোন ভাগ আর কোন তারিখ: মেরিটো = নতুনদের সূচিতে থাকা ভাগ, তাঁদের তারিখে; পাইলট = শুধু-নতুনদের ভাগ বাদে
     const pdOf = (g, p) => g === 'merito' ? (mm.by.get(p.no) || {}).date || null : p.date || null;
