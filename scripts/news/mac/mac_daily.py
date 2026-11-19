@@ -56,6 +56,12 @@ TRIAL_DAYS = 3               # নতুন নিয়মের প্রথ�
 ALERT_HOUR = 11              # এর পরেও গতকালের সংবাদ না থাকলে বার্তা
 BACKFILL = ["2026-11-05", "2026-11-06", "2026-11-07", "2026-11-08", "2026-11-09"]
 RETRY_EMPTY_H = 3            # কিছু না পেলে কত ঘণ্টা পরে আবার চেষ্টা
+ARCHIVE_FROM = dt.date(2026, 1, 1)   # পুরোনো দিন আর্কাইভ থেকে এই তারিখ পর্যন্ত (PIASH, ২০২৬-১১-১৯)
+ARCHIVE_PER_RUN = 2          # প্রতি খেপে কতটা পুরোনো দিন
+ARCHIVE_TRIES = 2            # একটা পুরোনো দিনে সর্বোচ্চ কতবার চেষ্টা
+ARCHIVE_ENV = {"NEWS_PICK_MODEL": "gemma-4-31b*", "NEWS_WRITE_MODEL": "gemma-4-31b*"}   # Gemini-র দৈনিক সীমা আজকের জন্য থাকুক
+SHIP_EVERY_H = 20            # জমা থাকা পুরোনো দিন GitHub-এ পাঠানো অন্তত এতক্ষণ পরপর (মাসে ৫০০ বিল্ডের সীমা)
+LAST_SHIP = BOT / ".last-ship"
 LOOKBACK = 3                 # সাইটে না থাকা কত দিন পেছন পর্যন্ত খোঁজা (Mac বন্ধ বা বট আটকে থাকার দিন)
 
 
@@ -171,12 +177,25 @@ def targets(now: dt.datetime, state: dict) -> list[str]:
     return out
 
 
-def make_draft(ds: str, state: dict, backfill: bool = False) -> bool:
+def archive_next(now: dt.datetime, state: dict, n: int) -> list[str]:
+    """আর্কাইভ থেকে বানানোর পুরোনো দিন: সাম্প্রতিক থেকে পেছনে, সাইটে নেই এমন, চেষ্টা বাকি আছে এমন।"""
+    out, d = [], now.date() - dt.timedelta(days=LOOKBACK + 1)
+    while d >= ARCHIVE_FROM and len(out) < n:
+        ds = d.isoformat()
+        st = state.get(ds, {})
+        if not (REPO / "news" / "day" / f"{ds}.json").exists() and st.get("status") not in ("published", "rejected", "draft") \
+                and st.get("archive_tries", 0) < ARCHIVE_TRIES:
+            out.append(ds)
+        d -= dt.timedelta(days=1)
+    return out
+
+
+def make_draft(ds: str, state: dict, backfill: bool = False, archive: bool = False) -> bool:
     """run_daily.py চালিয়ে খসড়া drafts/<দিন>/-এ। True = প্রকাশযোগ্য কিছু আছে।
     backfill: পুরোনো দিন — প্রথম চালানোর আটকে থাকা লিংক (summary-first.md) থেকে আবার চেষ্টা, আগের সংবাদ রেখে।"""
     d = DRAFTS / ds
     d.mkdir(parents=True, exist_ok=True)
-    env = dict(os.environ, GEMINI_API_KEY=KEYFILE.read_text().strip())
+    env = dict(os.environ, GEMINI_API_KEY=KEYFILE.read_text().strip(), **(ARCHIVE_ENV if archive else {}))
     log(f"{ds}: খসড়া তৈরি শুরু" + (" (পুরোনো দিন, আটকে থাকা খবর আবার)" if backfill else ""))
     extra = []
     if backfill:
@@ -186,6 +205,8 @@ def make_draft(ds: str, state: dict, backfill: bool = False) -> bool:
         if (d / "day.json").exists():
             shutil.copy2(d / "day.json", d / "day-first.json")
         extra = ["--from-summary", str(first)]
+    if archive:
+        extra = ["--archive"]
     r = sh(sys.executable, str(REPO / "scripts/news/run_daily.py"), "--date", ds, "--summary", str(d / "summary.md"),
            *extra, cwd=REPO, env=env, check=False)
     (d / "run.log").write_text((r.stdout or "") + "\n" + (r.stderr or ""), encoding="utf-8")
@@ -200,11 +221,13 @@ def make_draft(ds: str, state: dict, backfill: bool = False) -> bool:
         return False
     if not ok:
         prev = state.get(ds, {})
-        state[ds] = {"status": "empty", "at": dt.datetime.now(DHAKA).isoformat(), "tries": prev.get("tries", 0) + 1}
+        state[ds] = {"status": "empty", "at": dt.datetime.now(DHAKA).isoformat(), "tries": prev.get("tries", 0) + (0 if archive else 1),
+                     **({"archive_tries": prev.get("archive_tries", 0) + 1} if archive or prev.get("archive_tries") else {})}
         log(f"{ds}: প্রকাশযোগ্য কিছু পাওয়া যায়নি (দেখুন {d / 'run.log'})")
         notify("খবরের বট", f"{ds}: যাচাই পেরোনো ঘটনা পাওয়া যায়নি। কয়েক ঘণ্টা পরে আবার চেষ্টা করবে।")
         return False
-    state[ds] = {"status": "draft", "at": dt.datetime.now(DHAKA).isoformat(), **({"backfill": True} if backfill else {})}
+    state[ds] = {"status": "draft", "at": dt.datetime.now(DHAKA).isoformat(), **({"backfill": True} if backfill else {}),
+                 **({"archive": True} if archive else {})}
     return True
 
 
@@ -257,9 +280,20 @@ def deploy_cloudflare() -> tuple[bool, str]:
     ফেরত: (হলো কি না, কোথায় গেল বা কেন থামল)।"""
     lane = _lane()
     try:
-        return True, lane.ship(REPO, log=log)
+        where = lane.ship(REPO, log=log)
+        LAST_SHIP.touch()
+        return True, where
     except lane.LaneError as e:
         return False, str(e)
+
+
+def ship_due() -> bool:
+    """জমা পুরোনো দিন পাঠানোর সময় হয়েছে কি না (শেষ পাঠানোর SHIP_EVERY_H ঘণ্টা পরে)।"""
+    try:
+        age = dt.datetime.now().timestamp() - LAST_SHIP.stat().st_mtime
+    except OSError:
+        return True
+    return age >= SHIP_EVERY_H * 3600
 
 
 def day_errors(day) -> list[str]:
@@ -276,7 +310,7 @@ def reset_news() -> None:
     sh("git", "clean", "-qfd", "news", cwd=REPO, check=False)
 
 
-def publish(ds: str) -> str:
+def publish(ds: str, ship: bool = True) -> str:
     """খসড়া রিপোর কপিতে কমিট → GitHub (পারলে) + Cloudflare (সরাসরি)। ফেরত: কোথায় গেল।
     যেকোনো ধাপ ভাঙলে RuntimeError, আর news/ আগের অবস্থায় (সাইটে কিছু যায় না)।"""
     sync_repo()
@@ -305,7 +339,10 @@ def publish(ds: str) -> str:
         reset_news()
         raise RuntimeError(f"পাতা বানানো মাঝপথে ভাঙল ({e.__class__.__name__}: {str(e)[:160]}); কিছু প্রকাশ হয়নি") from None
     sh("git", "add", "news", cwd=REPO)
-    sh("git", "commit", "-q", "-m", f"news: আজকের গুরুত্বপূর্ণ সংবাদ {ds} (Mac থেকে)", cwd=REPO, check=False)
+    sh("git", "commit", "-q", "-m", f"news: আজকের গুরুত্বপূর্ণ সংবাদ {ds} (Mac থেকে" + ("" if ship else ", আর্কাইভ") + ")",
+       cwd=REPO, check=False)
+    if not ship:
+        return "Mac-এ জমা (পুরোনো দিন; দিনে একবার একসঙ্গে সাইটে যায়)"
     ok, where = deploy_cloudflare()
     if not ok:
         log(f"{ds}: সাইটে তোলা থামানো হলো: {where}")
@@ -313,9 +350,9 @@ def publish(ds: str) -> str:
     return where
 
 
-def do_publish(ds: str, state: dict, auto: bool) -> bool:
+def do_publish(ds: str, state: dict, auto: bool, ship: bool = True) -> bool:
     try:
-        where = publish(ds)
+        where = publish(ds, ship=ship)
     except RuntimeError as e:
         log(f"{ds}: প্রকাশ হলো না: {e}")
         notify("খবরের বট", f"{ds}: প্রকাশ হলো না; সাইটে আগের পাতা আছে। কারণ: {str(e)[:120]}")
@@ -323,7 +360,8 @@ def do_publish(ds: str, state: dict, auto: bool) -> bool:
         return False
     was = state.get(ds, {})
     state[ds] = {"status": "published", "at": dt.datetime.now(DHAKA).isoformat(), "where": where,
-                 "auto": auto, **({"backfill": True} if was.get("backfill") else {})}
+                 "auto": auto, **({"backfill": True} if was.get("backfill") else {}),
+                 **({"archive": True} if was.get("archive") else {})}
     tr = state.get("_trial", {})
     if not auto and not was.get("backfill") and tr.get("left", 0) > 0:
         tr["left"] -= 1
@@ -443,10 +481,15 @@ def main() -> int:
         make_draft(todo[0], state, backfill=True)
         bf["done"].append(todo[0])
         save_state(state)
+    if not MANUAL.exists():                                 # আর্কাইভ থেকে পুরোনো দিন (১ জানুয়ারি ২০২৬ পর্যন্ত)
+        for ds in archive_next(now, state, ARCHIVE_PER_RUN):
+            make_draft(ds, state, archive=True)
+            save_state(state)
     missing_alert(now, state)
     pending = sorted(ds for ds, st in state.items()
                      if st.get("status") == "draft" and (DRAFTS / ds / "day.json").exists())
     if not pending:
+        ship_stock()
         return 0
     if MANUAL.exists() or state.get("_trial", {}).get("left", 0) > 0:
         # PIASH হাতে অনুমোদন চেয়েছেন, বা নতুন নিয়মের পরীক্ষামূলক দিন: পেছনে চলা কাজ জানালা খুলতে পারে না, তাই Terminal-এ
@@ -455,9 +498,25 @@ def main() -> int:
         return 0
     for ds in pending:                                     # নিজে থেকে প্রকাশ (PIASH, ২০২৬-১১-০৭)
         preview(ds)
-        do_publish(ds, state, auto=True)
+        old = state.get(ds, {}).get("archive", False)
+        do_publish(ds, state, auto=True, ship=not old)     # আজকের/সাম্প্রতিক দিন সঙ্গে সঙ্গে; পুরোনো দিন জমা থাকে
         save_state(state)
+    ship_stock()
     return 0
+
+
+def ship_stock() -> None:
+    """Mac-এ জমা পুরোনো দিন: শেষ পাঠানোর ২০ ঘণ্টা পরে একসঙ্গে GitHub-এ (একটা বিল্ড)।"""
+    try:
+        lane = _lane()
+        if not lane.pending(REPO) or not ship_due():
+            return
+    except Exception:  # noqa: BLE001
+        return
+    ok, where = deploy_cloudflare()
+    log(("জমা পুরোনো দিন সাইটে: " if ok else "জমা পুরোনো দিন পাঠানো গেল না: ") + where)
+    if ok:
+        notify("খবরের বট", "পুরোনো দিনের সংবাদ সাইটে গেল ✓")
 
 
 if __name__ == "__main__":

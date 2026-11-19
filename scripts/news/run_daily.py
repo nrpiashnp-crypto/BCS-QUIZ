@@ -101,6 +101,7 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true", help="news/-এ কিছু লেখা হবে না")
     ap.add_argument("--summary", help="ফলাফলের Markdown কোথায় লিখবে")
     ap.add_argument("--force", action="store_true", help="হাতে বানানো (manual) দিনের ফাইলও বদলাবে")
+    ap.add_argument("--archive", action="store_true", help="পুরোনো দিন: ফিড নয়, পত্রিকার আর্কাইভ/দিনের sitemap থেকে (archive.py)")
     ap.add_argument("--from-summary", help="পুরোনো দিন: সেদিনের summary.md-এর আটকে থাকা লিংক থেকে আবার চেষ্টা; "
                                            "আগের প্রকাশিত সংবাদ থাকে, নতুন যাচাই-পেরোনোগুলো যোগ হয়")
     args = ap.parse_args()
@@ -121,7 +122,11 @@ def main() -> int:
         single = []
         log(f"পুরোনো দিনের আটকে থাকা দল: {len(multi)}")
     else:
-        items, health = collect(until)
+        if args.archive:
+            from archive import collect_day          # noqa: E402  (পুরোনো দিন, PIASH ২০২৬-১১-১৯)
+            items, health = collect_day(date)
+        else:
+            items, health = collect(until)
         items = headlines_by_source(items)
         log(f"মোট শিরোনাম: {len(items)}")
         if len(items) < 10:
