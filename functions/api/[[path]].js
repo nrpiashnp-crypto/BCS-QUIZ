@@ -248,6 +248,10 @@ async function sessionUser(req, db) {
     .bind(await sha(m[1]), Date.now()).first();
 }
 
+// কুকি আছে কিন্তু D1 ত্রুটি = সার্ভার ব্যস্ত, লগআউট নয় (৪০১ দিলে ফোন lb:u মুছে ফেলত; ১৮/১১-এর শেষ যাচাই)
+const hasCookie = req => new RegExp('(?:^|;\\s*)' + COOKIE + '=').test(req.headers.get('Cookie') || '');
+const busy = () => json({error: 'busy'}, 503, {'Retry-After': '900', 'Cache-Control': 'no-store'});
+
 const pub = u => ({name: u.name || '', email: u.email || '', pic: u.pic || ''});
 
 // শিক্ষার্থীর লক্ষ্যের পরীক্ষা আর আনুমানিক মাস (/account/-এ নিজে বলেন; পর্যালোচনা /admin/review/ এটা দিয়ে শুরু করে)
@@ -3104,14 +3108,16 @@ export async function onRequest({request: req, env}) {
   try {
     if (path === 'me' && m === 'GET') {
       let u = null;
-      if (db) try { u = await sessionUser(req, db); } catch (e) { /* টেবিল এখনো তৈরি হয়নি */ }
+      // D1 সাড়া না দিলে (যেমন দিনের সীমা পার) 503: ফোন লগইন-চিহ্ন রাখে, "লগআউট" হয় না
+      if (db) try { u = await sessionUser(req, db); } catch (e) { if (hasCookie(req)) return busy(); }
       return json({cid: db && env.GOOGLE_CLIENT_ID || '', user: u ? pub(u) : null});
     }
     if (!db) return json({error: 'setup'}, 503);
     if (path === 'login' && m === 'POST') return await login(req, env, db);
     if (path === 'ch' || path.startsWith('ch/')) return await challenge(path, req, db, env);
 
-    const u = await sessionUser(req, db).catch(() => null);
+    let u = null;
+    try { u = await sessionUser(req, db); } catch (e) { if (hasCookie(req)) return busy(); }
     if (path === 'logout' && m === 'POST') {
       const c = (req.headers.get('Cookie') || '').match(new RegExp('(?:^|;\\s*)' + COOKIE + '=([A-Za-z0-9_-]+)'));
       if (c) await db.prepare('DELETE FROM sessions WHERE token = ?').bind(await sha(c[1])).run().catch(() => {});
