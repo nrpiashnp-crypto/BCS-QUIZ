@@ -1,0 +1,36 @@
+name: sync-sheets
+# এক শিট, সব কোর্সে (claude.ai প্রজেক্ট "LY Sites"-এর claude/topic-sheets-plan.md):
+# Lyanna_data-র main-এ sheets/<বিষয়>/<শিট>/ থাকলেই নিজে থেকে পড়ার পাতায় (lyannabooks.com/read/<শিট>/) ওঠে, টপিক-ট্যাগসহ।
+# শুধু নতুন বা বদলানো শিট যায় (ছাপ মিলিয়ে); কোনো শিট মোছে না। আটকে থাকা শিট (ভুল টপিক ইত্যাদি) সারাংশে দেখায়, তখন রান লাল।
+# নিয়ম আর chapter.json-এর ঘর: Lyanna_data/tools/sync_sheets.py। একটা শিট হাতে তুলতে পুরোনো upload-sheets এখনো আছে।
+# গোপন ঘর: LYANNA_DATA_TOKEN (Lyanna_data শুধু-পড়া), LY_UPLOAD_KEY (সেট তোলার একই চাবি)।
+on:
+  schedule:
+    - cron: '7,37 * * * *'
+  workflow_dispatch:
+concurrency: upload-sheets
+permissions:
+  contents: read
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: nrpiashnp-crypto/Lyanna_data
+          token: ${{ secrets.LYANNA_DATA_TOKEN }}
+          path: data
+          sparse-checkout: |
+            sheets
+            taxonomy/topics
+            tools/upload_sheet.py
+            tools/sync_sheets.py
+          sparse-checkout-cone-mode: false
+      - name: শিট মেলানো
+        env:
+          LY_UPLOAD_KEY: ${{ secrets.LY_UPLOAD_KEY }}
+        working-directory: data
+        run: |
+          if [ ! -f tools/sync_sheets.py ]; then echo 'Lyanna_data-তে sync_sheets.py এখনো নেই (PR মার্জের অপেক্ষা)'; exit 0; fi
+          python3 tools/sync_sheets.py

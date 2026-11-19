@@ -174,7 +174,7 @@ async function todayCard(){
   if(d.kind==='result')return;
   const wk=d.week&&!(W&&+W===d.week)?`<a class="btn" href="${HOME}?w=${d.week}">আজকের পরীক্ষা</a>`:'';
   el.innerHTML=`<div class="card today"><small class="dim">আজকের কাজ · ${esc(d.wd)}, ${dday(d.date)}</small><b style="display:block">${esc(d.title)}</b>
-    ${d.sheet?`<p style="margin:4px 0">১. শিট: ${sheetLink(d.sheet,rt.sheets[d.sheet])}</p>`:''}
+    ${d.sheet||d.topics?`<p style="margin:4px 0">১. শিট: ${sheetCell(d,rt.sheets[d.sheet])}</p>`:''}
     ${d.n?`<p style="margin:4px 0">${d.sheet?'২. ':''}পরীক্ষা: ${bn(d.n)} প্রশ্ন, ${bn(d.min)} মিনিট</p>`:''}${wk}</div>`;
 }
 
@@ -193,7 +193,7 @@ async function routineView(){
     if(d.kind==='rest')return '';
     if(d.week&&d.date<=today)return `<a class="btn${d.date===today?'':' ghost'}" href="${HOME}?w=${d.week}">${d.date===today?'আজ':'দিন'}</a>`;
     return `<span class="st">শিগগির</span>`};
-  const sheet=d=>d.sheet?`<small>শিট: ${sheetLink(d.sheet,rt.sheets[d.sheet],d.sheet_new)}</small>`:'';
+  const sheet=d=>d.sheet||d.topics?`<small>শিট: ${sheetCell(d,rt.sheets[d.sheet],d.sheet_new)}</small>`:'';
   let h=back+` <button class="btn ghost" id="pdf">রুটিন PDF</button><h1 style="margin-top:12px">${esc(NAME)} · ${bn(rt.days.length)} দিনের রুটিন</h1><p class="sub">${dday(rt.start)} থেকে ${dday(rt.end)}। শনি-বৃহস্পতি রোজ একটি পড়া ও ${bn(30)} প্রশ্নের পরীক্ষা, শুক্রবার রিভিশন।</p>`;
   for(const [k,L] of G){const open=L.some(d=>d.date===today)||(k==='অবস্থা-যাচাই'&&today<L[0].date);
     h+=`<details class="card wk"${open?' open':''}><summary>${k} · ${dday(L[0].date)} – ${dday(L[L.length-1].date)}</summary>${L.map(d=>
@@ -204,6 +204,8 @@ async function routineView(){
 }
 
 // শিট: পড়ার পাতায় তোলা থাকলে "পড়ুন" (/read/<শিট>/), নইলে Drive-এর PDF; শুধু লগইন করা শিক্ষার্থী ME.sheets পান; না থাকলে "শিগগির আসছে"
+// দিনে "topics" থাকলে (এক শিট, সব কোর্সে): টপিক ধরে তোলা শিট (ME.tsheets); নইলে পুরোনো শিট-আইডির পথ
+const sheetCell=(d,nm,nw)=>{if(!Array.isArray(d.topics)||!d.topics.length)return sheetLink(d.sheet,nm,nw);const T=(ME&&ME.tsheets)||{},seen=new Set(),L=[];for(const t of d.topics)for(const x of(T[t]||[]))if(Array.isArray(x)&&/^\/read\/[a-z0-9-]+\/$/.test(x[0])&&!seen.has(x[0])){seen.add(x[0]);L.push(x)}return L.length?L.map(x=>`${esc(x[1])}${nw?' · নতুন':''} · <a href="${esc(x[0])}" style="font-weight:600">শিট পড়ুন →</a>`).join('<br>'):d.sheet?sheetLink(d.sheet,nm,nw):'<span class="dim">শিগগির আসছে</span>'};
 const sheetLink=(id,nm,nw)=>{const u=ME&&ME.sheets&&ME.sheets[id];return esc(nm||id)+(nw?' · নতুন':'')+(u&&/^\/read\/[a-z0-9-]+\/$/.test(u)?` · <a href="${esc(u)}" style="font-weight:600">শিট পড়ুন →</a>`:u&&/^https:\/\/(drive|docs)\.google\.com\//.test(u)?` · <a href="${esc(u)}" target="_blank" rel="noopener">PDF খুলুন</a>`:' <span class="dim">· শিগগির আসছে</span>')};
 
 // ---------- মেরিটোর নতুনরা (sheet-plan.md §২): অবস্থা-যাচাই নেই, প্রতিটি পরীক্ষা নিজের তারিখে খোলে আর খোলাই থাকে ----------
@@ -221,7 +223,7 @@ const mBtn=(e,today)=>{
   if(e.st==='locked')return '<span class="st">খুলবে</span>';
   return `<a class="btn${e.date===today||e.st==='going'||e.st==='closing'?'':' ghost'}" href="${HOME}?w=${e.w}${e.st==='closing'?'':'&p='+e.part}">${e.st==='going'?'চালিয়ে যান':e.st==='closing'?'ফল দেখুন':'শুরু করুন'}</a>`};
 const mRow=(e,today,big)=>`<div class="${big?'card ex today':'day ex'+(e.date===today?' today':'')}"><div>${big?'':`<b>${esc(e.wd||'')}, ${dday(e.date)}</b> · `}${big?`<b>${esc(e.title)}</b>`:esc(e.title)}
-  <small>${KIND[e.kind]||''}${e.n?' · '+bn(e.n)+' প্রশ্ন, '+bn(e.min)+' মিনিট':''}</small>${e.sheet&&e.kind==='study'?`<small>শিট: ${sheetLink(e.sheet,(RT&&RT.sheets||{})[e.sheet])}</small>`:''}</div>${mBtn(e,today)}</div>`;
+  <small>${KIND[e.kind]||''}${e.n?' · '+bn(e.n)+' প্রশ্ন, '+bn(e.min)+' মিনিট':''}</small>${(e.sheet||e.topics)&&e.kind==='study'?`<small>শিট: ${sheetCell(e,(RT&&RT.sheets||{})[e.sheet])}</small>`:''}</div>${mBtn(e,today)}</div>`;
 async function meritoDash(){
   await routine();
   const X=ME.mx||[],T=ME.today,done=X.filter(e=>e.st==='done').length;
