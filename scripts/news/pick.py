@@ -111,11 +111,23 @@ WRITE_PROMPT = """তুমি বাংলাদেশের বিসিএস
 """
 
 
+def _rows(res, key: str) -> list:
+    """Gemini কখনো {"key": [...]} না দিয়ে সরাসরি [...] ফেরত দেয় (১৬ ও ১৯ নভেম্বর এতেই সব হারিয়েছিল)। দুটোই মানা।"""
+    if isinstance(res, list):
+        if len(res) == 1 and isinstance(res[0], dict) and isinstance(res[0].get(key), list):
+            return res[0][key]
+        return [r for r in res if isinstance(r, dict)]
+    if isinstance(res, dict):
+        v = res.get(key)
+        return [r for r in v if isinstance(r, dict)] if isinstance(v, list) else []
+    return []
+
+
 def group(items: list[dict]) -> list[dict]:
     rows = [{"i": n, "s": it["src"], "t": it["title"], "d": it["desc"][:160]} for n, it in enumerate(items)]
     res = gemini_json(PICK_PROMPT.format(cats=CAT_LIST, items=json.dumps(rows, ensure_ascii=False)), PICK_MODELS)
     groups = []
-    for g in res.get("groups", []):
+    for g in _rows(res, "groups"):
         idx = [i for i in g.get("items", []) if isinstance(i, int) and 0 <= i < len(items)]
         if not idx or g.get("category") not in CATEGORIES:
             continue
@@ -164,7 +176,7 @@ def write_batch(jobs: list[tuple[dict, list[dict]]]) -> list[dict | None]:
         blocks.append(f"===== [ঘটনা {k}] {g['topic']} =====\n{srcs}")
     res = gemini_json(WRITE_PROMPT.format(cats=CAT_LIST, texts="\n\n".join(blocks)), WRITE_MODELS)
     out: list[dict | None] = [None] * len(jobs)
-    for r in (res.get("items") if isinstance(res, dict) else None) or []:
+    for r in _rows(res, "items"):
         try:
             k = int(r.get("event")) - 1
         except (TypeError, ValueError):
@@ -206,7 +218,7 @@ def rewrite_batch(jobs: list[tuple[dict, list[str]]]) -> list[dict | None]:
                       f"আটকানোর কারণ: {'; '.join(why[:4])}\nযাচাই-হওয়া তথ্য:\n{facts}")
     res = gemini_json(REWRITE_PROMPT.format(blocks="\n\n".join(blocks)), WRITE_MODELS)
     out: list[dict | None] = [None] * len(jobs)
-    for r in (res.get("items") if isinstance(res, dict) else None) or []:
+    for r in _rows(res, "items"):
         try:
             k = int(r.get("event")) - 1
         except (TypeError, ValueError):
@@ -254,7 +266,7 @@ def proofread(items: list[dict]) -> tuple[bool, list[str]]:
         return False, []
     names = {str(x.get("value", "")) for it in items for x in it.get("facts", [])}
     done = []
-    for fx in (res.get("fixes") if isinstance(res, dict) else None) or []:
+    for fx in _rows(res, "fixes"):
         w, r = str(fx.get("wrong", "")).strip(), str(fx.get("right", "")).strip()
         if not w or not r or w == r or " " in w or " " in r or re.search(r"[0-9০-৯A-Za-z]", w + r):
             continue
