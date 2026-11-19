@@ -1813,7 +1813,7 @@ async function meritoMine(db, sch, uid, today) {
   const now = Date.now();
   return (sch.exams || []).map(e => {
     const m = e.s && M.get(e.s), no = m ? [...m.by].find(([, x]) => x === e)?.[0] : null;
-    const o = {no: e.no, date: e.date, wd: e.wd || '', title: e.title, kind: e.kind, n: e.n, min: e.min, ...(e.sheet ? {sheet: e.sheet} : {}), ...(e.s ? {w: e.s === 'pb-x' ? 'x' : +e.s.slice(4)} : {})};
+    const o = {no: e.no, date: e.date, wd: e.wd || '', title: e.title, kind: e.kind, n: e.n, min: e.min, ...(e.sheet ? {sheet: e.sheet} : {}), ...(Array.isArray(e.topics) ? {topics: e.topics} : {}), ...(e.s ? {w: e.s === 'pb-x' ? 'x' : +e.s.slice(4)} : {})};
     if (!no) return {...o, st: 'soon'};
     o.part = no;
     const r = A.get(e.s + ':' + no);
@@ -1914,7 +1914,7 @@ async function diag(path, req, url, env, db, u) {
     // মেরিটোর মূল পাতা (অবস্থা-যাচাইয়ের সেট খোলা হলে): সব পরীক্ষা এক তালিকায়, নিজের তারিখ আর অবস্থাসহ
     if (grp === 'merito' && sid === 'pb-start') out.mx = await meritoMine(db, sch, u.id, today);
     // শিটের লিংক শুধু লগইন করা শিক্ষার্থীর জন্য
-    if (pb) out.sheets = await diagSheets(db, true);
+    if (pb) { out.sheets = await diagSheets(db, true); out.tsheets = await rdTopics(db); }
     if (out.rep) {
       const nt = await db.prepare('SELECT txt, pub, ts FROM diag_note WHERE sid = ? AND uid = ?').bind(sid, u.id).first();
       if (nt && (nt.pub || as)) out.note = {txt: nt.txt, ts: nt.ts, pub: nt.pub};
@@ -2735,6 +2735,18 @@ async function rdList(env, db, u) {
   list.sort((a, b) => b.at - a.at);
   return json({me: !!u, list}, 200, {'Cache-Control': 'no-store'});
 }
+// টপিক → শিট (এক শিট, সব কোর্সে; claude.ai প্রজেক্ট "LY Sites"-এর claude/topic-sheets-plan.md):
+// শিটের chapter.json-এর "topics" তোলার সময় meta.topics-এ বসে; রুটিনের দিনে "topics" থাকলে plan.js এখান থেকে শিট খোঁজে।
+// {topic: [[ '/read/<শিট>/', শিরোনাম ], …]}; বাবা-টপিকে নিজে থেকে ফেরা নয় (শিট নিজে যা ঘোষণা করে শুধু তা)
+async function rdTopics(db) {
+  await rdSetup(db);
+  const out = {};
+  for (const r of (await db.prepare('SELECT id, meta FROM rd_sheet ORDER BY id').all()).results) {
+    let m; try { m = JSON.parse(r.meta); } catch (e) { continue; }
+    for (const t of (Array.isArray(m.topics) ? m.topics : [])) (out[t] = out[t] || []).push(['/read/' + r.id + '/', m.title || r.id]);
+  }
+  return out;
+}
 // রুটিনের শিট-আইডি → /read/<শিট>/ (তোলা শিটে "fr" থাকলে)
 async function rdLinks(db) {
   await rdSetup(db);
@@ -2755,14 +2767,23 @@ async function readAdmin(path, req, db) {
     const fr = (Array.isArray(s.for) ? s.for : []).map(String).filter(x => TID.test(x)).slice(0, 10).join(',') || null;
     const meta = {id, title: rdText(s.title, 200), sub: rdText(s.sub, 300), label: rdText(s.label, 100), howto: rdText(s.howto, 2000), by: rdText(s.by, 100),
       copy: (Array.isArray(s.copy) ? s.copy : []).map(x => rdText(x, 200)).slice(0, 3),
-      secs: (Array.isArray(s.secs) ? s.secs : []).slice(0, 60).map(x => ({no: +x.no || 0, title: rdText(x.title, 200)}))};
+      secs: (Array.isArray(s.secs) ? s.secs : []).slice(0, 60).map(x => ({no: +x.no || 0, title: rdText(x.title, 200)})),
+      topics: [...new Set((Array.isArray(s.topics) ? s.topics : []).map(String).filter(x => RD_PID.test(x) && x.length <= 80))].slice(0, 30),
+      mh: rdText(s.mh, 20)};
+    const old = await db.prepare('SELECT meta, acc, fr, ts FROM rd_sheet WHERE id = ?').bind(id).first();
     const have = new Map((await db.prepare('SELECT pid, h FROM rd_part WHERE s = ?').bind(id).all()).results.map(r => [r.pid, r.h]));
     const keep = new Set(pids.map(x => String(x[0]))), gone = [...have.keys()].filter(p => !keep.has(p));
     const q = [db.prepare('INSERT INTO rd_sheet(id, meta, acc, fr, ts) VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET meta = excluded.meta, acc = excluded.acc, fr = excluded.fr, ts = excluded.ts')
-      .bind(id, JSON.stringify(meta), s.acc, fr, now)];
+      .bind(id, JSON.stringify(meta), s.acc, fr, old && old.meta === JSON.stringify(meta) && old.acc === s.acc && old.fr === fr ? old.ts : now)];
     for (let i = 0; i < gone.length; i += 90) q.push(db.prepare(`DELETE FROM rd_part WHERE s = ? AND pid IN (${gone.slice(i, i + 90).map(() => '?').join(',')})`).bind(id, ...gone.slice(i, i + 90)));
     await db.batch(q);
     return json({ok: true, need: pids.filter(([p, h]) => have.get(String(p)) !== String(h)).map(x => String(x[0])), removed: gone.length});
+  }
+  // স্বয়ংক্রিয় তোলা (Action sync-sheets): কোন শিটের কোন ছাপ সাইটে আছে, যাতে শুধু বদলানো শিট পাঠানো হয়
+  if (path === 'admin/read/hashes' && m === 'GET') {
+    const out = {};
+    for (const r of (await db.prepare('SELECT id, meta FROM rd_sheet').all()).results) { try { out[r.id] = JSON.parse(r.meta).mh || ''; } catch (e) { out[r.id] = ''; } }
+    return json({h: out}, 200, {'Cache-Control': 'no-store'});
   }
   if (path === 'admin/read/parts' && m === 'POST') {
     const id = String(body.s || '');
@@ -3119,7 +3140,7 @@ export async function onRequest({request: req, env}) {
       return await diagAdmin(path, url, req, db, env);
     }
     // শিট তোলা (একই চাবি): শুধু পড়ার পাতার শিট আর অংশ
-    if ((path === 'admin/read/sheet' || path === 'admin/read/parts') && m === 'POST' && /^Bearer /.test(req.headers.get('Authorization') || '')) {
+    if ((((path === 'admin/read/sheet' || path === 'admin/read/parts') && m === 'POST') || (path === 'admin/read/hashes' && m === 'GET')) && /^Bearer /.test(req.headers.get('Authorization') || '')) {
       if (!(await upkeyOk(req, db))) return json({error: 'key'}, 403);
       return await readAdmin(path, req, db);
     }
