@@ -40,3 +40,6 @@
   Cache-Control: no-cache
 /c/*
   X-Robots-Tag: noindex
+/read/*
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-cache

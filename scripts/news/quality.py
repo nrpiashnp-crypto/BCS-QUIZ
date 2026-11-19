@@ -21,11 +21,20 @@ TRUSTED_DOMAINS = {
     "prothomalo.com",       # প্রথম আলো (বাংলা ও ইংরেজি)
     "ittefaq.com.bd",       # ইত্তেফাক
     "thedailystar.net",     # দ্য ডেইলি স্টার (ইংরেজি ও বাংলা)
+    # PIASH, ২০২৬-১১-১৯: সংবাদ বাড়াতে
+    "bbc.com",              # বিবিসি বাংলা (bbc.com/bengali; একই ডোমেইনে বিবিসি ওয়ার্ল্ডও)
+    "bbc.co.uk",            # বিবিসির ফিডের ঠিকানা
+    "dhakatribune.com",     # ঢাকা ট্রিবিউন
+    "samakal.com",          # সমকাল
+    "bssnews.net",          # বাসস (রাষ্ট্রীয় বার্তা সংস্থা)
 }
+TRUSTED_SUFFIXES = (".gov.bd",)   # সরকারি সাইট (মন্ত্রণালয়, বিভাগ, পরিসংখ্যান ব্যুরো…)
+TRUSTED_EXTRA = {"bb.org.bd", "ec.org.bd"}   # বাংলাদেশ ব্যাংক, নির্বাচন কমিশন (.gov.bd নয়)
 
 
 def trusted(domain: str) -> bool:
-    return domain in TRUSTED_DOMAINS
+    d = (domain or "").lower()
+    return d in TRUSTED_DOMAINS or d in TRUSTED_EXTRA or d.endswith(TRUSTED_SUFFIXES)
 
 
 # ---------- বাদের ছাঁকনি ----------

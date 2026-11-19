@@ -7,7 +7,7 @@
 <title>Diagnostic · Admin · Lyanna Books</title>
 <meta name="robots" content="noindex">
 <link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/fonts/fonts.css">
+<script>/* ফন্ট: কম দামি ফোন/ধীর নেটে হালকা রূপ (tools/font_mode.py) */!function(){var n=navigator,c=n.connection||{},l=c.saveData||/2g/.test(c.effectiveType)||c.downlink<1||n.deviceMemory<=2;try{var q=location.search.match(/[?&]font=(lite|full|auto)/);if(q)localStorage.lyFont=q[1]=='auto'?'':q[1];if(localStorage.lyFont)l=localStorage.lyFont=='lite'}catch(e){}if(l)document.documentElement.classList.add('ly-lite');document.write(l?'<link rel="stylesheet" href="/fonts/lite.css">':'<link rel="preload" href="/fonts/AnekBangla-bengali.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/fonts/fonts.css">')}()</script><noscript><link rel="stylesheet" href="/fonts/fonts.css"></noscript>
 <style>
 :root{--paper:#fbfaf7;--ink:#1d1f21;--muted:#5f6366;--rule:#d9d6cf;--card:#fff;--navy:#13294b;--soft:#e9edf4;--link:#13294b;
   --display:'Tiro Bangla',Georgia,serif;--body:'Noto Sans Bengali',system-ui,sans-serif}
@@ -51,13 +51,22 @@ small.dim{font-size:12.5px}
 <h1>Diagnostic (custom plan)</h1>
 <p class="sub">Who answered what, who rushed, how each question went. Rushing flags show only here; learners never see them.</p>
 <div class="row"><input type="text" id="sid" value="bcs-start" style="max-width:220px"><button class="btn ghost" id="load">Reload</button><a class="btn ghost" id="csv" href="#">All answers CSV</a></div>
-<div class="tabs" id="tabs"><button data-t="sum" aria-pressed="true">Summary</button><button data-t="ppl">Learners</button><button data-t="items">Questions</button><button data-t="rep">Weak spots</button><button data-t="att">Attendance</button><button data-t="tst">Testers</button><button data-t="up">Upload set</button></div>
+<div class="tabs" id="tabs"><button data-t="sum" aria-pressed="true">Summary</button><button data-t="ppl">Learners</button><button data-t="items">Questions</button><button data-t="rep">Weak spots</button><button data-t="att">Attendance</button><button data-t="grp">Merito &amp; sheets</button><button data-t="tst">Testers</button><button data-t="up">Upload set</button></div>
 <section id="sum"></section>
 <section id="ppl" hidden></section>
 <section id="one" hidden></section>
 <section id="items" hidden></section>
 <section id="rep" hidden></section>
 <section id="att" hidden></section>
+<section id="grp" hidden>
+<div class="card"><p style="margin:0 0 6px;font-weight:600">Merito group (Petrobangla batch)</p>
+<p class="sub" style="margin:0 0 8px">Only students who finished every part of the status check (pb-start) stay on the pilot routine; those who did only some parts count as Merito (their marks stay). Everyone else who opens <a href="/plan/pb/" target="_blank" rel="noopener">lyannabooks.com/plan/pb/</a> gets the Merito routine by themselves (code M01… on first visit); the link /plan/pb/?g=merito works too. Each test opens on its own date (plan/pb/merito.json) and stays open. Use the buttons below only to override.</p>
+<div class="row"><input type="email" id="gm" placeholder="E-mail" style="max-width:260px"><button class="btn" id="ga">Add to Merito</button></div>
+<div id="gl" style="margin-top:10px"></div></div>
+<div class="card" style="margin-top:14px"><p style="margin:0 0 6px;font-weight:600">Sheet PDF links (logged-in students only)</p>
+<p class="sub" style="margin:0 0 8px">Paste the Google Drive link of each final sheet PDF. It shows next to every study day in the routine and today's card, only after login. Empty = "coming soon". Links are kept in D1, not in the public repo.</p>
+<div id="shl"></div></div>
+</section>
 <section id="tst" hidden>
 <div class="card"><p class="sub" style="margin:0 0 8px">All parts are open for testers right away, with no wait for dates or earlier tests. Their results are not counted in standing or attendance. Before you add an e-mail, that person must log in to the site once with Google.</p>
 <div class="row"><input type="email" id="tsm" placeholder="E-mail" style="max-width:260px"><button class="btn" id="tsa">Add</button></div>
@@ -119,13 +128,13 @@ function compose(box,uids,emails,resetParts,after){
       const r=await api('diag/msg',{s:S(),uids,text:t});box.querySelector('#mo').textContent=en(r.n)+' sent.';if(after)setTimeout(after,900)}
     catch(e){box.querySelector('#mo').textContent='Not sent: '+e.message;box.querySelector('#ms').disabled=false}};
 }
-const TABS=['sum','ppl','items','rep','att','tst','up'];let PUSHED=0;
+const TABS=['sum','ppl','items','rep','att','grp','tst','up'];let PUSHED=0;
 // ভেতরের প্রতিটা ভাগ ঠিকানায় (#ppl, #p12) জমা হয়, তাই ফোনের ব্যাক বোতাম আগের ভাগে ফেরায়, পাতা থেকে বেরিয়ে যায় না
 function mark(h,nopush){if(!nopush&&location.hash!=='#'+h){history.pushState(null,'','#'+h);PUSHED++}}
 function route(){const h=location.hash.slice(1);if(/^p\d+$/.test(h))person(+h.slice(1),1);else tab(TABS.includes(h)?h:'sum',1)}
 addEventListener('popstate',route);
 function tab(t,nopush){mark(t,nopush);document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t?'true':'false'));
-  ['sum','ppl','one','items','up','rep','att','tst'].forEach(x=>$(x).hidden=x!==t);if(t==='tst')testers();if(t==='items'&&!IT)items();if(t==='rep'&&!RP)report();if(t==='att'&&!AT)attView();scrollTo(0,0)}
+  ['sum','ppl','one','items','up','rep','att','grp','tst'].forEach(x=>$(x).hidden=x!==t);if(t==='tst')testers();if(t==='grp')grpView();if(t==='items'&&!IT)items();if(t==='rep'&&!RP)report();if(t==='att'&&!AT)attView();scrollTo(0,0)}
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.t));
 
 // ---- পরীক্ষক: সব ভাগ খোলা, পরে তাঁদের দাগ মোছা ----
@@ -225,23 +234,35 @@ const EASE=['','Easy','OK','Hard'],STUDY=['Did not study','<30 min','30-60 min',
 async function attView(){
   const f=$('att');f.innerHTML='<p class="dim">Loading…</p>';
   try{AT=await api('diag/att?s='+encodeURIComponent(S()))}catch(e){f.innerHTML='<div class="card">Could not open: '+esc(e.message)+'</div>';return}
-  const {parts}=AT.set,T=AT.today,pp=AT.people;
+  attDraw();
+}
+function attDraw(){
+  const f=$('att');
+  const T=AT.today,G=ATG,pp=AT.people.filter(x=>!G||x.grp===G);
+  // দল বাছলে শুধু সেই দলের ভাগ, সেই দলের তারিখে (মেরিটো = নতুনদের তারিখ)
+  const parts=G==='merito'?AT.set.parts.filter(p=>p.mdate).map(p=>({...p,date:p.mdate})).sort((a,b)=>a.date.localeCompare(b.date)):G==='pilot'?AT.set.parts.filter(p=>!p.only):AT.set.parts;
   const dd=d=>d?en(+d.slice(8))+'/'+en(+d.slice(5,7)):'';
-  const cell=(x,p)=>{const a=x.parts[p.no];
+  const hasM=AT.people.some(x=>x.grp==='merito')||parts.some(p=>p.mdate);
+  const cell=(x,p)=>{const a=x.parts[p.no],dt=G==='merito'?p.date:x.grp==='merito'?p.mdate:p.date;
+    if(!G&&(x.grp==='merito'?!p.mdate:p.only))return '<td class="dim">·</td>';
     if(a&&a.st==='done')return `<td class="ok" title="${a.fb?'Gave feedback':''}">✓ ${a.score!=null?en(a.score):''}${a.late?'<small class="dim"> late</small>':''}${a.fb?' 💬':''}</td>`;
     if(a)return '<td class="warnc">In progress</td>';
-    return p.date&&p.date>T?'<td class="dim">—</td>':'<td class="bad">✗</td>'};
+    return dt&&dt>T?`<td class="dim">${x.grp==='merito'&&dt!==p.date?dd(dt):'—'}</td>`:'<td class="bad">✗</td>'};
   const late=pp.filter(x=>x.behind>=2);
   let h=`<p class="sub">Set <b>${esc(AT.set.id)}</b> (daily tests: type pb-w1, pb-w2 … in the set box and press "Reload"). ✓ = taken (score), ✗ = day passed but not taken, 💬 = night feedback.</p>
-  <div class="row" style="margin-bottom:8px"><a class="btn ghost" href="/api/admin/diag/att?s=${encodeURIComponent(AT.set.id)}&csv=1">Attendance CSV (coded)</a></div>
+  <div class="row" style="margin-bottom:8px">${hasM?`<span class="tabs" style="margin:0">${[['','All'],['pilot','Pilot'],['merito','Merito']].map(([g,l])=>`<button data-ag="${g}" aria-pressed="${G===g}">${l} (${en(g?AT.people.filter(x=>x.grp===g).length:AT.people.length)})</button>`).join('')}</span>`:''}<a class="btn ghost" href="/api/admin/diag/att?s=${encodeURIComponent(AT.set.id)}&csv=1">Attendance CSV (coded)</a></div>
+  ${hasM&&!G?'<p class="sub">Column dates are the pilot dates. Merito students have their own dates (shown in grey until due); · = not in that group\'s routine. Pick Pilot or Merito to see each group on its own dates.</p>':''}
   ${late.length?`<div class="card"><b class="bad">2+ days behind: ${en(late.length)}</b><p style="margin:4px 0 0">${late.map(x=>esc(x.code||x.name)+' ('+en(x.behind)+')').join(', ')}</p></div>`:''}
   <div class="card scroll"><table><thead><tr><th>Code</th><th>Name</th>${parts.map(p=>`<th title="${esc(p.title)}">${p.date?dd(p.date):'Part '+en(p.no)}</th>`).join('')}<th>Behind</th></tr></thead><tbody>
-  ${pp.length?pp.map(x=>`<tr><td>${esc(x.code||'—')}</td><td>${esc(x.name)}</td>${parts.map(p=>cell(x,p)).join('')}<td class="${x.behind>=2?'bad':''}">${en(x.behind)}</td></tr>`).join(''):`<tr><td colspan="${parts.length+3}" class="dim">No one yet.</td></tr>`}</tbody></table></div>`;
+  ${pp.length?pp.map(x=>`<tr><td>${esc(x.code||'—')}${x.grp==='merito'&&!G?' <small class="dim">M</small>':''}</td><td>${esc(x.name)}</td>${parts.map(p=>cell(x,p)).join('')}<td class="${x.behind>=2?'bad':''}">${en(x.behind)}</td></tr>`).join(''):`<tr><td colspan="${parts.length+3}" class="dim">No one yet.</td></tr>`}</tbody></table></div>`;
   const nm=new Map(pp.map(x=>[x.uid,x.code||x.name])),pd=new Map(parts.map(p=>[p.no,p]));
   if(AT.fb.length)h+=`<h2>Night feedback (${en(AT.fb.length)})</h2><div class="card scroll"><table><thead><tr><th>Who</th><th>Day</th><th>Test</th><th>Study</th><th>Comment</th></tr></thead><tbody>${AT.fb.map(r=>
     `<tr><td>${esc(nm.get(r.uid)||'uid '+r.uid)}</td><td>${pd.get(r.part)&&pd.get(r.part).date?dd(pd.get(r.part).date):'Part '+en(r.part)}</td><td>${EASE[r.d.ease]||'—'}</td><td>${r.d.mins!=null?STUDY[r.d.mins]:'—'}</td><td>${esc(r.d.txt||'')}</td></tr>`).join('')}</tbody></table></div>`;
   f.innerHTML=h;
+  f.querySelectorAll('[data-ag]').forEach(b=>b.onclick=()=>{ATG=b.dataset.ag;attView2()});
 }
+// দলের ছাঁকনি (সব / পাইলট / মেরিটো): বদলালে আবার আনা নয়, শুধু আঁকা
+let ATG='';const attView2=attDraw;
 async function report(){
   const f=$('rep');f.innerHTML='<p class="dim">Loading…</p>';
   try{RP=await api('diag/report?s='+encodeURIComponent(S()))}catch(e){f.innerHTML='<div class="card">Could not open: '+esc(e.message)+'</div>';return}
@@ -374,6 +395,26 @@ $('xkb').onclick=async()=>{
 };
 $('xkc').onclick=async()=>{const v=$('xkv');try{await navigator.clipboard.writeText(v.value)}catch(e){v.select();document.execCommand('copy')}$('xkc').textContent='Copied ✓'};
 $('load').onclick=load;load();if(location.hash.length>1)route();ukLoad();xkLoad();
+
+// ---------- মেরিটো দল আর শিটের লিংক ----------
+async function grpView(){
+  $('gl').innerHTML='<p class="dim">Loading…</p>';$('shl').innerHTML='';
+  try{const [g,sh,rt]=await Promise.all([api('diag/grp'),api('diag/sheets'),fetch('/plan/pb/routine.json',{cache:'no-cache'}).then(r=>r.json())]);
+    $('gl').innerHTML=g.people.length?'<table><thead><tr><th>Code</th><th>Who</th><th>Joined</th><th></th></tr></thead><tbody>'+g.people.map(x=>
+      `<tr><td>${esc(x.code||'—')}</td><td>${esc(x.name||'')}<br><small class="dim">${esc(x.email||'uid '+x.uid)}</small></td><td>${when(x.ts)}</td><td><button class="btn ghost" data-gdel="${x.uid}">Move to pilot</button></td></tr>`).join('')+'</tbody></table>':'<p class="dim">No one in the Merito group yet.</p>';
+    $('gl').querySelectorAll('[data-gdel]').forEach(b=>b.onclick=async()=>{if(!confirm('Move to the pilot routine? Their marks stay.'))return;await api('diag/grp',{del:+b.dataset.gdel});grpView()});
+    const L=Object.entries(rt.sheets||{});
+    $('shl').innerHTML='<table><thead><tr><th>Sheet</th><th>Drive link</th><th></th></tr></thead><tbody>'+L.map(([id,nm])=>
+      `<tr><td>${esc(nm)}<br><small class="dim">${esc(id)}</small></td><td><input type="url" data-sh="${esc(id)}" value="${esc(sh.sheets[id]||'')}" placeholder="https://drive.google.com/…" style="width:100%;min-width:220px"></td><td><button class="btn ghost" data-shs="${esc(id)}">Save</button><small class="dim" data-sho="${esc(id)}"></small></td></tr>`).join('')+'</tbody></table>';
+    $('shl').querySelectorAll('[data-shs]').forEach(b=>b.onclick=async()=>{const id=b.dataset.shs,o=$('shl').querySelector(`[data-sho="${id}"]`);
+      try{await api('diag/sheets',{id,url:$('shl').querySelector(`[data-sh="${id}"]`).value.trim()});o.textContent=' saved'}catch(e){o.textContent=e.message==='url'?' Only https://drive.google.com/… or docs.google.com links':' '+e.message}});
+  }catch(e){$('gl').innerHTML='<div class="card">Could not open: '+esc(e.message)+'</div>'}
+}
+$('ga').onclick=async()=>{const m=$('gm').value.trim();if(!m)return;
+  const add=async force=>{await api('diag/grp',{add:m,force});$('gm').value='';grpView()};
+  try{await add(false)}catch(e){
+    if(e.message==='pilot'){if(confirm('This person took the pilot status check. Move them to the Merito routine anyway? Their marks stay.'))add(true).catch(x=>alert(x.message));return}
+    alert(e.message==='no user'?'This e-mail has not logged in to the site yet.':e.message)}};
 </script>
 </body>
 </html>

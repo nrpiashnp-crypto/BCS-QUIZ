@@ -5,10 +5,10 @@ launchd প্রতি ঘণ্টায় এটা চালায় (Mac 
 2. দিনটা আগে তৈরি না হলে run_daily.py চালিয়ে খসড়া বানায় (Gemini চাবি ~/.lyanna/gemini.key থেকে, রিপোর বাইরে)।
 3. **নিজে থেকে প্রকাশ** (PIASH, ২০২৬-১১-০৭): যাচাই পেরোনো খবর সাইটে যায়; দুই উৎসে না মেলা খবর
    আটকে থাকে, সেগুলোর কথা Mac-এর বিজ্ঞপ্তিতে আর drafts/<দিন>/preview.html-এ।
-4. প্রকাশ মানে: রিপোর কপিতে এক কমিট → scripts/deploy_guard.py দুই দিক মিলিয়ে GitHub-এ push, Cloudflare সেখান
-   থেকে নিজে তোলে (PIASH, ২০২৬-১১-১৩; আগের "push না হলেও সরাসরি Cloudflare" বাতিল, কারণ তাতে GitHub পিছিয়ে
-   পড়ে আর পরের PR মার্জে সাইট পুরোনো হয়ে যায়)। GitHub না গেলে সরাসরি Cloudflare শুধু PIASH-এর
-   ~/Lyanna-Backup/allow-direct-deploy ফাইল থাকলে।
+4. প্রকাশ মানে: রিপোর কপিতে এক কমিট → scripts/bot_lane.py GitHub-এর সর্বশেষ main-এর ওপর শুধু news/ আর circular/
+   বসিয়ে push (PR-এর সঙ্গে conflict অসম্ভব; PIASH, ২০২৬-১১-১৫), Cloudflare সেখান থেকে নিজে তোলে। GitHub না গেলে
+   কাজ Mac-এ জমা থাকে, পরের চালানোয় যায়। Mac থেকে সরাসরি Cloudflare-এ তোলা আর নেই (১৩/১১-এর মতো পুরোনো সাইট
+   ওঠার ভয় নেই)।
 5. GitHub থেকে নতুন কোড আনা না গেলে Mac-এর কপি দিয়েই চলে (আটকে যায় না)।
 
 নিরাপত্তা (LY Sites-এর নির্দেশনা, ২০২৬-১১-১০):
@@ -56,7 +56,13 @@ TRIAL_DAYS = 3               # নতুন নিয়মের প্রথ�
 ALERT_HOUR = 11              # এর পরেও গতকালের সংবাদ না থাকলে বার্তা
 BACKFILL = ["2026-11-05", "2026-11-06", "2026-11-07", "2026-11-08", "2026-11-09"]
 RETRY_EMPTY_H = 3            # কিছু না পেলে কত ঘণ্টা পরে আবার চেষ্টা
-DEPLOY_TIMEOUT = 900         # Cloudflare-এ তোলার সর্বোচ্চ সময় (সেকেন্ড)
+ARCHIVE_FROM = dt.date(2026, 1, 1)   # পুরোনো দিন আর্কাইভ থেকে এই তারিখ পর্যন্ত (PIASH, ২০২৬-১১-১৯)
+ARCHIVE_PER_RUN = 2          # প্রতি খেপে কতটা পুরোনো দিন
+ARCHIVE_TRIES = 2            # একটা পুরোনো দিনে সর্বোচ্চ কতবার চেষ্টা
+ARCHIVE_ENV = {"NEWS_PICK_MODEL": "gemma-4-31b*", "NEWS_WRITE_MODEL": "gemma-4-31b*"}   # Gemini-র দৈনিক সীমা আজকের জন্য থাকুক
+SHIP_EVERY_H = 20            # জমা থাকা পুরোনো দিন GitHub-এ পাঠানো অন্তত এতক্ষণ পরপর (মাসে ৫০০ বিল্ডের সীমা)
+LAST_SHIP = BOT / ".last-ship"
+LOOKBACK = 3                 # সাইটে না থাকা কত দিন পেছন পর্যন্ত খোঁজা (Mac বন্ধ বা বট আটকে থাকার দিন)
 
 
 def log(*a):
@@ -124,46 +130,34 @@ def save_state(s: dict) -> None:
     STATE.write_text(json.dumps(s, ensure_ascii=False, indent=1), encoding="utf-8")
 
 
-def sync_repo() -> None:
-    """আলাদা কপিটা GitHub-এর main-এর সঙ্গে মেলানো।
+def _lane():
+    if str(REPO / "scripts") not in sys.path:
+        sys.path.insert(0, str(REPO / "scripts"))
+    import bot_lane  # noqa: E402  (রিপোর নিজের কোড: বটের আলাদা রাস্তা)
+    return bot_lane
 
-    - GitHub না পেলে (অ্যাকাউন্ট আটকে, ইন্টারনেট নেই): Mac-এর কপি যেমন আছে তেমন দিয়েই চলে।
-    - Mac-এ এমন কমিট থাকলে যা GitHub-এ নেই (GitHub আটকে থাকার সময়ের খবর বা কোড): সেগুলো রেখে
-      GitHub-এর নতুন কাজের ওপর বসানো (rebase); না বসলে আগের মতো রেখে দেওয়া, হারায় না।
-    - news/-এর কমিট না হওয়া আধা-কাজ সবসময় মুছে পরিষ্কার।
+
+def sync_repo() -> None:
+    """বটের কপি GitHub-এর সর্বশেষ main-এ (scripts/bot_lane.py-র fresh; PIASH, ২০২৬-১১-১৫)।
+
+    rebase বা merge নেই, তাই PR-এর সঙ্গে conflict-ও নেই। না-পাঠানো খবর/বিজ্ঞপ্তি থাকলে সেটুকু ওপরে বসানো থাকে।
+    GitHub না পেলে বটের কপি যেমন আছে তেমন দিয়েই চলে।
     """
     if not (REPO / ".git").exists():
         log("রিপোর কপি নামানো হচ্ছে…")
         sh("git", "clone", "-q", "--depth", "20", REMOTE, str(REPO))
     sh("git", "config", "user.name", "lyanna-news-bot", cwd=REPO)
     sh("git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com", cwd=REPO)
-    sh("git", "checkout", "-q", "--", "news", cwd=REPO, check=False)
-    sh("git", "clean", "-qfd", "news", cwd=REPO, check=False)
-    sh("git", "rebase", "--abort", cwd=REPO, check=False)
-    r = sh("git", "fetch", "-q", "--depth", "50", "origin", "+refs/heads/main:refs/remotes/origin/main",
-           cwd=REPO, check=False, timeout=120)
-    if r.returncode:
-        log(f"GitHub থেকে আনা গেল না, Mac-এর কপি দিয়েই চলছে ({(r.stderr or '').strip()[:120]})")
-        if sh("git", "symbolic-ref", "-q", "HEAD", cwd=REPO, check=False).returncode:
-            sh("git", "checkout", "-q", "-B", "main", cwd=REPO, check=False)
-        return
-    ahead = sh("git", "rev-list", "--count", "origin/main..main", cwd=REPO, check=False).stdout.strip()
-    if ahead in ("", "0"):
-        sh("git", "checkout", "-q", "-B", "main", "origin/main", cwd=REPO)
-        sh("git", "reset", "-q", "--hard", "origin/main", cwd=REPO)
-        return
-    sh("git", "checkout", "-q", "main", cwd=REPO, check=False)
-    rb = sh("git", "rebase", "-q", "origin/main", cwd=REPO, check=False)
-    if rb.returncode:
-        sh("git", "rebase", "--abort", cwd=REPO, check=False)
-        log(f"Mac-এর {ahead}টা কমিট GitHub-এর ওপর বসানো গেল না; আগের মতো রাখা হলো (Claude-কে জানান)")
-    else:
-        log(f"Mac-এর {ahead}টা কমিট GitHub-এর নতুন কাজের ওপর বসানো হলো")
+    lane = _lane()
+    try:
+        lane.fresh(REPO, log=log)
+    except lane.LaneError as e:
+        log(f"বটের কপি মেলানো গেল না: {e}")
 
 
 def targets(now: dt.datetime, state: dict) -> list[str]:
     today = now.date()
-    days = [today - dt.timedelta(days=1)]
+    days = [today - dt.timedelta(days=k) for k in range(LOOKBACK, 0, -1)]
     if now.hour >= EVENING:
         days.append(today)
     out = []
@@ -183,12 +177,25 @@ def targets(now: dt.datetime, state: dict) -> list[str]:
     return out
 
 
-def make_draft(ds: str, state: dict, backfill: bool = False) -> bool:
+def archive_next(now: dt.datetime, state: dict, n: int) -> list[str]:
+    """আর্কাইভ থেকে বানানোর পুরোনো দিন: সাম্প্রতিক থেকে পেছনে, সাইটে নেই এমন, চেষ্টা বাকি আছে এমন।"""
+    out, d = [], now.date() - dt.timedelta(days=LOOKBACK + 1)
+    while d >= ARCHIVE_FROM and len(out) < n:
+        ds = d.isoformat()
+        st = state.get(ds, {})
+        if not (REPO / "news" / "day" / f"{ds}.json").exists() and st.get("status") not in ("published", "rejected", "draft") \
+                and st.get("archive_tries", 0) < ARCHIVE_TRIES:
+            out.append(ds)
+        d -= dt.timedelta(days=1)
+    return out
+
+
+def make_draft(ds: str, state: dict, backfill: bool = False, archive: bool = False) -> bool:
     """run_daily.py চালিয়ে খসড়া drafts/<দিন>/-এ। True = প্রকাশযোগ্য কিছু আছে।
     backfill: পুরোনো দিন — প্রথম চালানোর আটকে থাকা লিংক (summary-first.md) থেকে আবার চেষ্টা, আগের সংবাদ রেখে।"""
     d = DRAFTS / ds
     d.mkdir(parents=True, exist_ok=True)
-    env = dict(os.environ, GEMINI_API_KEY=KEYFILE.read_text().strip())
+    env = dict(os.environ, GEMINI_API_KEY=KEYFILE.read_text().strip(), **(ARCHIVE_ENV if archive else {}))
     log(f"{ds}: খসড়া তৈরি শুরু" + (" (পুরোনো দিন, আটকে থাকা খবর আবার)" if backfill else ""))
     extra = []
     if backfill:
@@ -198,6 +205,8 @@ def make_draft(ds: str, state: dict, backfill: bool = False) -> bool:
         if (d / "day.json").exists():
             shutil.copy2(d / "day.json", d / "day-first.json")
         extra = ["--from-summary", str(first)]
+    if archive:
+        extra = ["--archive"]
     r = sh(sys.executable, str(REPO / "scripts/news/run_daily.py"), "--date", ds, "--summary", str(d / "summary.md"),
            *extra, cwd=REPO, env=env, check=False)
     (d / "run.log").write_text((r.stdout or "") + "\n" + (r.stderr or ""), encoding="utf-8")
@@ -207,13 +216,18 @@ def make_draft(ds: str, state: dict, backfill: bool = False) -> bool:
         shutil.copy2(day, d / "day.json")
     sh("git", "checkout", "-q", "--", "news", cwd=REPO, check=False)
     sh("git", "clean", "-qfd", "news", cwd=REPO, check=False)
+    if not ok and r.returncode == 3:                 # run_daily.NO_NET: Mac-এর ইন্টারনেট নেই, চেষ্টা গোনা নয়
+        log(f"{ds}: ইন্টারনেট পাওয়া যায়নি; পরের ঘণ্টায় আবার (চেষ্টা গোনা হলো না)")
+        return False
     if not ok:
         prev = state.get(ds, {})
-        state[ds] = {"status": "empty", "at": dt.datetime.now(DHAKA).isoformat(), "tries": prev.get("tries", 0) + 1}
+        state[ds] = {"status": "empty", "at": dt.datetime.now(DHAKA).isoformat(), "tries": prev.get("tries", 0) + (0 if archive else 1),
+                     **({"archive_tries": prev.get("archive_tries", 0) + 1} if archive or prev.get("archive_tries") else {})}
         log(f"{ds}: প্রকাশযোগ্য কিছু পাওয়া যায়নি (দেখুন {d / 'run.log'})")
         notify("খবরের বট", f"{ds}: যাচাই পেরোনো ঘটনা পাওয়া যায়নি। কয়েক ঘণ্টা পরে আবার চেষ্টা করবে।")
         return False
-    state[ds] = {"status": "draft", "at": dt.datetime.now(DHAKA).isoformat(), **({"backfill": True} if backfill else {})}
+    state[ds] = {"status": "draft", "at": dt.datetime.now(DHAKA).isoformat(), **({"backfill": True} if backfill else {}),
+                 **({"archive": True} if archive else {})}
     return True
 
 
@@ -258,39 +272,28 @@ h1{{font-size:22px}} .c{{background:#fff;border-left:4px solid #1E5B4A;padding:1
     return out
 
 
-def _wrangler(repo: Path) -> tuple[bool, str]:
-    """Mac থেকে সরাসরি Cloudflare Pages-এ তোলা। শুধু deploy_guard.direct_deploy() ডাকে (জরুরি পথ)।"""
-    env = dict(os.environ, PATH="/opt/homebrew/bin:/usr/local/bin:" + os.environ.get("PATH", "/usr/bin:/bin"))
-    head = sh("git", "rev-parse", "HEAD", cwd=repo, check=False).stdout.strip() or "local"
-    msg = (sh("git", "log", "-1", "--format=%s", cwd=repo, check=False).stdout.strip() or "Mac deploy")[:200]
-    r = sh("npx", "--yes", "wrangler", "pages", "deploy", ".", "--project-name", PAGES_PROJECT,
-           "--branch", "main", "--commit-hash", head, "--commit-message", msg,
-           cwd=repo, env=env, check=False, timeout=DEPLOY_TIMEOUT)
-    tail = ((r.stdout or "") + (r.stderr or "")).strip()[-600:]
-    return r.returncode == 0, tail
-
-
-def _guard():
-    if str(REPO / "scripts") not in sys.path:
-        sys.path.insert(0, str(REPO / "scripts"))
-    import deploy_guard  # noqa: E402  (রিপোর নিজের কোড)
-    return deploy_guard
-
-
 def deploy_cloudflare() -> tuple[bool, str]:
-    """সাইটে তোলা, দুই দিক মিলিয়ে (scripts/deploy_guard.py; PIASH, ২০২৬-১১-১৩)।
-    সাধারণ পথ: GitHub আর Mac মিলিয়ে push, Cloudflare GitHub থেকে নিজে তোলে।
-    GitHub না গেলে: শুধু PIASH-এর অনুমতি-ফাইল থাকলে সরাসরি Cloudflare, নইলে কোথাও না (কাজ Mac-এ জমা)।
+    """সাইটে তোলা: বটের আলাদা রাস্তা (scripts/bot_lane.py; PIASH, ২০২৬-১১-১৫)।
+    GitHub-এর সর্বশেষ main-এর ওপর শুধু news/ আর circular/ বসিয়ে push; Cloudflare GitHub থেকে নিজে তোলে।
+    PR-এর সঙ্গে conflict হয় না, PR-এর দিনের মার্জ-সীমায়ও গোনা হয় না।
+    GitHub না গেলে কাজ Mac-এ জমা থাকে, পরের চালানোয় আবার চেষ্টা।
     ফেরত: (হলো কি না, কোথায় গেল বা কেন থামল)।"""
-    g = _guard()
+    lane = _lane()
     try:
-        return True, g.ship(REPO)
-    except g.GuardError as e:
-        first = str(e)
+        where = lane.ship(REPO, log=log)
+        LAST_SHIP.touch()
+        return True, where
+    except lane.LaneError as e:
+        return False, str(e)
+
+
+def ship_due() -> bool:
+    """জমা পুরোনো দিন পাঠানোর সময় হয়েছে কি না (শেষ পাঠানোর SHIP_EVERY_H ঘণ্টা পরে)।"""
     try:
-        return True, g.direct_deploy(REPO, _wrangler)
-    except g.GuardError as e:
-        return False, f"{first} | {e}"
+        age = dt.datetime.now().timestamp() - LAST_SHIP.stat().st_mtime
+    except OSError:
+        return True
+    return age >= SHIP_EVERY_H * 3600
 
 
 def day_errors(day) -> list[str]:
@@ -307,7 +310,7 @@ def reset_news() -> None:
     sh("git", "clean", "-qfd", "news", cwd=REPO, check=False)
 
 
-def publish(ds: str) -> str:
+def publish(ds: str, ship: bool = True) -> str:
     """খসড়া রিপোর কপিতে কমিট → GitHub (পারলে) + Cloudflare (সরাসরি)। ফেরত: কোথায় গেল।
     যেকোনো ধাপ ভাঙলে RuntimeError, আর news/ আগের অবস্থায় (সাইটে কিছু যায় না)।"""
     sync_repo()
@@ -336,7 +339,10 @@ def publish(ds: str) -> str:
         reset_news()
         raise RuntimeError(f"পাতা বানানো মাঝপথে ভাঙল ({e.__class__.__name__}: {str(e)[:160]}); কিছু প্রকাশ হয়নি") from None
     sh("git", "add", "news", cwd=REPO)
-    sh("git", "commit", "-q", "-m", f"news: আজকের গুরুত্বপূর্ণ সংবাদ {ds} (Mac থেকে)", cwd=REPO, check=False)
+    sh("git", "commit", "-q", "-m", f"news: আজকের গুরুত্বপূর্ণ সংবাদ {ds} (Mac থেকে" + ("" if ship else ", আর্কাইভ") + ")",
+       cwd=REPO, check=False)
+    if not ship:
+        return "Mac-এ জমা (পুরোনো দিন; দিনে একবার একসঙ্গে সাইটে যায়)"
     ok, where = deploy_cloudflare()
     if not ok:
         log(f"{ds}: সাইটে তোলা থামানো হলো: {where}")
@@ -344,9 +350,9 @@ def publish(ds: str) -> str:
     return where
 
 
-def do_publish(ds: str, state: dict, auto: bool) -> bool:
+def do_publish(ds: str, state: dict, auto: bool, ship: bool = True) -> bool:
     try:
-        where = publish(ds)
+        where = publish(ds, ship=ship)
     except RuntimeError as e:
         log(f"{ds}: প্রকাশ হলো না: {e}")
         notify("খবরের বট", f"{ds}: প্রকাশ হলো না; সাইটে আগের পাতা আছে। কারণ: {str(e)[:120]}")
@@ -354,7 +360,8 @@ def do_publish(ds: str, state: dict, auto: bool) -> bool:
         return False
     was = state.get(ds, {})
     state[ds] = {"status": "published", "at": dt.datetime.now(DHAKA).isoformat(), "where": where,
-                 "auto": auto, **({"backfill": True} if was.get("backfill") else {})}
+                 "auto": auto, **({"backfill": True} if was.get("backfill") else {}),
+                 **({"archive": True} if was.get("archive") else {})}
     tr = state.get("_trial", {})
     if not auto and not was.get("backfill") and tr.get("left", 0) > 0:
         tr["left"] -= 1
@@ -451,10 +458,13 @@ def main() -> int:
     except RuntimeError as e:
         log(f"রিপোর কপি তৈরি হলো না: {e}")
         return 1
-    src = REPO / "scripts/news/mac/approve.command"            # অনুমোদনের ফাইল সবসময় নতুন রাখা
-    if src.exists():
-        shutil.copy2(src, BOT / "approve.command")
-        os.chmod(BOT / "approve.command", 0o755)
+    for name in ("approve.command", "run.sh"):                # অনুমোদনের ফাইল আর run.sh সবসময় সর্বশেষ main-এর
+        src = REPO / "scripts/news/mac" / name
+        if src.exists():
+            tmp = BOT / f".{name}.new"
+            shutil.copy2(src, tmp)
+            os.chmod(tmp, 0o755)
+            os.replace(tmp, BOT / name)                        # চলমান run.sh-এর ক্ষতি নেই (নতুন ফাইল, পুরোনোটা খোলা থাকে)
     if "_trial" not in state:                                # নতুন নিয়ম চালুর পরে প্রথম ৩ দিন হাতে দেখে
         state["_trial"] = {"left": TRIAL_DAYS, "since": now.date().isoformat()}
         save_state(state)
@@ -471,10 +481,15 @@ def main() -> int:
         make_draft(todo[0], state, backfill=True)
         bf["done"].append(todo[0])
         save_state(state)
+    if not MANUAL.exists():                                 # আর্কাইভ থেকে পুরোনো দিন (১ জানুয়ারি ২০২৬ পর্যন্ত)
+        for ds in archive_next(now, state, ARCHIVE_PER_RUN):
+            make_draft(ds, state, archive=True)
+            save_state(state)
     missing_alert(now, state)
     pending = sorted(ds for ds, st in state.items()
                      if st.get("status") == "draft" and (DRAFTS / ds / "day.json").exists())
     if not pending:
+        ship_stock()
         return 0
     if MANUAL.exists() or state.get("_trial", {}).get("left", 0) > 0:
         # PIASH হাতে অনুমোদন চেয়েছেন, বা নতুন নিয়মের পরীক্ষামূলক দিন: পেছনে চলা কাজ জানালা খুলতে পারে না, তাই Terminal-এ
@@ -483,9 +498,25 @@ def main() -> int:
         return 0
     for ds in pending:                                     # নিজে থেকে প্রকাশ (PIASH, ২০২৬-১১-০৭)
         preview(ds)
-        do_publish(ds, state, auto=True)
+        old = state.get(ds, {}).get("archive", False)
+        do_publish(ds, state, auto=True, ship=not old)     # আজকের/সাম্প্রতিক দিন সঙ্গে সঙ্গে; পুরোনো দিন জমা থাকে
         save_state(state)
+    ship_stock()
     return 0
+
+
+def ship_stock() -> None:
+    """Mac-এ জমা পুরোনো দিন: শেষ পাঠানোর ২০ ঘণ্টা পরে একসঙ্গে GitHub-এ (একটা বিল্ড)।"""
+    try:
+        lane = _lane()
+        if not lane.pending(REPO) or not ship_due():
+            return
+    except Exception:  # noqa: BLE001
+        return
+    ok, where = deploy_cloudflare()
+    log(("জমা পুরোনো দিন সাইটে: " if ok else "জমা পুরোনো দিন পাঠানো গেল না: ") + where)
+    if ok:
+        notify("খবরের বট", "পুরোনো দিনের সংবাদ সাইটে গেল ✓")
 
 
 if __name__ == "__main__":

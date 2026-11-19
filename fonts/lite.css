@@ -1,0 +1,3 @@
+/* হালকা রূপ (tools/font_mode.py বাছে): কম দামি ফোন বা ধীর নেটে নিজস্ব বাংলা ফন্ট নামানো হয় না; 'Noto Sans Bengali' নামে ফোনের নিজের বাংলা ফন্টই আসে।
+   শুধু লোগোর "লিয়ানা বুকস" (৪KB) আগের মতো। */
+@font-face{font-family:'Lyanna Wordmark';font-style:normal;font-weight:400 600;font-display:swap;src:url(/fonts/LyannaWordmark.woff2) format('woff2')}

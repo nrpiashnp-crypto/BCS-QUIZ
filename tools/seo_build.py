@@ -23,6 +23,7 @@ It also
 
 Generated folders carry a .seo marker file; never edit their index.html by hand.
 """
+from font_mode import SNIPPET as FONT_HEAD  # কম দামি ফোনে হালকা ফন্ট
 import glob, html, json, os, re, subprocess, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from theme import apply as theme_apply  # site theme: logo, /css/omr.css, /js/omr.js
@@ -81,13 +82,13 @@ h1{font-family:'Tiro Bangla',Georgia,serif;font-weight:400;font-size:26px;line-h
 h2{font-family:'Tiro Bangla',Georgia,serif;font-weight:400;font-size:20px;margin:28px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--rule)}
 .lead{color:var(--muted);margin:0 0 14px}.cta{display:inline-block;background:#13294b;color:#fff;text-decoration:none;padding:10px 18px;border-radius:10px;font-weight:600;margin:2px 0 8px}
 .cta:hover{background:#1d3a66}.toc{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0;padding:0;list-style:none;font-size:14px}.toc a{display:block;padding:3px 10px;border:1px solid var(--rule);border-radius:99px;text-decoration:none}
-ol.qs{list-style:none;margin:0;padding:0}.q{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:12px 14px;margin:10px 0}
+ol.qs{list-style:none;margin:0;padding:0}.q{content-visibility:auto;contain-intrinsic-size:auto 300px;background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:12px 14px;margin:10px 0}
 .qt{font-weight:600}.qt .n{color:var(--muted);margin-right:4px}.src{display:block;font-size:12.5px;font-weight:400;color:var(--muted)}
 .q ul{list-style:none;margin:8px 0 0;padding:0}.q li{padding:2px 8px;border-radius:7px}.q li.ok{background:var(--good-bg);color:var(--good);font-weight:600}.q li.ok:after{content:' ✓'}
 .exp{margin-top:8px;font-size:14.5px;border-top:1px dashed var(--rule);padding-top:8px}.exp b.h{color:var(--muted);font-weight:600}
 .q img{max-width:100%;height:auto}.q table{border-collapse:collapse;font-size:14px}.q td,.q th{border:1px solid var(--rule);padding:2px 6px}
 table.sub{border-collapse:collapse;font-size:14.5px;margin:8px 0;width:100%;max-width:480px}table.sub th,table.sub td{border-bottom:1px solid var(--rule);padding:5px 8px;text-align:left}table.sub td:last-child,table.sub th:last-child{text-align:right;white-space:nowrap}
-ul.list{padding-left:18px}ul.list li{margin:3px 0}.cols{columns:2 240px;column-gap:24px}
+ul.list{padding-left:18px;content-visibility:auto;contain-intrinsic-size:auto 600px}ul.list li{margin:3px 0}.cols{columns:2 240px;column-gap:24px}
 .book{margin:28px 0 0;padding:12px 14px;border:1px solid var(--rule);border-radius:12px;background:var(--soft);font-size:14.5px}
 footer{text-align:center;font-size:13px;color:var(--muted);padding:20px 16px 30px}footer a{color:var(--muted)}"""
 
@@ -160,8 +161,7 @@ def page(path, title, desc, crumbs, body, current=None, img='/img/og.png', ld_ex
 <link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/img/logo/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="preload" href="/fonts/AnekBangla-bengali.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/fonts/fonts.css">
+{FONT_HEAD}
 <script type="application/ld+json">{json.dumps(ld, ensure_ascii=False)}</script>
 {''.join(f'<script type="application/ld+json">{json.dumps(x, ensure_ascii=False)}</script>' + chr(10) for x in ld_extra)}<style>{CSS}</style>
 </head>
@@ -498,6 +498,8 @@ for mk in glob.glob(os.path.join(R, '*', '.seo')) + glob.glob(os.path.join(R, '*
 
 # ---------- tags on the hand-made pages ----------
 gen_dirs = keep
+# বিষয়ভিত্তিক প্রস্তুতির পাতা: টপিক নয়, শুধু সেট (Lyanna_data-র build_subject.py নতুন ডেটা লিখলেও প্রতি বিল্ডে ঠিক থাকে)
+subprocess.run([sys.executable, os.path.join(R, 'tools', 'subject_sets.py')], check=True, stdout=subprocess.DEVNULL)
 hand = []
 for f in sorted(glob.glob(os.path.join(R, '**', 'index.html'), recursive=True)):
     d = os.path.relpath(os.path.dirname(f), R)
@@ -506,28 +508,29 @@ for f in sorted(glob.glob(os.path.join(R, '**', 'index.html'), recursive=True)):
     hand.append(d)
 
 chap_names = {s: nm for s, _, nm, _ in ch_links}
-# হোমের নিচে বড় দুই বাটন (সব প্রশ্ন ও সমাধান, বিষয়ভিত্তিক প্রস্তুতি); ১৩/১১-এর বিল্ডে সাধারণ লিংক হয়ে গিয়েছিল, তাই এখানে
+# হোমের নিচে বড় বাটন (সব প্রশ্ন ও সমাধান; বিষয়ভিত্তিক প্রস্তুতি এখন ওপরের বড় বাটনে); ১৩/১১-এর বিল্ডে সাধারণ লিংক হয়ে গিয়েছিল, তাই এখানে
 _HB = 'display:inline-block;color:#13294b;font-weight:600;font-size:16px;background:#fffdf7;border:1.4px solid #13294b;border-radius:3px;padding:8px 18px;text-decoration:none;margin:4px 5px'
 HOME_LINKS = ('<!--seo-links--><nav style="max-width:760px;margin:24px auto 0;padding:0 16px 24px;text-align:center;font:13px/1.8 \'Noto Sans Bengali\',system-ui,sans-serif">'
-              f'<a href="/questions/" style="{_HB}">সব প্রশ্ন ও সমাধান →</a><a href="/subject/" style="{_HB}">বিষয়ভিত্তিক প্রস্তুতি →</a>{{fb}}</nav><!--/seo-links-->')
+              f'<a href="/questions/" style="{_HB}">সব প্রশ্ন ও সমাধান →</a>{{fb}}</nav><!--/seo-links-->')
 
-SUBJ_CSS = ('.sbj{max-width:640px}.sbj .sbd{font-size:14.5px;color:var(--ink2);margin:2px 0 10px}'
-            '.sbg{display:grid;grid-template-columns:1fr 1fr;gap:8px}'
-            '.sbg a{display:flex;align-items:center;gap:9px;min-height:52px;padding:8px 10px;border:1.4px solid #13294b;border-radius:3px;background:#fffdf7;'
-            'color:#13294b;text-decoration:none;font:600 15px/1.35 \'Noto Sans Bengali\',sans-serif}'
-            '.sbg a i{flex:none;width:26px;height:26px;border:1.4px solid #c8326a;border-radius:50%;display:grid;place-items:center;'
-            'font:500 12px/1 \'Noto Sans Bengali\',sans-serif;font-style:normal;color:#c8326a}'
-            '.sbg a:active{background:#13294b;color:#fff}@media(hover:hover){.sbg a:hover{background:#13294b;color:#fff}}'
-            '.sbm{display:block;margin:12px 0 0;text-align:right;font-weight:600;color:#c8326a}'
-            '@media(min-width:700px){.sbg{grid-template-columns:repeat(3,1fr)}}')
+SUBJ_CSS = ('.sbj{max-width:640px;padding:0 16px 0 14px;box-sizing:border-box}'
+            '.sbb{display:flex;align-items:center;gap:14px;padding:16px 16px 16px 18px;border:1.6px solid #13294b;border-radius:4px;'
+            'background:#fffdf7;color:#13294b;text-decoration:none;box-shadow:3px 3px 0 #13294b}'
+            '.sbb b{display:block;font:700 19px/1.35 \'Noto Sans Bengali\',sans-serif}'
+            '.sbb small{display:block;margin-top:3px;font:500 14px/1.45 \'Noto Sans Bengali\',sans-serif;color:var(--ink2)}'
+            '.sbb .so{display:flex;gap:4px;margin-top:9px}'
+            '.sbb .so i{width:15px;height:15px;border:1.3px solid #c8326a;border-radius:50%}.sbb .so i:first-child{background:#c8326a}'
+            '.sbb .sa{flex:none;margin-left:auto;width:40px;height:40px;border-radius:50%;background:#13294b;color:#fff;display:grid;place-items:center;font:600 20px/1 sans-serif}'
+            '.sbb:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #13294b}'
+            '@media(hover:hover){.sbb:hover{background:#f4efe2}}')
 
 
 def home_subjects(s):
-    """হোমে বিষয়ভিত্তিক প্রস্তুতির অংশ (subject/index.html-এর বিষয় থেকে), খবরের অংশের পরে, বইয়ের আগে।"""
-    tiles = ''.join(f'<a href="{h}"><i aria-hidden="true">{bn(k)}</i>{esc(n)}</a>' for k, (h, n) in enumerate(SUBJECTS, 1))
-    blk = ('<!--subject-home--><section class="hs sbj" id="subjects" aria-label="বিষয়ভিত্তিক প্রস্তুতি"><h2>বিষয়ভিত্তিক প্রস্তুতি</h2>'
-           f'<p class="sbd">বিষয় বেছে নিন, তারপর টপিক ধরে পরীক্ষা দিন।</p><div class="sbg">{tiles}</div>'
-           f'<a class="sbm" href="/subject/">বিষয়ভিত্তিক প্রস্তুতির পাতা →</a></section><style>{SUBJ_CSS}</style><!--/subject-home-->\n')
+    """হোমে বিষয়ভিত্তিক প্রস্তুতির একটাই বড় বাটন (PIASH, ১৪/১১): বিষয়গুলোর বাটন /subject/ পাতায়। খবরের অংশের পরে, বইয়ের আগে।"""
+    blk = ('<!--subject-home--><section class="hs sbj" id="subjects" aria-label="বিষয়ভিত্তিক প্রস্তুতি">'
+           f'<a class="sbb" href="/subject/"><span><b>বিষয়ভিত্তিক প্রস্তুতি</b><small>{bn(len(SUBJECTS))}টি বিষয় · টপিক ধরে পরীক্ষা</small>'
+           '<span class="so" aria-hidden="true"><i></i><i></i><i></i><i></i></span></span><span class="sa" aria-hidden="true">→</span></a>'
+           f'</section><style>{SUBJ_CSS}</style><!--/subject-home-->\n')
     if '<!--subject-home-->' in s:
         return re.sub(r'<!--subject-home-->.*?<!--/subject-home-->\n?', lambda m: blk, s, count=1, flags=re.S)
     return s.replace('<div class="row2">', blk + '\n<div class="row2">', 1)
@@ -539,14 +542,14 @@ FB_LINK = (' · <a href="' + FB + '" target="_blank" rel="noopener" style="color
 for d in hand:
     p = (d + '/index.html') if d else 'index.html'
     s = rd(p)
-    if d.split('/')[0] != 'news':  # /news/-এর মেনু scripts/news/build_pages.py-র ছাঁচে
+    if d.split('/')[0] not in ('news', 'circular'):  # /news/ আর /circular/-এর মেনু বটের ছাঁচে (build_pages.py, jbuild.py)
         t = nav_subject(s, cur=d.split('/')[0] == 'subject')
         if t != s: wr(p, t); s = t
     if 'name="robots" content="noindex"' in s: continue
     url = f'{SITE}/{d + "/" if d else ""}'
     o = s
     slug = d.split('/')[0]
-    if slug == 'news': continue  # /news/ pages are generated by scripts/news/build_pages.py (LY News): sitemap only, never edited here
+    if slug in ('news', 'circular'): continue  # বটের পাতা (scripts/bot_lane.py; build_pages.py, jbuild.py): শুধু sitemap, এখানে কখনো বদলানো নয়
     if d == '' and SUBJECTS:
         s = home_subjects(s)
     if d in chap_names and 'লিয়ানা' not in s.split('</title>')[0]:

@@ -26,6 +26,7 @@ from verify import check_item, prune  # noqa: E402
 
 MAX_HEADLINES = 350
 PER_SOURCE = 45          # এক উৎস থেকে সর্বোচ্চ কতটা শিরোনাম
+NO_NET = 3               # ফেরত-সংখ্যা: ইন্টারনেট নেই (mac_daily এটা চেষ্টা হিসেবে গোনে না)
 SOLO_MIN_SCORE = 6       # বিশ্বস্ত পত্রিকার এক-উৎসের দল লেখানো হবে চমক-মান এর বেশি হলে
 SOLO_MAX = 12            # এক চালানোয় সর্বোচ্চ কতটা এক-উৎসের দল (Gemini-র সীমা মাথায় রেখে)
 
@@ -100,6 +101,7 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true", help="news/-এ কিছু লেখা হবে না")
     ap.add_argument("--summary", help="ফলাফলের Markdown কোথায় লিখবে")
     ap.add_argument("--force", action="store_true", help="হাতে বানানো (manual) দিনের ফাইলও বদলাবে")
+    ap.add_argument("--archive", action="store_true", help="পুরোনো দিন: ফিড নয়, পত্রিকার আর্কাইভ/দিনের sitemap থেকে (archive.py)")
     ap.add_argument("--from-summary", help="পুরোনো দিন: সেদিনের summary.md-এর আটকে থাকা লিংক থেকে আবার চেষ্টা; "
                                            "আগের প্রকাশিত সংবাদ থাকে, নতুন যাচাই-পেরোনোগুলো যোগ হয়")
     args = ap.parse_args()
@@ -120,10 +122,18 @@ def main() -> int:
         single = []
         log(f"পুরোনো দিনের আটকে থাকা দল: {len(multi)}")
     else:
-        items, health = collect(until)
+        if args.archive:
+            from archive import collect_day          # noqa: E402  (পুরোনো দিন, PIASH ২০২৬-১১-১৯)
+            items, health = collect_day(date)
+        else:
+            items, health = collect(until)
         items = headlines_by_source(items)
         log(f"মোট শিরোনাম: {len(items)}")
         if len(items) < 10:
+            down = [h for h in health if not h.get("ok") and "URLError" in str(h.get("error", ""))]
+            if health and len(down) >= 0.7 * len(health):     # প্রায় সব উৎসে URLError = Mac-এর ইন্টারনেট নেই
+                report(args.summary, ds, [], [], health, "ইন্টারনেট পাওয়া যায়নি — এই চেষ্টা গোনা হবে না, পরের ঘণ্টায় আবার।")
+                return NO_NET
             report(args.summary, ds, [], [], health, "খুব কম শিরোনাম এল — ফিডগুলো দেখতে হবে। আজ কিছু প্রকাশ হয়নি।")
             return 1
         groups = group(items)
@@ -170,6 +180,7 @@ def main() -> int:
             continue
         for (g, texts, links), res in zip(chunk, results):
             if not res:
+                log(f"  লেখা আসেনি বা AI বাদ দিয়েছে: {g['topic']}")
                 continue
             res["sources"] = sources_of(res, texts)
             w = excluded(res.get("title", ""), res.get("short", ""))

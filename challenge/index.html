@@ -18,8 +18,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/svg+xml" href="/img/logo/final-icon.svg">
 <link rel="apple-touch-icon" href="/img/logo/apple-touch-icon.png">
-<link rel="preload" href="/fonts/AnekBangla-bengali.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/fonts/fonts.css">
+<script>/* ফন্ট: কম দামি ফোন/ধীর নেটে হালকা রূপ (tools/font_mode.py) */!function(){var n=navigator,c=n.connection||{},l=c.saveData||/2g/.test(c.effectiveType)||c.downlink<1||n.deviceMemory<=2;try{var q=location.search.match(/[?&]font=(lite|full|auto)/);if(q)localStorage.lyFont=q[1]=='auto'?'':q[1];if(localStorage.lyFont)l=localStorage.lyFont=='lite'}catch(e){}if(l)document.documentElement.classList.add('ly-lite');document.write(l?'<link rel="stylesheet" href="/fonts/lite.css">':'<link rel="preload" href="/fonts/AnekBangla-bengali.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/fonts/fonts.css">')}()</script><noscript><link rel="stylesheet" href="/fonts/fonts.css"></noscript>
 <style>
 /* বন্ধুর চ্যালেঞ্জ: শুরু (কে চ্যালেঞ্জ করেছে, তার নম্বর) → পরীক্ষা (নিচে ঘড়ি) → ফল (কে জিতল, দুজনের উত্তরপত্র, ব্যাখ্যা) */
 :root{
@@ -108,6 +107,7 @@ button{font:inherit;cursor:pointer}
 .sheet .hd{font-size:12.5px;color:var(--muted);border-bottom:1px solid var(--rule);margin-bottom:4px;padding-bottom:2px}
 .sheet .hd span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sheet .r{padding:2px 0}
+.sheet.one .r{grid-template-columns:2.2em 1fr}
 .sheet .r>span:first-child{font-size:13px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
 .bb{display:flex;gap:4px}
 .bb i{font-style:normal;width:20px;height:20px;border-radius:50%;border:1.2px solid rgba(200,50,106,.6);color:var(--pink);display:grid;place-items:center;font-size:10.5px;line-height:1}
@@ -124,20 +124,22 @@ button{font:inherit;cursor:pointer}
 <link rel="manifest" href="/manifest.webmanifest">
 <script src="/js/app.js" defer></script>
 <link rel="stylesheet" href="/css/omr.css"><script src="/js/omr.js" defer></script>
-<script src="/js/report.js" defer></script></head>
+<script src="/js/report.js" defer></script>
+<script src="/js/math.js" defer></script></head>
 <body data-noch>
 <div class="sitebar"><a href="/" aria-label="লিয়ানা বুকস"><img src="/img/logo/li-mark.svg" alt="" width="34" height="44"><span class="lgn-n">লিয়ানা বুকস</span></a><nav class="sec" aria-label="সাইটের অংশ"><a href="/bcs/">বিসিএস</a><a href="/jobs/">চাকরি</a><a href="/science/">বিজ্ঞান</a><a href="/subject/" aria-label="বিষয়ভিত্তিক প্রস্তুতি">বিষয়<span class="n1">ভিত্তিক</span><span class="n2"> প্রস্তুতি</span></a><a href="/running/">চলমান</a><a href="/news/">খবর</a></nav></div>
 <div class="wrap">
 <section id="load"><p class="load">লোড হচ্ছে…</p></section>
 
 <section id="intro" hidden>
-  <span class="stamp">চ্যালেঞ্জ</span>
+  <span class="stamp" id="istamp">চ্যালেঞ্জ</span>
   <h1 id="ih"></h1>
   <p class="sub" id="is"></p>
-  <div class="vs"><div class="side"><span class="who" id="iname"></span><span class="pts" id="ipts"></span><span class="tm" id="itm"></span></div>
+  <div class="vs" id="ivs"><div class="side"><span class="who" id="iname"></span><span class="pts" id="ipts"></span><span class="tm" id="itm"></span></div>
     <span class="vsx">বনাম</span><div class="side me"><span class="who">আপনি</span><span class="pts">?</span><span class="tm">দেখা যাক!</span></div></div>
   <form class="start" id="iform"><label><span>আপনার নাম</span><input id="iname2" maxlength="24" autocomplete="given-name" placeholder="যেমন: করিম" required></label><button class="btn" type="submit">পরীক্ষা শুরু করুন</button></form>
   <ul class="rules"><li>একবার দাগালে আর বদলানো যায় না</li><li>সময় শেষ হলে নিজে থেকে জমা হবে</li><li>ভুলে নম্বর কাটা নেই, শুধু সঠিক সংখ্যা তুলনা হয়</li><li>প্রথমবারের ফলই বোর্ডে ওঠে</li></ul>
+  <div class="rev" id="ishare" hidden><b>দলের অন্যদের লিংক পাঠান</b><p>লগইন লাগে না; যতজন খুশি পরীক্ষা দিতে পারবে, সবার ফল নিচের তালিকায় উঠবে।</p><div id="ishb"></div></div>
   <div id="iboard"></div>
 </section>
 
@@ -158,8 +160,9 @@ button{font:inherit;cursor:pointer}
 <section id="result" hidden>
   <div class="score" id="scorebox"></div>
   <div id="rboard"></div>
+  <div class="rev" id="rshare" hidden><b>দলের লিংক</b><p>যারা এখনো দেয়নি, তাদের পাঠান।</p><div id="rshb"></div></div>
   <div class="rev" id="rev"><b>পাল্টা চ্যালেঞ্জ</b><p id="revp">একই প্রশ্ন, এবার আপনার নম্বর দিয়ে। বন্ধুদের পাঠান।</p><button class="btn" id="revgo" type="button">পাল্টা চ্যালেঞ্জের লিংক বানান</button><p class="chx-e" id="reve" hidden></p><div id="revshare" hidden></div></div>
-  <h2>দুজনের উত্তরপত্র</h2>
+  <h2 id="shh">দুজনের উত্তরপত্র</h2>
   <div class="sheet" id="sheet"></div>
   <div class="key"><span><span class="bb"><i class="f c">ক</i></span> সঠিক দাগ</span><span><span class="bb"><i class="f">ক</i></span> ভুল দাগ</span><span><span class="bb"><i class="c">ক</i></span> সঠিক উত্তর</span></div>
   <h2>উত্তর ও ব্যাখ্যা</h2>
@@ -174,7 +177,7 @@ button{font:inherit;cursor:pointer}
 </section>
 </div>
 <script src="/js/account.js" defer></script>
-<script src="/js/challenge.js?v=3"></script>
+<script src="/js/challenge.js?v=4"></script>
 <script>
 (function(){
 var $=function(i){return document.getElementById(i)},K=['ক','খ','গ','ঘ','ঙ','চ'],bn=LBC.bn,ls=LBC.store,safe=LBC.safe;
@@ -184,26 +187,42 @@ function show(s){['load','intro','own','exam','result','err'].forEach(function(x
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return '&#'+c.charCodeAt(0)+';'})}
 function t(s){s=s||0;return bn(Math.floor(s/60))+':'+bn(String(s%60).padStart(2,'0'))}
 function head(c){return esc(c.title||'পরীক্ষা')+' · '+bn(c.n)+'টি প্রশ্ন · '+bn(c.mins)+' মিনিট'}
-function board(c,me){if(!c.top||!c.top.length)return '';
-  return '<div class="board"><h3>সেরা তিনজন</h3><ol>'+c.top.map(function(r,i){return '<li><i>'+bn(i+1)+'</i><span>'+esc(r.name)+(r.host?' (চ্যালেঞ্জদাতা)':'')+'</span><b>'+bn(r.ok)+'/'+bn(c.n)+'</b><small>'+t(r.sec)+'</small></li>'}).join('')+
+function board(c,me){if(!c.top||!c.top.length)return c.g?'<div class="board"><p>এখনো কেউ দেয়নি। আপনিই প্রথম হতে পারেন।</p></div>':'';
+  return '<div class="board"><h3>'+(c.g?(c.count>c.top.length?'সেরা '+bn(c.top.length)+' জন':'ফলাফল'):'সেরা তিনজন')+'</h3><ol>'+c.top.map(function(r,i){return '<li><i>'+bn(i+1)+'</i><span>'+esc(r.name)+(r.host?' (চ্যালেঞ্জদাতা)':'')+'</span><b>'+bn(r.ok)+'/'+bn(c.n)+'</b><small>'+t(r.sec)+'</small></li>'}).join('')+
    '</ol><p>এ পর্যন্ত '+bn(c.count)+' জন দিয়েছেন'+(me?'; আপনি '+bn(me)+' নম্বরে।':'।')+'</p></div>'}
 function shareText(name,c,ok){return name+' আপনাকে চ্যালেঞ্জ করেছে! '+(c.title||'পরীক্ষা')+'-এর '+bn(c.n)+'টি প্রশ্নে সে পেয়েছে '+bn(ok)+'টি সঠিক। আপনি পারবেন?'}
 
-function intro(c){$('ih').textContent=c.name+' আপনাকে চ্যালেঞ্জ করেছে';$('is').innerHTML=head(c);
+var G=0;/* দলের পরীক্ষা (/make/ থেকে): বানানো নিজে দেননি, তাই "বনাম" নেই, শুধু সবার তালিকা */
+function hm(m){var h=Math.floor(m/60),r=m%60;return (h?bn(h)+' ঘণ্টা':'')+(h&&r?' ':'')+(r||!h?bn(r)+' মিনিট':'')}
+function grpText(c){return (c.title||'পরীক্ষা')+': '+bn(c.n)+'টি প্রশ্ন, '+hm(c.mins)+'। '+c.name+' দলের জন্য বানিয়েছেন, লগইন লাগে না। দিয়ে দেখুন কে কত পায়।'}
+function mineMade(){try{return JSON.parse(ls('mk:list')||'[]').some(function(x){return x.id===id})}catch(e){return false}}
+function intro(c){if(G){$('istamp').textContent='দলের পরীক্ষা';$('ih').textContent=c.title||'দলের পরীক্ষা';
+   $('is').innerHTML=bn(c.n)+'টি প্রশ্ন, '+hm(c.mins)+'। বানিয়েছেন '+esc(c.name)+'।';$('ivs').hidden=true;$('iname2').value=LBC.name();$('iboard').innerHTML=board(c);
+   var li=document.querySelectorAll('#intro .rules li');if(li.length)li[li.length-1].textContent='প্রথমবারের ফলই তালিকায় ওঠে';
+   /* শুরুর পাতায় শেয়ার শুধু যিনি বানিয়েছেন তাঁর জন্য; বাকিরা ফলের পাতায় পান */
+   if(mineMade()){$('ishare').hidden=false;LBC.share($('ishb'),c.id,grpText(c))}document.title=(c.title||'দলের পরীক্ষা')+' · লিয়ানা বুকস';return show('intro')}
+  $('ih').textContent=c.name+' আপনাকে চ্যালেঞ্জ করেছে';$('is').innerHTML=head(c);
   $('iname').textContent=c.name;$('itm').textContent='সময় '+t(c.sec);$('ipts').innerHTML=bn(c.ok)+'<small>/'+bn(c.n)+'</small>';$('iname2').value=LBC.name();$('iboard').innerHTML=board(c);
   document.title=c.name+'-এর চ্যালেঞ্জ · লিয়ানা বুকস';show('intro')}
 function own(c){$('oh').textContent=c.title||'পরীক্ষা';$('os').innerHTML=bn(c.n)+'টি প্রশ্নে আপনি পেয়েছেন '+bn(c.ok)+'টি সঠিক, সময় '+t(c.sec)+'।';
   LBC.share($('oshare'),c.id,shareText(c.name,c,c.ok));$('oboard').innerHTML=board(c);show('own')}
 
-function exam(){var box=$('elist');box.innerHTML='';pick=C.qs.map(function(){return -1});$('tot').textContent=bn(C.n);$('ans').textContent='০';
+/* পাতা রিলোড হলেও দাগ আর শুরুর সময় থাকে (লম্বা পরীক্ষায় দরকার) */
+var run={};function save(){ls('ch:run:'+id,JSON.stringify({s:startAt,p:pick}))}
+function exam(){var box=$('elist');box.innerHTML='';pick=C.qs.map(function(){return -1});$('tot').textContent=bn(C.n);
+  try{run=JSON.parse(ls('ch:run:'+id)||'{}')||{}}catch(e){run={}}if(!run.s||Date.now()-run.s>C.mins*60e3+60e3)run={};
+  if(Array.isArray(run.p))run.p.forEach(function(v,i){if(i<pick.length&&Number.isInteger(v)&&v>=0)pick[i]=v});
+  $('ans').textContent=bn(pick.filter(function(p){return p>=0}).length);
   C.qs.forEach(function(q,i){var s=document.createElement('section');s.className='q';
    s.innerHTML='<div class="qh"><span class="num">'+bn(i+1)+'.</span><div class="qt">'+safe(q.q)+'</div></div><div class="opts">'+
     q.o.map(function(o,j){return '<button type="button" class="opt" data-j="'+j+'"><span class="k">'+K[j]+'</span><span>'+safe(o)+'</span></button>'}).join('')+'</div>';
    /* একবার দাগালে আর বদলানো যায় না (সাইটের নিয়ম, আসল OMR-এর মতো) */
    s.querySelectorAll('.opt').forEach(function(b){b.onclick=function(){if(pick[i]>=0)return;pick[i]=+b.dataset.j;b.classList.add('sel');b.setAttribute('aria-pressed','true');
-     s.querySelectorAll('.opt').forEach(function(x){x.disabled=true});
-     $('ans').textContent=bn(pick.filter(function(p){return p>=0}).length)}});box.appendChild(s)});
-  fetch('/api/ch/'+id+'/start',{method:'POST'}).catch(function(){});var end=C.mins*60;startAt=Date.now();clearInterval(timer);
+     s.querySelectorAll('.opt').forEach(function(x){x.disabled=true});save();
+     $('ans').textContent=bn(pick.filter(function(p){return p>=0}).length)}});
+   if(pick[i]>=0){var o=s.querySelectorAll('.opt')[pick[i]];if(o){o.classList.add('sel');o.setAttribute('aria-pressed','true')}s.querySelectorAll('.opt').forEach(function(x){x.disabled=true})}
+   box.appendChild(s)});
+  fetch('/api/ch/'+id+'/start',{method:'POST',headers:LBC.hdr()}).catch(function(){});var end=C.mins*60;startAt=run.s||Date.now();save();clearInterval(timer);
   var tick=function(){var left=Math.max(0,end-Math.floor((Date.now()-startAt)/1000));$('clock').textContent=t(left);$('clock').classList.toggle('low',left<=60);if(!left)send()};
   tick();timer=setInterval(tick,1000);show('exam')}
 function ask(){var blank=pick.filter(function(p){return p<0}).length;
@@ -212,13 +231,14 @@ function ask(){var blank=pick.filter(function(p){return p<0}).length;
 var sending=0;
 function send(){if(sending)return;sending=1;clearInterval(timer);[$('submit'),$('submit2')].forEach(function(b){b.disabled=true;b.textContent='জমা হচ্ছে…'});
   var name=ls('ch:name')||'বন্ধু',sec=Math.min(C.mins*60,Math.round((Date.now()-startAt)/1000));
-  var go=function(n){fetch('/api/ch/'+id+'/try',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name,picks:pick,sec:sec})})
-   .then(function(r){if(!r.ok)throw r;return r.json()}).then(function(R){ls('ch:done:'+id,JSON.stringify(R));result(R)},function(){
+  var go=function(n){fetch('/api/ch/'+id+'/try',{method:'POST',headers:LBC.hdr(1),body:JSON.stringify({name:name,picks:pick,sec:sec})})
+   .then(function(r){if(!r.ok)throw r;return r.json()}).then(function(R){ls('ch:done:'+id,JSON.stringify(R));ls('ch:run:'+id,'');result(R)},function(){
      if(n<3)return setTimeout(function(){go(n+1)},1500*(n+1));
      sending=0;[$('submit'),$('submit2')].forEach(function(b){b.disabled=false;b.textContent='আবার জমা দিন'});alert('জমা হলো না। ইন্টারনেট সংযোগ দেখে আবার "জমা দিন" চাপুন, আপনার দাগ মুছে যায়নি।')})};
   go(0)}
 
 function result(R){var me=R.me,hw=R.ok,mw=me.ok,host=R.name;
+  if(G)return gresult(R);
   var win=mw>hw||mw===hw&&me.sec<R.sec,tie=mw===hw&&me.sec===R.sec;
   var v=tie?'একদম সমান সমান!':win?(mw===hw?'নম্বর সমান, তবে সময়ে আপনি জিতেছেন!':'আপনি জিতেছেন!'):(mw===hw?'নম্বর সমান, সময়ে '+esc(host)+' এগিয়ে।':'এবার '+esc(host)+' জিতেছে।');
   $('scorebox').innerHTML='<p class="verdict">'+v+'</p><div class="vs"><div class="side me'+(win?' win':'')+'"><span class="who">'+esc(me.name)+' (আপনি)</span><span class="pts">'+bn(mw)+'<small>/'+bn(R.n)+'</small></span><span class="tm">সময় '+t(me.sec)+'</span></div>'+
@@ -243,10 +263,25 @@ function result(R){var me=R.me,hw=R.ok,mw=me.ok,host=R.name;
   if(R.src){$('srcl').href=R.src;$('srcl').textContent=(R.title||'মূল')+': পুরো পরীক্ষার পাতা'}else $('srcl').hidden=true;
   document.title='আপনি '+bn(mw)+' · '+host+' '+bn(hw)+' · লিয়ানা বুকস';show('result')}
 
+var K2=K;function gresult(R){var me=R.me;
+  $('scorebox').innerHTML='<p class="verdict">আপনি পেয়েছেন '+bn(me.ok)+'/'+bn(R.n)+'</p><p class="rank">সময় '+t(me.sec)+'। '+(me.off?'এই নেট থেকে অনেকে দিয়েছেন, তাই আপনার ফল তালিকায় ওঠেনি।':bn(R.count)+' জনের মধ্যে আপনার অবস্থান '+bn(R.rank)+(me.again?' (প্রথমবারের ফল)':'')+'।')+'</p>';
+  $('rboard').innerHTML=board(R);$('rev').hidden=true;$('rshare').hidden=false;LBC.share($('rshb'),R.id,grpText(R));
+  var bub=function(q,p){return '<span class="bb">'+q.o.map(function(_,j){return '<i class="'+(j===q.a?'c':'')+(j===p?' f':'')+'">'+K2[j]+'</i>'}).join('')+'</span>'};
+  $('shh').textContent='আপনার উত্তরপত্র';$('sheet').classList.add('one');
+  $('sheet').innerHTML=R.qs.map(function(q,i){return '<div class="r"><span>'+bn(i+1)+'</span>'+bub(q,me.picks[i])+'</div>'}).join('');
+  var box=$('rlist');box.innerHTML='';
+  R.qs.forEach(function(q,i){var p=me.picks[i],s=document.createElement('section');s.className='q';
+   s.innerHTML='<div class="qh"><span class="num">'+bn(i+1)+'.</span><div class="qt">'+safe(q.q)+'</div></div><div class="opts">'+
+    q.o.map(function(o,j){return '<button type="button" disabled class="opt'+(j===q.a?' right':'')+(j===p&&p!==q.a?' wrong':'')+'"><span class="k">'+K2[j]+'</span><span>'+safe(o)+'</span></button>'}).join('')+'</div>'+
+    '<div class="exp">'+(p<0?'<span class="skip">উত্তর দেননি।</span> সঠিক উত্তর: '+K2[q.a]+'।':p===q.a?'<span class="ok">সঠিক।</span>':'<span class="no">ভুল।</span> সঠিক উত্তর: '+K2[q.a]+'।')+' '+safe(q.e)+'</div>';
+   box.appendChild(s)});
+  $('srcl').href='/make/';$('srcl').textContent='নিজের দলের জন্য পরীক্ষা বানান';
+  document.title='আপনি '+bn(me.ok)+'/'+bn(R.n)+' · '+(R.title||'দলের পরীক্ষা')+' · লিয়ানা বুকস';show('result')}
+
 $('iform').onsubmit=function(e){e.preventDefault();var n=$('iname2').value.trim();if(!n)return;ls('ch:name',n);exam()};
 $('submit').onclick=$('submit2').onclick=ask;
 if(!/^[A-Za-z0-9]{6,12}$/.test(id||''))return show('err');
-fetch('/api/ch/'+id).then(function(r){if(r.status===404)throw 404;if(!r.ok)throw r.status;return r.json()}).then(function(c){C=c;
+fetch('/api/ch/'+id,{headers:LBC.hdr()}).then(function(r){if(r.status===404)throw 404;if(!r.ok)throw r.status;return r.json()}).then(function(c){C=c;G=c.ok<0||!!c.g;
   var done=null;try{done=JSON.parse(ls('ch:done:'+id)||'null')}catch(e){}
   if(done&&done.me){done.top=c.top;done.count=c.count;if(c.mine)done.rank=c.mine.rank;return result(done)}
   if(ls('ch:own:'+id))return own(c);

@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="theme-color" content="#13294b">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>দলের পরীক্ষা বানান · লিয়ানা বুকস</title>
+<meta name="description" content="আজ যে টপিকগুলো পড়েছেন সেগুলো বেছে নিন, প্রশ্নের সংখ্যা দিন; বিসিএসের হিসাবে সময় ঠিক হয়ে যাবে। একটা লিংক পাবেন, গ্রুপে দিলে সবাই একই পরীক্ষা দিতে পারবে।">
+<link rel="canonical" href="https://lyannabooks.com/make/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="লিয়ানা বুকস">
+<meta property="og:title" content="দলের পরীক্ষা বানান · লিয়ানা বুকস">
+<meta property="og:description" content="টপিক বাছুন, প্রশ্নের সংখ্যা দিন, লিংক গ্রুপে দিন। সবাই একই প্রশ্নে পরীক্ষা দেবে, শেষে সবার ফল এক তালিকায়।">
+<meta property="og:url" content="https://lyannabooks.com/make/">
+<meta property="og:image" content="https://lyannabooks.com/img/og.png">
+<meta property="og:locale" content="bn_BD">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/svg+xml" href="/img/logo/final-icon.svg">
+<link rel="apple-touch-icon" href="/img/logo/apple-touch-icon.png">
+<script>/* ফন্ট: কম দামি ফোন/ধীর নেটে হালকা রূপ (tools/font_mode.py) */!function(){var n=navigator,c=n.connection||{},l=c.saveData||/2g/.test(c.effectiveType)||c.downlink<1||n.deviceMemory<=2;try{var q=location.search.match(/[?&]font=(lite|full|auto)/);if(q)localStorage.lyFont=q[1]=='auto'?'':q[1];if(localStorage.lyFont)l=localStorage.lyFont=='lite'}catch(e){}if(l)document.documentElement.classList.add('ly-lite');document.write(l?'<link rel="stylesheet" href="/fonts/lite.css">':'<link rel="preload" href="/fonts/AnekBangla-bengali.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/fonts/fonts.css">')}()</script><noscript><link rel="stylesheet" href="/fonts/fonts.css"></noscript>
+<style>
+/* দলের পরীক্ষা বানানো: টপিক বাছা → প্রশ্নের সংখ্যা (সময় নিজে ঠিক হয়) → লিংক। প্রশ্ন আসে /subject/data/t/<টপিক>/<সেট>.json থেকে,
+   লিংক বানায় POST /api/ch {grp:1} (বন্ধুকে চ্যালেঞ্জের একই ব্যবস্থা); পরীক্ষা হয় /c/<id> পাতায়। */
+:root{
+  --paper:#fbfaf7; --ink:#1d1f21; --muted:#5f6366; --rule:#d9d6cf; --card:#ffffff;
+  --pink:#c8326a; --navy:#13294b; --bad:#b3261e;
+  --display:'Tiro Bangla',Georgia,serif; --body:'Noto Sans Bengali',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6}
+.wrap{max-width:680px;margin:0 auto;padding-block:16px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font-family:var(--display);font-weight:400;font-size:28px;line-height:1.3;margin:4px 0 4px}
+.sub{color:var(--muted);font-size:15px;margin:0 0 6px}
+h2{font-family:var(--display);font-weight:400;font-size:21px;margin:26px 0 8px;display:flex;gap:10px;align-items:center}
+h2 i{font-style:normal;flex:none;width:28px;height:28px;border-radius:50%;border:1.5px solid var(--pink);color:var(--pink);display:grid;place-items:center;font-size:14px;font-family:var(--body)}
+button,input{font:inherit}
+.btn{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--navy);background:var(--navy);color:#fff;border-radius:3px;padding:12px 20px;font-weight:600;text-decoration:none;cursor:pointer}
+.btn:disabled{opacity:.55;cursor:default}
+.btn.ghost{background:none;color:var(--navy)}
+/* বিষয় → টপিক */
+.subjects{border:1.3px solid var(--rule);border-radius:3px;background:var(--card)}
+.subj{border-top:1px solid var(--rule)}.subj:first-child{border-top:0}
+.subj>summary{list-style:none;cursor:pointer;padding:11px 12px;display:flex;justify-content:space-between;gap:10px;font-weight:500}
+.subj>summary::-webkit-details-marker{display:none}
+.subj>summary::after{content:"+";color:var(--pink);font-weight:600}
+.subj[open]>summary::after{content:"−"}
+.subj>summary small{color:var(--pink);font-weight:600;margin-left:auto}
+.tl{padding:0 12px 10px}
+.tl label{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--rule);cursor:pointer;font-size:16px}
+.tl input{flex:none;appearance:none;width:20px;height:20px;margin:3px 0 0;border:1.5px solid rgba(200,50,106,.7);border-radius:50%;background:#fff;cursor:pointer}
+.tl input:checked{background:var(--pink);box-shadow:inset 0 0 0 3px #fff}
+.tl span{flex:1;min-width:0}
+.tl small{color:var(--muted);font-size:13px;white-space:nowrap}
+.tl .ld{color:var(--muted);font-size:14px;padding:6px 0}
+.picked{font-size:15px;color:var(--muted);margin:10px 0 0}
+.picked b{color:var(--ink);font-weight:500}
+/* প্রশ্নের সংখ্যা: OMR বাবলের সারি */
+.cnt{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media (min-width:560px){.cnt{grid-template-columns:repeat(6,1fr)}}
+.cnt button{padding:10px 6px;font-size:18px;border:1.5px solid rgba(200,50,106,.6);border-radius:3px;background:#fff;color:var(--ink);cursor:pointer;font-variant-numeric:tabular-nums}
+.cnt button[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#fff;font-weight:600}
+.cnt button:disabled{opacity:.35;cursor:default}
+.time{margin:12px 0 0;border-left:3px solid var(--pink);padding:2px 0 2px 12px}
+.time b{font-family:var(--display);font-size:24px;font-weight:400;color:var(--navy)}
+.time small{display:block;color:var(--muted);font-size:13.5px}
+/* নাম আর শেষ বোতাম */
+.f{display:flex;flex-direction:column;gap:10px}
+.f label{display:flex;flex-direction:column;gap:3px;font-size:14px;color:var(--muted)}
+.f input{font-size:17px;color:var(--ink);background:#fff;border:1.4px solid rgba(200,50,106,.55);border-radius:3px;padding:10px 12px;min-width:0}
+.go{width:100%;font-size:18px;padding:14px 20px;margin-top:6px}
+.err{color:var(--bad);font-size:15px;margin:8px 0 0}
+/* লিংক তৈরি */
+.done{margin:8px 0 0}
+.done h3{margin:0;font-family:var(--display);font-weight:400;font-size:22px;color:var(--navy)}
+.done p{margin:4px 0 10px;font-size:15px;color:var(--muted)}
+.done .btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.mine{margin:30px 0 0;font-size:15px}
+.mine h3{font-size:15px;font-weight:600;color:var(--navy);margin:0 0 4px}
+.mine a{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid var(--rule);color:var(--ink);text-decoration:none}
+.mine a small{color:var(--muted);white-space:nowrap}
+[hidden]{display:none !important}
+</style>
+<link rel="stylesheet" href="/css/omr.css"><script src="/js/omr.js" defer></script>
+<script src="/js/app.js" defer></script>
+</head>
+<body data-noch>
+<div class="sitebar"><a href="/" aria-label="লিয়ানা বুকস"><img src="/img/logo/li-mark.svg" alt="" width="34" height="44"><span class="lgn-n">লিয়ানা বুকস</span></a><nav class="sec" aria-label="সাইটের অংশ"><a href="/bcs/">বিসিএস</a><a href="/jobs/">চাকরি</a><a href="/science/">বিজ্ঞান</a><a href="/subject/" aria-label="বিষয়ভিত্তিক প্রস্তুতি">বিষয়<span class="n1">ভিত্তিক</span><span class="n2"> প্রস্তুতি</span></a><a href="/running/">চলমান</a><a href="/news/">খবর</a></nav></div>
+<div class="wrap">
+<h1>দলের পরীক্ষা বানান</h1>
+<p class="sub">আজ যা পড়েছেন সেই টপিক বাছুন। একটা লিংক পাবেন; গ্রুপে দিলে সবাই একই প্রশ্নে পরীক্ষা দেবে, শেষে সবার ফল এক তালিকায়। লগইন লাগে না।</p>
+
+<h2><i>১</i>আজ কী পড়েছেন?</h2>
+<div class="subjects" id="subjects"></div>
+<p class="picked" id="picked">এখনো কোনো টপিক বাছা হয়নি। বিষয় খুলে টপিকে চাপুন।</p>
+
+<h2><i>২</i>কয়টি প্রশ্ন?</h2>
+<div class="cnt" id="cnt" role="group" aria-label="প্রশ্নের সংখ্যা"></div>
+<p class="time" id="time"></p>
+
+<h2 id="h3"><i>৩</i>লিংক বানান</h2>
+<form class="f" id="form">
+  <label><span>আপনার নাম (সবাই দেখবে কে বানিয়েছেন)</span><input id="name" maxlength="24" autocomplete="given-name" placeholder="যেমন: করিম" required></label>
+  <label><span>পরীক্ষার নাম</span><input id="title" maxlength="100" placeholder="টপিক বাছলে নিজে বসে যাবে"></label>
+  <button class="btn go" id="go" type="submit">লিংক বানান</button>
+  <p class="err" id="err" hidden></p>
+</form>
+
+<div class="done" id="done" hidden>
+  <h3 id="dh"></h3>
+  <p id="dp"></p>
+  <div id="share"></div>
+  <div class="btns"><a class="btn" id="take" href="#">আমিও পরীক্ষা দেব</a><button class="btn ghost" id="again" type="button">আরেকটা বানান</button></div>
+</div>
+
+<div class="mine" id="mine" hidden><h3>আপনার বানানো পরীক্ষা (ফল দেখতে চাপুন)</h3><div id="minel"></div></div>
+</div>
+<script src="/js/challenge.js?v=4"></script>
+<script>
+(function(){
+var $=function(i){return document.getElementById(i)},bn=LBC.bn,ls=LBC.store;
+/* /subject/-এর বিষয়গুলো (ফাইল /subject/data/<id>.json); বিষয় খুললে তবেই ফাইল নামে */
+var SUBJ=[['bangla','বাংলা ভাষা ও সাহিত্য'],['english','ইংরেজি ভাষা ও সাহিত্য'],['math','গাণিতিক যুক্তি'],['mental','মানসিক দক্ষতা'],['science','সাধারণ বিজ্ঞান'],['ict','কম্পিউটার ও তথ্যপ্রযুক্তি'],
+  ['bangladesh','বাংলাদেশ বিষয়াবলি'],['international','আন্তর্জাতিক বিষয়াবলি'],['geography','ভূগোল, পরিবেশ ও দুর্যোগ ব্যবস্থাপনা'],['ethics','নৈতিকতা, মূল্যবোধ ও সুশাসন'],
+  ['economics','অর্থনীতি, ব্যাংকিং ও ব্যবসায়'],['law','আইন'],['samprotik','সাম্প্রতিক বিষয়াবলি']];
+var COUNTS=[10,20,25,50,100,200],MAX=200;
+var topics={},picked=[],want=50,count=50;  /* want = যা চাপা হয়েছে, count = বাছা টপিকে যতটা সম্ভব */  /* topics[id]={id,name,n,sets:[…],subj}; picked = বাছা টপিকের id, বাছার ক্রমে */
+/* বিসিএস প্রিলিতে ২০০ নম্বরে ২ ঘণ্টা = প্রতি প্রশ্নে ৩৬ সেকেন্ড (সার্ভারও একই হিসাবে সময় রাখে, অন্তত ৩ মিনিট) */
+function mins(n){return Math.max(3,Math.ceil(n*36/60))}
+function hm(m){var h=Math.floor(m/60),r=m%60;return (h?bn(h)+' ঘণ্টা':'')+(h&&r?' ':'')+(r||!h?bn(r)+' মিনিট':'')}
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return '&#'+c.charCodeAt(0)+';'})}
+
+/* ১. বিষয় আর টপিক */
+var box=$('subjects');
+SUBJ.forEach(function(s){var d=document.createElement('details');d.className='subj';d.dataset.s=s[0];
+  d.innerHTML='<summary><span>'+s[1]+'</span><small></small></summary><div class="tl"><p class="ld">লোড হচ্ছে…</p></div>';
+  d.addEventListener('toggle',function(){if(d.open&&!d.dataset.ok)load(d,s[0])});box.appendChild(d)});
+function load(d,sid){d.dataset.ok=1;
+  fetch('/subject/data/'+sid+'.json').then(function(r){if(!r.ok)throw r;return r.json()}).then(function(j){
+    var tl=d.querySelector('.tl');tl.innerHTML='';
+    j.topics.filter(function(t){return t.sets&&t.sets.length}).forEach(function(t){
+      topics[t.id]={id:t.id,name:t.name,n:t.n||0,sets:t.sets.map(function(x){return {id:x.id,k:x.kind}}),subj:sid};
+      var l=document.createElement('label');l.innerHTML='<input type="checkbox" value="'+esc(t.id)+'"><span>'+esc(t.name)+'</span><small>'+bn(t.n||0)+' প্রশ্ন</small>';
+      var c=l.querySelector('input');c.checked=picked.indexOf(t.id)>=0;
+      c.onchange=function(){var i=picked.indexOf(t.id);if(c.checked&&i<0)picked.push(t.id);if(!c.checked&&i>=0)picked.splice(i,1);sync()};
+      tl.appendChild(l)})},function(){d.dataset.ok='';d.querySelector('.tl').innerHTML='<p class="ld">খোলা গেল না। ইন্টারনেট দেখে আবার বন্ধ করে খুলুন।</p>'})}
+
+function avail(){return picked.reduce(function(s,id){return s+topics[id].n},0)}
+var autoTitle='';
+function sync(){
+  var names=picked.map(function(id){return topics[id].name});
+  $('picked').innerHTML=picked.length?'বাছা হয়েছে '+bn(picked.length)+'টি টপিক: <b>'+esc(names.join(', '))+'</b>':'এখনো কোনো টপিক বাছা হয়নি। বিষয় খুলে টপিকে চাপুন।';
+  [].forEach.call(box.children,function(d){var k=picked.filter(function(id){return topics[id].subj===d.dataset.s}).length;d.querySelector('summary small').textContent=k?bn(k)+'টি বাছা':''});
+  var t=names.length>3?names.slice(0,3).join(', ')+' ও আরও '+bn(names.length-3)+'টি':names.join(', ');
+  if(!$('title').value||$('title').value===autoTitle){$('title').value=t;}autoTitle=t;
+  counts()}
+
+/* ২. প্রশ্নের সংখ্যা আর সময় */
+function counts(){var a=picked.length?avail():MAX,cb=$('cnt');cb.innerHTML='';count=Math.min(want,a);
+  COUNTS.forEach(function(n){var b=document.createElement('button');b.type='button';b.textContent=bn(n);b.setAttribute('aria-pressed',n===count?'true':'false');
+    b.disabled=picked.length&&n>a;b.onclick=function(){want=n;counts()};cb.appendChild(b)});
+  $('time').innerHTML='সময়: <b>'+hm(mins(count))+'</b><small>বিসিএসের হিসাবে: ২০০ প্রশ্নে ২ ঘণ্টা, অর্থাৎ প্রতি প্রশ্নে ৩৬ সেকেন্ড। ভুলে নম্বর কাটা নেই।</small>'+
+    (picked.length&&count<want?'<small>বাছা টপিকে মোট '+bn(a)+'টি প্রশ্ন আছে, তাই '+bn(count)+'টি।</small>':'')+
+    (picked.length>count?'<small>টপিক বেশি, প্রশ্ন কম: সব টপিক থেকে প্রশ্ন আসবে না।</small>':'')}
+
+/* প্রশ্ন জোগাড়: প্রতিটি টপিকের ভাগ সমান; সেটগুলো এলোমেলো, আগের পরীক্ষার প্রশ্ন (b, x) আর সম্ভাব্য প্রশ্ন (l) পালা করে */
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
+function order(t){var real=shuffle(t.sets.filter(function(s){return s.k!=='l'})),lik=shuffle(t.sets.filter(function(s){return s.k==='l'})),o=[];
+  while(real.length||lik.length){if(real.length)o.push(real.shift());if(lik.length)o.push(lik.shift())}return o}
+function good(q){return q&&typeof q.q==='string'&&q.q.trim()&&Array.isArray(q.o)&&q.o.length>=2&&q.o.length<=6&&Number.isInteger(q.a)&&q.a>=0&&q.a<q.o.length&&q.o.every(function(x){return typeof x==='string'&&x.trim()})}
+/* একটা টপিক থেকে অন্তত need-টা আলাদা প্রশ্ন জোগাড় (সেট ৩টা করে নামে; সর্বোচ্চ ৩০ ফাইল) */
+function pool(t,need){var sets=order(t),got=[],seen={},i=0;
+  function next(){if(got.length>=need*1.3+3||i>=sets.length||i>=30)return Promise.resolve(got);
+    var batch=sets.slice(i,i+3);i+=3;
+    return Promise.all(batch.map(function(s){return fetch('/subject/data/t/'+t.id+'/'+s.id+'.json').then(function(r){return r.ok?r.json():[]}).catch(function(){return []})})).then(function(ls){
+      ls.forEach(function(l){(Array.isArray(l)?l:[]).forEach(function(q){var k=good(q)&&key(q);if(k&&!seen[k]){seen[k]=1;got.push({q:q.q,o:q.o,a:q.a,e:q.e||''})}})});return next()})}
+  return next()}
+function key(q){return q.q.replace(/<[^>]*>|\s+/g,'')}
+/* ভাগ: সবাইকে সমান, ছোট টপিকের ঘাটতি বড়গুলো পায় */
+function alloc(av,N){var w=av.map(function(){return 0}),left=N,open=av.map(function(_,i){return i}).filter(function(i){return av[i]>0});
+  while(left>0&&open.length){var share=Math.max(1,Math.floor(left/open.length));
+    open.forEach(function(i){if(left<=0)return;var g=Math.min(share,av[i]-w[i],left);w[i]+=g;left-=g});
+    open=open.filter(function(i){return w[i]<av[i]})}
+  return w}
+function gather(){var ts=picked.map(function(id){return topics[id]}),need=alloc(ts.map(function(t){return t.n}),count);
+  return Promise.all(ts.map(function(t,i){return need[i]?pool(t,need[i]):Promise.resolve([])})).then(function(pools){
+    var seen={},out=ts.map(function(){return []}),take=function(i,n){var p=pools[i];while(n>0&&p.length){var q=p.shift(),k=key(q);if(!seen[k]){seen[k]=1;out[i].push(q);n--}}};
+    pools.forEach(shuffle);ts.forEach(function(_,i){take(i,need[i])});
+    /* কোনো টপিকে কম পড়লে (একই প্রশ্ন দুই টপিকে, বা গোনার চেয়ে কম) অন্যদের বাকি থেকে */
+    var short=count-out.reduce(function(s,x){return s+x.length},0);
+    for(var i=0;short>0&&i<pools.length;i++){var before=out[i].length;take(i,short);short-=out[i].length-before}
+    return [].concat.apply([],out)})}
+/* $…$ অঙ্কের ভেতরের < আর > সার্ভারের ট্যাগ-ছাঁকনিতে মুছে যেত; KaTeX-এর \lt, \gt দিয়ে বদলানো */
+function mathSafe(v){return typeof v==='string'?v.replace(/\$[^$]+\$/g,function(m){return m.replace(/</g,'\\lt ').replace(/>/g,'\\gt ')}):v}
+
+/* ৩. লিংক */
+$('name').value=LBC.name();
+$('form').onsubmit=function(e){e.preventDefault();var err=$('err');err.hidden=true;
+  if(!picked.length){err.textContent='আগে অন্তত একটি টপিক বাছুন (ধাপ ১)।';err.hidden=false;return}
+  var name=$('name').value.trim();if(!name)return;ls('ch:name',name);
+  var go=$('go');go.disabled=true;go.textContent='প্রশ্ন সাজানো হচ্ছে…';
+  gather().then(function(qs){
+    if(qs.length<3)throw {error:'few'};
+    qs.forEach(function(q){q.q=mathSafe(q.q);q.o=q.o.map(mathSafe);q.e=mathSafe(q.e)});
+    /* খুব লম্বা ব্যাখ্যা হলে ছোট করা, যাতে সার্ভারের সীমা (৬০০KB) পার না হয় */
+    var body={grp:1,name:name,title:$('title').value.trim()||autoTitle,qs:qs};
+    if(new Blob([JSON.stringify(body)]).size>560000)qs.forEach(function(q){if(q.e.length>900)q.e=q.e.slice(0,900)+'…'});
+    go.textContent='লিংক বানানো হচ্ছে…';return LBC.post(body)}).then(function(j){
+    var t=$('title').value.trim()||autoTitle,list=[];try{list=JSON.parse(ls('mk:list')||'[]')}catch(e){}
+    list.unshift({id:j.id,t:t,n:j.n,ts:Date.now()});ls('mk:list',JSON.stringify(list.slice(0,20)));
+    $('dh').textContent='লিংক তৈরি!';
+    $('dp').textContent=t+': '+bn(j.n)+'টি প্রশ্ন, '+hm(j.mins||mins(j.n))+'। লিংকটা গ্রুপে দিন; যতজন খুশি পরীক্ষা দিতে পারবে, সবার ফল একই তালিকায় উঠবে।'+(j.n<count?' (বাছা টপিকে '+bn(j.n)+'টির বেশি আলাদা প্রশ্ন পাওয়া যায়নি।)':'');
+    LBC.share($('share'),j.id,t+': '+bn(j.n)+'টি প্রশ্ন, '+hm(j.mins||mins(j.n))+'। '+name+' দলের জন্য পরীক্ষা বানিয়েছেন, লগইন লাগে না। দিয়ে দেখুন কে কত পায়।');
+    $('take').href='/c/'+j.id;$('form').hidden=true;$('h3').hidden=true;$('done').hidden=false;mine();$('done').scrollIntoView({behavior:'smooth',block:'start'})
+  }).catch(function(e){err.textContent=e&&e.error==='few'?'বাছা টপিকে যথেষ্ট প্রশ্ন পাওয়া গেল না। আরেকটি টপিক যোগ করুন।':LBC.fail(e);err.hidden=false})
+  .then(function(){go.disabled=false;go.textContent='লিংক বানান'})};
+$('again').onclick=function(){$('done').hidden=true;$('h3').hidden=false;$('form').hidden=false;scrollTo(0,0)};
+
+function mine(){var list=[];try{list=JSON.parse(ls('mk:list')||'[]')}catch(e){}
+  if(!list.length)return;$('mine').hidden=false;
+  $('minel').innerHTML=list.map(function(x){var d=new Date(x.ts);return '<a href="/c/'+encodeURIComponent(x.id)+'"><span>'+esc(x.t||'পরীক্ষা')+' ('+bn(x.n)+'টি প্রশ্ন)</span><small>'+bn(d.getDate())+'/'+bn(d.getMonth()+1)+'</small></a>'}).join('')}
+counts();mine();
+})();
+</script>
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "6b92edeb250b475e9d759f64df8eb91e"}'></script><!-- End Cloudflare Web Analytics -->
+<!--seo-links--><nav style="max-width:760px;margin:24px auto 0;padding:0 16px 24px;text-align:center;font:13px/1.8 'Noto Sans Bengali',system-ui,sans-serif"><a href="/" style="color:inherit;opacity:.75">লিয়ানা বুকস</a> · <a href="/questions/" style="color:inherit;opacity:.75">সব প্রশ্ন ও সমাধান</a> · <a href="https://www.facebook.com/profile.php?id=61595898604238" target="_blank" rel="noopener" style="color:inherit;opacity:.75"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true" style="vertical-align:-2px;margin-right:4px"><path fill="currentColor" d="M13.5 22v-8.2h2.8l.4-3.3h-3.2V8.4c0-.9.3-1.6 1.6-1.6h1.7V3.9a23 23 0 0 0-2.5-.1c-2.5 0-4.2 1.5-4.2 4.3v2.4H7.3v3.3h2.8V22h3.4Z"/></svg>ফেসবুক পেজ</a></nav><!--/seo-links-->
+</body>
+</html>

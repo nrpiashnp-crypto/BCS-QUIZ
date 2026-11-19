@@ -45,6 +45,21 @@ state.json, news-bot.log)। Gemini চাবি `~/.lyanna/gemini.key`-এ, র
 পাবলিক ফাইলে শুধু আমাদের লেখা আর মূল লিংক; উৎসের লেখা বা উদ্ধৃতি নয়।
 হাতে বানানো দিনের ফাইল (`"method": "manual-…"`) রাতের ধারা বদলায় না (`--force` ছাড়া)।
 
+## বটের আলাদা রাস্তা (PIASH, ২০২৬-১১-১৫; `scripts/bot_lane.py`)
+- `news/` আর `circular/` শুধু বটের। বট GitHub-এর সর্বশেষ main-এর ওপর শুধু এই দুই ফোল্ডার বসিয়ে একটা কমিট push করে (rebase/merge নয়), তাই PR-এর সঙ্গে conflict হয় না, বট পুরোনো সাইটও তুলতে পারে না। PR নয়, তাই দিনের মার্জ-সীমায় গোনা হয় না।
+- কোনো PR এই দুই ফোল্ডারে হাত দিলে live-guard-এর `bot-lane` যাচাই লাল। মেনু/চেহারা বদলাতে `build_pages.py` বা `jobs/jbuild.py`-র ছাঁচ বদলান; `tools/seo_build.py` এই দুই ফোল্ডার ছোঁয় না (শুধু sitemap)।
+- নতুন Mac-এ চালু: Terminal-এ `curl -fsSL https://raw.githubusercontent.com/nrpiashnp-crypto/BCS-QUIZ/main/scripts/news/mac/install.command -o /tmp/lyanna-bot.command && bash /tmp/lyanna-bot.command` (Gemini চাবি + শুধু BCS-QUIZ-এ লেখার GitHub চাবি `~/.lyanna/github.token`)।
+- সাইটে না থাকা শেষ ৩ দিন (`LOOKBACK`) বট নিজে খোঁজে।
+
+## পুরোনো দিন: আর্কাইভ থেকে (PIASH, ২০২৬-১১-১৯; `archive.py`)
+- লক্ষ্য ১ জানুয়ারি ২০২৬ থেকে প্রতিটা দিন। ফিডে পুরোনো খবর থাকে না, তাই পত্রিকার দিনের sitemap (প্রথম আলো: `/sitemap/sitemap-daily-YYYY-MM-DD.xml`) বা আর্কাইভ পাতা (ইত্তেফাক: `/archive/YYYY-MM-DD`)। অন্য পত্রিকার ধাঁচ স্ক্রিপ্ট নিজে খোঁজে (জানা ছাঁচ → robots.txt-এর sitemap-সূচি) আর `~/Lyanna-Backup/news-bot/archive-formats.json`-এ মনে রাখে।
+- `run_daily.py --archive --date YYYY-MM-DD`; বাকি ধাপ আর যাচাই একই। বাছাই আর লেখা Gemma 4 31B-এ (Gemini-র দৈনিক সীমা আজকের জন্য)।
+- Mac-এ প্রতি খেপে ২টা পুরোনো দিন (সাম্প্রতিক থেকে পেছনে), দিনে সর্বোচ্চ ২ চেষ্টা। পুরোনো দিন Mac-এ জমা থাকে, শেষ পাঠানোর ২০ ঘণ্টা পরে একসঙ্গে GitHub-এ (একটা বিল্ড)।
+- হাতে পরখ: `python3 scripts/news/archive.py 2026-01-15`।
+
+## বিশ্বস্ত পত্রিকা (১৯/১১ থেকে)
+প্রথম আলো, ইত্তেফাক, ডেইলি স্টার, বিবিসি (বাংলা), ঢাকা ট্রিবিউন, সমকাল, বাসস, `.gov.bd` সরকারি সাইট, বাংলাদেশ ব্যাংক, নির্বাচন কমিশন — একটা উৎসেই চলে, তবে উদ্ধৃতি সেই পাতায় আছে কি না আর সংখ্যা মেলে কি না স্ক্রিপ্ট মেলায় (`quality.trusted`)।
+
 ## প্রকাশের নিরাপত্তা (Mac, `mac/mac_daily.py`)
 - প্রকাশের আগে `quality.check_day()`; কিছু না মিললে বা পাতা বানানো মাঝপথে ভাঙলে কিছুই যায় না — `news/` আগের অবস্থায়,
   সাইটে আগের দিনের পাতা, লগে কারণ আর Mac-এর বার্তা। সকাল ১১টার পরেও গতকালের সংবাদ না থাকলে দিনে একবার বার্তা।
