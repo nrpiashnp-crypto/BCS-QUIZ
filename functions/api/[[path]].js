@@ -117,6 +117,8 @@ let attqReady = false;
 async function attqTable(db) {
   if (attqReady) return;
   await db.prepare(ATTQ).run();
+  // রপ্তানি (export/teacher, src=attq) সময় ধরে পাতা পাতা পড়ে; index ছাড়া প্রতিটা পাতায় পুরো attq পড়া হতো
+  await db.prepare('CREATE INDEX IF NOT EXISTS attq_ts ON attq(ts)').run();
   for (const col of ['tm', 'm', 'qv']) try { await db.prepare('ALTER TABLE attq ADD COLUMN ' + col + ' TEXT').run(); } catch (e) { /* আগেই আছে */ }
   attqReady = true;
 }
@@ -185,7 +187,9 @@ const SCHEMA = [
   'CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY, sub TEXT UNIQUE NOT NULL, email TEXT, name TEXT, pic TEXT, created INTEGER, seen INTEGER)',
   'CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY, uid INTEGER NOT NULL, exp INTEGER NOT NULL)',
   'CREATE TABLE IF NOT EXISTS att(uid INTEGER NOT NULL, k TEXT NOT NULL, ts INTEGER NOT NULL, c TEXT, t TEXT, p TEXT, s REAL, n INTEGER, ok INTEGER, no INTEGER, sec INTEGER, sb TEXT, PRIMARY KEY(uid, k))',
-  'CREATE INDEX IF NOT EXISTS att_ts ON att(uid, ts)'
+  'CREATE INDEX IF NOT EXISTS att_ts ON att(uid, ts)',
+  // D1 পড়া কমাতে (১৩ নভেম্বর ২০২৬, দিনের ৫০ লাখ সারির সীমা): লগইনে "DELETE FROM sessions WHERE exp < ?" আর পুরো টেবিল পড়ে না
+  'CREATE INDEX IF NOT EXISTS sessions_exp ON sessions(exp)'
 ];
 const LIB_SCHEMA = [
   'CREATE TABLE IF NOT EXISTS lib_sources(id TEXT PRIMARY KEY, title TEXT, subject TEXT, exam TEXT, updated INTEGER)',
@@ -243,6 +247,10 @@ async function sessionUser(req, db) {
   return db.prepare('SELECT u.id, u.name, u.email, u.pic FROM sessions s JOIN users u ON u.id = s.uid WHERE s.token = ? AND s.exp > ?')
     .bind(await sha(m[1]), Date.now()).first();
 }
+
+// কুকি আছে কিন্তু D1 ত্রুটি = সার্ভার ব্যস্ত, লগআউট নয় (৪০১ দিলে ফোন lb:u মুছে ফেলত; ১৮/১১-এর শেষ যাচাই)
+const hasCookie = req => new RegExp('(?:^|;\\s*)' + COOKIE + '=').test(req.headers.get('Cookie') || '');
+const busy = () => json({error: 'busy'}, 503, {'Retry-After': '900', 'Cache-Control': 'no-store'});
 
 const pub = u => ({name: u.name || '', email: u.email || '', pic: u.pic || ''});
 
@@ -490,10 +498,11 @@ async function chDay(db, kind, cap) {
   const r = await db.prepare('INSERT INTO ch_day(k, n) VALUES(?, 1) ON CONFLICT(k) DO UPDATE SET n = n + 1 WHERE n < ? RETURNING n').bind(k, cap).first();
   return !!r;
 }
-// এক আইপি থেকে ঘণ্টায় ৩০টা আর দিনে ৬০টা চ্যালেঞ্জ; একটা চ্যালেঞ্জে এক আইপির ৩টা আর মোট ১০০০টা চেষ্টা বোর্ডে ওঠে
-const CH_MAX_Q = 200, CH_MAX_BYTES = 600000, CH_PER_HOUR = 30, CH_PER_DAY_IP = 60, CH_IP_TRIES = 3, CH_MAX_TRIES = 1000;
+// এক আইপি থেকে ঘণ্টায় ৬০টা আর দিনে ১৫০টা চ্যালেঞ্জ; একটা চ্যালেঞ্জে এক আইপির ৩টা আর মোট ১০০০টা চেষ্টা বোর্ডে ওঠে
+// (মোবাইল অপারেটরে অনেকে একই আইপি ভাগ করেন; ঘোষণার আগে ৩০/৬০ থেকে বাড়ানো, ১৯/১১। সবার মিলিয়ে সীমা আগের মতোই)
+const CH_MAX_Q = 200, CH_MAX_BYTES = 600000, CH_PER_HOUR = 60, CH_PER_DAY_IP = 150, CH_IP_TRIES = 3, CH_MAX_TRIES = 1000;
 // দলের পরীক্ষা: একই হোস্টেল/কোচিংয়ের ওয়াইফাই বা মোবাইল নেটে অনেকে একই আইপিতে থাকেন, তাই এক আইপির সীমা বেশি; বোর্ডে সেরা ৩০ জন
-const CH_GRP_IP_TRIES = 40, CH_GRP_TOP = 30, CH_GRP_PER_DAY_IP = 15;
+const CH_GRP_IP_TRIES = 40, CH_GRP_TOP = 30, CH_GRP_PER_DAY_IP = 40;
 const chGrp = c => c.ok < 0;
 // সব আইপি মিলিয়ে দিনে এতগুলোর বেশি চ্যালেঞ্জ জমা হয় না, যাতে আইপি বদলে বদলে কেউ D1-এর দৈনিক লেখার কোটা শেষ করতে না পারে।
 // এক আইপির দৈনিক সীমা আলাদা থাকায় একজন একা এই মোট সীমা শেষ করে অন্যদের আটকাতে পারে না
@@ -609,7 +618,7 @@ async function challenge(path, req, db, env) {
       qs = cl.qs; picks = chPicks(cl.picks, qs); ok = chScore(picks, qs); idx = JSON.stringify(ids);
       sec = Math.max(0, Math.min(chMins(qs.length) * 60, Math.round(num(body.sec) || 0)));
     } else if (body.grp) {
-      // দলের পরীক্ষা: বানানো দাগ দেন না; ok = -1 মানে দলের পরীক্ষা। পুরো প্রশ্ন-ব্যাখ্যা জমা হয়, তাই এক আইপি দিনে ১৫টা
+      // দলের পরীক্ষা: বানানো দাগ দেন না; ok = -1 মানে দলের পরীক্ষা। পুরো প্রশ্ন-ব্যাখ্যা জমা হয়, তাই এক আইপি দিনে ৪০টা
       const g = await db.prepare('SELECT COUNT(*) AS n FROM ch WHERE iph = ? AND ts > ? AND ok < 0').bind(ip, now - 86400e3).first();
       if (g && g.n >= CH_GRP_PER_DAY_IP) return json({error: 'slow'}, 429);
       const cl = chClean(body.qs, null);
@@ -698,8 +707,8 @@ async function repSetup(db) {
   try { await db.prepare('ALTER TABLE rep ADD COLUMN h TEXT').run(); } catch (e) { /* আগেই আছে */ }
   REP_READY = true;
 }
-// এক আইপি থেকে ঘণ্টায় ২০টা, দিনে ৬০টা; সবার মিলিয়ে দিনে ৩০০০টা (D1-এর দৈনিক লেখার সীমা বাঁচাতে)
-const REP_KINDS = new Set(['hard', 'ans', 'exp', 'q', 'other']), REP_PER_HOUR = 20, REP_PER_DAY_IP = 60, REP_PER_DAY_ALL = 3000;
+// এক আইপি থেকে ঘণ্টায় ৫০টা, দিনে ১৫০টা (ভাগ করা মোবাইল আইপির জন্য, ১৯/১১); সবার মিলিয়ে দিনে ৩০০০টা (D1-এর দৈনিক লেখার সীমা বাঁচাতে)
+const REP_KINDS = new Set(['hard', 'ans', 'exp', 'q', 'other']), REP_PER_HOUR = 50, REP_PER_DAY_IP = 150, REP_PER_DAY_ALL = 3000;
 const repText = (v, n) => (typeof v === 'string' ? v.normalize('NFC') : '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, n);
 async function report(req, db, u) {
   const b = await req.json().catch(() => ({}));
@@ -737,7 +746,7 @@ const FB_SCHEMA = [
 ];
 let FB_READY = false;
 async function fbSetup(db) { if (!FB_READY) { await db.batch(FB_SCHEMA.map(x => db.prepare(x))); FB_READY = true; } }
-const FB_PER_DAY_IP = 150, FB_PER_DAY_ALL = 20000;
+const FB_PER_DAY_IP = 400, FB_PER_DAY_ALL = 20000;
 async function fbTap(req, db, u) {
   let b = {};
   try { b = JSON.parse(await req.text()); } catch (e) { /* sendBeacon text/plain-এ পাঠায় */ }
@@ -987,6 +996,7 @@ const PILOT_SCHEMA = [
   'CREATE TABLE IF NOT EXISTS pilot_q(pilot TEXT NOT NULL, qid TEXT NOT NULL, topic TEXT, d TEXT NOT NULL, PRIMARY KEY(pilot, qid))',
   'CREATE TABLE IF NOT EXISTS pilot_mem(pilot TEXT NOT NULL, uid INTEGER NOT NULL, code TEXT, st TEXT NOT NULL, ts INTEGER, PRIMARY KEY(pilot, uid))',
   'CREATE TABLE IF NOT EXISTS pilot_sit(pilot TEXT NOT NULL, uid INTEGER NOT NULL, no INTEGER NOT NULL, ts INTEGER NOT NULL, dl INTEGER NOT NULL, qs TEXT NOT NULL, rep TEXT NOT NULL, done INTEGER, PRIMARY KEY(pilot, uid, no))',
+  'CREATE INDEX IF NOT EXISTS pilot_sit_ts ON pilot_sit(ts)',
   'CREATE TABLE IF NOT EXISTS pilot_ans(pilot TEXT NOT NULL, uid INTEGER NOT NULL, no INTEGER NOT NULL, qid TEXT NOT NULL, topic TEXT, pick INTEGER NOT NULL, ok INTEGER NOT NULL, conf TEXT NOT NULL, sec INTEGER, ts INTEGER NOT NULL, rep INTEGER NOT NULL, late INTEGER, cts INTEGER, PRIMARY KEY(pilot, uid, no, qid))',
   'CREATE TABLE IF NOT EXISTS pilot_sheet(pilot TEXT NOT NULL, uid INTEGER NOT NULL, topic TEXT NOT NULL, ts INTEGER NOT NULL, last INTEGER, n INTEGER NOT NULL, PRIMARY KEY(pilot, uid, topic))'
 ];
@@ -1483,6 +1493,10 @@ const DIAG_SCHEMA = [
   'CREATE TABLE IF NOT EXISTS msg(id INTEGER PRIMARY KEY, uid INTEGER NOT NULL, ts INTEGER NOT NULL, src TEXT, text TEXT NOT NULL, seen INTEGER)',
   'CREATE INDEX IF NOT EXISTS msg_uid ON msg(uid, ts)',
   'CREATE TABLE IF NOT EXISTS diag_att(sid TEXT NOT NULL, uid INTEGER NOT NULL, part INTEGER NOT NULL, ts INTEGER NOT NULL, dl INTEGER NOT NULL, ans TEXT NOT NULL, done INTEGER, res TEXT, hid INTEGER, hn INTEGER, PRIMARY KEY(sid, uid, part))',
+  // মূল চাবি sid দিয়ে শুরু, তাই "WHERE uid = ?" (/api/today প্রতিবার দুবার, admin/att) পুরো diag_att পড়ত; ts-এর index রপ্তানির জন্য।
+  // ans/res হালনাগাদে uid বা ts বদলায় না, তাই এই index-এ বাড়তি লেখা প্রায় নেই
+  'CREATE INDEX IF NOT EXISTS diag_att_uid ON diag_att(uid, ts)',
+  'CREATE INDEX IF NOT EXISTS diag_att_ts ON diag_att(ts)',
   // PIASH-এর লেখা পরামর্শ (সমস্যার তালিকা আর PDF রিপোর্টে); pub = শিক্ষার্থী দেখবেন কি না
   'CREATE TABLE IF NOT EXISTS diag_note(sid TEXT NOT NULL, uid INTEGER NOT NULL, txt TEXT NOT NULL, pub INTEGER NOT NULL, ts INTEGER NOT NULL, PRIMARY KEY(sid, uid))',
   // রাতের ছোট মতামত (site-needs.md §৬): একটা ভাগ (দিনের পরীক্ষা) শেষে, অ্যাকাউন্টের সঙ্গে জোড়া; d = {ease, mins, txt}
@@ -2482,7 +2496,8 @@ async function teacherExport(path, url, req, db) {
       more = sits.length > EX_PAGE;
       const S = sits.slice(0, EX_PAGE);
       const {results: ans} = S.length ? await db.prepare(`SELECT a.pilot, a.uid, a.no, a.qid, a.pick, a.ok, a.conf, a.sec, a.ts, a.qv FROM pilot_ans a
-        JOIN pilot_sit s ON s.pilot = a.pilot AND s.uid = a.uid AND s.no = a.no WHERE s.ts >= ? AND s.ts < ?`).bind(from, to).all() : {results: []};
+        JOIN pilot_sit s ON s.pilot = a.pilot AND s.uid = a.uid AND s.no = a.no WHERE s.ts >= ? AND s.ts <= ?`).bind(S[0].ts, S[S.length - 1].ts).all() : {results: []};
+      // ↑ শুধু এই পাতার পরীক্ষাগুলোর সময়ের ভেতরের উত্তর (S সময়-ক্রমে); আগে প্রতিটা পাতায় পুরো সপ্তাহের সব উত্তর পড়া হতো
       const A = new Map(ans.map(a => [a.pilot + '|' + a.uid + '|' + a.no + '|' + a.qid, a]));
       for (const s of S) {
         const ids = s.qs.split(','), closed = !!s.done || s.dl + GRACE < now, [day, hour] = exAt(s.ts);
@@ -3094,14 +3109,16 @@ export async function onRequest({request: req, env}) {
   try {
     if (path === 'me' && m === 'GET') {
       let u = null;
-      if (db) try { u = await sessionUser(req, db); } catch (e) { /* টেবিল এখনো তৈরি হয়নি */ }
+      // D1 সাড়া না দিলে (যেমন দিনের সীমা পার) 503: ফোন লগইন-চিহ্ন রাখে, "লগআউট" হয় না
+      if (db) try { u = await sessionUser(req, db); } catch (e) { if (hasCookie(req)) return busy(); }
       return json({cid: db && env.GOOGLE_CLIENT_ID || '', user: u ? pub(u) : null});
     }
     if (!db) return json({error: 'setup'}, 503);
     if (path === 'login' && m === 'POST') return await login(req, env, db);
     if (path === 'ch' || path.startsWith('ch/')) return await challenge(path, req, db, env);
 
-    const u = await sessionUser(req, db).catch(() => null);
+    let u = null;
+    try { u = await sessionUser(req, db); } catch (e) { if (hasCookie(req)) return busy(); }
     if (path === 'logout' && m === 'POST') {
       const c = (req.headers.get('Cookie') || '').match(new RegExp('(?:^|;\\s*)' + COOKIE + '=([A-Za-z0-9_-]+)'));
       if (c) await db.prepare('DELETE FROM sessions WHERE token = ?').bind(await sha(c[1])).run().catch(() => {});
