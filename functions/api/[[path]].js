@@ -498,10 +498,11 @@ async function chDay(db, kind, cap) {
   const r = await db.prepare('INSERT INTO ch_day(k, n) VALUES(?, 1) ON CONFLICT(k) DO UPDATE SET n = n + 1 WHERE n < ? RETURNING n').bind(k, cap).first();
   return !!r;
 }
-// এক আইপি থেকে ঘণ্টায় ৩০টা আর দিনে ৬০টা চ্যালেঞ্জ; একটা চ্যালেঞ্জে এক আইপির ৩টা আর মোট ১০০০টা চেষ্টা বোর্ডে ওঠে
-const CH_MAX_Q = 200, CH_MAX_BYTES = 600000, CH_PER_HOUR = 30, CH_PER_DAY_IP = 60, CH_IP_TRIES = 3, CH_MAX_TRIES = 1000;
+// এক আইপি থেকে ঘণ্টায় ৬০টা আর দিনে ১৫০টা চ্যালেঞ্জ; একটা চ্যালেঞ্জে এক আইপির ৩টা আর মোট ১০০০টা চেষ্টা বোর্ডে ওঠে
+// (মোবাইল অপারেটরে অনেকে একই আইপি ভাগ করেন; ঘোষণার আগে ৩০/৬০ থেকে বাড়ানো, ১৯/১১। সবার মিলিয়ে সীমা আগের মতোই)
+const CH_MAX_Q = 200, CH_MAX_BYTES = 600000, CH_PER_HOUR = 60, CH_PER_DAY_IP = 150, CH_IP_TRIES = 3, CH_MAX_TRIES = 1000;
 // দলের পরীক্ষা: একই হোস্টেল/কোচিংয়ের ওয়াইফাই বা মোবাইল নেটে অনেকে একই আইপিতে থাকেন, তাই এক আইপির সীমা বেশি; বোর্ডে সেরা ৩০ জন
-const CH_GRP_IP_TRIES = 40, CH_GRP_TOP = 30, CH_GRP_PER_DAY_IP = 15;
+const CH_GRP_IP_TRIES = 40, CH_GRP_TOP = 30, CH_GRP_PER_DAY_IP = 40;
 const chGrp = c => c.ok < 0;
 // সব আইপি মিলিয়ে দিনে এতগুলোর বেশি চ্যালেঞ্জ জমা হয় না, যাতে আইপি বদলে বদলে কেউ D1-এর দৈনিক লেখার কোটা শেষ করতে না পারে।
 // এক আইপির দৈনিক সীমা আলাদা থাকায় একজন একা এই মোট সীমা শেষ করে অন্যদের আটকাতে পারে না
@@ -617,7 +618,7 @@ async function challenge(path, req, db, env) {
       qs = cl.qs; picks = chPicks(cl.picks, qs); ok = chScore(picks, qs); idx = JSON.stringify(ids);
       sec = Math.max(0, Math.min(chMins(qs.length) * 60, Math.round(num(body.sec) || 0)));
     } else if (body.grp) {
-      // দলের পরীক্ষা: বানানো দাগ দেন না; ok = -1 মানে দলের পরীক্ষা। পুরো প্রশ্ন-ব্যাখ্যা জমা হয়, তাই এক আইপি দিনে ১৫টা
+      // দলের পরীক্ষা: বানানো দাগ দেন না; ok = -1 মানে দলের পরীক্ষা। পুরো প্রশ্ন-ব্যাখ্যা জমা হয়, তাই এক আইপি দিনে ৪০টা
       const g = await db.prepare('SELECT COUNT(*) AS n FROM ch WHERE iph = ? AND ts > ? AND ok < 0').bind(ip, now - 86400e3).first();
       if (g && g.n >= CH_GRP_PER_DAY_IP) return json({error: 'slow'}, 429);
       const cl = chClean(body.qs, null);
@@ -706,8 +707,8 @@ async function repSetup(db) {
   try { await db.prepare('ALTER TABLE rep ADD COLUMN h TEXT').run(); } catch (e) { /* আগেই আছে */ }
   REP_READY = true;
 }
-// এক আইপি থেকে ঘণ্টায় ২০টা, দিনে ৬০টা; সবার মিলিয়ে দিনে ৩০০০টা (D1-এর দৈনিক লেখার সীমা বাঁচাতে)
-const REP_KINDS = new Set(['hard', 'ans', 'exp', 'q', 'other']), REP_PER_HOUR = 20, REP_PER_DAY_IP = 60, REP_PER_DAY_ALL = 3000;
+// এক আইপি থেকে ঘণ্টায় ৫০টা, দিনে ১৫০টা (ভাগ করা মোবাইল আইপির জন্য, ১৯/১১); সবার মিলিয়ে দিনে ৩০০০টা (D1-এর দৈনিক লেখার সীমা বাঁচাতে)
+const REP_KINDS = new Set(['hard', 'ans', 'exp', 'q', 'other']), REP_PER_HOUR = 50, REP_PER_DAY_IP = 150, REP_PER_DAY_ALL = 3000;
 const repText = (v, n) => (typeof v === 'string' ? v.normalize('NFC') : '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, n);
 async function report(req, db, u) {
   const b = await req.json().catch(() => ({}));
@@ -745,7 +746,7 @@ const FB_SCHEMA = [
 ];
 let FB_READY = false;
 async function fbSetup(db) { if (!FB_READY) { await db.batch(FB_SCHEMA.map(x => db.prepare(x))); FB_READY = true; } }
-const FB_PER_DAY_IP = 150, FB_PER_DAY_ALL = 20000;
+const FB_PER_DAY_IP = 400, FB_PER_DAY_ALL = 20000;
 async function fbTap(req, db, u) {
   let b = {};
   try { b = JSON.parse(await req.text()); } catch (e) { /* sendBeacon text/plain-এ পাঠায় */ }
