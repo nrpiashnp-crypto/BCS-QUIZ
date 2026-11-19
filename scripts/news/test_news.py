@@ -17,6 +17,7 @@ import pick  # noqa: E402
 import run_daily  # noqa: E402
 import quality  # noqa: E402
 import verify  # noqa: E402
+import archive  # noqa: E402
 from verify import check_item, norm, numbers, shared_run  # noqa: E402
 
 RSS = """<?xml version="1.0"?><rss><channel>
@@ -490,6 +491,39 @@ class GeminiShapeTest(unittest.TestCase):
             g = pick.group(items)
         self.assertEqual(len(g), 1)
         self.assertEqual(len(g[0]["members"]), 2)
+
+
+class ArchiveTest(unittest.TestCase):
+    """পুরোনো দিন (১৯/১১): দিনের sitemap আর আর্কাইভ পাতা পড়া, বিশ্বস্ত তালিকা।"""
+
+    def test_sitemap_with_news_title(self):
+        raw = b"""<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"><url><loc>https://www.prothomalo.com/bangladesh/abc12345xy</loc>
+        <news:news><news:publication_date>2026-01-15T10:00:00+06:00</news:publication_date><news:title>\xe0\xa6\x95</news:title></news:news>
+        </url><url><loc>https://www.prothomalo.com/bangladesh/zzz99999qq</loc><lastmod>2026-01-15T12:00:00Z</lastmod></url></urlset>"""
+        rows, kids = archive.parse_sitemap(raw)
+        self.assertEqual(kids, [])
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[1]["title"], "")
+        self.assertTrue(archive._same_day(rows[0]["time"], dt.date(2026, 1, 15)))
+        self.assertFalse(archive._same_day("2026-01-14T23:00:00Z", dt.date(2026, 1, 15)))
+
+    def test_archive_html_links(self):
+        raw = ('<a href="/national/773311/বাজেট-ঘোষণা">জাতীয় সংসদে নতুন অর্থবছরের বাজেট ঘোষণা করা হলো</a>'
+               '<a href="/about">আমাদের সম্পর্কে জানুন বিস্তারিত পাতায়</a>'
+               '<a href="https://other.com/x/123456">অন্য সাইটের একটা লম্বা শিরোনাম এখানে</a>').encode()
+        rows = archive.parse_archive_html(raw, "https://www.ittefaq.com.bd")
+        self.assertEqual(len(rows), 1)
+        self.assertTrue(rows[0]["url"].startswith("https://www.ittefaq.com.bd/national/773311/"))
+
+    def test_skip_sections(self):
+        self.assertFalse(archive._is_news("https://www.prothomalo.com/entertainment/abc12345"))
+        self.assertTrue(archive._is_news("https://www.prothomalo.com/bangladesh/abc12345"))
+
+    def test_trusted_new(self):
+        for d in ("dhakatribune.com", "samakal.com", "bssnews.net", "bbc.com", "mof.gov.bd", "bb.org.bd"):
+            self.assertTrue(quality.trusted(d), d)
+        self.assertFalse(quality.trusted("banglatribune.com"))
 
 
 if __name__ == "__main__":
