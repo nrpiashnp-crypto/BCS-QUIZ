@@ -167,7 +167,7 @@ class Pages(unittest.TestCase):
         self.assertIn('href="/news/2026/11/05/"', h)                    # নতুন পাশের দিন
         self.assertIn('href="/news/2026/11/"', h)                       # মাসের লিংক
         self.assertNotIn("evidence", h)
-        self.assertEqual(h.count("<script"), 3 + h.count("<script>alert"))   # শুধু সাইটের app, account, omr
+        self.assertEqual(h.count("<script src"), 3)   # শুধু সাইটের app, account, omr (+ font_mode-এর ছোট ভেতরের অংশ)
 
     def test_landing_and_month(self):
         build_pages.build_all(self.nd)
@@ -469,6 +469,27 @@ class Prune(unittest.TestCase):
         ok, why = verify.check_item(it, texts)
         self.assertTrue(ok, why)
         self.assertNotIn("২০১৮", it["detail"])
+
+
+class GeminiShapeTest(unittest.TestCase):
+    """১৬ ও ১৯ নভেম্বর: Gemini {"groups": [...]} না দিয়ে সরাসরি [...] দিয়েছিল — সব হারিয়ে গিয়েছিল বা চালানো ভেঙেছিল।"""
+
+    def test_rows_all_shapes(self):
+        a = {"event": 1, "title": "x"}
+        self.assertEqual(pick._rows({"items": [a]}, "items"), [a])
+        self.assertEqual(pick._rows([a], "items"), [a])
+        self.assertEqual(pick._rows([{"items": [a]}], "items"), [a])
+        self.assertEqual(pick._rows(None, "items"), [])
+        self.assertEqual(pick._rows({"items": "ভুল"}, "items"), [])
+
+    def test_group_accepts_bare_list(self):
+        items = [{"src": "a", "title": "t1", "desc": "", "url": "https://a.com/1"},
+                 {"src": "b", "title": "t2", "desc": "", "url": "https://b.com/2"}]
+        cat = next(iter(pick.CATEGORIES))
+        with mock.patch.object(pick, "gemini_json", return_value=[{"items": [0, 1], "topic": "ঘটনা", "category": cat, "score": 8}]):
+            g = pick.group(items)
+        self.assertEqual(len(g), 1)
+        self.assertEqual(len(g[0]["members"]), 2)
 
 
 if __name__ == "__main__":

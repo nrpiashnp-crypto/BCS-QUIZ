@@ -26,6 +26,7 @@ from verify import check_item, prune  # noqa: E402
 
 MAX_HEADLINES = 350
 PER_SOURCE = 45          # এক উৎস থেকে সর্বোচ্চ কতটা শিরোনাম
+NO_NET = 3               # ফেরত-সংখ্যা: ইন্টারনেট নেই (mac_daily এটা চেষ্টা হিসেবে গোনে না)
 SOLO_MIN_SCORE = 6       # বিশ্বস্ত পত্রিকার এক-উৎসের দল লেখানো হবে চমক-মান এর বেশি হলে
 SOLO_MAX = 12            # এক চালানোয় সর্বোচ্চ কতটা এক-উৎসের দল (Gemini-র সীমা মাথায় রেখে)
 
@@ -124,6 +125,10 @@ def main() -> int:
         items = headlines_by_source(items)
         log(f"মোট শিরোনাম: {len(items)}")
         if len(items) < 10:
+            down = [h for h in health if not h.get("ok") and "URLError" in str(h.get("error", ""))]
+            if health and len(down) >= 0.7 * len(health):     # প্রায় সব উৎসে URLError = Mac-এর ইন্টারনেট নেই
+                report(args.summary, ds, [], [], health, "ইন্টারনেট পাওয়া যায়নি — এই চেষ্টা গোনা হবে না, পরের ঘণ্টায় আবার।")
+                return NO_NET
             report(args.summary, ds, [], [], health, "খুব কম শিরোনাম এল — ফিডগুলো দেখতে হবে। আজ কিছু প্রকাশ হয়নি।")
             return 1
         groups = group(items)
@@ -170,6 +175,7 @@ def main() -> int:
             continue
         for (g, texts, links), res in zip(chunk, results):
             if not res:
+                log(f"  লেখা আসেনি বা AI বাদ দিয়েছে: {g['topic']}")
                 continue
             res["sources"] = sources_of(res, texts)
             w = excluded(res.get("title", ""), res.get("short", ""))

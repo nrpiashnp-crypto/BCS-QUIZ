@@ -195,6 +195,9 @@ def make_draft(ds: str, state: dict, backfill: bool = False) -> bool:
         shutil.copy2(day, d / "day.json")
     sh("git", "checkout", "-q", "--", "news", cwd=REPO, check=False)
     sh("git", "clean", "-qfd", "news", cwd=REPO, check=False)
+    if not ok and r.returncode == 3:                 # run_daily.NO_NET: Mac-এর ইন্টারনেট নেই, চেষ্টা গোনা নয়
+        log(f"{ds}: ইন্টারনেট পাওয়া যায়নি; পরের ঘণ্টায় আবার (চেষ্টা গোনা হলো না)")
+        return False
     if not ok:
         prev = state.get(ds, {})
         state[ds] = {"status": "empty", "at": dt.datetime.now(DHAKA).isoformat(), "tries": prev.get("tries", 0) + 1}
