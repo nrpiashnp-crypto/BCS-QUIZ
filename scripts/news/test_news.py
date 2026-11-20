@@ -18,6 +18,7 @@ import run_daily  # noqa: E402
 import quality  # noqa: E402
 import verify  # noqa: E402
 import archive  # noqa: E402
+import picker  # noqa: E402
 from verify import check_item, norm, numbers, shared_run  # noqa: E402
 
 RSS = """<?xml version="1.0"?><rss><channel>
@@ -524,6 +525,35 @@ class ArchiveTest(unittest.TestCase):
         for d in ("dhakatribune.com", "samakal.com", "bssnews.net", "bbc.com", "mof.gov.bd", "bb.org.bd"):
             self.assertTrue(quality.trusted(d), d)
         self.assertFalse(quality.trusted("banglatribune.com"))
+
+
+class PickerTest(unittest.TestCase):
+    """সাপ্তাহিক PDF-এর ঘটনা (২০/১১): দিনের তালিকা আর দলের সঙ্গে মেলানো।"""
+
+    def test_events_for_window_and_mark(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            old = picker.OUT
+            picker.OUT = Path(d)
+            try:
+                (Path(d) / "w.json").write_text(json.dumps({"events": [
+                    {"date": "2026-03-10", "topic": "বিশ্বব্যাংকের ৫০ কোটি ডলার ঋণ অনুমোদন", "section": "bd", "kind": "event",
+                     "keys": ["বিশ্বব্যাংক", "World Bank", "৫০ কোটি ডলার"]},
+                    {"date": "2026-03-20", "topic": "অন্য সপ্তাহের ঘটনা", "section": "bd", "kind": "event", "keys": ["x"]},
+                    {"date": None, "topic": "তারিখহীন সূচক", "section": "gk", "kind": "report", "keys": ["সূচক"]}]},
+                    ensure_ascii=False), encoding="utf-8")
+                evs = picker.events_for(dt.date(2026, 3, 11))
+                self.assertEqual(len(evs), 1)
+                self.assertTrue(evs[0]["topic"].startswith("বিশ্বব্যাংকের"))
+                groups = [{"topic": "বিশ্বব্যাংক দিচ্ছে ৫০ কোটি ডলার", "score": 5, "members": [{"title": "World Bank approves $500m"}]},
+                          {"topic": "অন্য খবর", "score": 6, "members": []}]
+                n, missed = picker.mark_groups(groups, evs)
+                self.assertEqual(n, 1)
+                self.assertEqual(groups[0]["score"], 8)
+                self.assertEqual(groups[1]["score"], 6)
+                self.assertEqual(missed, [])
+            finally:
+                picker.OUT = old
 
 
 if __name__ == "__main__":

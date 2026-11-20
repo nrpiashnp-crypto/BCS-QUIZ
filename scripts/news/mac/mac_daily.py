@@ -57,7 +57,7 @@ ALERT_HOUR = 11              # এর পরেও গতকালের সং�
 BACKFILL = ["2026-11-05", "2026-11-06", "2026-11-07", "2026-11-08", "2026-11-09"]
 RETRY_EMPTY_H = 3            # কিছু না পেলে কত ঘণ্টা পরে আবার চেষ্টা
 ARCHIVE_FROM = dt.date(2026, 1, 1)   # পুরোনো দিন আর্কাইভ থেকে এই তারিখ পর্যন্ত (PIASH, ২০২৬-১১-১৯)
-ARCHIVE_PER_RUN = 2          # প্রতি খেপে কতটা পুরোনো দিন
+ARCHIVE_PER_RUN = 4          # প্রতি খেপে কতটা পুরোনো দিন (২০/১১: ২ → ৪, Gemma-র সীমা অনেক)
 ARCHIVE_TRIES = 2            # একটা পুরোনো দিনে সর্বোচ্চ কতবার চেষ্টা
 ARCHIVE_ENV = {"NEWS_PICK_MODEL": "gemma-4-31b*", "NEWS_WRITE_MODEL": "gemma-4-31b*"}   # Gemini-র দৈনিক সীমা আজকের জন্য থাকুক
 SHIP_EVERY_H = 20            # জমা থাকা পুরোনো দিন GitHub-এ পাঠানো অন্তত এতক্ষণ পরপর (মাসে ৫০০ বিল্ডের সীমা)
@@ -481,6 +481,13 @@ def main() -> int:
         make_draft(todo[0], state, backfill=True)
         bf["done"].append(todo[0])
         save_state(state)
+    (BOT / "pdf").mkdir(exist_ok=True)                     # সাপ্তাহিক PDF রাখার জায়গা (PIASH ২০/১১)
+    if any((BOT / "pdf").glob("*.pdf")):
+        r = sh(sys.executable, str(REPO / "scripts/news/picker.py"), "extract", "--max", "4", cwd=REPO, check=False,
+               env=dict(os.environ, GEMINI_API_KEY=KEYFILE.read_text().strip(), LYANNA_NEWS_BOT=str(BOT)), timeout=1800)
+        for line in (r.stdout + "\n" + r.stderr).splitlines():
+            if "PDF" in line:
+                log(line.strip())
     if not MANUAL.exists():                                 # আর্কাইভ থেকে পুরোনো দিন (১ জানুয়ারি ২০২৬ পর্যন্ত)
         for ds in archive_next(now, state, ARCHIVE_PER_RUN):
             make_draft(ds, state, archive=True)

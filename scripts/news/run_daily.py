@@ -106,6 +106,7 @@ def main() -> int:
                                            "আগের প্রকাশিত সংবাদ থাকে, নতুন যাচাই-পেরোনোগুলো যোগ হয়")
     args = ap.parse_args()
 
+    missed: list[dict] = []
     today = now_dhaka().date()
     date = dt.date.fromisoformat(args.date) if args.date else today
     until = now_dhaka() if date >= today else dt.datetime.combine(date, dt.time(23, 59), DHAKA)
@@ -145,6 +146,15 @@ def main() -> int:
             else:
                 kept.append(g)
         groups = kept
+        try:                                               # সাপ্তাহিক PDF-এর ঘটনা (PIASH ২০/১১): মিললে চমক-মান ৮+
+            import picker                                  # noqa: E402
+            evs = picker.events_for(date)
+            if evs:
+                n_hit, missed = picker.mark_groups(groups, evs)
+                groups.sort(key=lambda g: -g.get("score", 0))
+                log(f"PDF-এর ঘটনা: {len(evs)}টা, শিরোনামে মিলল {n_hit}টা দলে")
+        except Exception as e:  # noqa: BLE001
+            log(f"  PDF-তালিকা পড়া গেল না: {e}")
         multi = [g for g in groups if len({domain(m["url"]) for m in g["members"]}) >= 2]
         # বিশ্বস্ত পত্রিকার একার খবর: একাধিক-উৎসের পরে লেখানো হয়
         solo = [g for g in groups if g not in multi and g["score"] >= SOLO_MIN_SCORE
@@ -155,6 +165,9 @@ def main() -> int:
 
     allow = {float(date.year), float(date.month), float(date.day)}
     published, review = [], []
+    for e in missed[:15]:                                  # PDF-এ আছে, কিন্তু সেদিনের পত্রিকার শিরোনামে মেলেনি
+        review.append({"title": e["topic"], "score": 8, "why": ["সাপ্তাহিক PDF-এর ঘটনা, পত্রিকার শিরোনামে মেলেনি"],
+                       "links": []})
     for g in single[:10]:
         review.append({"title": g["topic"], "score": g["score"], "why": ["মাত্র একটা উৎসে পাওয়া গেছে"],
                        "links": [m["url"] for m in g["members"]][:3]})
