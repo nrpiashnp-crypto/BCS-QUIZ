@@ -1,7 +1,9 @@
 /* বুদ্ধির গেম: খেলার ইঞ্জিন (/game/play/?s=s01)।
    পর্যায়ের লেখা /game/data/sNN.json-এ (ছাঁচ: /game/README.md), তালিকা /game/data/stages.json-এ (tools/game_index.py বানায়)।
-   অগ্রগতি এই ফোনে 'ly:game'-এ; প্রতিটা রাউন্ডের সারি 'ly:game:rows'-এ জমে (পরে D1-এ পাঠানোর জন্য),
-   আর পর্যায় শেষে একবার LBA.save() (লগইন থাকলে ড্যাশবোর্ডে যায়, c:'game')।
+   খেলতে লগইন লাগে (PIASH, ২০২৬-১১-২০)। অগ্রগতি এই ফোনে 'ly:game'-এ।
+   প্রতিটা ঘটনা (শুরু, প্রতিটা রাউন্ড, ব্যাখ্যা পড়ে এগোনো, মাঝপথে ছাড়া, শেষ) সঙ্গে সঙ্গে 'ly:game:q'-এ জমে আর কয়েকটা একসঙ্গে
+   POST /api/game-এ যায় (D1 game_rounds; পাতা ছাড়ার সময়ও)। ইন্টারনেট না থাকলে জমে থাকে, পরে যায়।
+   পর্যায় শেষে একবার LBA.save() (ড্যাশবোর্ডে, c:'game')।
    সব কোড একটা ফাংশনের ভেতরে; top, name, open, close জাতীয় বৈশ্বিক নাম নয়। */
 (function () {
   'use strict';
@@ -13,7 +15,7 @@
     set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } }
   };
   var RM = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var KEY = 'ly:game', ROWS = 'ly:game:rows';
+  var KEY = 'ly:game', GQ = 'ly:game:q';
   var today = function () { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); };
   var prog = LS.get(KEY, null) || { v: 1, done: {}, wr: [], days: [] };
   prog.done = prog.done || {}; prog.wr = prog.wr || []; prog.days = prog.days || [];
@@ -28,6 +30,40 @@
   var S = null, LIST = [], R = [];
   var i = 0, t0 = 0, log = [], words = [], cum = [0], pos = 0, busy = 0, streak = 0, rows = [], startedAt = 0, warm = [];
   var solemn = false;
+
+  /* ---------- তথ্য: প্রতিটা ঘটনা এক সারি ---------- */
+  var gid = (Date.now().toString(36) + Math.random().toString(36).slice(2)).replace(/[^a-z0-9]/g, '').slice(0, 16);
+  var seq = 0, sending = 0, sendT = 0, begun = 0, ended = 0, fin0 = 0, exo = 0;
+  var DEV = window.innerWidth >= 900 ? 'pc' : 'ph';
+  var fnv = function (t) { var h = 0x811c9dc5; for (var k = 0; k < t.length; k++) { h ^= t.charCodeAt(k); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); };
+  var ver = function (r) { try { return fnv(JSON.stringify(r)); } catch (e) { return ''; } };
+  var MAIN = { s: 1, q: 1, r: 1, ty: 1, d: 1, ok: 1, sec: 1, ans: 1, code: 1, v: 1 };
+  function ev(o) {
+    var row = { g: gid, n: seq++, ts: Date.now(), dv: DEV }, x = null;
+    Object.keys(o).forEach(function (k) { if (MAIN[k]) row[k] = o[k]; else if (o[k] != null) { x = x || {}; x[k] = o[k]; } });
+    if (x) row.x = x;
+    var q = LS.get(GQ, []); q.push(row); LS.set(GQ, q.slice(-600));
+    clearTimeout(sendT); sendT = setTimeout(send, 1500);
+  }
+  function send(keep) {
+    if (sending || !(window.LBA && LBA.user && LBA.user())) return;
+    var q = LS.get(GQ, []); if (!q.length) return;
+    var part = q.slice(0, 40), sent = {}; part.forEach(function (r) { sent[r.g + ':' + r.n] = 1; });
+    sending = 1;
+    fetch('/api/game', { method: 'POST', credentials: 'same-origin', keepalive: !!keep, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rows: part }) })
+      .then(function (r) {
+        sending = 0;
+        if (r.status === 401) { try { localStorage.removeItem('lb:u'); } catch (e) { } return; }
+        if (!r.ok) return;
+        LS.set(GQ, LS.get(GQ, []).filter(function (x) { return !sent[x.g + ':' + x.n]; }));
+        if (q.length > part.length && !keep) setTimeout(send, 300);
+      }).catch(function () { sending = 0; });
+  }
+  // মাঝপথে ছেড়ে গেলে: কোন রাউন্ডে ছাড়লেন (প্রতিবার পাতা লুকালে নয়, শুধু পাতা বন্ধ/অন্য পাতায় গেলে)
+  window.addEventListener('pagehide', function () {
+    if (begun && !ended) ev({ s: S.id, r: i + 1, ty: 'leave', sec: Math.round((Date.now() - startedAt) / 1000) });
+    clearTimeout(sendT); send(1);
+  });
 
   function gsay(line, first) {
     return line ? '<div class="guide' + (first ? ' first' : '') + ' in"><div class="gav">' + GV + '</div><div class="bub"><b>' + GUIDE.name + ' · ' + GUIDE.role + '</b>' + esc(line) + '</div></div>' : '';
@@ -142,9 +178,11 @@
     var C = $('card'), g = document.createElement('div');
     g.innerHTML = gsay(line); if (g.firstChild) C.appendChild(g.firstChild);
     if (streak === 5 && !solemn) { toast('পরপর ৫টা ঠিক!'); sparkle(12); }
-    var box = document.createElement('div'); box.innerHTML = exBox(r, ok); C.appendChild(box.firstChild);
-    var full = Object.assign({ s: S.id, q: r.id, r: i + 1, ty: r.type, d: r.d || 0, ok: ok ? 1 : 0, sec: sec() }, row || {});
-    rows.push(full);
+    var box = document.createElement('div'); box.innerHTML = exBox(r, ok); var bx = box.firstChild; C.appendChild(bx);
+    fin0 = Date.now(); exo = 0;
+    var dt = bx.querySelector('details'); if (dt) dt.addEventListener('toggle', function () { if (dt.open && !exo) exo = Math.round((Date.now() - fin0) / 100) / 10 || 0.1; });
+    var full = Object.assign({ s: S.id, q: r.id, r: i + 1, ty: r.type, d: r.d || 0, ok: ok ? 1 : 0, sec: sec(), v: ver(r) }, row || {});
+    rows.push(full); ev(full);
     log.push({ ok: ok, g: r.g, id: r.id });
     if (!ok && (r.type === 'mcq' || r.type === 'base' || r.type === 'star' || r.type === 'bet' || r.type === 'clue')) remember(r);
     go(r);
@@ -161,6 +199,7 @@
     b.textContent = i < 9 ? 'সামনে এগোই →' : (solemn ? 'স্মারকের কাছে যাই →' : 'সিন্দুকের কাছে যাই →');
     b.onclick = function () {
       if (busy) return; b.disabled = true;
+      ev({ s: S.id, q: r.id, r: i + 1, ty: 'nx', sec: Math.round((Date.now() - fin0) / 100) / 10, exo: exo || 0 });
       window.scrollTo({ top: 0, behavior: RM ? 'auto' : 'smooth' });
       i++; walk(cum[i], function () { i < 10 ? show() : sentence(); });
     };
@@ -183,7 +222,7 @@
         if (r.type === 'base' && r.st && !ok) {
           $('sub').innerHTML = '<div class="in" style="margin-top:14px">' + gsay('চলুন এক ধাপ পেছনে যাই। এই ছোট প্রশ্নটা পারলে ওপরেরটাও সহজ হয়ে যাবে।') +
             '<p class="qq" style="margin-top:10px">' + esc(r.st.q) + '</p><div id="o2"></div></div>';
-          opts(r.st.o, r.st.a, $('o2'), function (k2) { row.base = k2 === r.st.a ? 1 : 0; finish(r, ok, row); });
+          opts(r.st.o, r.st.a, $('o2'), function (k2) { row.base = k2 === r.st.a ? 1 : 0; row.bk = k2; finish(r, ok, row); });
           return;
         }
         finish(r, ok, row);
@@ -207,7 +246,7 @@
       });
     },
     big: function (r, el) {
-      var j = 0, res = [];
+      var j = 0, res = [], pk = [], mc = [];
       var draw = function () {
         var p = r.pairs[j];
         el.innerHTML = '<p class="small" style="margin:0 0 6px">' + bn(j + 1) + ' / ' + bn(r.pairs.length) + ' · ' + esc(p.q) + '</p><div class="pair in">' + p.o.map(function (o, k) { return '<button data-k="' + k + '">' + esc(o) + '</button>'; }).join('') + '</div>';
@@ -216,11 +255,11 @@
           b.onclick = function () {
             if (lk) return; lk = 1; var k = +b.dataset.k, ok = k === p.a;
             el.querySelectorAll('.pair button').forEach(function (x, m) { if (m === p.a) x.classList.add('ok'); else if (m === k) x.classList.add('bad'); });
-            res.push(ok ? 1 : 0);
+            res.push(ok ? 1 : 0); pk.push(k); if (!ok && p.m) mc.push(p.m);
             setTimeout(function () {
               j++;
               if (j < r.pairs.length) draw();
-              else { var n = res.filter(Boolean).length; el.innerHTML = '<p style="margin:0">' + bn(r.pairs.length) + 'টার মধ্যে ' + bn(n) + 'টা ঠিক।</p>'; finish(r, n === r.pairs.length, { parts: res }); }
+              else { var n = res.filter(Boolean).length; el.innerHTML = '<p style="margin:0">' + bn(r.pairs.length) + 'টার মধ্যে ' + bn(n) + 'টা ঠিক।</p>'; finish(r, n === r.pairs.length, { parts: res, pk: pk, code: mc[0] || null, mc: mc.length > 1 ? mc : null }); }
             }, 850);
           };
         });
@@ -259,7 +298,7 @@
       }).catch(function () { el.innerHTML = '<p class="small">মানচিত্র আসেনি; ইন্টারনেট দেখে আবার চেষ্টা করুন।</p><button class="go2" id="skipm">এই রাউন্ড বাদ দিন</button>'; $('skipm').onclick = function () { finish(r, false, { skip: 1 }); }; });
     },
     tl: function (r, el) {
-      var line = [Object.assign({ st: '' }, r.base)], hand = shuffle(r.cards), res = [], N = r.cards.length;
+      var line = [Object.assign({ st: '' }, r.base)], hand = shuffle(r.cards), res = [], pl = [], N = r.cards.length;
       var lab = function (x) { return x.yl ? esc(x.yl) : x.y < 0 ? 'খ্রি.পূ. ' + bn(-x.y) : bn(x.y); };
       var gl = function (g) { return g === 0 ? ' (সবার আগে)' : g === line.length ? ' (সবার পরে)' : ' (এই দুইয়ের মাঝে)'; };
       var draw = function () {
@@ -271,23 +310,24 @@
         el.querySelectorAll('.gap').forEach(function (b) {
           b.onclick = function () {
             var g = +b.dataset.g, cor = line.filter(function (x) { return x.y < c.y; }).length, ok = g === cor;
+            pl.push([r.cards.indexOf(c), g, cor]);
             line.splice(cor, 0, Object.assign({}, c, { st: ok ? 'ok' : 'bad' })); res.push(ok ? 1 : 0); hand.shift(); draw();
-            if (!hand.length) finish(r, res.every(Boolean), { parts: res });
+            if (!hand.length) finish(r, res.every(Boolean), { parts: res, pl: pl });
           };
         });
       };
       draw();
     },
     match: function (r, el) {
-      var j = 0, res = [];
+      var j = 0, res = [], pk = [];
       var draw = function () {
         el.innerHTML = '<p class="small" style="margin:0 0 6px">' + bn(j + 1) + ' / ' + bn(r.L.length) + '</p><p class="mq in">' + esc(r.L[j]) + ' — ' + esc(r.ask) + '</p><div id="o"></div>';
         opts(r.Rr, r.ans[j], $('o'), function (k) {
-          res.push(k === r.ans[j] ? 1 : 0);
+          res.push(k === r.ans[j] ? 1 : 0); pk.push(k);
           setTimeout(function () {
             j++;
             if (j < r.L.length) draw();
-            else { var n = res.filter(Boolean).length; el.innerHTML = '<p style="margin:0">' + bn(r.L.length) + 'টার মধ্যে ' + bn(n) + 'টা ঠিক মিলেছে।</p>'; finish(r, n === res.length, { parts: res }); }
+            else { var n = res.filter(Boolean).length; el.innerHTML = '<p style="margin:0">' + bn(r.L.length) + 'টার মধ্যে ' + bn(n) + 'টা ঠিক মিলেছে।</p>'; finish(r, n === res.length, { parts: res, pk: pk }); }
           }, 900);
         });
       };
@@ -324,7 +364,7 @@
       t0 = Date.now();
       opts(w.o, w.a, $('o'), function (k) {
         var ok = k === w.a;
-        rows.push({ s: S.id, q: w.id, r: 0, ty: 'again', ok: ok ? 1 : 0, sec: sec(), ans: k });
+        var ag = { s: S.id, q: w.id, r: 0, ty: 'again', ok: ok ? 1 : 0, sec: sec(), ans: k, from: w.s }; rows.push(ag); ev(ag);
         if (ok) prog.wr = prog.wr.filter(function (x) { return x.id !== w.id; }), saveProg();
         $('wres').innerHTML = (ok ? '<p><span class="seal">আগে ভুল, আজ ঠিক</span></p>' : '') +
           '<div class="exbox in"><p>' + esc(w.e) + '</p></div><button class="go in" id="wn">' + (j + 1 < warm.length ? 'পরেরটা →' : 'এবার আজকের যাত্রা শুরু →') + '</button>';
@@ -403,14 +443,13 @@
         : '<p class="cert"><b>২০টা পর্যায়ই শেষ!</b><br>সব পর্যায়ের পাতায় আপনার সনদ অপেক্ষা করছে।</p>') +
       '<button class="go2" id="again">আবার খেলুন</button><a class="go2" href="/game/" style="display:block;text-align:center;padding-top:10px;color:var(--navy)">সব পর্যায়</a>';
     if (firstClear && LIST.filter(function (x) { return prog.done[x.id]; }).length % 5 === 0) setTimeout(function () { toast('নতুন পদক পেলেন! সব পর্যায়ের পাতায় দেখুন।'); }, 1800);
-    rows.push({ s: S.id, r: 11, ty: 'end', ok: n, bad: bad, help: help, tier: tier, plays: plays, sec: Math.round((Date.now() - startedAt) / 1000) });
+    var er = { s: S.id, r: 11, ty: 'end', ok: n, bad: bad, help: help, tier: tier, plays: plays, sec: Math.round((Date.now() - startedAt) / 1000) };
+    rows.push(er); ended = 1; ev(er); clearTimeout(sendT); send();
     flush(n);
     $('again').onclick = function () { location.reload(); };
   }
   function flush(n) {
-    var q = LS.get(ROWS, []); var dev = (window.innerWidth >= 900 ? 'pc' : 'ph');
-    rows.forEach(function (x) { x.dv = dev; x.ts = Date.now(); });
-    q = q.concat(rows).slice(-400); LS.set(ROWS, q); rows = [];
+    rows = [];
     try {
       if (window.LBA && LBA.save) {
         var p = prog.done[S.id].plays, sb = {}; sb[S.name] = [n, 10];
@@ -437,8 +476,19 @@
         '<a class="go" href="/game/play/?s=' + LIST[idx - 1].id + '" style="text-align:center;text-decoration:none;padding-top:13px">আগের পর্যায়: ' + esc(LIST[idx - 1].name) + ' →</a><a class="go2" href="/game/" style="display:block;text-align:center;padding-top:10px;color:var(--navy)">সব পর্যায়</a>';
       return;
     }
-    drawScene(); startedAt = Date.now();
-    topBar();
-    warmup(show);
+    drawScene(); topBar();
+    var go = function () {
+      startedAt = Date.now(); begun = 1;
+      ev({ s: S.id, r: 0, ty: 'start', plays: (prog.done[S.id] || {}).plays || 0, warm: prog.wr.filter(function (w) { return w.s !== S.id; }).slice(-2).length, sw: window.innerWidth });
+      warmup(show);
+    };
+    if (window.LBA && LBA.signin && !LBA.user()) {
+      $('card').innerHTML = gsay('যাত্রা শুরুর আগে একবার লগইন করে নিন। তাহলে আপনার পদক, সংগ্রহ আর কোথায় ভুল হচ্ছে, সব জমা থাকবে; ফোন বদলালেও হারাবে না।', 1) +
+        '<div id="gate" style="margin-top:14px;display:flex;justify-content:center;min-height:48px"></div><p class="small" style="text-align:center;margin:8px 0 0">Google দিয়ে, পাসওয়ার্ড লাগে না।</p>';
+      LBA.signin($('gate'), function () { anim($('card')); go(); });
+      return;
+    }
+    send();
+    go();
   }).catch(function () { fail('এই পর্যায়টা খুঁজে পাওয়া গেল না, বা ইন্টারনেট নেই।'); });
 })();

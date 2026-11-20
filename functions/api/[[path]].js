@@ -894,6 +894,7 @@ async function admin(path, url, env, db, u, req) {
   if (path === 'admin/exkey') return exkeyAdmin(req, db);
   if (path === 'admin/diag' || path.startsWith('admin/diag/')) return diagAdmin(path, url, req, db, env);
   if (path === 'admin/read' || path.startsWith('admin/read/')) return readAdmin(path, req, db);
+  if (path === 'admin/game') return gameAdmin(url, db);
   await attqTable(db);
   if (path === 'admin/learners') {
     const {results} = await db.prepare(`SELECT u.id, u.name, u.email, u.created, u.seen,
@@ -2382,7 +2383,7 @@ async function diagAdmin(path, url, req, db, env) {
 /* Lyanna_data-র GitHub Action (weekly-export.yml → tools/weekly_export.py) সপ্তাহে একবার টানে, লেখে Lyanna_data feedback/<সপ্তাহ>/-এ।
    চাবি: Authorization: Bearer <রপ্তানির চাবি> (D1 export_key-এ শুধু ছাপ, /admin/diag/ থেকে বানানো)। শুধু পড়া, D1-এ কিছু লেখে না
    (শুধু প্রথমবার লবণ)। Free প্ল্যানে CPU কম, তাই স্ক্রিপ্ট দিনে দিনে আর পাতায় পাতায় টানে (off, more)।
-   GET /api/export/teacher?part=attempts&src=attq|pilot|diag&from=<ms>&to=<ms>&off=  → {rows: দাগ, sessions: বসা, more}
+   GET /api/export/teacher?part=attempts&src=attq|pilot|diag|game&from=<ms>&to=<ms>&off=  → {rows: দাগ, sessions: বসা, more}
    GET /api/export/teacher?part=feedback|changes&from=&to=
    GET /api/export/teacher?part=students&from=&to=     → সব ব্যবহারকারী; active = from-to-র মধ্যে কোনো দাগ
    GET /api/export/teacher?part=questions&src=pilot|diag&off=  → পাইলট/নির্ণয়ের প্রশ্নের এখনকার চিহ্ন (লেখা নয়);
@@ -2529,18 +2530,43 @@ async function teacherExport(path, url, req, db) {
         sessions.push({...base, quiz_c: null, n: p.qs.length, answered, at_day: day, at_hour: hour, sec: r.done ? Math.round((r.done - r.ts) / 1000) : null,
           hidden_s: r.hid == null ? null : r.hid, hidden_n: r.hn == null ? null : r.hn, device: exDev(mt.dev), screen_w: mt.w || null, time_note: closed ? null : 'open'});
       }
+    } else if (src === 'game') {
+      // বুদ্ধির গেম: পাতা ভাগ হয় বসা (gid) ধরে, তাই এক বসা দুই পাতায় ছিঁড়ে যায় না
+      await gameSetup(db);
+      const {results: G} = await db.prepare(`SELECT uid, gid, MIN(ts) t FROM game_rounds WHERE ts >= ? AND ts < ? GROUP BY uid, gid
+        ORDER BY t, uid LIMIT ? OFFSET ?`).bind(from, to, EX_PAGE + 1, off).all();
+      more = G.length > EX_PAGE;
+      for (const g of G.slice(0, EX_PAGE)) {
+        const {results: E} = await db.prepare('SELECT n, ts, s, q, r, ty, d, ok, sec, ans, code, v, dv, x FROM game_rounds WHERE uid = ? AND gid = ? ORDER BY n')
+          .bind(g.uid, g.gid).all();
+        if (!E.length) continue;
+        const [day, hour] = exAt(g.t), stg = E[0].s, nx = new Map();
+        E.filter(e => e.ty === 'nx').forEach(e => nx.set(e.q, {sec: e.sec, x: exJp(e.x)}));
+        const base = {student_id: await id.stu(g.uid), session_id: 'g' + await id.ses(g.uid + ':' + g.gid), quiz_kind: 'game', quiz_ref: stg};
+        const dev = E[0].dv === 'pc' ? 'desktop' : E[0].dv === 'ph' ? 'mobile' : null;
+        const ans = E.filter(e => !['start', 'nx', 'leave', 'end'].includes(e.ty));
+        ans.forEach(e => { const [d2, h2] = exAt(e.ts), after = nx.get(e.q);
+          rows.push({attempt_id: base.session_id + ':' + e.n, ...base, question_id: e.q, chosen_option: e.ans == null || e.ans < 0 ? null : e.ans,
+            is_blank: 0, correct: e.ok, time_ds: e.sec == null ? null : Math.round(e.sec * 10), left_app: null, uncertain: null,
+            position_in_quiz: e.r, at_day: d2, at_hour: h2, device: dev, key_version: e.v || null, explanation_version: e.v || null,
+            game: {type: e.ty, difficulty: e.d, misconception: e.code, detail: exJp(e.x), read_s: after ? after.sec : null, read: after ? after.x : null}}); });
+        const end = E.find(e => e.ty === 'end'), leave = E.filter(e => e.ty === 'leave').pop();
+        sessions.push({...base, quiz_c: 'game', n: 10, answered: ans.filter(e => e.ty !== 'again').length, at_day: day, at_hour: hour,
+          sec: end ? end.sec : null, hidden_s: null, hidden_n: null, device: dev, screen_w: null,
+          time_note: end ? null : leave ? 'left_at_round_' + leave.r : 'open', game_end: end ? exJp(end.x) : null, game_ok: end ? end.ok : null});
+      }
     } else return json({error: 'src'}, 400);
     return json({rows, sessions, more, next: more ? off + EX_PAGE : null}, 200, H0);
   }
 
   if (part === 'students') {
-    await goalCols(db); await attqTable(db); await pilotSetup(db); await diagSetup(db);
+    await goalCols(db); await attqTable(db); await pilotSetup(db); await diagSetup(db); await gameSetup(db);
     const [u, pm, dg, act] = await db.batch([
       db.prepare('SELECT id, created, goal, gdate FROM users ORDER BY id LIMIT 50000'),
       db.prepare("SELECT uid, pilot FROM pilot_mem WHERE st = 'ok'"),
       db.prepare('SELECT DISTINCT uid, sid FROM diag_att'),
       db.prepare(`SELECT uid FROM attq WHERE ts >= ?1 AND ts < ?2 UNION SELECT uid FROM pilot_ans WHERE ts >= ?1 AND ts < ?2
-        UNION SELECT uid FROM diag_att WHERE ts >= ?1 AND ts < ?2`).bind(from, to)
+        UNION SELECT uid FROM diag_att WHERE ts >= ?1 AND ts < ?2 UNION SELECT uid FROM game_rounds WHERE ts >= ?1 AND ts < ?2`).bind(from, to)
     ]);
     const co = new Map(), add = (uid, v) => { if (!co.has(uid)) co.set(uid, []); co.get(uid).push(v); };
     pm.results.forEach(r => add(r.uid, r.pilot)); dg.results.forEach(r => add(r.uid, 'diag:' + r.sid));
@@ -2814,6 +2840,69 @@ async function readAdmin(path, req, db) {
       parts: (P.get(r.id) || {}).n || 0, len: (P.get(r.id) || {}).len || 0, who: (Rr.get(r.id) || {}).who || 0, last: (Rr.get(r.id) || {}).last || null}))});
   }
   return json({error: 'not found'}, 404);
+}
+
+// ── বুদ্ধির গেমের প্রতিটা রাউন্ড (game_rounds; PIASH-এর অনুমতি ২০২৬-১১-২০; Fable-যাচাই claude.ai "LY Sites" claude/game-data-fable-audit.md) ──
+// খেলতে লগইন লাগে। game.js প্রতিটা ঘটনা সঙ্গে সঙ্গে ফোনে জমায় আর কয়েকটা একসঙ্গে পাঠায় (পাতা ছাড়ার সময়ও)।
+// POST /api/game {rows: [{g, n, ts, s, q, r, ty, d, ok, sec, ans, code, v, dv, x}]}
+//   g = এক বসার এলোমেলো আইডি, n = সেই বসায় ঘটনার ক্রম (একই g+n দুবার জমে না), ty = রাউন্ডের ধরন বা ঘটনা
+//   (start শুরু · again "মনে আছে?" · nx ব্যাখ্যা পড়ে এগোনো · leave মাঝপথে ছাড়া · end শেষ), v = রাউন্ডের লেখার ছাপ (লেখা বদলালে বদলায়),
+//   x = বাড়তি খুঁটিনাটি (JSON: বাজির কয়েন, সূত্র, জোড়া/কার্ডের প্রতিটা বাছাই আর ভুল-ধারণা, ব্যাখ্যা খোলা ইত্যাদি)।
+// দিনে একজনের ৩০০০ ঘটনার বেশি নয় (ওপরে গেলে চুপচাপ বাদ)। কাউকে দেখানো হয় না; অ্যাডমিন দেখেন শুধু পর্যায়ের হিসাব (/admin/game/),
+// আর শিক্ষকের রপ্তানিতে নাম ছাড়া (src=game)।
+const GAME_SQL = [
+  'CREATE TABLE IF NOT EXISTS game_rounds(uid INTEGER NOT NULL, gid TEXT NOT NULL, n INTEGER NOT NULL, ts INTEGER NOT NULL, s TEXT, q TEXT, r INTEGER, ty TEXT, d INTEGER, ok INTEGER, sec REAL, ans INTEGER, code TEXT, v TEXT, dv TEXT, x TEXT, PRIMARY KEY(uid, gid, n))',
+  'CREATE INDEX IF NOT EXISTS game_rounds_ts ON game_rounds(ts)',
+  'CREATE INDEX IF NOT EXISTS game_rounds_uts ON game_rounds(uid, ts)'
+];
+let gameReady = false;
+async function gameSetup(db) { if (!gameReady) { for (const q of GAME_SQL) await db.prepare(q).run(); gameReady = true; } }
+const GAME_BATCH = 40, GAME_DAY = 3000, GID = /^[a-z0-9]{6,16}$/, GTY = /^[a-z]{2,8}$/, GSID = /^s\d{2}$/;
+function gameRow(r, now) {
+  if (!r || typeof r !== 'object') return null;
+  const g = str(r.g, 16), n = num(r.n), ts = num(r.ts), ty = str(r.ty, 8), s = str(r.s, 4);
+  if (!g || !GID.test(g) || n == null || n < 0 || n > 500 || !ty || !GTY.test(ty) || !s || !GSID.test(s)) return null;
+  const t = ts && ts > now - 30 * DAY && ts < now + 5 * 60e3 ? Math.round(ts) : now;
+  const int = (v, lo, hi) => { const x = num(v); return x == null ? null : Math.max(lo, Math.min(hi, Math.round(x))); };
+  let x = null;
+  if (r.x && typeof r.x === 'object') { try { const j = JSON.stringify(r.x); if (j.length <= 800) x = j; } catch (e) {} }
+  const sec = num(r.sec);
+  return [g, Math.round(n), t, s, str(r.q, 12), int(r.r, 0, 20), ty, int(r.d, 0, 5), int(r.ok, 0, 10),
+    sec == null ? null : Math.max(0, Math.min(3600, Math.round(sec * 10) / 10)), int(r.ans, -1, 20), str(r.code, 120), str(r.v, 12), str(r.dv, 3), x];
+}
+async function gameSave(req, db, u) {
+  const b = await req.json().catch(() => ({})), now = Date.now();
+  const rows = (Array.isArray(b.rows) ? b.rows : []).slice(0, GAME_BATCH).map(r => gameRow(r, now)).filter(Boolean);
+  if (!rows.length) return json({ok: true, saved: 0});
+  await gameSetup(db);
+  const d0 = Date.parse(dhakaDay(now) + 'T00:00:00Z') - 6 * H;
+  const c = await db.prepare('SELECT COUNT(*) n FROM game_rounds WHERE uid = ? AND ts >= ?').bind(u.id, d0).first();
+  if ((c && c.n || 0) + rows.length > GAME_DAY) return json({ok: true, saved: 0, full: 1});
+  const st = db.prepare('INSERT OR IGNORE INTO game_rounds(uid, gid, n, ts, s, q, r, ty, d, ok, sec, ans, code, v, dv, x) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+  await db.batch(rows.map(r => st.bind(u.id, ...r)));
+  return json({ok: true, saved: rows.length});
+}
+// অ্যাডমিন: প্রতিটা পর্যায়ে কতজন শুরু করলেন, কোন রাউন্ড পর্যন্ত গেলেন (কোথায় ছাড়লেন), প্রতিটা রাউন্ডে ঠিকের হার আর গড় সময়
+// GET /api/admin/game?days=30
+async function gameAdmin(url, db) {
+  await gameSetup(db);
+  const days = Math.max(1, Math.min(365, parseInt(url.searchParams.get('days'), 10) || 30)), from = Date.now() - days * DAY;
+  const [st, rd, en, lv, pl] = await db.batch([
+    db.prepare("SELECT s, COUNT(*) plays, COUNT(DISTINCT uid) people FROM game_rounds WHERE ty = 'start' AND ts >= ? GROUP BY s").bind(from),
+    db.prepare(`SELECT s, r, ty, COUNT(*) n, SUM(ok) ok, AVG(sec) sec, COUNT(DISTINCT gid) reach FROM game_rounds
+      WHERE ts >= ? AND r BETWEEN 1 AND 10 AND ty NOT IN ('start','nx','leave','end','again') GROUP BY s, r, ty`).bind(from),
+    db.prepare("SELECT s, COUNT(*) n, AVG(ok) ok, AVG(sec) sec FROM game_rounds WHERE ty = 'end' AND ts >= ? GROUP BY s").bind(from),
+    db.prepare("SELECT s, r, COUNT(*) n FROM game_rounds WHERE ty = 'leave' AND ts >= ? GROUP BY s, r").bind(from),
+    db.prepare("SELECT COUNT(DISTINCT uid) people, COUNT(DISTINCT gid) plays FROM game_rounds WHERE ts >= ?").bind(from)
+  ]);
+  const S = new Map(), get = s => { if (!S.has(s)) S.set(s, {s, plays: 0, people: 0, done: 0, ok: null, sec: null, rounds: [], left: {}}); return S.get(s); };
+  st.results.forEach(r => Object.assign(get(r.s), {plays: r.plays, people: r.people}));
+  rd.results.forEach(r => get(r.s).rounds.push({r: r.r, ty: r.ty, n: r.n, reach: r.reach, ok: r.n ? Math.round(100 * r.ok / r.n) : null, sec: r.sec == null ? null : Math.round(r.sec)}));
+  en.results.forEach(r => Object.assign(get(r.s), {done: r.n, ok: r.ok == null ? null : Math.round(r.ok * 10) / 10, sec: r.sec == null ? null : Math.round(r.sec)}));
+  lv.results.forEach(r => { get(r.s).left[r.r] = r.n; });
+  const stages = [...S.values()].sort((a, b) => a.s < b.s ? -1 : 1);
+  stages.forEach(x => x.rounds.sort((a, b) => a.r - b.r));
+  return json({days, total: pl.results[0] || {people: 0, plays: 0}, stages}, 200, {'Cache-Control': 'no-store'});
 }
 
 // ── "আজ" পাতা আর সাইটে কাজের সময় (social-review ঙ-১, ঙ-২; পাতা /today/) ──
@@ -3156,6 +3245,7 @@ export async function onRequest({request: req, env}) {
     if (path === 'goal') return await goal(req, db, u);
     if (path === 'today' && m === 'GET') return await today(db, u);
     if (path === 'here' && m === 'POST') return await here(req, db, u);
+    if (path === 'game' && m === 'POST') return await gameSave(req, db, u);
     if (path === 'fb/mine' && m === 'GET') return await fbMine(db, u);
     // একটা পরীক্ষার ফল আর প্রতিটি উত্তর (নিজের উত্তরপত্র দেখার পাতা /account/script/)
     if (path === 'att/one' && m === 'GET') {
@@ -3204,12 +3294,13 @@ export async function onRequest({request: req, env}) {
       return json({ok: true, saved: rows.length, qs, qd: qds.length});
     }
     if (path === 'delete' && m === 'POST') {
-      await attqTable(db); await diagSetup(db); await jobsSetup(db); await sdaySetup(db); await pairSetup(db); await grpSetup(db);
+      await attqTable(db); await diagSetup(db); await jobsSetup(db); await sdaySetup(db); await pairSetup(db); await grpSetup(db); await gameSetup(db);
       const gm = await grpMine(db, u);
       await db.batch([
         db.prepare('DELETE FROM gmem WHERE uid = ?').bind(u.id),
         db.prepare('DELETE FROM gmsg WHERE uid = ?').bind(u.id),
         db.prepare('DELETE FROM sday WHERE uid = ?').bind(u.id),
+        db.prepare('DELETE FROM game_rounds WHERE uid = ?').bind(u.id),
         db.prepare('DELETE FROM pair WHERE uid = ? OR pid = ?').bind(u.id, u.id),
         db.prepare('DELETE FROM pinv WHERE uid = ?').bind(u.id),
         db.prepare('DELETE FROM nudge WHERE uid = ?').bind(u.id),
