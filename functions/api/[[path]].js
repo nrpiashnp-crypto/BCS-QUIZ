@@ -46,6 +46,7 @@
    নিজের পরিকল্পনা, অবস্থা-যাচাই (/plan/<সেট>/, /admin/diag/): নিচে "নিজের পরিকল্পনা" অংশের মাথায় সব পথ।
    আমার চাকরি (/myjobs/, /admin/jobs/): নিচে "আমার চাকরি" অংশের মাথায় সব পথ।
    "আজ" পাতা, সাইটে কাজের সময় আর জুটি (/today/, GET /api/today, POST /api/here, /api/pair/*; D1 sday, pair, pinv, nudge), দল (/group/, /api/grp*; D1 grp, gmem, gmsg): নিচে "আজ" অংশে।
+   লাইভ ক্লাস (/class/, /admin/class/; D1 cls, cls_q): নিচে "লাইভ ক্লাস" অংশের মাথায় সব পথ।
    শিক্ষকের সাপ্তাহিক রপ্তানি (GET /api/export/teacher, রপ্তানির চাবি দিয়ে): নিচে "শিক্ষকের সাপ্তাহিক রপ্তানি" অংশে। */
 const COOKIE = 'lb_s', AGE = 180 * 86400;
 const MAX_BATCH = 300, MAX_ROWS = 3000;
@@ -894,6 +895,7 @@ async function admin(path, url, env, db, u, req) {
   if (path === 'admin/exkey') return exkeyAdmin(req, db);
   if (path === 'admin/diag' || path.startsWith('admin/diag/')) return diagAdmin(path, url, req, db, env);
   if (path === 'admin/read' || path.startsWith('admin/read/')) return readAdmin(path, req, db);
+  if (path === 'admin/cls' || path.startsWith('admin/cls/')) return clsAdmin(path, url, req, db);
   await attqTable(db);
   if (path === 'admin/learners') {
     const {results} = await db.prepare(`SELECT u.id, u.name, u.email, u.created, u.seen,
@@ -3104,6 +3106,108 @@ async function today(db, u) {
     jobs: j.results.map(r => { try { const x = JSON.parse(r.data); return {post: x.post, org: x.org, ae: x.ae, exam: x.exam || '', est: x.est || 0}; } catch (e) { return null; } }).filter(Boolean)
   }, 200, {'Cache-Control': 'no-store'});
 }
+// ---------- লাইভ ক্লাস (/class/, /class/<id>/, /admin/class/) ----------
+/* পরিকল্পনা আর Fable-যাচাই: claude.ai প্রজেক্ট LY Sites-এর claude/live-class-plan.md আর live-class-fable-review.md (২০২৬-১১-২০)।
+   ভিডিও চলে YouTube-এ (StreamYard থেকে public লাইভ, পরে একই ভিডিওই রেকর্ডিং); সাইটে শুধু ক্লাসের তালিকা, প্রশ্ন পাঠানো আর শিক্ষকের প্রশ্নের তালিকা।
+   ছাত্রের পাতা কিছু বারবার টানে না (পোলিং নয়); নতুন প্রশ্ন টানে শুধু অ্যাডমিন পাতা। প্রশ্ন শুধু অ্যাডমিন দেখেন, অন্য ছাত্র নয়।
+   GET  /api/cls              → {rows:[{id,title,at,yt,notes,prac}]} সবার জন্য (শুধু st='on'), ৬০ সেকেন্ড ক্যাশে
+   POST /api/cls/q {id, text} → লগইন লাগে; প্রতি জনে মিনিটে ১টা, এক ক্লাসে ২০টা; সবার মিলিয়ে দিনে ৩০০০টা
+   অ্যাডমিন: GET  /api/admin/cls → সব ক্লাস (লুকানোসহ), প্রতিটির নতুন প্রশ্ন কয়টা
+            POST /api/admin/cls {id?, title, at, yt, notes, prac, st:'on'|'off'} → {id} (id না দিলে নতুন)
+            POST /api/admin/cls/del {id} → ক্লাস আর তার প্রশ্ন মুছে যায়
+            GET  /api/admin/cls/q?id=&after= → প্রশ্ন, পুরোনো আগে; after = আগে দেখা শেষ প্রশ্নের id (শুধু নতুনগুলো আসে)
+            POST /api/admin/cls/q {ids:[…], st:'done'|'new'} → "উত্তর হয়েছে" দাগ
+   yt-এ শুধু YouTube ভিডিওর ১১ অক্ষরের id রাখা হয় (যেকোনো YouTube লিংক দিলে id বের করে নেয়)। */
+const CLS_SCHEMA = [
+  'CREATE TABLE IF NOT EXISTS cls(id TEXT PRIMARY KEY, title TEXT NOT NULL, at INTEGER, yt TEXT, notes TEXT, prac TEXT, st TEXT NOT NULL, upd INTEGER)',
+  'CREATE TABLE IF NOT EXISTS cls_q(id INTEGER PRIMARY KEY, cid TEXT NOT NULL, uid INTEGER NOT NULL, name TEXT, ts INTEGER NOT NULL, text TEXT NOT NULL, st TEXT NOT NULL)',
+  'CREATE INDEX IF NOT EXISTS cls_q_cid ON cls_q(cid, id)',
+  'CREATE INDEX IF NOT EXISTS cls_q_uid ON cls_q(uid, ts)',
+  'CREATE TABLE IF NOT EXISTS ch_day(k TEXT PRIMARY KEY, n INTEGER NOT NULL)'
+];
+let CLS_READY = false;
+async function clsSetup(db) { if (!CLS_READY) { await db.batch(CLS_SCHEMA.map(x => db.prepare(x))); CLS_READY = true; } }
+const CLS_PER_CLASS = 20, CLS_PER_DAY_ALL = 3000;
+const clsKey = req => new Request(new URL('/api/cls', req.url).toString());
+// যেকোনো YouTube লিংক (watch?v=, youtu.be/, /live/, /embed/, /shorts/) বা শুধু id → ১১ অক্ষরের id
+function ytId(v) {
+  const s = String(v || '').trim();
+  if (/^[\w-]{11}$/.test(s)) return s;
+  const m = s.match(/^https?:\/\/(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?(?:[^#]*&)?v=|live\/|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
+  return m ? m[1] : null;
+}
+// নোট আর অনুশীলনের লিংক: এই সাইটের পথ বা https লিংক, আর কিছু নয়
+const clsLink = v => { const s = String(v || '').trim().slice(0, 300); return /^\/(?!\/)[^\s"'<>]*$/.test(s) || /^https:\/\/[^\s"'<>]+$/.test(s) ? s : ''; };
+
+async function clsPublic(path, req, db, u) {
+  const m = req.method;
+  if (path === 'cls' && m === 'GET') {
+    const cache = caches.default, key = clsKey(req), hit = await cache.match(key);
+    if (hit) return hit;
+    await clsSetup(db);
+    const {results} = await db.prepare("SELECT id, title, at, yt, notes, prac FROM cls WHERE st = 'on' ORDER BY at DESC LIMIT 200").all();
+    const res = json({rows: results}, 200, {'Cache-Control': 'public, max-age=60'});
+    await cache.put(key, res.clone());
+    return res;
+  }
+  if (path === 'cls/q' && m === 'POST') {
+    if (!u) return json({error: 'login'}, 401);
+    const b = await req.json().catch(() => ({}));
+    const id = /^[a-z0-9-]{1,40}$/.test(b.id || '') ? b.id : null, text = repText(b.text, 500);
+    if (!id || !text) return json({error: 'empty'}, 400);
+    await clsSetup(db);
+    if (!(await db.prepare("SELECT 1 FROM cls WHERE id = ? AND st = 'on'").bind(id).first())) return json({error: 'not found'}, 404);
+    const now = Date.now();
+    const c = await db.prepare('SELECT SUM(ts > ?) m, SUM(cid = ?) k FROM cls_q WHERE uid = ? AND ts > ?').bind(now - 60e3, id, u.id, now - 86400e3).first();
+    if ((c && (c.m >= 1 || c.k >= CLS_PER_CLASS)) || !await chDay(db, 'cls', CLS_PER_DAY_ALL)) return json({error: 'slow'}, 429);
+    await db.prepare("INSERT INTO cls_q(cid, uid, name, ts, text, st) VALUES(?,?,?,?,?,'new')").bind(id, u.id, str(u.name, 80) || '', now, text).run();
+    return json({ok: true});
+  }
+  return json({error: 'not found'}, 404);
+}
+
+async function clsAdmin(path, url, req, db) {
+  const m = req.method;
+  await clsSetup(db);
+  if (path === 'admin/cls' && m === 'GET') {
+    const {results} = await db.prepare("SELECT c.id, c.title, c.at, c.yt, c.notes, c.prac, c.st, (SELECT COUNT(*) FROM cls_q q WHERE q.cid = c.id AND q.st = 'new') nq FROM cls c ORDER BY c.at DESC LIMIT 300").all();
+    return json({rows: results});
+  }
+  if (path === 'admin/cls' && m === 'POST') {
+    const b = await req.json().catch(() => ({}));
+    const title = repText(b.title, 160);
+    if (!title) return json({error: 'title'}, 400);
+    const at = num(b.at) ? Math.round(b.at) : null, yt = b.yt ? ytId(b.yt) : null;
+    if (b.yt && !yt) return json({error: 'yt'}, 400);
+    let id = /^[a-z0-9-]{1,40}$/.test(b.id || '') ? b.id : null;
+    if (!id) { const r = new Uint8Array(5); crypto.getRandomValues(r); id = [...r].map(x => 'abcdefghjkmnpqrstuvwxyz23456789'[x % 31]).join(''); }
+    await db.prepare('INSERT INTO cls(id, title, at, yt, notes, prac, st, upd) VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title, at=excluded.at, yt=excluded.yt, notes=excluded.notes, prac=excluded.prac, st=excluded.st, upd=excluded.upd')
+      .bind(id, title, at, yt, clsLink(b.notes), clsLink(b.prac), b.st === 'off' ? 'off' : 'on', Date.now()).run();
+    await caches.default.delete(clsKey(req));
+    return json({ok: true, id});
+  }
+  if (path === 'admin/cls/del' && m === 'POST') {
+    const b = await req.json().catch(() => ({}));
+    if (typeof b.id !== 'string') return json({error: 'bad'}, 400);
+    await db.batch([db.prepare('DELETE FROM cls_q WHERE cid = ?').bind(b.id), db.prepare('DELETE FROM cls WHERE id = ?').bind(b.id)]);
+    await caches.default.delete(clsKey(req));
+    return json({ok: true});
+  }
+  if (path === 'admin/cls/q' && m === 'GET') {
+    const id = url.searchParams.get('id') || '', after = Math.max(0, parseInt(url.searchParams.get('after') || '0', 10) || 0);
+    const {results} = await db.prepare('SELECT q.id, q.ts, q.name, u.email, q.text, q.st FROM cls_q q LEFT JOIN users u ON u.id = q.uid WHERE q.cid = ? AND q.id > ? ORDER BY q.id LIMIT 500').bind(id, after).all();
+    return json({rows: results}, 200, {'Cache-Control': 'no-store'});
+  }
+  if (path === 'admin/cls/q' && m === 'POST') {
+    const b = await req.json().catch(() => ({}));
+    const ids = (Array.isArray(b.ids) ? b.ids : []).filter(x => Number.isInteger(x)).slice(0, 90);
+    if (!ids.length) return json({error: 'bad'}, 400);
+    await db.prepare('UPDATE cls_q SET st = ? WHERE id IN (' + ids.map(() => '?').join(',') + ')').bind(b.st === 'new' ? 'new' : 'done', ...ids).run();
+    return json({ok: true});
+  }
+  return json({error: 'not found'}, 404);
+}
+
 export async function onRequest({request: req, env}) {
   const url = new URL(req.url), path = url.pathname.replace(/^\/api\/?/, '').replace(/\/+$/, ''), m = req.method;
   if (m === 'POST') {
@@ -3150,6 +3254,7 @@ export async function onRequest({request: req, env}) {
     if (path.startsWith('jobs/')) return await jobs(path, req, db, u);
     if (path.startsWith('pair/')) return await pairRoute(path, req, url, db, u);
     if (path === 'grp' || path.startsWith('grp/')) return await grpRoute(path, req, url, db, u);
+    if (path === 'cls' || path.startsWith('cls/')) return await clsPublic(path, req, db, u);
     if (!u) return json({error: 'login'}, 401);
 
     if (path.startsWith('admin/')) return await admin(path, url, env, db, u, req);

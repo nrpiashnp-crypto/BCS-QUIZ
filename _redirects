@@ -11,3 +11,5 @@
 /running/petrobangla  /pilot/petrobangla-1/  302
 # /read/<শিট>/ আর /read/<শিট>/<অংশ> পড়ার পাতা (লেখা আসে /api/read থেকে, D1-এ থাকে)
 /read/*  /read/  200
+# /class/<id>/ লাইভ ক্লাসের পাতা; সব ক্লাস একই পাতা, ক্লাস চেনে ঠিকানা থেকে (তথ্য আসে /api/cls থেকে, D1-এ থাকে)
+/class/*  /class/  200
