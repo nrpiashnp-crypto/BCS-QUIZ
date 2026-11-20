@@ -153,7 +153,7 @@
         // এই ফোনে 'lb:att'-এ যা আছে (এইমাত্র দেওয়া পরীক্ষাসহ) সব পাঠানো হয়; একই k সার্ভারে দুবার থাকে না
         var q=get('lb:q',[]),have={};q.forEach(function(a){have[a.k]=1});
         get('lb:att',[]).forEach(function(a){if(!have[a.k])q.push(a)});
-        set('lb:q',q.slice(-1000));flush();done(el);
+        set('lb:q',q.slice(-1000));flush();done(el);if(el._cb){try{el._cb(j.user)}catch(e){}}
         var b=document.querySelector('.lba-me');if(b&&j.user.pic)b.innerHTML='<img src="'+j.user.pic.replace(/"/g,'')+'" alt="" referrerpolicy="no-referrer">';
       })
       .catch(function(){g.innerHTML='লগইন হয়নি। <a href="/account/">আবার চেষ্টা করুন →</a>'});
@@ -200,7 +200,13 @@
     nav.appendChild(a);
   }
 
-  window.LBA={save:save,qa:qa,user:user,dev:dev,flush:flush,get:get,set:set};
+  /* লগইন ছাড়া চলে না এমন পাতার জন্য (যেমন বুদ্ধির গেম): el-এ Google বোতাম বসায়, লগইন হলে cb(user)।
+     সার্ভারে লগইন চালু না থাকলে /account/-এর লিংক। */
+  function signin(el,cb){
+    if(!el)return;style();el._cb=cb;el.innerHTML='<span class="lba-g">…</span>';
+    cid().then(function(id){if(user())return cb(user());if(!id){el.querySelector('.lba-g').innerHTML='<a href="/account/">লগইন করুন →</a>';return}gis(id,el)});
+  }
+  window.LBA={save:save,qa:qa,user:user,dev:dev,flush:flush,get:get,set:set,signin:signin};
   function init(){badge();flush()}
   document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init):init();
   addEventListener('online',flush);
