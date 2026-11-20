@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="theme-color" content="#13294b">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Live classes · Lyanna Books</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
+<script>/* ফন্ট: কম দামি ফোন/ধীর নেটে হালকা রূপ (tools/font_mode.py) */!function(){var n=navigator,c=n.connection||{},l=c.saveData||/2g/.test(c.effectiveType)||c.downlink<1||n.deviceMemory<=2;try{var q=location.search.match(/[?&]font=(lite|full|auto)/);if(q)localStorage.lyFont=q[1]=='auto'?'':q[1];if(localStorage.lyFont)l=localStorage.lyFont=='lite'}catch(e){}if(l)document.documentElement.classList.add('ly-lite');document.write(l?'<link rel="stylesheet" href="/fonts/lite.css">':'<link rel="preload" href="/fonts/AnekBangla-bengali.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/fonts/fonts.css">')}()</script><noscript><link rel="stylesheet" href="/fonts/fonts.css"></noscript>
+<style>
+:root{--paper:#f8f5ee;--ink:#1d1f21;--muted:#5f6366;--rule:#d9d6cf;--card:#fff;--navy:#13294b;--pink:#c8326a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 'Noto Sans Bengali',system-ui,sans-serif}
+.wrap{max-width:720px;margin:0 auto;padding:20px 16px 80px}
+h1{font:400 28px/1.3 'Tiro Bangla',Georgia,serif;margin:0 0 4px;color:var(--navy)}
+.sub{color:var(--muted);margin:0 0 18px;font-size:14.5px}
+h2{font:400 18px/1.3 'Tiro Bangla',Georgia,serif;margin:22px 0 6px;color:var(--muted)}
+ul.go{list-style:none;margin:0;padding:0;border-top:1px solid var(--rule)}
+ul.go li{border-bottom:1px solid var(--rule)}
+ul.go a{display:block;padding:12px 4px 12px 14px;border-left:3px solid transparent;color:inherit;text-decoration:none}
+ul.go a:hover,ul.go a:focus-visible{border-left-color:var(--pink);background:#fff}
+ul.go b{display:flex;align-items:center;gap:8px;color:var(--navy);font-size:17px;font-weight:600}
+ul.go b::after{content:"→";margin-left:auto;color:var(--muted);font-weight:400}
+ul.go span{display:block;color:var(--muted);font-size:14px;line-height:1.5}
+.n{background:var(--pink);color:#fff;font-size:13px;font-weight:600;border-radius:3px;padding:0 7px;line-height:1.6}
+.n:empty{display:none}
+#msg{background:#fff;border:1px solid var(--rule);border-radius:3px;padding:12px 14px;margin:0 0 14px}
+#msg:empty{display:none}
+.foot{margin-top:28px;font-size:14px;color:var(--muted)}
+.foot a{color:var(--navy)}
+
+label{display:block;font-size:14px;color:var(--muted);margin:10px 0 2px}
+input[type=text],input[type=url],input[type=datetime-local]{width:100%;font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--rule);border-radius:3px;background:#fff;color:var(--ink)}
+.chk{display:flex;align-items:center;gap:8px;margin-top:12px;color:var(--ink);font-size:15px}
+.btn{display:inline-block;background:var(--navy);color:#fff;border:0;border-radius:3px;padding:10px 16px;font:inherit;font-weight:600;font-size:15px;cursor:pointer;text-decoration:none}
+.btn.ghost{background:#fff;color:var(--navy);border:1px solid var(--rule)}
+.btn:disabled{opacity:.5}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.card{background:#fff;border:1px solid var(--rule);border-radius:3px;padding:12px 14px;margin:0 0 10px}
+.card b{color:var(--navy);font-size:17px}
+.card .meta{color:var(--muted);font-size:14px}
+.off{opacity:.6}
+.q{border-bottom:1px solid var(--rule);padding:10px 0}
+.q .who{font-size:13.5px;color:var(--muted)}
+.q p{margin:2px 0 6px;font-size:17px;white-space:pre-wrap}
+.q.done{opacity:.5}
+.q.done p{text-decoration:line-through}
+.hint{font-size:14px;color:var(--muted);background:#fff;border-left:3px solid var(--pink);padding:8px 10px;margin:10px 0}
+</style>
+<link rel="stylesheet" href="/css/omr.css">
+<link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body>
+<div class="adbar"><a class="adback" href="/admin/">← Admin</a><span class="adname">Live classes</span></div>
+<main class="wrap">
+<div id="msg"></div>
+<div id="app"><p class="sub">Loading…</p></div>
+</main>
+<script>
+(function(){
+/* লাইভ ক্লাস (অ্যাডমিন): ক্লাস বানানো/বদলানো, আর ক্লাস চলার সময় ছাত্রদের প্রশ্ন। সার্ভার: functions/api-র "লাইভ ক্লাস" অংশ।
+   প্রশ্নের তালিকা খোলা থাকলে ১০ সেকেন্ড পরপর শুধু নতুন প্রশ্ন টানে (after=শেষ id), পাতা আড়ালে গেলে থামে। */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function api(p,b){const r=await fetch('/api/'+p,{method:b?'POST':'GET',credentials:'same-origin',cache:'no-store',headers:b?{'Content-Type':'application/json'}:{},body:b?JSON.stringify(b):undefined});
+  if(r.status===401)throw 'login';if(r.status===403)throw 'admin';const j=await r.json().catch(()=>({}));if(!r.ok)throw j.error||'err';return j}
+function fail(e){
+  if(e==='login')$('msg').innerHTML='Please <a href="/account/">log in</a> first (with an admin email).';
+  else if(e==='admin')$('msg').textContent='This email is not on the admin list.';
+  else if(e==='yt')alert('That YouTube link was not understood. Paste the link of the live stream or video.');
+  else if(e==='title')alert('Give the class a title.');
+  else $('msg').textContent='Something went wrong ('+e+'). Try again.';
+}
+// datetime-local ফাঁকা ঘরের মান বাংলাদেশের সময় ধরা হয় (UTC+৬)
+const toTs=v=>{const m=(v||'').match(/^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d)/);return m?Date.UTC(+m[1],m[2]-1,+m[3],+m[4],+m[5])-6*3600e3:null};
+const toLocal=t=>t?new Date(t+6*3600e3).toISOString().slice(0,16):'';
+const show=t=>t?new Date(t+6*3600e3).toISOString().slice(0,16).replace('T',' ')+' (BD time)':'no time set';
+const link=id=>location.origin+'/class/'+id+'/';
+let rows=[],timer=null;
+
+async function home(){
+  stop();
+  const j=await api('admin/cls');rows=j.rows||[];
+  let h='<h1>Live classes</h1><p class="sub">Students open the class link, watch the YouTube live and send questions. Later the same link plays the recording. All classes: <a href="/class/">/class/</a></p>'+
+    '<div class="row" style="margin:0 0 16px"><button class="btn" id="new">+ New class</button></div>';
+  if(!rows.length)h+='<p class="sub">No classes yet.</p>';
+  h+=rows.map(c=>'<div class="card'+(c.st==='off'?' off':'')+'"><b>'+esc(c.title)+'</b>'+(c.st==='off'?' <span class="meta">(hidden)</span>':'')+
+    '<div class="meta">'+show(c.at)+(c.yt?' · YouTube set':' · <b style="color:var(--pink);font-size:14px">no YouTube link yet</b>')+'</div>'+
+    '<div class="row"><button class="btn" data-q="'+c.id+'">Questions'+(c.nq?' <i class="n">'+c.nq+' new</i>':'')+'</button>'+
+    '<button class="btn ghost" data-cp="'+c.id+'">Copy link</button><button class="btn ghost" data-ed="'+c.id+'">Edit</button></div></div>').join('');
+  $('app').innerHTML=h;
+  $('new').onclick=()=>edit({});
+  $('app').querySelectorAll('[data-ed]').forEach(b=>b.onclick=()=>edit(rows.find(c=>c.id===b.dataset.ed)));
+  $('app').querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>qs(rows.find(c=>c.id===b.dataset.q)));
+  $('app').querySelectorAll('[data-cp]').forEach(b=>b.onclick=async()=>{try{await navigator.clipboard.writeText(link(b.dataset.cp));b.textContent='Copied ✓'}catch(e){prompt('Copy this link:',link(b.dataset.cp))}});
+}
+
+function edit(c){
+  stop();
+  $('app').innerHTML='<h1>'+(c.id?'Edit class':'New class')+'</h1>'+
+    '<label for="t">Title (shown to students, in Bangla)</label><input type="text" id="t" maxlength="160" value="'+esc(c.title||'')+'" placeholder="যেমন: আলো: প্রতিফলন আর প্রতিসরণ">'+
+    '<label for="w">Date and time (Bangladesh time)</label><input type="datetime-local" id="w" value="'+toLocal(c.at)+'">'+
+    '<label for="y">YouTube link of the live stream</label><input type="url" id="y" value="'+(c.yt?'https://youtu.be/'+c.yt:'')+'" placeholder="Paste after scheduling the live in StreamYard; can be added later">'+
+    '<div class="hint">In StreamYard, schedule the broadcast to YouTube as <b>Public</b>. Copy the YouTube link it gives and paste it here. After the class the same link becomes the recording, nothing to change.</div>'+
+    '<label for="p">Practice test link (after class; optional)</label><input type="url" id="p" value="'+esc(c.prac||'')+'" placeholder="/light/ or https://…">'+
+    '<label for="n">Notes link (after class; optional)</label><input type="url" id="n" value="'+esc(c.notes||'')+'" placeholder="/read/… or https://…">'+
+    '<label class="chk"><input type="checkbox" id="on"'+(c.st==='off'?'':' checked')+'> Show on the site</label>'+
+    '<div class="row"><button class="btn" id="sv">Save</button><button class="btn ghost" id="cn">Cancel</button>'+(c.id?'<button class="btn ghost" id="dl" style="margin-left:auto;color:#b23b3b">Delete</button>':'')+'</div>';
+  $('cn').onclick=()=>home().catch(fail);
+  $('sv').onclick=async()=>{
+    $('sv').disabled=true;
+    try{const j=await api('admin/cls',{id:c.id||'',title:$('t').value,at:toTs($('w').value),yt:$('y').value.trim(),prac:$('p').value.trim(),notes:$('n').value.trim(),st:$('on').checked?'on':'off'});
+      if(!c.id)try{await navigator.clipboard.writeText(link(j.id))}catch(e){}
+      await home();if(!c.id)$('msg').innerHTML='Saved. Class link (copied): <a href="/class/'+j.id+'/">'+esc(link(j.id))+'</a>';}
+    catch(e){fail(e);$('sv').disabled=false}
+  };
+  if($('dl'))$('dl').onclick=async()=>{if(!confirm('Delete this class and all its questions?'))return;try{await api('admin/cls/del',{id:c.id});await home()}catch(e){fail(e)}};
+}
+
+let last=0,qrows=[],hideDone=false;
+function qs(c){
+  stop();last=0;qrows=[];
+  $('app').innerHTML='<h1>'+esc(c.title)+'</h1><p class="sub">Questions from students, oldest first. New ones appear by themselves every 10 seconds. Tap "Answered" after you answer one live.</p>'+
+    '<div class="row" style="margin:0 0 8px"><button class="btn ghost" id="bk">← All classes</button><label class="chk" style="margin:0"><input type="checkbox" id="hd"> Hide answered</label></div><div id="ql"><p class="sub">Loading…</p></div>';
+  $('bk').onclick=()=>home().catch(fail);
+  $('hd').onchange=()=>{hideDone=$('hd').checked;draw()};
+  const tick=async()=>{try{const j=await api('admin/cls/q?id='+encodeURIComponent(c.id)+'&after='+last);(j.rows||[]).forEach(r=>{qrows.push(r);last=Math.max(last,r.id)});draw()}catch(e){fail(e)}};
+  tick();
+  timer=setInterval(()=>{if(!document.hidden)tick()},10e3);
+}
+function draw(){
+  const el=$('ql');if(!el)return;
+  const list=qrows.filter(r=>!(hideDone&&r.st==='done'));
+  el.innerHTML=list.length?list.map(r=>'<div class="q'+(r.st==='done'?' done':'')+'"><div class="who">'+esc(r.name||'—')+' · '+new Date(r.ts+6*3600e3).toISOString().slice(11,16)+'</div><p>'+esc(r.text)+'</p>'+
+    '<button class="btn ghost" data-id="'+r.id+'">'+(r.st==='done'?'Mark not answered':'Answered ✓')+'</button></div>').join(''):'<p class="sub">No questions yet.</p>';
+  el.querySelectorAll('[data-id]').forEach(b=>b.onclick=async()=>{const r=qrows.find(x=>x.id==b.dataset.id),st=r.st==='done'?'new':'done';
+    try{await api('admin/cls/q',{ids:[r.id],st});r.st=st;draw()}catch(e){fail(e)}});
+}
+function stop(){if(timer){clearInterval(timer);timer=null}$('msg').textContent=''}
+
+home().catch(fail);
+})();
+</script>
+</body>
+</html>

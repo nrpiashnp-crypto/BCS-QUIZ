@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="theme-color" content="#13294b">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>লাইভ ক্লাস · লিয়ানা বুকস</title>
+<meta name="description" content="লিয়ানা বুকসের লাইভ ক্লাস: সময়মতো যোগ দিন, প্রশ্ন পাঠান, পরে রেকর্ডিং দেখুন।">
+<link rel="canonical" href="https://lyannabooks.com/class/">
+<meta property="og:title" content="লাইভ ক্লাস · লিয়ানা বুকস">
+<meta property="og:description" content="সময়মতো যোগ দিন, প্রশ্ন পাঠান, পরে রেকর্ডিং দেখুন।">
+<meta property="og:url" content="https://lyannabooks.com/class/">
+<meta property="og:type" content="website">
+<link rel="icon" href="/img/logo/final-icon.svg" type="image/svg+xml">
+<script>/* ফন্ট: কম দামি ফোন/ধীর নেটে হালকা রূপ (tools/font_mode.py) */!function(){var n=navigator,c=n.connection||{},l=c.saveData||/2g/.test(c.effectiveType)||c.downlink<1||n.deviceMemory<=2;try{var q=location.search.match(/[?&]font=(lite|full|auto)/);if(q)localStorage.lyFont=q[1]=='auto'?'':q[1];if(localStorage.lyFont)l=localStorage.lyFont=='lite'}catch(e){}if(l)document.documentElement.classList.add('ly-lite');document.write(l?'<link rel="stylesheet" href="/fonts/lite.css">':'<link rel="preload" href="/fonts/AnekBangla-bengali.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/fonts/fonts.css">')}()</script><noscript><link rel="stylesheet" href="/fonts/fonts.css"></noscript>
+<style>
+/* লাইভ ক্লাস: /class/ = তালিকা, /class/<id>/ = একটা ক্লাস (_redirects একই পাতায় আনে)। একটাই অনুরোধ /api/cls (৬০ সেকেন্ড ক্যাশ)।
+   ভিডিও YouTube-এর; চাপার আগে শুধু ছবি, চাপলে তবেই YouTube লোড হয় (প্রথম স্ক্রিন হালকা)। পাতা কিছু বারবার টানে না।
+   পরিকল্পনা: claude.ai প্রজেক্ট LY Sites-এর claude/live-class-plan.md, live-class-fable-review.md। */
+:root{--paper:#f8f5ee;--ink:#1d1f21;--muted:#5d5a55;--rule:#e6d3d9;--card:#fffdf7;--navy:#13294b;--pink:#c8326a;--warn:#8a5a00;
+  --body:'Noto Sans Bengali',system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6}
+a{color:var(--navy)}
+.sitebar .who{color:var(--muted);font-size:15px;text-decoration:none}
+.wrap{max-width:640px;margin:0 auto;padding:14px 16px 56px}
+h1{font:400 25px/1.35 'Tiro Bangla',serif;margin:0 0 2px;color:var(--navy)}
+h2{font:400 19px/1.3 'Tiro Bangla',serif;margin:24px 0 6px;color:var(--navy)}
+.when{color:var(--muted);font-size:15px;margin:0 0 12px}
+.when b{color:var(--pink);font-weight:600}
+.wait{color:var(--muted)}
+.vid{position:relative;aspect-ratio:16/9;background:#13294b center/cover no-repeat;border-radius:3px;overflow:hidden;margin:0 0 6px}
+.vid button{position:absolute;inset:0;width:100%;border:0;background:rgba(19,41,75,.45);color:#fff;font:600 18px/1.3 var(--body);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+.vid button i{width:64px;height:64px;border-radius:50%;border:2px solid #fff;display:grid;place-items:center;font-style:normal;font-size:24px;padding-left:5px}
+.vid iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.vid .none{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:#e6c97a;padding:16px;font-size:15px}
+.box{background:var(--card);border:1.4px solid rgba(200,50,106,.45);border-radius:3px;padding:14px;margin-top:14px}
+.box p{margin:0 0 8px}
+textarea{width:100%;min-height:88px;font:16px/1.5 var(--body);padding:10px;border:1px solid #cfc7bb;border-radius:3px;background:#fff;color:var(--ink);resize:vertical}
+.btn{display:block;width:100%;text-align:center;background:var(--navy);color:#fff;border:0;border-radius:3px;padding:12px;font:600 17px/1.3 var(--body);text-decoration:none;margin-top:10px;cursor:pointer}
+.btn:disabled{opacity:.55;cursor:default}
+.btn.line{background:var(--card);color:var(--navy);border:1.4px solid var(--pink);font-size:16px;padding:11px}
+.mut{color:var(--muted)}.sm{font-size:14px}
+.ok{color:#2e6b45}
+ul.list{list-style:none;margin:0;padding:0;border-top:1px solid var(--rule)}
+ul.list li{border-bottom:1px solid var(--rule)}
+ul.list a{display:block;padding:11px 2px;text-decoration:none;color:inherit}
+ul.list b{display:block;color:var(--navy);font-weight:600}
+ul.list span{font-size:14px;color:var(--muted)}
+.next{margin:4px 0 0}
+.back{display:inline-block;margin-top:22px;font-size:15px}
+</style>
+<link rel="stylesheet" href="/css/omr.css">
+</head>
+<body>
+<div class="sitebar"><a href="/" aria-label="লিয়ানা বুকস"><img src="/img/logo/li-mark.svg" alt="" width="34" height="44"><span class="lgn-n">লিয়ানা বুকস</span></a><a class="who" href="/account/" id="who"></a></div>
+<main class="wrap" id="app"><p class="wait">খোলা হচ্ছে…</p></main>
+<script src="/js/account.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const bn=x=>String(x).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+const MON=['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
+const WD=['রবিবার','সোমবার','মঙ্গলবার','বুধবার','বৃহস্পতিবার','শুক্রবার','শনিবার'];
+const LIVE=3*3600e3; // শুরুর পর ৩ ঘণ্টা পর্যন্ত "চলছে", তারপর রেকর্ডিং
+// বাংলাদেশের সময় (UTC+৬), ফোনের সময়-অঞ্চল যা-ই হোক
+function when(ts){
+  const d=new Date(ts+6*3600e3),h=d.getUTCHours(),mi=d.getUTCMinutes();
+  const part=h<5?'রাত':h<12?'সকাল':h<15?'দুপুর':h<18?'বিকেল':h<20?'সন্ধ্যা':'রাত';
+  const h12=h%12||12;
+  return bn(d.getUTCDate())+' '+MON[d.getUTCMonth()]+', '+WD[d.getUTCDay()]+' · '+part+' '+bn(h12)+(mi?':'+bn(String(mi).padStart(2,'0')):'')+'টা';
+}
+const state=(c,now)=>!c.at?'rec':now<c.at?'soon':now<c.at+LIVE?'live':'rec';
+const user=()=>window.LBA&&LBA.user();
+const id=(location.pathname.match(/^\/class\/([a-z0-9-]{1,40})\/?$/)||[])[1]||'';
+
+function calLink(c){
+  const f=t=>new Date(t).toISOString().replace(/[-:]|\.\d{3}/g,'');
+  return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent('লিয়ানা লাইভ ক্লাস: '+c.title)+
+    '&dates='+f(c.at)+'/'+f(c.at+3600e3)+'&details='+encodeURIComponent('https://lyannabooks.com/class/'+c.id+'/');
+}
+
+function list(rows){
+  const now=Date.now();
+  const up=rows.filter(c=>c.at&&now<c.at+LIVE).sort((a,b)=>a.at-b.at),old=rows.filter(c=>!up.includes(c));
+  let h='<h1>লাইভ ক্লাস</h1><p class="when">সময়মতো যোগ দিন, প্রশ্ন পাঠান। পরে একই পাতায় রেকর্ডিং।</p>';
+  if(up.length){
+    const c=up[0],s=state(c,now);
+    h+='<div class="box"><p class="mut sm">'+(s==='live'?'<b class="ok">এখন চলছে</b>':'পরের ক্লাস')+'</p><p><b>'+esc(c.title)+'</b><br><span class="mut">'+when(c.at)+'</span></p>'+
+      '<a class="btn" href="/class/'+c.id+'/">'+(s==='live'?'ক্লাসে যোগ দিন':'ক্লাসের পাতা')+'</a></div>';
+    if(up.length>1)h+='<h2>এর পরে</h2><ul class="list">'+up.slice(1).map(row).join('')+'</ul>';
+  }else h+='<p class="mut">এখন কোনো ক্লাস ঠিক করা নেই।</p>';
+  if(old.length)h+='<h2>আগের ক্লাস</h2><ul class="list">'+old.map(row).join('')+'</ul>';
+  $('app').innerHTML=h;
+}
+const row=c=>'<li><a href="/class/'+c.id+'/"><b>'+esc(c.title)+'</b><span>'+(c.at?when(c.at):'')+'</span></a></li>';
+
+function one(c){
+  const now=Date.now(),s=state(c,now);
+  document.title=c.title+' · লাইভ ক্লাস · লিয়ানা বুকস';
+  let h='<h1>'+esc(c.title)+'</h1><p class="when">'+(c.at?when(c.at):'')+(s==='live'?' · <b>এখন চলছে</b>':s==='soon'?' · শুরু হবে':'')+'</p>';
+  if(c.yt){
+    h+='<div class="vid" id="vid" style="background-image:url(https://i.ytimg.com/vi/'+c.yt+'/hqdefault.jpg)"><button type="button" id="play"><i aria-hidden="true">▶</i>'+
+      (s==='rec'?'রেকর্ডিং দেখুন':s==='live'?'ক্লাসে যোগ দিন':'ক্লাসের ভিডিও')+'</button></div>';
+  }else h+='<div class="vid"><p class="none">'+(s==='rec'?'রেকর্ডিং এখনো দেওয়া হয়নি।':'ক্লাসের সময় এই জায়গায় ভিডিও আসবে।')+'</p></div>';
+  if(s==='soon')h+='<a class="btn line" href="'+calLink(c)+'" target="_blank" rel="noopener">ক্যালেন্ডারে যোগ করুন</a>';
+  if(s!=='rec')h+='<div class="box" id="ask"></div>';
+  if(c.prac||c.notes){
+    h+='<h2>ক্লাসের পরে</h2>';
+    if(c.prac)h+='<a class="btn" href="'+esc(c.prac)+'">এই ক্লাসের অনুশীলন দিন</a>';
+    if(c.notes)h+='<p class="next"><a href="'+esc(c.notes)+'">এই ক্লাসের নোট</a></p>';
+  }
+  h+='<a class="back" href="/class/">সব ক্লাস</a>';
+  $('app').innerHTML=h;
+  if($('play'))$('play').onclick=()=>{
+    $('vid').innerHTML='<iframe src="https://www.youtube-nocookie.com/embed/'+c.yt+'?autoplay=1&rel=0&modestbranding=1&playsinline=1" title="'+esc(c.title)+'" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>';
+  };
+  if($('ask'))ask(c);
+}
+
+function ask(c){
+  const el=$('ask');
+  if(!user()){
+    el.innerHTML='<p>ক্লাসে কিছু বুঝতে না পারলে প্রশ্ন লিখে পাঠান, আমি লাইভেই উত্তর দেব। প্রশ্ন পাঠাতে লগইন লাগবে।</p><a class="btn line" href="/account/">লগইন করুন</a>';
+    return;
+  }
+  el.innerHTML='<p><label for="qt">আপনার প্রশ্ন</label></p><textarea id="qt" maxlength="500" placeholder="যেমন: আলোর প্রতিসরণের দ্বিতীয় সূত্রটা আবার বলবেন?"></textarea>'+
+    '<button class="btn" id="qs" type="button">প্রশ্ন পাঠান</button><p class="sm mut" id="qm" style="margin:8px 0 0">প্রশ্ন শুধু আমি দেখি, লাইভেই উত্তর দিই।</p>';
+  $('qs').onclick=async()=>{
+    const t=$('qt').value.trim();if(!t){$('qt').focus();return}
+    $('qs').disabled=true;
+    let r=null;try{r=await fetch('/api/cls/q',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:c.id,text:t})})}catch(e){}
+    if(r&&r.ok){$('qt').value='';$('qm').innerHTML='<span class="ok">পাঠানো হয়েছে।</span> লাইভে উত্তর শুনুন।'}
+    else if(r&&r.status===429)$('qm').textContent='একটু থামুন, এক মিনিট পরে আবার পাঠান।';
+    else if(r&&r.status===401){try{localStorage.removeItem('lb:u')}catch(e){}return ask(c)}
+    else $('qm').textContent='পাঠানো গেল না। নেট দেখে আবার চেষ্টা করুন।';
+    setTimeout(()=>{if($('qs'))$('qs').disabled=false},r&&r.ok?60e3:3e3);
+  };
+}
+
+(async function(){
+  const u=user();if(u&&u.name)$('who').textContent=String(u.name).trim().split(/\s+/)[0];
+  let j=null;try{const r=await fetch('/api/cls');if(r.ok)j=await r.json()}catch(e){}
+  if(!j){$('app').innerHTML='<p class="wait">খোলা গেল না। নেট দেখে পাতাটা আবার খুলুন।</p>';return}
+  const rows=j.rows||[];
+  if(!id)return list(rows);
+  const c=rows.find(x=>x.id===id);
+  if(!c){$('app').innerHTML='<h1>ক্লাস পাওয়া যায়নি</h1><p class="mut">লিংকটা হয়তো ভুল, বা ক্লাসটা সরানো হয়েছে।</p><a class="back" href="/class/">সব ক্লাস</a>';return}
+  one(c);
+})();
+});
+</script>
+</body>
+</html>
