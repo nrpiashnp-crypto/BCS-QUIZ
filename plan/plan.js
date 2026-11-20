@@ -105,13 +105,15 @@ function intro(login){
   const t=total();
   V.innerHTML=`<h1>${esc(NAME)} · নিজের পরিকল্পনা</h1>
   <p class="sub">আগে নিজের অবস্থা যাচাই, তারপর বিষয় ধরে প্রস্তুতি।</p>
-  <div class="card"><ol class="path">
+  <div class="card"><ol class="path">${V.dataset.flex?`<li><b>অবস্থা-যাচাই:</b> ${ME.ready?bn(t.n)+'টি প্রশ্ন, '+bn(ME.parts.length)+'টি ভাগে':'কয়েক ভাগে'}; একেক ভাগ ${ME.ready?mins(Math.round(t.m/ME.parts.length)):'আধা ঘণ্টা'}। এক বসায় সব, বা যত দিনে খুশি।</li>
+    <li><b>মেয়াদ বাছাই:</b> ফল দেখে ৫০, ৮০, ১০০, ১২০ বা ১৫০ দিন।</li>
+    <li><b>রোজের কাজ:</b> সেই মেয়াদে পুরো সিলেবাস; যেখানে নম্বর বাড়ানো সহজ, সেখানে বেশি সময়।</li></ol></div>`:`
     <li><b>অবস্থা-যাচাই:</b> ${ME.ready?bn(t.n)+'টি প্রশ্ন, '+bn(ME.parts.length)+'টি ভাগে, মোট প্রায় '+mins(t.m):'কয়েক ভাগে ভাগ করা পরীক্ষা'}। একেক ভাগ একেক দিনে দেওয়া যায়।</li>
     <li><b>প্রতিটা ভাগের শেষে</b> সেই ভাগের ফল।</li>
     <li><b>সব ভাগ শেষে</b> বিষয় ধরে আপনার অবস্থা: কোথায় বেশ ভালো, কোথায় ফোকাস করবেন।</li>
     <li><b>পড়ার ক্রম:</b> যেখানে সবচেয়ে বেশি নম্বর বাড়ানো যায়, সেখান থেকে।</li>
   </ol>
-  </div>
+  </div>`}
   <h2>কীভাবে দেবেন</h2>
   <div class="card">${rules()}</div>
   ${login?'<div class="card"><p style="margin:0 0 8px">ফল জমা রাখতে Google দিয়ে লগইন করুন। পাসওয়ার্ড লাগে না।</p><div id="g"></div></div>':'<div class="card">এই পরীক্ষার প্রশ্ন এখনো তোলা হয়নি। ততক্ষণ <a href="/exams/">অন্য পরীক্ষা দিন →</a></div>'}`;
@@ -143,12 +145,13 @@ function dash(){
   if(PNOTE)h+='<div class="card"><b>আপনি পাইলট ব্যাচে আছেন</b><small class="dim" style="display:block">আপনার অবস্থা-যাচাই দেওয়া আছে, তাই রুটিন আগের মতোই থাকল।</small></div>';
   if(ME.tester)h+='<div class="card"><b>পরীক্ষক হিসেবে দেখছেন</b><small class="dim" style="display:block">সব ভাগ এখনই খোলা। আপনার ফল অবস্থান আর উপস্থিতিতে গোনা হয় না।</small></div>';
   if(V.dataset.routine)h+='<div id="today"></div>';
+  if(V.dataset.flex&&!W)h+='<div id="flex"></div>';
   const msgs=(ME.msgs||[]).filter(x=>!x.seen||Date.now()-x.seen<3*864e5);
   if(msgs.length)h+=msgs.map(x=>`<div class="card msg"><b>লিয়ানা বুকস থেকে</b><p>${esc(x.text).replace(/\n/g,'<br>')}</p></div>`).join('');
   const unseen=(ME.msgs||[]).filter(x=>!x.seen).map(x=>x.id);if(unseen.length)api('seen',{ids:unseen}).catch(()=>{});
   if(V.dataset.routine&&!W)h+=`<div class="card ex"><div><b>${bn(62)} দিনের রুটিন</b><small>কোন দিন কী, আপনার কোনটা দেওয়া, কোনটা বাকি</small></div><button class="btn ghost" id="rt">রুটিন</button></div>`;
   if(ME.rep)h+=`<div class="card ex"><div><b>আপনার সমস্যার তালিকা</b><small>${ME.all?'সব ভাগ থেকে':bn(ME.rep.doneParts)+' ভাগ থেকে'}: কোথায় ঘাটতি, আন্দাজে কত গেল</small></div><button class="btn" id="st">দেখুন</button></div>`;
-  else if(ME.all&&!W)h+=`<div class="card ex"><div><b>আপনার কার্ড তৈরি</b><small>বিষয় ধরে অবস্থা আর পড়ার ক্রম</small></div><button class="btn" id="st">দেখুন</button></div>`;
+  else if(ME.all&&!W&&!V.dataset.flex)h+=`<div class="card ex"><div><b>আপনার কার্ড তৈরি</b><small>বিষয় ধরে অবস্থা আর পড়ার ক্রম</small></div><button class="btn" id="st">দেখুন</button></div>`;
   if(!ME.all&&!W)h+=`<div class="card"><b>${bn(ME.parts.length)} ভাগের ${bn(done)}টি শেষ</b><div class="prog"><i style="width:${Math.round((t.n-left)/t.n*100)}%"></i></div><span class="dim">${bn(t.n)}-এর মধ্যে ${bn(left)}টি প্রশ্ন বাকি</span></div>`;
   h+=(W?'<h2>এই সপ্তাহের পরীক্ষা</h2>':'<h2>ভাগগুলো</h2>')+ME.parts.map(p=>{
     let right,info=`${bn(p.n)}টি প্রশ্ন · ${bn(p.mins)} মিনিট`;
@@ -163,6 +166,7 @@ function dash(){
   if($('st'))$('st').onclick=()=>status(false);
   if($('rt'))$('rt').onclick=routineView;
   if($('today'))todayCard();
+  if($('flex')&&window.LBFLEX)window.LBFLEX(ME,$('flex'),{status:()=>status(false)});
   scrollTo(0,0);
 }
 // আজকের কাজ (§৫): রুটিনের আজকের দিন। পড়া/রিভিশন/মডেলের দিনে শিট আর সেই সপ্তাহের পরীক্ষার পথ; অবস্থা-যাচাইয়ের দিনে কিছু নয় (ভাগ নিচেই)
