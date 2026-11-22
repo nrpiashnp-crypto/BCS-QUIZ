@@ -390,11 +390,13 @@ async function main(){
   shown=20;
   const local=await localRows();
   let me=null,cid='',online=true;
-  try{const j=await fetch('/api/me',{credentials:'same-origin',cache:'no-store'}).then(r=>r.json());me=j.user;cid=j.cid}catch(e){online=false;me=get('lb:u',null)}
+  let busy=false;
+  // 503 = সার্ভার ব্যস্ত (D1-এর সীমা): লগইন-চিহ্ন মোছা নয়, এই ফোনের ফল দেখানো
+  try{const j=await fetch('/api/me',{credentials:'same-origin',cache:'no-store'}).then(r=>{if(r.status===503){busy=true;throw 0}return r.json()});me=j.user;cid=j.cid}catch(e){online=false;me=get('lb:u',null)}
   if(online)set('lb:u',me);
   if(!me){ME=null;pitch(cid,local.length);draw(local,false);return}
   head(me);
-  if(!online){$('imp').innerHTML='<p class="local">ইন্টারনেট নেই, তাই শুধু এই ফোনের ফল দেখানো হচ্ছে।</p>';draw(local,true);return}
+  if(!online){$('imp').innerHTML='<p class="local">'+(busy?'সার্ভার এখন ব্যস্ত, একটু পরে আবার খুলুন। ততক্ষণ এই ফোনের ফল দেখানো হচ্ছে; নতুন ফল ফোনে জমা থাকবে।':'ইন্টারনেট নেই, তাই শুধু এই ফোনের ফল দেখানো হচ্ছে।')+'</p>';draw(local,true);return}
   await L.flush();
   const load=async()=>{
     const j=await fetch('/api/att',{credentials:'same-origin',cache:'no-store'}).then(r=>r.ok?r.json():null).catch(()=>null);
