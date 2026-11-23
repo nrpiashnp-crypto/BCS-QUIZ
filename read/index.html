@@ -65,6 +65,13 @@ h1{font:600 24px/1.4 var(--display);color:var(--navy);margin:6px 0 4px}
 .xq .op:disabled{opacity:1}
 .xs{background:var(--card);border:1.4px solid var(--pink);border-radius:3px;padding:10px 12px;margin:0 0 12px;font-weight:500}
 .ex>p,.ex .wq{background:var(--card);border:1px dashed var(--navy);border-radius:3px;padding:10px 12px;margin:0 0 10px}
+.xq .af{margin:8px 0 0;font-size:.92em}.xq:not(.done) .af{display:none}
+.tg{display:inline-block;color:var(--navy);background:var(--soft);border-radius:2px;padding:1px 7px;font-size:.88em}
+.why{margin:6px 0 0;padding:0 0 0 10px;border-left:2px solid var(--good);color:#33363a}
+.xq.hid{display:none}
+.xs .again{display:block;margin:10px 0 0}
+.ex .all{background:none;border:0;color:var(--navy);font:inherit;font-weight:600;padding:4px 0;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.toc .scr{color:var(--good);font-size:.85em;white-space:nowrap}
 details.key{margin:6px 0 12px}details.key summary{cursor:pointer;color:var(--navy);font-weight:600;padding:4px 0}
 details.key p{margin:6px 0 0}
 /* আগের/পরের */
@@ -137,7 +144,8 @@ function wm(lines){
 const inl=s=>esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\s*(\[[^\]\n]{2,160}\])\s*$/,'<span class="tag">$1</span>');
 // "(ক) ৯১ (খ) ৮৭ …" → [[ক, ৯১], …]; দুটোর কম হলে null
 function opts(t){
-  const m=t.split(/\s*\(([কখগঘঙ])\)\s*/);if(m.length<5)return null;
+  const B=/\(ক\)/.test(t);if(!B&&!/\(a\)[\s\S]*\(b\)/.test(t))return null;
+  const m=t.split(B?/\s*\(([কখগঘঙ])\)\s*/:/\s*\(([a-e])\)\s*/);if(m.length<5)return null;
   const head=m[0],L=[];for(let i=1;i<m.length;i+=2)L.push([m[i],(m[i+1]||'').trim()]);
   return {head,L};
 }
@@ -145,10 +153,13 @@ const optList=L=>`<div class="opl${L.some(x=>x[1].length>22)?' one':''}">${L.map
 function md(src,kind){
   const blocks=src.replace(/\r/g,'').split(/\n{2,}/).map(b=>b.trim()).filter(Boolean);
   if(kind==='ex')return exMd(blocks);
+  if(kind==='pq'){const q=pqMd(blocks);if(q)return q}
+  const QZ=prac(blocks);
   let h='',qa=null,rule=null;
   const flushQa=()=>{if(qa){h+='<div class="qa">'+qa+'</div>';qa=null}};
   const flushRule=()=>{if(rule!=null){h+='<div class="rule">'+rule+'</div>';rule=null}};
   for(const b of blocks){
+    if(b.charCodeAt(0)===0){flushRule();flushQa();h+=QZ[+b.slice(1)];continue}
     const L=b.split('\n');
     let html=null;
     if(L.every(l=>/^\|/.test(l))){
@@ -175,34 +186,123 @@ function md(src,kind){
   flushRule();flushQa();
   return h;
 }
-const key=p=>`<details class="key"><summary>উত্তরমালা দেখুন</summary><p>${inl(p.replace(/^উত্তরমালা[:ঃ]\s*/,''))}</p></details>`;
-// অনুশীলনী: "(১) প্রশ্ন (ক) … (খ) …" আর "উত্তরমালা: ১-খ, ২-ক" → ছোট পরীক্ষা, প্রথম ট্যাপেই লক
+const KEY=/^(উত্তরমালা|Answers?)\s*[:ঃ]/i,WHY=/^(ব্যাখ্যা|Why)\s*[:ঃ]\s*/i;
+const key=p=>`<details class="key"><summary>উত্তরমালা দেখুন</summary><p>${inl(p.replace(KEY,'').trim())}</p></details>`;
+const keys=p=>{const K={};for(const m of p.matchAll(/([০-৯0-9]+)\s*[-–]\s*([কখগঘঙa-e])(?![A-Za-z])/g))K[en(m[1])]=m[2];return K};
+// একটা প্রশ্ন: অপশনে চাপ দিলেই লক; লকের পরে পরীক্ষার নাম আর এক লাইনের ব্যাখ্যা (থাকলে)
+function xq(no,head,L,k,tag,why){
+  const af=tag||why?`<div class="af">${tag?`<span class="tg">${esc(tag)}</span>`:''}${why?`<p class="why">${inl(why)}</p>`:''}</div>`:'';
+  return `<div class="xq" data-k="${esc(k)}"><p class="q">${no?`<b>${no}.</b> `:''}${inl(head)}</p><div class="ops${L.every(x=>x[1].length<=14)?' two':''}">${L.map(([a,v])=>`<button type="button" class="op" data-o="${esc(a)}"><i>${esc(a)}</i><span>${inl(v)}</span></button>`).join('')}</div>${af}</div>`;
+}
+const qbox=(items,n,foot)=>`<div class="ex" data-n="${n}"><p class="pgt xh">নিজে করে দেখুন: অপশনে চাপ দিলেই উত্তর লক হবে।</p>${items}<div class="xr"></div>${foot||''}</div>`;
+// অনুশীলনী-অংশ (পুরোনো ধাঁচ): "(১) প্রশ্ন (ক) … (খ) …" আর "উত্তরমালা: ১-খ, ২-ক"
 function exMd(blocks){
-  const kb=blocks.find(b=>/^উত্তরমালা[:ঃ]/.test(b)),K={};
-  if(kb)for(const m of kb.matchAll(/([০-৯0-9]+)\s*[-–]\s*([কখগঘঙ])/g))K[en(m[1])]=m[2];
-  let h='',mcq=0;
+  const kb=blocks.find(b=>KEY.test(b)),K=kb?keys(kb):{};
+  let h='',mcq=0,last=null;
   for(const b of blocks){
     if(b===kb)continue;
-    const p=b.replace(/\n/g,' '),m=p.match(/^\(([০-৯0-9]+)\)\s*(.+)$/),o=m&&opts(m[2]),k=m&&K[en(m[1])];
-    if(m&&o&&k&&o.L.some(x=>x[0]===k)){
-      mcq++;
-      h+=`<div class="xq" data-k="${k}"><p class="q"><b>${bn(en(m[1]))}.</b> ${inl(o.head)}</p><div class="ops${o.L.every(x=>x[1].length<=14)?' two':''}">${o.L.map(([a,v])=>`<button type="button" class="op" data-o="${a}"><i>${a}</i><span>${inl(v)}</span></button>`).join('')}</div></div>`;
-    }else if(m)h+=`<p class="wq"><b>${bn(en(m[1]))}.</b> ${inl(m[2])}</p>`;
-    else h+=`<p>${inl(p)}</p>`;
+    const p=b.replace(/\n/g,' ');
+    if(WHY.test(p)&&last){last.why=p.replace(WHY,'');continue}
+    const m=p.match(/^\(([০-৯0-9]+)\)\s*(.+)$/),o=m&&opts(m[2]),k=m&&K[en(m[1])];
+    if(m&&o&&k&&o.L.some(x=>x[0]===k)){mcq++;last={no:bn(en(m[1])),o,k,why:''};h+='\u0001'+(mcq-1);(exMd.L=exMd.L||[])[mcq-1]=last}
+    else{last=null;h+=m?`<p class="wq"><b>${bn(en(m[1]))}.</b> ${inl(m[2])}</p>`:`<p>${inl(p)}</p>`}
   }
-  return `<div class="ex" data-n="${mcq}">${mcq?'<p class="pgt" style="margin:0 0 8px;background:none;border:0;padding:0">নিজে করে দেখুন: অপশনে চাপ দিলেই উত্তর লক হবে।</p>':''}${h}<div id="xs"></div>${kb?key(kb.replace(/\n/g,' ')):''}</div>`;
+  const L=exMd.L||[];exMd.L=null;
+  h=h.replace(/\u0001(\d+)/g,(_,i)=>{const x=L[i];return xq(x.no,x.o.head,x.o.L,x.k,'',x.why)});
+  if(!mcq)return `<div class="ex">${h}${kb?key(kb.replace(/\n/g,' ')):''}</div>`;
+  return qbox(h,mcq,kb?key(kb.replace(/\n/g,' ')):'');
+}
+// মূল লেখার ভেতরের Practice: "১. প্রশ্ন (a) … (e) …" লাইনগুলো + "Answers: ১-b, ২-c" (বা বাংলা ক-ঙ, "উত্তরমালা:")।
+// সব প্রশ্নের উত্তর মিললে তবেই কুইজ; নইলে লেখা আগের মতো। ফেরত: যে HTML-গুলো বসবে (ব্লকের জায়গায় \0সূচক)
+function prac(blocks){
+  const out=[];
+  for(let ki=blocks.length-1;ki>0;ki--){
+    if(!KEY.test(blocks[ki]))continue;
+    const K=keys(blocks[ki]);let j=ki,items=[],ok=true;
+    while(j>0){
+      const L=blocks[j-1].split('\n').map(x=>x.trim()).filter(Boolean);
+      if(!L.length||!L.every(l=>/^[০-৯0-9]+[.।]\s/.test(l)||/^\([০-৯0-9]+\)\s/.test(l)||WHY.test(l)))break;
+      const got=[];
+      for(const l of L){
+        if(WHY.test(l)){if(got.length)got[got.length-1].why=l.replace(WHY,'');else ok=false;continue}
+        const m=l.match(/^\(?([০-৯0-9]+)[.।)]\s*(.+)$/),o=m&&opts(m[2]),k=m&&K[en(m[1])];
+        if(!(o&&k&&o.L.some(x=>x[0]===k))){ok=false;break}
+        got.push({no:bn(en(m[1])),o,k,why:''});
+      }
+      if(!ok)break;items=got.concat(items);j--;
+    }
+    if(!ok||!items.length||items.length!==Object.keys(K).length)continue;
+    out.push(qbox(items.map(x=>xq(x.no,x.o.head,x.o.L,x.k,'',x.why)).join(''),items.length,key(blocks[ki].replace(/\n/g,' '))));
+    blocks.splice(j,ki-j+1,'\u0000'+(out.length-1));ki=j;
+  }
+  return out;
+}
+// "পরীক্ষায় যা এসেছে": "- প্রশ্ন (a) … (b) **উত্তর** … [পরীক্ষা] ব্যাখ্যা: …" → উত্তর লুকানো কুইজ।
+// অপশন নেই এমন লাইন (যেমন "প্রশ্ন · **উত্তর** · [পরীক্ষা]") আগের মতো তালিকায়
+function pqMd(blocks){
+  let h='',n=0,li='';
+  const flush=()=>{if(li){h+='<ul>'+li+'</ul>';li=''}};
+  for(const b of blocks){
+    const L=b.split('\n');
+    if(!L.every(l=>/^[-*] /.test(l))){flush();h+=`<p>${inl(b.replace(/\n/g,' '))}</p>`;continue}
+    for(const raw of L){
+      let t=raw.slice(2).trim(),why='',tag='';
+      const w=t.split(/\s+(?=(?:ব্যাখ্যা|Why)\s*[:ঃ])/i);if(w.length>1){t=w[0];why=w.slice(1).join(' ').replace(WHY,'')}
+      const g=t.match(/\s*(\[[^\]\n]{2,160}\])\s*$/);if(g){tag=g[1];t=t.slice(0,g.index)}
+      const o=opts(t),A=o?o.L.filter(x=>/^\*\*.+\*\*$/.test(x[1])):[];
+      if(o&&A.length===1){
+        flush();n++;
+        h+=xq(bn(n),o.head,o.L.map(([k,v])=>[k,v.replace(/^\*\*(.+)\*\*$/,'$1')]),A[0][0],tag,why);
+      }else li+='<li>'+inl(raw.slice(2))+'</li>';
+    }
+  }
+  flush();
+  if(!n)return null;
+  return qbox(h,n,'<button type="button" class="all">সব উত্তর দেখুন</button>');
+}
+// প্রথম চেষ্টার ফল: এই ফোনে, আর লগইন থাকলে D1-এ (পড়ার হিসাবের পাশে)
+function score(ok,n,w){
+  const sc=get('rd:sc:'+SID,{});sc[PID]=[ok,n];put('rd:sc:'+SID,sc);
+  if(TOC){TOC.sc=TOC.sc||{};TOC.sc[PID]=[ok,n]}
+  if(TOC&&TOC.me)fetch('/api/read/score',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({s:SID,p:PID,ok,n,w})}).catch(()=>{});
 }
 function exWire(){
-  const box=V.querySelector('.ex[data-n]');if(!box||!+box.dataset.n)return;
-  let done=0,ok=0;const n=+box.dataset.n;
-  box.querySelectorAll('.xq').forEach(q=>q.querySelectorAll('.op').forEach(b=>b.onclick=()=>{
-    if(q.classList.contains('done'))return;
-    q.classList.add('done');done++;
-    const k=q.dataset.k,mine=b.dataset.o;
-    q.querySelectorAll('.op').forEach(x=>{if(x.dataset.o===k)x.classList.add('ok')});
-    if(mine===k)ok++;else b.classList.add('no');
-    if(done===n)$('xs').innerHTML=`<div class="xs">${bn(n)}টির মধ্যে ${bn(ok)}টি ঠিক।${ok===n?' চমৎকার!':ok*2>=n?' ভুলগুলোর টাইপ আরেকবার দেখে নিন।':' টাইপগুলো আরেকবার পড়ে তারপর আবার করুন।'}</div>`;
-  }));
+  const boxes=[...V.querySelectorAll('.ex[data-n]')].filter(b=>+b.dataset.n);if(!boxes.length)return;
+  const st={left:boxes.length,ok:0,n:0,w:[],sent:false};
+  boxes.forEach(box=>{
+    const Q=[...box.querySelectorAll('.xq')],R=box.querySelector('.xr'),all=box.querySelector('.all');
+    let round=Q,done=0,ok=0,first=true,shown=false;
+    const finish=()=>{
+      const n=round.length,wrong=round.filter(q=>q.dataset.r==='no');
+      let t=first?`${bn(n)}টির মধ্যে ${bn(ok)}টি ঠিক।`:`আবারের চেষ্টায় ${bn(n)}টির মধ্যে ${bn(ok)}টি ঠিক।`;
+      t+=ok===n?' চমৎকার!':ok*2>=n?' ভুলগুলো আরেকবার দেখে নিন।':' ওপরের লেখা আরেকবার পড়ে তারপর আবার করুন।';
+      R.innerHTML=`<div class="xs">${t}${wrong.length?'<button type="button" class="btn again">শুধু ভুলগুলো আবার</button>':''}</div>`;
+      if(all)all.hidden=true;
+      if(first&&!shown){st.ok+=ok;st.n+=n;st.w.push(...wrong.map(q=>q.querySelector('.q b')?en(q.querySelector('.q b').textContent.replace('.','')):0));
+        if(--st.left===0&&!st.sent){st.sent=true;score(st.ok,st.n,st.w.slice(0,60).map(Number))}}
+      const a=R.querySelector('.again');
+      if(a)a.onclick=()=>{
+        first=false;round=wrong;done=0;ok=0;R.innerHTML='';
+        Q.forEach(q=>{if(!wrong.includes(q))q.classList.add('hid')});
+        wrong.forEach(q=>{q.classList.remove('done');delete q.dataset.r;q.querySelectorAll('.op').forEach(x=>x.classList.remove('ok','no'))});
+        wrong[0].scrollIntoView({behavior:'smooth',block:'center'});
+      };
+      if(!wrong.length&&!first)Q.forEach(q=>q.classList.remove('hid'));
+    };
+    Q.forEach(q=>q.querySelectorAll('.op').forEach(b=>b.onclick=()=>{
+      if(q.classList.contains('done'))return;
+      q.classList.add('done');done++;
+      const k=q.dataset.k,mine=b.dataset.o;
+      q.querySelectorAll('.op').forEach(x=>{if(x.dataset.o===k)x.classList.add('ok')});
+      if(mine===k){ok++;q.dataset.r='ok'}else{b.classList.add('no');q.dataset.r='no'}
+      if(done===round.length)finish();
+    }));
+    if(all)all.onclick=()=>{
+      shown=true;all.hidden=true;st.left=-1;
+      Q.forEach(q=>{if(q.classList.contains('done'))return;q.classList.add('done');q.querySelectorAll('.op').forEach(x=>{if(x.dataset.o===q.dataset.k)x.classList.add('ok')})});
+    };
+  });
 }
 
 const api=p=>fetch('/api/read/'+p,{credentials:'same-origin',cache:'no-store'}).then(r=>r.json().then(j=>({st:r.status,j})));
@@ -262,7 +362,8 @@ async function route(){
   PID?part():toc();
 }
 function toc(){
-  const T=TOC,S=T.s,seen=new Set(T.seen),loc=get('rd:last:'+SID,null),last=T.last||loc,B=base();
+  const T=TOC,S=T.s,seen=new Set(T.seen),loc=get('rd:last:'+SID,null),last=T.last||loc,B=base(),SC=Object.assign({},get('rd:sc:'+SID,{}),T.sc||{});
+  const scr=p=>SC[p]?` <small class="scr">${bn(SC[p][0])}/${bn(SC[p][1])} ঠিক</small>`:'';
   document.title=S.title+' · লিয়ানা বুকস';
   const lastT=last&&T.toc.find(x=>x[0]===last);
   // যে ভাগ খোলা থাকবে: শেষ পড়া অংশের, নইলে প্রথম না-পড়া অংশের
@@ -275,7 +376,7 @@ function toc(){
     const L=T.toc.filter(x=>x[1]===sec.no);if(!L.length)continue;
     const r=L.filter(x=>seen.has(x[0])).length;
     h+=`<details class="sec"${sec.no===openSec?' open':''}><summary><span>${bn(sec.no)}. ${esc(sec.title)}</span><small>${r?bn(r)+'/'+bn(L.length):bn(L.length)+'টি অংশ'}</small></summary>`+
-      L.map(x=>`<a href="${B}${esc(x[0])}" class="${seen.has(x[0])?'r':''}${x[2]==='type'||x[2]==='text'?'':' k'}${cur&&x[0]===cur[0]?' c':''}"><i aria-hidden="true"></i><span>${esc(x[3])}${seen.has(x[0])?'<span class="sr" style="position:absolute;left:-9999px"> (পড়েছেন)</span>':''}</span></a>`).join('')+'</details>';
+      L.map(x=>`<a href="${B}${esc(x[0])}" class="${seen.has(x[0])?'r':''}${x[2]==='type'||x[2]==='text'?'':' k'}${cur&&x[0]===cur[0]?' c':''}"><i aria-hidden="true"></i><span>${esc(x[3])}${scr(x[0])}${seen.has(x[0])?'<span class="sr" style="position:absolute;left:-9999px"> (পড়েছেন)</span>':''}</span></a>`).join('')+'</details>';
   }
   h+=`</div>${!T.me?'<p class="note">লগইন করলে কোন অংশ পড়েছেন তা সব ফোনে মনে থাকে।</p>':''}${S.copy&&S.copy.length?`<p class="note">${esc(S.copy[0])}${S.by?' '+esc(S.by):''}</p>`:''}`;
   V.innerHTML=h;scrollTo(0,0);

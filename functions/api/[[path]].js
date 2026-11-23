@@ -2643,7 +2643,9 @@ const RD_SCHEMA = [
   'CREATE TABLE IF NOT EXISTS rd_sheet(id TEXT PRIMARY KEY, meta TEXT NOT NULL, acc TEXT NOT NULL, fr TEXT, ts INTEGER NOT NULL)',
   'CREATE TABLE IF NOT EXISTS rd_part(s TEXT NOT NULL, pid TEXT NOT NULL, ord INTEGER NOT NULL, sec INTEGER NOT NULL, kind TEXT NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL, h TEXT NOT NULL, ts INTEGER NOT NULL, PRIMARY KEY(s, pid))',
   'CREATE TABLE IF NOT EXISTS rd_read(uid INTEGER NOT NULL, s TEXT NOT NULL, pid TEXT NOT NULL, n INTEGER NOT NULL, first INTEGER NOT NULL, last INTEGER NOT NULL, PRIMARY KEY(uid, s, pid))',
-  'CREATE TABLE IF NOT EXISTS rd_rate(k TEXT PRIMARY KEY, win INTEGER NOT NULL, wn INTEGER NOT NULL, day INTEGER NOT NULL, dn INTEGER NOT NULL)'
+  'CREATE TABLE IF NOT EXISTS rd_rate(k TEXT PRIMARY KEY, win INTEGER NOT NULL, wn INTEGER NOT NULL, day INTEGER NOT NULL, dn INTEGER NOT NULL)',
+  // অংশের প্রশ্নের ফল (২৪/১১/২০২৬, PIASH: শুরু থেকেই D1-এ): প্রথম পুরো চেষ্টা ok/n আর ভুল প্রশ্নের নম্বর w (JSON); পরের চেষ্টায় শুধু tries/last
+  'CREATE TABLE IF NOT EXISTS rd_score(uid INTEGER NOT NULL, s TEXT NOT NULL, pid TEXT NOT NULL, ok INTEGER NOT NULL, n INTEGER NOT NULL, w TEXT NOT NULL, tries INTEGER NOT NULL, first INTEGER NOT NULL, last INTEGER NOT NULL, PRIMARY KEY(uid, s, pid))'
 ];
 // পাঠক (লগইন বা দর্শক-কুকি) আর IP: [১০ মিনিটে, দিনে]। এক অংশ পড়তে মানুষের কয়েক মিনিট লাগে; IP-তে বেশি, কারণ মোবাইলে অনেকে এক IP ভাগ করেন
 const RD_LIM = {who: [40, 300], ip: [400, 3000]}, RD_WIN = 600e3, RD_ACC = ['all', 'login', 'pb'];
@@ -2697,6 +2699,7 @@ async function rdRate(db, keys, now) {
   return true;
 }
 async function read(path, req, url, env, db, u) {
+  if (path === 'read/score' && req.method === 'POST') return rdScore(req, env, db, u);
   if (req.method !== 'GET') return json({error: 'not found'}, 404);
   await rdSetup(db);
   if (path === 'read/list') return rdList(env, db, u);
@@ -2708,11 +2711,13 @@ async function read(path, req, url, env, db, u) {
   if (deny) return json({error: deny, title: sh.meta.title}, deny === 'login' ? 401 : 403);
   if (path === 'read/toc') {
     const q = [db.prepare('SELECT pid, sec, kind, title FROM rd_part WHERE s = ? ORDER BY ord').bind(sid)];
-    if (u) q.push(db.prepare('SELECT pid, last FROM rd_read WHERE uid = ? AND s = ? ORDER BY last DESC').bind(u.id, sid));
-    const [t, r] = await db.batch(q);
+    if (u) q.push(db.prepare('SELECT pid, last FROM rd_read WHERE uid = ? AND s = ? ORDER BY last DESC').bind(u.id, sid),
+      db.prepare('SELECT pid, ok, n FROM rd_score WHERE uid = ? AND s = ?').bind(u.id, sid));
+    const [t, r, sc] = await db.batch(q);
     const {id, title, sub, label, howto, by, copy, secs} = sh.meta;
     return json({s: {id, title, sub, label, howto, by, copy, secs}, toc: t.results.map(x => [x.pid, x.sec, x.kind, x.title]),
-      wm: rdWm(u, now), me: !!u, seen: r ? r.results.map(x => x.pid) : [], last: r && r.results[0] ? r.results[0].pid : null});
+      wm: rdWm(u, now), me: !!u, seen: r ? r.results.map(x => x.pid) : [], last: r && r.results[0] ? r.results[0].pid : null,
+      sc: sc ? Object.fromEntries(sc.results.map(x => [x.pid, [x.ok, x.n]])) : {}});
   }
   if (path === 'read/p') {
     const pid = String(url.searchParams.get('p') || '');
@@ -2735,6 +2740,25 @@ async function read(path, req, url, env, db, u) {
     return json({...out, prev: pv.results[0] || null, next: nx.results[0] || null}, 200, hdr);
   }
   return json({error: 'not found'}, 404);
+}
+// POST /api/read/score {s, p, ok, n, w: [ভুল প্রশ্নের নম্বর]} → অংশের প্রশ্নের ফল (শুধু লগইন; প্রথম চেষ্টার ফল বদলায় না)
+async function rdScore(req, env, db, u) {
+  if (!u) return json({error: 'login'}, 401);
+  let b; try { b = await req.json(); } catch (e) { return json({error: 'bad'}, 400); }
+  const sid = String(b.s || ''), pid = String(b.p || ''), ok = b.ok, n = b.n;
+  if (!RD_PID.test(sid) || sid.length > 60 || !RD_PID.test(pid) || pid.length > 40 ||
+      !Number.isInteger(ok) || !Number.isInteger(n) || n < 1 || n > 200 || ok < 0 || ok > n) return json({error: 'bad'}, 400);
+  const w = (Array.isArray(b.w) ? b.w : []).filter(x => Number.isInteger(x) && x > 0 && x < 1000).slice(0, 60);
+  await rdSetup(db);
+  const sh = await rdSheet(db, sid);
+  if (!sh) return json({error: 'no sheet'}, 404);
+  if (await rdDeny(db, sh, u, env)) return json({error: 'member'}, 403);
+  if (!await db.prepare('SELECT 1 x FROM rd_part WHERE s = ? AND pid = ?').bind(sid, pid).first()) return json({error: 'no part'}, 404);
+  const now = Date.now();
+  if (!await rdRate(db, [['u:' + u.id, RD_LIM.who]], now)) return json({error: 'slow'}, 429);
+  await db.prepare('INSERT INTO rd_score(uid, s, pid, ok, n, w, tries, first, last) VALUES(?,?,?,?,?,?,1,?,?) ON CONFLICT(uid, s, pid) DO UPDATE SET tries = tries + 1, last = excluded.last')
+    .bind(u.id, sid, pid, ok, n, JSON.stringify(w), now, now).run();
+  return json({ok: true});
 }
 // যে শিটগুলো এই পাঠক পড়তে পারেন (/read/ পাতার তালিকা আর /account/-এর "পড়া চালিয়ে যান"):
 // {me, list: [{id, title, sub, label, n: অংশ, seen: পড়া অংশ, last: শেষ পড়া অংশ, at: কখন}]}; শুরু করা শিট আগে
