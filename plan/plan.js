@@ -1,7 +1,7 @@
 /* নিজের পরিকল্পনা: অবস্থা-যাচাইয়ের পাতা (/plan/bcs/ ইত্যাদি)। সার্ভার /api/diag/* (functions-এর "নিজের পরিকল্পনা" অংশ)।
    পাতায় <main id="view" data-set="bcs-start" data-name="বিসিএস"> (পেট্রোবাংলা: /plan/pb/, সেট pb-start, data-mk)। লগইন বাধ্যতামূলক। নকশা: Lyanna_data/pilot/custom-plan/PLAN.md §৯।
    - দুই ধরন (ভাগ শুরুর আগে বাছাই, ভাগের শেষ পর্যন্ত একই): এক প্রশ্ন এক পর্দায় ("বাদ দিন" চাপলে শেষে আবার আসে),
-     বা পাতায় ১০টি (না-দাগানোগুলো শেষে "বাকি প্রশ্ন" পাতায়; নিশ্চিত/আন্দাজ নেই)। দুটোতেই অপশনে প্রথম চাপেই লক।
+     বা সব প্রশ্ন এক পাতায় (না-দাগানোগুলো শেষে "বাকি প্রশ্ন" পাতায়; নিশ্চিত/আন্দাজ নেই)। দুটোতেই অপশনে প্রথম চাপেই লক।
    - উত্তর এই ফোনে জমে ('lb:diag:<সেট>:<ভাগ>'), ৫টা করে সার্ভারে যায়; সময় সার্ভারের।
    - ফল: ঠিক / ভুল / বাদ আলাদা, নেট নম্বর বা −০.৫ নয়। কার্ডের ছবি ফোনেই আঁকা (canvas), সার্ভারে কিছু যায় না।
    - পাইলট-ধাঁচের সেট (pb-start, সার্ভারের DIAG_DEF): ভাগ নিজের দিনে খোলে, ভুলে কাটা (নেট নম্বর দেখায়), প্রতিটি উত্তরের পরে
@@ -356,9 +356,10 @@ function show(){
   fresh();
   scrollTo(0,0);
 }
-// ---------- দুই ধরন: একটা একটা করে, বা পাতায় ১০টি ----------
-// একটা একটা করে: conf-সেটে প্রতিটি উত্তরের পরে "নিশ্চিত/আন্দাজ" (রিপোর্টে আন্দাজের হিসাব)। পাতায় ১০টি: আসল পরীক্ষার মতো, conf চাওয়া হয় না।
-const MDK='lb:diag:mode',PG=10;
+// ---------- দুই ধরন: একটা একটা করে, বা সব প্রশ্ন একসাথে ----------
+// একটা একটা করে: conf-সেটে প্রতিটি উত্তরের পরে "নিশ্চিত/আন্দাজ" (রিপোর্টে আন্দাজের হিসাব)। সব একসাথে: আসল প্রশ্নপত্রের মতো এক পাতায়, conf চাওয়া হয় না।
+// PG = এক পাতায় কয়টি; মালিকের সিদ্ধান্ত (২৪ নভেম্বর): সব প্রশ্ন এক পাতায়, ওপর-নিচে স্ক্রল (প্রশ্ন শুরুতেই ফোনে আসে, তাই বাড়তি লোড নেই)
+const MDK='lb:diag:mode',PG=1000;
 function modes(){
   const m=get(MDK,'one')==='page'?'page':'one',cf=ME&&ME.conf;
   const o=(v,t,d)=>`<label class="card"><input type="radio" name="md" value="${v}"${m===v?' checked':''}><span><b>${t}</b>${d}</span></label>`;
@@ -366,9 +367,9 @@ function modes(){
   const one=cf?`<ul><li>এক পর্দায় একটি প্রশ্ন আসবে। উত্তর দাগানোর পরে বলবেন: <b>নিশ্চিত</b>, না <b>আন্দাজ</b>।</li>
     <li>শেষে রিপোর্ট কার্ডে দুই ভাগে দেখাবে: নিশ্চিত ছিলেন এমন উত্তরের কয়টা ভুল হলো (মানে ভুল জানা, এগুলো আগে ঠিক করতে হবে), আর আন্দাজে দেওয়া উত্তরের কয়টা লাগল, তাতে নম্বর বাড়ল না কমল।</li>
     <li>এই হিসাব ধরেই আপনার সামনের পড়া সাজানো হবে।</li></ul>`:'<small>এক পর্দায় একটি প্রশ্ন।</small>';
-  const page=cf?`<ul><li>ভাগের সব প্রশ্ন আসল পরীক্ষার প্রশ্নপত্রের মতো, এক পাতায় ১০টি করে। ইচ্ছেমতো আগে-পরে যাওয়া যাবে।</li>
-    <li>নিশ্চিত/আন্দাজ বলতে হবে না, তাই রিপোর্টে এই দুই ভাগের হিসাব থাকবে না। নম্বর আর বিষয় ধরে অবস্থা থাকবে।</li></ul>`:'<small>আসল পরীক্ষার মতো, এক পাতায় ১০টি প্রশ্ন।</small>';
-  return `<div class="mode" role="radiogroup">${o('one','একটা একটা করে',one)}${o('page','সব প্রশ্ন একসাথে (পাতায় ১০টি করে)',page)}</div>`;
+  const page=cf?`<ul><li>ভাগের সব প্রশ্ন আসল প্রশ্নপত্রের মতো এক পাতায় আসবে। ওপর-নিচে স্ক্রল করে যেটা আগে পারেন, সেটা আগে দাগাবেন।</li>
+    <li>নিশ্চিত/আন্দাজ বলতে হবে না, তাই রিপোর্টে এই দুই ভাগের হিসাব থাকবে না। নম্বর আর বিষয় ধরে অবস্থা থাকবে।</li></ul>`:'<small>আসল প্রশ্নপত্রের মতো, সব প্রশ্ন এক পাতায়।</small>';
+  return `<div class="mode" role="radiogroup">${o('one','একটা একটা করে',one)}${o('page','সব প্রশ্ন একসাথে',page)}</div>`;
 }
 function pageStart(){
   const L=local(EX.part);EX.ids=EX.qs.map(q=>q.id);EX.rev=0;EX.pg=0;
@@ -376,18 +377,19 @@ function pageStart(){
   // আবার খুললে: যে পাতায় ছিলেন সেখানেই ("বাকি প্রশ্ন"-এ থাকলে তালিকা নতুন করে)
   const [rv,pg]=L.pg||[0,0];
   if(rv)revStart();else{EX.pg=Math.min(pg,Math.ceil(EX.ids.length/PG)-1);pageShow()}
+  const f=V.querySelector('.pq .opt:not(:disabled)');if(f&&L.seen.length)setTimeout(()=>f.closest('.pq').scrollIntoView({block:'start'}),50)
 }
 function revStart(){const L=local(EX.part);EX.rev=1;EX.pg=0;EX.rl=EX.ids.filter(id=>!L.a[id]);pageShow()}
 function pageShow(){
   const L=local(EX.part),list=EX.rev?EX.rl:EX.ids,np=Math.max(1,Math.ceil(list.length/PG)),ids=list.slice(EX.pg*PG,EX.pg*PG+PG);
   for(const id of ids)if(!L.seen.includes(id))L.seen.push(id);L.pg=[EX.rev,EX.pg];set(LK(EX.part),L);
   const done=()=>EX.ids.filter(id=>local(EX.part).a[id]).length,last=EX.pg>=np-1;
-  V.innerHTML=`<div class="qh"><span>${EX.rev?'বাকি প্রশ্ন':'ভাগ '+bn(EX.part)} · পাতা ${bn(EX.pg+1)} / ${bn(np)}</span><span id="cnt">${bn(done())} / ${bn(EX.ids.length)} উত্তর</span></div>
+  V.innerHTML=`<div class="qh"><span>${EX.rev?'বাকি প্রশ্ন':'ভাগ '+bn(EX.part)}${np>1?' · পাতা '+bn(EX.pg+1)+' / '+bn(np):''}</span><span id="cnt">${bn(done())} / ${bn(EX.ids.length)} উত্তর</span></div>
     ${EX.rev&&!EX.pg?'<p class="sub">যেগুলো দাগাননি, সেগুলো এখানে। পারলে দাগান, নইলে জমা দিন।</p>':''}
     ${ids.map(id=>{const q=EX.qs.find(x=>x.id===id),a=L.a[id];return `<section class="pq" data-id="${esc(id)}">${q.mk?MKT:''}<div class="qt"><span class="qn">${bn(EX.ids.indexOf(id)+1)}.</span> ${rich(q.q)}</div>
       ${q.o.map((o,k)=>`<button class="opt${a&&a[0]===k?' sel':''}" data-o="${k}"${a?' disabled':''}><span class="k">${K[k]}</span><span>${rich(o)}</span></button>`).join('')}</section>`}).join('')}
     <p class="net" id="net">${navigator.onLine?'':'নেট নেই। পরীক্ষা চলছে, উত্তর ফোনে জমছে।'}</p>
-    <div class="pnav">${EX.pg||EX.rev?'<button class="btn ghost" id="pv">← আগের পাতা</button>':''}<button class="btn" id="nx"></button></div>`;
+    <div class="pnav">${EX.pg||EX.rev?`<button class="btn ghost" id="pv">← ${EX.rev&&!EX.pg?'সব প্রশ্ন':'আগের পাতা'}</button>`:''}<button class="btn" id="nx"></button></div>`;
   V.querySelectorAll('.pq').forEach(sec=>{const id=sec.dataset.id;sec.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
     const L=local(EX.part);if(L.a[id]||b.disabled)return;
     // প্রথম চাপেই লক। সময় ০: পাতায় প্রশ্নপ্রতি সময় মাপা যায় না, আর সার্ভার ০-কে সময়ের হিসাবে ধরে না
