@@ -448,6 +448,11 @@ function result(res){
   const rp=ME.parts.find(p=>p.no===res.part)||{};
   let h=`${back}<h1 style="margin-top:12px">${W&&rp.date?esc(dday(rp.date)+' · '+(rp.title||'পরীক্ষা'))+': ফল':'ভাগ '+bn(res.part)+'-এর ফল'}</h1>`;
   if(res.net!=null)h+=`<div class="card"><b>নম্বর: ${bn(res.n)}-এর মধ্যে ${nb(res.net)}</b><div class="sub" style="margin:2px 0 0">${bn(res.ok)}টি ঠিক, ${bn(res.no)}টি ভুল, ${bn(res.skip)}টি বাদ${res.no?` · ভুলের জন্য কাটা গেছে ${nb(res.no*res.neg)}`:''}</div></div>`;
+  // একটা একটা করে দিলে (conf-সেট): এই ভাগেই নিশ্চিত/আন্দাজের হিসাব, যাতে কার্ডের কথা সঙ্গে সঙ্গে চোখে পড়ে
+  const Su=res.su,G=res.g;
+  if(Su&&G&&(Su.n||G.n))h+=`<div class="card"><b>নিশ্চিত আর আন্দাজ</b><ul class="rules" style="margin-top:6px">
+    ${Su.n?`<li>নিশ্চিত বলেছিলেন ${bn(Su.n)}টি: ${bn(Su.ok)}টি ঠিক, <b>${bn(Su.no)}টি ভুল</b>।${Su.no?' এগুলো ভুল জানা, আগে ঠিক করতে হবে।':''}</li>`:''}
+    ${G.n?`<li>আন্দাজে দিয়েছেন ${bn(G.n)}টি: ${bn(G.ok)}টি লাগল, ${bn(G.no)}টি ভুল।${res.neg?(()=>{const t=Math.round((G.ok-G.no*res.neg)*100)/100;return ` আন্দাজে নম্বর ${t>=0?'বাড়ল '+nb(t):'কমল '+nb(-t)}।`})():''}</li>`:''}</ul></div>`;
   h+='<div id="rk"></div>';
   h+=Object.entries(res.by).map(([sid,x])=>{const b=band(x);
     return `<div class="card"><b>${esc(SUB(sid))}</b>: ${bn(x.n)}টির মধ্যে ${bn(x.ok)}টি ঠিক<div class="sub" style="margin:2px 0 0">${bn(x.no)}টি ভুল, ${bn(x.skip)}টি বাদ</div>${b&&LINE[b]?`<p style="margin:6px 0 0">${LINE[b]}</p>`:''}</div>`}).join('');
