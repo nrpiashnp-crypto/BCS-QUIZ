@@ -1,6 +1,7 @@
 /* নিজের পরিকল্পনা: অবস্থা-যাচাইয়ের পাতা (/plan/bcs/ ইত্যাদি)। সার্ভার /api/diag/* (functions-এর "নিজের পরিকল্পনা" অংশ)।
    পাতায় <main id="view" data-set="bcs-start" data-name="বিসিএস"> (পেট্রোবাংলা: /plan/pb/, সেট pb-start, data-mk)। লগইন বাধ্যতামূলক। নকশা: Lyanna_data/pilot/custom-plan/PLAN.md §৯।
-   - এক প্রশ্ন এক পর্দায়, অপশনে প্রথম চাপেই লক; "বাদ দিন" চাপলে শেষে আবার আসে (সময় থাকলে)।
+   - দুই ধরন (ভাগ শুরুর আগে বাছাই, ভাগের শেষ পর্যন্ত একই): এক প্রশ্ন এক পর্দায় ("বাদ দিন" চাপলে শেষে আবার আসে),
+     বা সব প্রশ্ন এক পাতায় (না-দাগানোগুলো শেষে "বাকি প্রশ্ন" পাতায়; নিশ্চিত/আন্দাজ নেই)। দুটোতেই অপশনে প্রথম চাপেই লক।
    - উত্তর এই ফোনে জমে ('lb:diag:<সেট>:<ভাগ>'), ৫টা করে সার্ভারে যায়; সময় সার্ভারের।
    - ফল: ঠিক / ভুল / বাদ আলাদা, নেট নম্বর বা −০.৫ নয়। কার্ডের ছবি ফোনেই আঁকা (canvas), সার্ভারে কিছু যায় না।
    - পাইলট-ধাঁচের সেট (pb-start, সার্ভারের DIAG_DEF): ভাগ নিজের দিনে খোলে, ভুলে কাটা (নেট নম্বর দেখায়), প্রতিটি উত্তরের পরে
@@ -59,9 +60,9 @@ const rules=()=>`<ul class="rules">
   <li>শান্ত পরিবেশে, ঠান্ডা মাথায় একটানা পরীক্ষা দিন। একবার শুরু করলে টাইমার চলতেই থাকবে; ব্রাউজার বন্ধ হয়ে গেলেও থামবে না।</li>
   ${(ME&&ME.grp==='merito')||GJ?'<li>প্রতিটি পরীক্ষা রুটিনের তারিখে খুলবে, তারপর খোলাই থাকবে। কোনো দিন না পারলে পরে দিয়ে দিন।</li>':ME&&ME.parts&&ME.parts.some(p=>p.date)?'<li>প্রতিদিন একটি করে পরীক্ষা খুলবে: নিজের দিন এলে, আর আগের দিনের পরীক্ষা শেষ হলে। কোনো দিন না পারলে পরে দেওয়া যাবে, তারপর পরেরটা খুলবে।</li>':''}
   <li>একবার পূরণ করলে উত্তর আর পরিবর্তন করা যাবে না।</li>
-  ${ME&&ME.conf?'<li>প্রতিটি উত্তরের পরে চাপুন: <b>নিশ্চিত</b>, না <b>আন্দাজ</b>। এতে বোঝা যাবে কোথায় জানা, কোথায় আন্দাজ।</li>':''}
+  ${ME&&ME.conf?'<li>একটা একটা করে দিলে প্রতিটি উত্তরের পরে চাপুন: <b>নিশ্চিত</b>, না <b>আন্দাজ</b>। এতে বোঝা যাবে কোথায় জানা, কোথায় আন্দাজ।</li>':''}
   ${ME&&ME.neg?'<li>আসল পরীক্ষার মতো প্রতিটি ভুলে '+nb(ME.neg)+' নম্বর কাটা যাবে।</li>':''}
-  <li>না জানলে আন্দাজে না দাগিয়ে প্রশ্নটি বাদ দিন। বাদ দেওয়া প্রশ্নগুলো ভাগের শেষে আবার আসবে।</li>
+  <li>না জানলে আন্দাজে না দাগিয়ে প্রশ্নটি ছেড়ে যান। না-দাগানো প্রশ্নগুলো ভাগের শেষে আবার আসবে।</li>
   <li>বই বা কারও সাহায্য নেবেন না। আপনার বর্তমান প্রস্তুতি কেমন, সেটা ঠিকঠাক জানা গেলে তবেই বুঝবেন কীভাবে পড়বেন।</li>
   <li>প্রতিটি ভাগ শুরুর সময় একবার ইন্টারনেট লাগবে। তখন ওই ভাগের সকল প্রশ্ন একসাথে আপনার ফোনে চলে আসে, উত্তরও ফোনেই জমা থাকে। মাঝপথে নেট চলে গেলেও পরীক্ষা চলবে; নেট ফিরলে উত্তর নিজে থেকেই জমা হয়ে যাবে।</li>
 </ul>`;
@@ -289,16 +290,20 @@ document.addEventListener('visibilitychange',()=>{
 function ready(p){
   V.innerHTML=`${back}<h1 style="margin-top:12px">${esc(PL(p))}</h1>
     <p class="sub">${bn(p.n)}টি প্রশ্ন, ${bn(p.mins)} মিনিট।</p><div class="card">${rules()}</div>
+    <h2>কীভাবে দেবেন</h2>${modes()}
     <button class="btn big" id="go">শুরু করুন</button>`;
-  wire();$('go').onclick=()=>part(p.no);scrollTo(0,0);
+  wire();$('go').onclick=()=>{const m=(V.querySelector('input[name=md]:checked')||{}).value==='page'?'page':'one';set(MDK,m);part(p.no,m)};scrollTo(0,0);
 }
-async function part(no){
+async function part(no,md){
   V.innerHTML='<p class="dim">প্রশ্ন আসছে…</p>';
   let app=0;try{app=localStorage.getItem('lb:inapp')?1:0}catch(e){}
   try{EX=await api('start',{part:no,w:innerWidth,app});EX.end=Date.now()+EX.left;set(XK(no),{part:EX.part,title:EX.title,mins:EX.mins,qs:EX.qs,end:EX.end,done:[],subs:ME?ME.subjects:[],conf:EX.conf})}catch(e){
     const off=get(XK(no),null);
     if(!e.s&&off&&off.end>Date.now()){EX=off}else{if(e.message==='done')del(XK(no));V.innerHTML=`<div class="card">${e.message==='done'?'এই ভাগ আগেই শেষ।':e.message==='locked'?(e.j&&e.j.why==='prev'?'আগের দিনের পরীক্ষা শেষ হলে এই ভাগ খুলবে।':'এই ভাগ '+dday(e.j&&e.j.date)+' খুলবে।'):'খোলা যায়নি। নেট দেখে আবার চেষ্টা করুন।'}</div>${back}`;wire();return}}
-  const L=local(no);for(const [id,p] of EX.done){if(!L.a[id])L.a[id]=[p,0];if(!L.sent.includes(id))L.sent.push(id)}set(LK(no),L);
+  const L=local(no);for(const [id,p] of EX.done){if(!L.a[id])L.a[id]=[p,0];if(!L.sent.includes(id))L.sent.push(id)}
+  // ধরন একবার ঠিক হলে ভাগের শেষ পর্যন্ত একই (পাতা আবার খুললেও); পুরোনো চলমান ভাগ = একটা একটা করে
+  if(!L.m)L.m=md==='page'?'page':'one';if(!L.seen)L.seen=[];set(LK(no),L);EX.mode=L.m;
+  if(EX.mode==='page'){timer();return pageStart()}
   // প্রথমে যেগুলো একবারও দেখানো হয়নি, তারপর বাদ দেওয়াগুলো (একবার)
   EX.queue=EX.qs.filter(q=>!L.a[q.id]&&!L.skip.includes(q.id)).map(q=>q.id).concat(L.skip.filter(id=>!L.a[id]));
   if(!EX.queue.length)return finish();
@@ -339,7 +344,7 @@ function show(){
   const go=(pick,kept)=>{
     if(busy)return;busy=true;
     const L=local(EX.part);
-    if(!kept){if(pick<0&&!again){L.skip.push(id)}else L.a[id]=[pick,Date.now()-t0]}
+    if(!kept){if(pick<0&&!again){L.skip.push(id);EX.queue.push(id)}else L.a[id]=[pick,Date.now()-t0]}
     set(LK(EX.part),L);EX.queue.shift();
     V.querySelectorAll('button').forEach(b=>b.disabled=true);
     if(Object.keys(L.a).length-L.sent.length>=5)sendPart(EX.part,false).catch(()=>{});
@@ -351,11 +356,74 @@ function show(){
   fresh();
   scrollTo(0,0);
 }
+// ---------- দুই ধরন: একটা একটা করে, বা সব প্রশ্ন একসাথে ----------
+// একটা একটা করে: conf-সেটে প্রতিটি উত্তরের পরে "নিশ্চিত/আন্দাজ" (রিপোর্টে আন্দাজের হিসাব)। সব একসাথে: আসল প্রশ্নপত্রের মতো এক পাতায়, conf চাওয়া হয় না।
+// PG = এক পাতায় কয়টি; মালিকের সিদ্ধান্ত (২৪ নভেম্বর): সব প্রশ্ন এক পাতায়, ওপর-নিচে স্ক্রল (প্রশ্ন শুরুতেই ফোনে আসে, তাই বাড়তি লোড নেই)
+const MDK='lb:diag:mode',PG=1000;
+function modes(){
+  const m=get(MDK,'one')==='page'?'page':'one',cf=ME&&ME.conf;
+  const o=(v,t,d)=>`<label class="card"><input type="radio" name="md" value="${v}"${m===v?' checked':''}><span><b>${t}</b>${d}</span></label>`;
+  // conf-সেটে একটা-একটা ধরনের যাচাই বিস্তারিত বলা (মালিকের চাওয়া, ২৪ নভেম্বর): নিশ্চিত/আন্দাজ কীভাবে রিপোর্টে আসে
+  const one=cf?`<ul><li>এক পর্দায় একটি প্রশ্ন আসবে। উত্তর দাগানোর পরে বলবেন: <b>নিশ্চিত</b>, না <b>আন্দাজ</b>।</li>
+    <li>কোথায় জানেন আর কোথায় আন্দাজ, সেটা ধরেই আপনার সামনের পড়া সাজানো হবে।</li></ul>
+    <p class="mgood">রিপোর্টে যা দেখবেন: নম্বর, বিষয় ধরে অবস্থা আর ভুলের তালিকা। সঙ্গে আলাদা করে: নিশ্চিত বলেও কয়টা ভুল হলো (মানে ভুল জানা, এগুলো আগে ঠিক করতে হবে), আর আন্দাজে কয়টা লাগল, তাতে নম্বর বাড়ল না কমল।</p>`:'<small>এক পর্দায় একটি প্রশ্ন।</small>';
+  const page=cf?`<ul><li>ভাগের সব প্রশ্ন আসল প্রশ্নপত্রের মতো এক পাতায় আসবে। ওপর-নিচে স্ক্রল করে যেটা আগে পারেন, সেটা আগে দাগাবেন।</li>
+    <li>নিশ্চিত/আন্দাজ বলতে হবে না।</li></ul>
+    <p class="mwarn">রিপোর্টে যা দেখবেন: নম্বর, বিষয় ধরে অবস্থা আর ভুলের তালিকা।<br>যা দেখবেন না: নিশ্চিত বলে কয়টা ভুল, আন্দাজে কয়টা লাগল।</p>`:'<small>আসল প্রশ্নপত্রের মতো, সব প্রশ্ন এক পাতায়।</small>';
+  return `<div class="mode" role="radiogroup">${o('one','একটা একটা করে',one)}${o('page','সব প্রশ্ন একসাথে',page)}</div>`;
+}
+function pageStart(){
+  const L=local(EX.part);EX.ids=EX.qs.map(q=>q.id);EX.rev=0;EX.pg=0;
+  if(EX.ids.every(id=>L.a[id]))return finish();
+  // আবার খুললে: যে পাতায় ছিলেন সেখানেই ("বাকি প্রশ্ন"-এ থাকলে তালিকা নতুন করে)
+  const [rv,pg]=L.pg||[0,0];
+  if(rv)revStart();else{EX.pg=Math.min(pg,Math.ceil(EX.ids.length/PG)-1);pageShow()}
+  const f=V.querySelector('.pq .opt:not(:disabled)');if(f&&L.seen.length)setTimeout(()=>f.closest('.pq').scrollIntoView({block:'start'}),50)
+}
+function revStart(){const L=local(EX.part);EX.rev=1;EX.pg=0;EX.rl=EX.ids.filter(id=>!L.a[id]);pageShow()}
+function pageShow(){
+  const L=local(EX.part),list=EX.rev?EX.rl:EX.ids,np=Math.max(1,Math.ceil(list.length/PG)),ids=list.slice(EX.pg*PG,EX.pg*PG+PG);
+  for(const id of ids)if(!L.seen.includes(id))L.seen.push(id);L.pg=[EX.rev,EX.pg];set(LK(EX.part),L);
+  const done=()=>EX.ids.filter(id=>local(EX.part).a[id]).length,last=EX.pg>=np-1;
+  V.innerHTML=`<div class="qh"><span>${EX.rev?'বাকি প্রশ্ন':'ভাগ '+bn(EX.part)}${np>1?' · পাতা '+bn(EX.pg+1)+' / '+bn(np):''}</span><span id="cnt">${bn(done())} / ${bn(EX.ids.length)} উত্তর</span></div>
+    ${EX.rev&&!EX.pg?'<p class="sub">যেগুলো দাগাননি, সেগুলো এখানে। পারলে দাগান, নইলে জমা দিন।</p>':''}
+    ${ids.map(id=>{const q=EX.qs.find(x=>x.id===id),a=L.a[id];return `<section class="pq" data-id="${esc(id)}">${q.mk?MKT:''}<div class="qt"><span class="qn">${bn(EX.ids.indexOf(id)+1)}.</span> ${rich(q.q)}</div>
+      ${q.o.map((o,k)=>`<button class="opt${a&&a[0]===k?' sel':''}" data-o="${k}"${a?' disabled':''}><span class="k">${K[k]}</span><span>${rich(o)}</span></button>`).join('')}</section>`}).join('')}
+    <p class="net" id="net">${navigator.onLine?'':'নেট নেই। পরীক্ষা চলছে, উত্তর ফোনে জমছে।'}</p>
+    <div class="pnav">${EX.pg||EX.rev?`<button class="btn ghost" id="pv">← ${EX.rev&&!EX.pg?'সব প্রশ্ন':'আগের পাতা'}</button>`:''}<button class="btn" id="nx"></button></div>`;
+  V.querySelectorAll('.pq').forEach(sec=>{const id=sec.dataset.id;sec.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+    const L=local(EX.part);if(L.a[id]||b.disabled)return;
+    // প্রথম চাপেই লক। সময় ০: পাতায় প্রশ্নপ্রতি সময় মাপা যায় না, আর সার্ভার ০-কে সময়ের হিসাবে ধরে না
+    // (নইলে পরপর দাগানোয় "খুব দ্রুত" চিহ্ন পড়ে পরিকল্পনা বদলে যেত)
+    L.a[id]=[+b.dataset.o,0];set(LK(EX.part),L);
+    sec.querySelectorAll('.opt').forEach(x=>x.disabled=true);b.classList.add('sel');
+    $('cnt').textContent=bn(done())+' / '+bn(EX.ids.length)+' উত্তর';label();
+    if(Object.keys(L.a).length-L.sent.length>=5)sendPart(EX.part,false).catch(()=>{});
+  })});
+  let arm=0;
+  const left=()=>EX.ids.length-done();
+  const label=()=>{const n=$('nx');if(arm)return;n.textContent=!last?'পরের পাতা →':!EX.rev&&left()?'বাকি প্রশ্ন ('+bn(left())+'টি) →':'জমা দিন'};
+  label();
+  let moving=0;
+  const go=f=>{if(moving)return;moving=1;V.classList.add('qout');setTimeout(()=>{f();scrollTo(0,0);requestAnimationFrame(()=>requestAnimationFrame(()=>V.classList.remove('qout')))},150)};
+  $('nx').onclick=()=>{
+    if(!last)return go(()=>{EX.pg++;pageShow()});
+    if(!EX.rev&&left())return go(revStart);
+    // জমা: ভুল চাপে শেষ নয়, দ্বিতীয় চাপে
+    if(arm&&Date.now()-arm<700)return;
+    if(arm&&Date.now()-arm<5000){V.querySelectorAll('button').forEach(b=>b.disabled=true);return finish()}
+    arm=Date.now();$('nx').textContent=left()?bn(left())+'টি বাকি, তবু জমা দিতে আবার চাপুন':'জমা দিতে আবার চাপুন';
+    setTimeout(()=>{if(arm&&Date.now()-arm>=5000){arm=0;label()}},5100);
+  };
+  if($('pv'))$('pv').onclick=()=>go(()=>{if(EX.pg)EX.pg--;else{EX.rev=0;EX.pg=Math.ceil(EX.ids.length/PG)-1}pageShow()});
+  if(window.LBMath)try{LBMath(V)}catch(e){}
+  fresh();
+}
 async function finish(){
   clearInterval(tick);$('timer').hidden=true;
   const no=EX.part,L=local(no);
   // একবারও দাগানো হয়নি এমন প্রশ্ন "বাদ" হিসেবে যায়
-  for(const q of EX.qs)if(!L.a[q.id])L.a[q.id]=[-1,0];
+  for(const q of EX.qs)if(!L.a[q.id])L.a[q.id]=[-1,(L.seen&&L.seen.includes(q.id))||(L.skip&&L.skip.includes(q.id))?1:0];
   set(LK(no),L);
   V.innerHTML='<p class="dim">ফল গোনা হচ্ছে…</p>';
   let r=null;
@@ -380,6 +448,11 @@ function result(res){
   const rp=ME.parts.find(p=>p.no===res.part)||{};
   let h=`${back}<h1 style="margin-top:12px">${W&&rp.date?esc(dday(rp.date)+' · '+(rp.title||'পরীক্ষা'))+': ফল':'ভাগ '+bn(res.part)+'-এর ফল'}</h1>`;
   if(res.net!=null)h+=`<div class="card"><b>নম্বর: ${bn(res.n)}-এর মধ্যে ${nb(res.net)}</b><div class="sub" style="margin:2px 0 0">${bn(res.ok)}টি ঠিক, ${bn(res.no)}টি ভুল, ${bn(res.skip)}টি বাদ${res.no?` · ভুলের জন্য কাটা গেছে ${nb(res.no*res.neg)}`:''}</div></div>`;
+  // একটা একটা করে দিলে (conf-সেট): এই ভাগেই নিশ্চিত/আন্দাজের হিসাব, যাতে কার্ডের কথা সঙ্গে সঙ্গে চোখে পড়ে
+  const Su=res.su,G=res.g;
+  if(Su&&G&&(Su.n||G.n))h+=`<div class="card"><b>নিশ্চিত আর আন্দাজ</b><ul class="rules" style="margin-top:6px">
+    ${Su.n?`<li>নিশ্চিত বলেছিলেন ${bn(Su.n)}টি: ${bn(Su.ok)}টি ঠিক, <b>${bn(Su.no)}টি ভুল</b>।${Su.no?' এগুলো ভুল জানা, আগে ঠিক করতে হবে।':''}</li>`:''}
+    ${G.n?`<li>আন্দাজে দিয়েছেন ${bn(G.n)}টি: ${bn(G.ok)}টি লাগল, ${bn(G.no)}টি ভুল।${res.neg?(()=>{const t=Math.round((G.ok-G.no*res.neg)*100)/100;return ` আন্দাজে নম্বর ${t>=0?'বাড়ল '+nb(t):'কমল '+nb(-t)}।`})():''}</li>`:''}</ul></div>`;
   h+='<div id="rk"></div>';
   h+=Object.entries(res.by).map(([sid,x])=>{const b=band(x);
     return `<div class="card"><b>${esc(SUB(sid))}</b>: ${bn(x.n)}টির মধ্যে ${bn(x.ok)}টি ঠিক<div class="sub" style="margin:2px 0 0">${bn(x.no)}টি ভুল, ${bn(x.skip)}টি বাদ</div>${b&&LINE[b]?`<p style="margin:6px 0 0">${LINE[b]}</p>`:''}</div>`}).join('');
