@@ -36,6 +36,7 @@ h1{font:600 24px/1.4 var(--display);color:var(--navy);margin:6px 0 4px}
 .rd-title{font:600 22px/1.45 var(--display);color:var(--navy);margin:2px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--pink)}
 .rd-text p{margin:0 0 10px}
 .rd-text ul{margin:0 0 12px;padding-left:22px}.rd-text li{margin:0 0 4px}
+.rd-text ul.nl{list-style:none;padding-left:0}.rd-text ul.nl li{padding-left:1.6em;text-indent:-1.6em}
 .rule{background:var(--soft);border-left:3px solid var(--navy);padding:10px 12px 2px;margin:0 0 14px;border-radius:0 3px 3px 0}
 .cap{font-weight:600;color:var(--navy);margin:6px 0 4px!important}
 .tb{overflow-x:auto;margin:0 0 14px;-webkit-overflow-scrolling:touch}
@@ -150,8 +151,25 @@ function opts(t){
   return {head,L};
 }
 const optList=L=>`<div class="opl${L.some(x=>x[1].length>22)?' one':''}">${L.map(([k,v])=>`<span><b>(${k})</b>${inl(v)}</span>`).join('')}</div>`;
+// ২৬/১১/২০২৬: লেখকের লুকানো নোট (<!-- … -->) পাতায় নয়; আর ছক বা "- " তালিকার আগে-পরে ফাঁকা লাইন না থাকলেও
+// (যেমন "ছক: …" লাইনের ঠিক নিচে ছক) আলাদা ব্লক, নইলে পুরো ছক এক অনুচ্ছেদে গলে যায়
+function prep(src,kind){
+  const L=src.replace(/\r/g,'').replace(/<!--[\s\S]*?-->/g,'').split('\n'),out=[];
+  const lx=kind!=='pq'&&kind!=='ex';
+  const cls=l=>!l.trim()?'':/^\s*\|/.test(l)?'t':lx&&/^[-*] /.test(l)?'l':lx&&/^[০-৯0-9]+[.।]\s/.test(l)?'n':'p';
+  let prev='';
+  for(const l of L){
+    let c=cls(l);
+    if(c==='p'&&prev==='n'&&/^(ব্যাখ্যা|Why)\s*[:ঃ]/i.test(l.trim()))c='n';   // অনুশীলনীর প্রশ্নের নিচের ব্যাখ্যা প্রশ্নের সঙ্গেই
+    if(c&&prev&&c!==prev&&(c!=='p'||prev!=='p'))out.push('');
+    if(c||l.trim()==='')out.push(c?l:'');
+    prev=c;
+  }
+  return out.join('\n');
+}
+const NUM=/^([০-৯0-9]+)[.।]\s+/;
 function md(src,kind){
-  const blocks=src.replace(/\r/g,'').split(/\n{2,}/).map(b=>b.trim()).filter(Boolean);
+  const blocks=prep(src,kind).split(/\n{2,}/).map(b=>b.trim()).filter(Boolean);
   if(kind==='ex')return exMd(blocks);
   if(kind==='pq'){const q=pqMd(blocks);if(q)return q}
   const QZ=prac(blocks);
@@ -162,10 +180,12 @@ function md(src,kind){
     if(b.charCodeAt(0)===0){flushRule();flushQa();h+=QZ[+b.slice(1)];continue}
     const L=b.split('\n');
     let html=null;
-    if(L.every(l=>/^\|/.test(l))){
-      const rows=L.filter(l=>!/^\|\s*:?-{2,}/.test(l)).map(l=>l.replace(/^\||\|$/g,'').split('|').map(c=>c.trim()));
+    if(L.every(l=>/^\s*\|/.test(l))){
+      const rows=L.map(l=>l.trim()).filter(l=>!/^\|\s*:?-{2,}/.test(l)).map(l=>l.replace(/^\||\|$/g,'').split('|').map(c=>c.trim()));
       html='<div class="tb"><table>'+rows.map((r,i)=>'<tr>'+r.map(c=>i?`<td>${inl(c)}</td>`:`<th>${inl(c)}</th>`).join('')+'</tr>').join('')+'</table></div>';
     }else if(L.every(l=>/^[-*] /.test(l)))html='<ul>'+L.map(l=>'<li>'+inl(l.slice(2))+'</li>').join('')+'</ul>';
+    // "১. …\n২. …" (কুইজ নয় এমন ধাপের তালিকা): এক লাইনে গলে না গিয়ে আলাদা লাইনে, নম্বর যেমন লেখা তেমন
+    else if(L.length>1&&L.every(l=>NUM.test(l)))html='<ul class="nl">'+L.map(l=>{const m=l.match(NUM);return `<li><b>${m[1]}.</b> ${inl(l.slice(m[0].length))}</li>`}).join('')+'</ul>';
     const p=b.replace(/\n/g,' ');
     // সমাধান করা অঙ্ক: প্রশ্ন (**১.** বা **সমস্যা ১.**) থেকে পরের প্রশ্নের আগ পর্যন্ত এক কার্ডে
     if(!html&&/^\*\*(সমস্যা\s*)?[০-৯0-9]+\.\*\*/.test(p)){flushRule();flushQa();qa=`<p class="q">${inl(p)}</p>`;continue}
@@ -173,11 +193,11 @@ function md(src,kind){
       if(!html&&/^\([কখগঘঙ]\)/.test(p)){const o=opts(p);qa+=o?optList(o.L):`<p>${inl(p)}</p>`;continue}
       if(!html&&/^\*\*উত্তর[:ঃ]?\*\*/.test(p)){qa+=`<p><span class="an">${inl(p)}</span></p>`;continue}
       if(!html&&/^\*\*সমাধান[:ঃ]?\*\*/.test(p)){qa+=`<p class="so">${inl(p)}</p>`;continue}
-      if(!/^ছক[:ঃ]/.test(p)&&!/^\*\*/.test(p)){qa+=html||`<p>${inl(p)}</p>`;continue}
+      if(!/^(ছক|টাইমলাইন)[:ঃ]/.test(p)&&!/^\*\*/.test(p)){qa+=html||`<p>${inl(p)}</p>`;continue}
       flushQa();
     }
     if(!html&&/^উত্তরমালা[:ঃ]/.test(p)){h+=key(p);continue}
-    if(!html&&/^ছক[:ঃ]/.test(p)){flushRule();h+=`<p class="cap">${inl(p.replace(/^ছক[:ঃ]\s*/,''))}</p>`;continue}
+    if(!html&&/^(ছক|টাইমলাইন)[:ঃ]/.test(p)){flushRule();h+=`<p class="cap">${inl(p.replace(/^(ছক|টাইমলাইন)[:ঃ]\s*/,''))}</p>`;continue}
     // টাইপের শুরুর নিয়ম আর সূত্র (প্রথম অঙ্কের আগ পর্যন্ত) একটা শান্ত বাক্সে
     const out=html||`<p>${inl(p)}</p>`;
     if(kind==='type'&&!h.includes('class="qa"')&&!/^<div class="tb"/.test(out)){rule=(rule||'')+out;continue}
